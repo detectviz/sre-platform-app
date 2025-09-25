@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { GoogleGenAI, Type } from "@google/genai";
 import { Incident, IncidentAnalysis, MultiIncidentAnalysis } from '../../types';
 import Icon from '../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
@@ -105,56 +104,17 @@ const IncidentListPage: React.FC = () => {
     };
     
     const handleRunAIAnalysis = async () => {
-        const selectedIncidents = incidents.filter(i => selectedIds.includes(i.id));
-        if (selectedIncidents.length === 0) return;
+        if (selectedIds.length === 0) return;
 
         setIsAnalysisModalOpen(true);
         setIsAnalysisLoading(true);
         setAnalysisReport(null);
 
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-            
-            if (selectedIncidents.length === 1) {
-                const incident = selectedIncidents[0];
-                const prompt = `Analyze this incident and provide a root cause analysis and recommendations in Traditional Chinese. Incident: ${JSON.stringify(incident, null, 2)}`;
-                const response = await ai.models.generateContent({
-                    model: 'gemini-2.5-flash',
-                    contents: prompt,
-                    config: {
-                        responseMimeType: "application/json",
-                        responseSchema: {
-                            type: Type.OBJECT,
-                            properties: {
-                                summary: { type: Type.STRING },
-                                root_causes: { type: Type.ARRAY, items: { type: Type.STRING } },
-                                recommendations: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { description: { type: Type.STRING }, action_text: { type: Type.STRING }, action_link: { type: Type.STRING }, playbook_id: { type: Type.STRING } }, required: ['description'] } }
-                            },
-                            required: ['summary', 'root_causes', 'recommendations']
-                        }
-                    }
-                });
-                setAnalysisReport(JSON.parse(response.text));
-            } else {
-                const prompt = `Analyze these incidents to find common patterns and suggest group actions in Traditional Chinese. Incidents: ${JSON.stringify(selectedIncidents, null, 2)}`;
-                const response = await ai.models.generateContent({
-                    model: 'gemini-2.5-flash',
-                    contents: prompt,
-                    config: {
-                         responseMimeType: "application/json",
-                         responseSchema: {
-                            type: Type.OBJECT,
-                            properties: {
-                                summary: { type: Type.STRING },
-                                common_patterns: { type: Type.ARRAY, items: { type: Type.STRING } },
-                                group_actions: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { description: { type: Type.STRING }, action_text: { type: Type.STRING }, playbook_id: { type: Type.STRING } }, required: ['description'] } }
-                            },
-                            required: ['summary', 'common_patterns', 'group_actions']
-                        }
-                    }
-                });
-                setAnalysisReport(JSON.parse(response.text));
-            }
+            const { data } = await api.post<IncidentAnalysis | MultiIncidentAnalysis>('/events/ai-analysis', {
+                incident_ids: selectedIds,
+            });
+            setAnalysisReport(data);
         } catch (err) {
             console.error(err);
             setAnalysisReport("Failed to generate AI analysis.");

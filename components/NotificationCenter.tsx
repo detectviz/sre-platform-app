@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { MOCK_NOTIFICATIONS } from '../constants';
 import { NotificationItem } from '../types';
 import Icon from './Icon';
+import api from '../services/api';
 
 const timeSince = (dateString: string) => {
     const date = new Date(dateString);
@@ -22,8 +22,19 @@ const timeSince = (dateString: string) => {
 
 const NotificationCenter: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
-    const [notifications, setNotifications] = useState<NotificationItem[]>(MOCK_NOTIFICATIONS);
+    const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        if (isOpen) {
+            setIsLoading(true);
+            api.get<NotificationItem[]>('/notifications')
+                .then(res => setNotifications(res.data))
+                .catch(err => console.error("Failed to fetch notifications", err))
+                .finally(() => setIsLoading(false));
+        }
+    }, [isOpen]);
 
     const unreadCount = notifications.filter(n => n.status === 'unread').length;
 
@@ -41,74 +52,70 @@ const NotificationCenter: React.FC = () => {
 
     const handleMarkAsRead = (id: string) => {
         setNotifications(notifications.map(n => n.id === id ? { ...n, status: 'read' } : n));
+        // In a real app, you would also send a POST/PATCH request to the API to mark it as read.
     };
 
     const handleMarkAllAsRead = () => {
         setNotifications(notifications.map(n => ({ ...n, status: 'read' })));
     };
 
-    const getSeverityIcon = (severity: NotificationItem['severity']) => {
-        switch (severity) {
-            case 'critical': return { icon: 'shield-alert', color: 'text-red-400' };
-            case 'warning': return { icon: 'alert-triangle', color: 'text-orange-400' };
-            case 'info': return { icon: 'info', color: 'text-sky-400' };
-            case 'success': return { icon: 'check-circle', color: 'text-green-400' };
-        }
-    };
-
-    // Conditionally apply classes to make the badge a circle for single-digit counts
-    // and a pill for multi-digit counts for better readability.
-    const badgeSizeClasses = unreadCount < 10 ? 'w-4' : 'px-1.5';
-
+    // FIX: Add JSX return to complete the component, fixing type errors.
     return (
         <div className="relative" ref={dropdownRef}>
             <button onClick={() => setIsOpen(!isOpen)} className="relative p-2 rounded-full hover:bg-slate-700/50">
                 <Icon name="bell" className="w-5 h-5" />
                 {unreadCount > 0 && (
-                    <span className={`absolute top-[0.125rem] right-[0.125rem] flex items-center justify-center h-4 ${badgeSizeClasses} text-[10px] text-white bg-red-500 rounded-full border-2 border-slate-900`}>
-                        {unreadCount}
+                    <span className="absolute top-1.5 right-1.5 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
                     </span>
                 )}
             </button>
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 z-50 flex flex-col">
-                    <div className="flex justify-between items-center p-3 border-b border-slate-700/50">
+                <div className="absolute right-0 mt-2 w-96 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 z-50 flex flex-col animate-fade-in-down" style={{ maxHeight: '80vh' }}>
+                    <div className="flex justify-between items-center p-4 border-b border-slate-700/50 shrink-0">
                         <h3 className="font-semibold text-white">通知中心</h3>
                         {unreadCount > 0 && (
-                            <button onClick={handleMarkAllAsRead} className="text-xs text-sky-400 hover:text-sky-300">全部標為已讀</button>
+                            <button onClick={handleMarkAllAsRead} className="text-sm text-sky-400 hover:text-sky-300">全部標為已讀</button>
                         )}
                     </div>
-                    <div className="max-h-96 overflow-y-auto">
-                        {notifications.length > 0 ? (
-                            notifications.map(notif => {
-                                const { icon, color } = getSeverityIcon(notif.severity);
-                                return (
-                                    <Link
-                                        key={notif.id}
-                                        to={notif.linkUrl || '#'}
-                                        onClick={() => handleMarkAsRead(notif.id)}
-                                        className="flex items-start p-3 hover:bg-slate-700 border-b border-slate-700/50 last:border-b-0"
-                                    >
-                                        {notif.status === 'unread' && <div className="w-2 h-2 rounded-full bg-sky-400 mr-3 mt-1.5 shrink-0"></div>}
-                                        <div className={`mr-3 ${notif.status === 'read' ? 'ml-5' : ''}`}>
-                                            <Icon name={icon} className={`w-4 h-4 mt-1 ${color}`} />
-                                        </div>
-                                        <div className="flex-grow">
-                                            <p className={`text-sm ${notif.status === 'unread' ? 'text-white font-semibold' : 'text-slate-300'}`}>{notif.title}</p>
-                                            <p className="text-xs text-slate-400">{notif.description}</p>
-                                            <p className="text-xs text-slate-500 mt-1">{timeSince(notif.createdAt)}</p>
-                                        </div>
-                                    </Link>
-                                );
-                            })
+                    <div className="flex-grow overflow-y-auto">
+                        {isLoading ? (
+                            <div className="flex items-center justify-center p-10">
+                                <Icon name="loader-circle" className="w-6 h-6 animate-spin text-slate-400" />
+                            </div>
+                        ) : notifications.length === 0 ? (
+                            <div className="text-center p-10 text-slate-400">
+                                <Icon name="bell-off" className="w-12 h-12 mx-auto mb-2" />
+                                <p>沒有新的通知</p>
+                            </div>
                         ) : (
-                            <div className="text-center py-8 text-slate-400 text-sm">沒有新的通知</div>
+                            <ul>
+                                {notifications.map(n => {
+                                    const severityColors = {
+                                        critical: 'border-red-500',
+                                        warning: 'border-yellow-500',
+                                        info: 'border-sky-500',
+                                        success: 'border-green-500'
+                                    };
+                                    return (
+                                        <li key={n.id} className={`p-4 hover:bg-slate-700/50 border-l-4 ${n.status === 'unread' ? severityColors[n.severity] : 'border-transparent'}`}>
+                                            <Link to={n.linkUrl || '#'} className="block" onClick={() => handleMarkAsRead(n.id)}>
+                                                <div className="flex justify-between items-start">
+                                                    <p className="font-semibold text-white">{n.title}</p>
+                                                    {n.status === 'unread' && <div className="w-2 h-2 rounded-full bg-sky-400 shrink-0 ml-2 mt-1.5"></div>}
+                                                </div>
+                                                <p className="text-sm text-slate-300">{n.description}</p>
+                                                <p className="text-xs text-slate-500 mt-1">{timeSince(n.createdAt)}</p>
+                                            </Link>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
                         )}
                     </div>
-                    <div className="p-2 border-t border-slate-700/50 text-center">
-                        <Link to="/settings/notification-management/history" onClick={() => setIsOpen(false)} className="text-sm text-sky-400 hover:text-sky-300 w-full block">
-                            查看所有通知
-                        </Link>
+                     <div className="p-2 border-t border-slate-700/50 text-center shrink-0">
+                        <Link to="/settings/notification-management/history" onClick={() => setIsOpen(false)} className="text-sm font-medium text-sky-400 hover:text-sky-300">查看所有通知</Link>
                     </div>
                 </div>
             )}
@@ -116,4 +123,5 @@ const NotificationCenter: React.FC = () => {
     );
 };
 
+// FIX: Add default export to fix module import error.
 export default NotificationCenter;

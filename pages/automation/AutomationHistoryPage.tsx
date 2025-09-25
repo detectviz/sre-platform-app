@@ -1,6 +1,7 @@
+
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { MOCK_PLAYBOOKS } from '../../constants';
-import { AutomationExecution } from '../../types';
+import { AutomationExecution, AutomationPlaybook } from '../../types';
 import Icon from '../../components/Icon';
 import Toolbar from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
@@ -19,9 +20,16 @@ const AutomationHistoryPage: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [selectedExecution, setSelectedExecution] = useState<AutomationExecution | null>(null);
+    const [playbooks, setPlaybooks] = useState<AutomationPlaybook[]>([]);
     
     // Filters state
     const [filters, setFilters] = useState<{ playbookId: string; status: string; startDate: string; endDate: string }>({ playbookId: '', status: '', startDate: '', endDate: '' });
+
+    useEffect(() => {
+        api.get<AutomationPlaybook[]>('/automation/scripts')
+            .then(res => setPlaybooks(res.data))
+            .catch(err => console.error("Failed to fetch playbooks for filter", err));
+    }, []);
 
     const fetchExecutions = useCallback(async () => {
         setIsLoading(true);
@@ -68,7 +76,7 @@ const AutomationHistoryPage: React.FC = () => {
         <div className="flex items-center space-x-2">
             <select value={filters.playbookId} onChange={e => setFilters({ ...filters, playbookId: e.target.value })} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm">
                 <option value="">所有腳本</option>
-                {MOCK_PLAYBOOKS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                {playbooks.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
             <select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm">
                 <option value="">所有狀態</option>

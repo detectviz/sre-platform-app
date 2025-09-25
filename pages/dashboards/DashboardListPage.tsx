@@ -7,7 +7,6 @@ import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import AddDashboardModal from '../../components/AddDashboardModal';
 import Modal from '../../components/Modal';
 import DashboardEditModal from '../../components/DashboardEditModal';
-import PlaceholderModal from '../../components/PlaceholderModal';
 import api from '../../services/api';
 import Pagination from '../../components/Pagination';
 import TableLoader from '../../components/TableLoader';
@@ -18,6 +17,7 @@ const DashboardListPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [totalDashboards, setTotalDashboards] = useState(0);
+    const [categories, setCategories] = useState<string[]>(['All']);
 
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
@@ -32,14 +32,13 @@ const DashboardListPage: React.FC = () => {
     const [deletingDashboard, setDeletingDashboard] = useState<Dashboard | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingDashboard, setEditingDashboard] = useState<Dashboard | null>(null);
-    const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
-    const [modalFeatureName, setModalFeatureName] = useState('');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-    const showPlaceholderModal = (featureName: string) => {
-        setModalFeatureName(featureName);
-        setIsPlaceholderModalOpen(true);
-    };
+    useEffect(() => {
+        api.get<{ categories: string[] }>('/dashboards/options')
+            .then(res => setCategories(['All', ...res.data.categories]))
+            .catch(err => console.error("Failed to fetch dashboard categories", err));
+    }, []);
 
     const fetchDashboards = useCallback(async () => {
         setIsLoading(true);
@@ -67,11 +66,6 @@ const DashboardListPage: React.FC = () => {
     useEffect(() => {
         const storedDefault = localStorage.getItem('default-dashboard') || 'sre-war-room';
         setDefaultDashboard(storedDefault);
-    }, []);
-  
-    const categories = useMemo(() => {
-        // In a real app, categories might come from an API
-        return ['All', '業務與 SLA', '基礎設施', '營運與容量', '團隊自訂'];
     }, []);
 
     const handleSetDefault = (dashboardId: string) => {
@@ -163,7 +157,7 @@ const DashboardListPage: React.FC = () => {
     
     const rightActions = (
         <>
-            <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => showPlaceholderModal('欄位設定')} />
+            <ToolbarButton icon="settings-2" text="欄位設定" disabled title="功能開發中" />
             <ToolbarButton icon="plus" text="新增儀表板" primary onClick={() => setIsAddModalOpen(true)} />
         </>
     );
@@ -257,7 +251,6 @@ const DashboardListPage: React.FC = () => {
                 <p>您確定要刪除儀表板 <strong className="text-amber-400">{deletingDashboard?.name}</strong> 嗎？</p>
                 <p className="mt-2 text-slate-400">此操作無法復原。</p>
             </Modal>
-            <PlaceholderModal isOpen={isPlaceholderModalOpen} onClose={() => setIsPlaceholderModalOpen(false)} featureName={modalFeatureName} />
         </div>
     );
 };

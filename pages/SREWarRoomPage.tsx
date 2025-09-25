@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { GoogleGenAI, Type } from "@google/genai";
-import ContextualKPICard from '../components/ContextualKPICard';
 import EChartsReact from '../components/EChartsReact';
 import Icon from '../components/Icon';
 import api from '../services/api';
+import PageKPIs from '../components/PageKPIs';
 
 interface BriefingData {
     stability_summary: string;
@@ -24,62 +23,6 @@ interface BriefingData {
 const SREWarRoomPage: React.FC = () => {
     const [aiBriefing, setAiBriefing] = useState<BriefingData | null>(null);
     const [isBriefingLoading, setIsBriefingLoading] = useState(true);
-
-    // Encapsulate dashboard data to make it reusable
-    const dashboardData = {
-        kpis: {
-            pending: 5,
-            critical: 2,
-            inProgress: 3,
-            inProgressTrend: -0.15,
-            resolvedToday: 12,
-            resolvedTrend: 0.08,
-            automationRate: 35.2,
-            autoResolved: 4,
-        },
-        heatmapData: [
-            // Latency, Traffic, Error, Saturation for each service
-            { service: '認證服務', values: [95, 100, 99, 92] },
-            { service: '支付 API', values: [98, 97, 5, 88] },
-            { service: '存儲', values: [100, 99, 98, 75] },
-            { service: 'Web 前端', values: [92, 94, 99, 91] },
-        ],
-        resourceGroupData: [
-            { name: 'Web 集群', healthy: 12, warning: 3, critical: 1 },
-            { name: '資料庫集群', healthy: 8, warning: 2, critical: 0 },
-        ],
-    };
-
-    const generateDynamicPrompt = (data: typeof dashboardData): string => {
-        const heatmapAnomalies = data.heatmapData
-            .map(s => ({ service: s.service, errorRate: 100 - s.values[2] }))
-            .filter(s => s.errorRate > 1)
-            .map(s => `${s.service} 錯誤率為 ${s.errorRate}%`)
-            .join(', ');
-
-        const resourceGroupAnomalies = data.resourceGroupData
-            .filter(g => g.critical > 0)
-            .map(g => `${g.name} 有 ${g.critical} 個嚴重問題`)
-            .join(', ');
-
-        return `
-            You are an expert SRE providing a daily briefing for the SRE War Room dashboard.
-            Analyze the following live system metrics and generate a briefing.
-            Respond in Traditional Chinese.
-
-            Map the following names to paths for 'resource_path' and 'button_link':
-            - "支付 API" -> "/dashboard/api-service-status"
-            - "Web 集群" -> "/resources/groups/rg-001"
-            - "資料庫集群" -> "/resources/groups/rg-002"
-
-            Live System Metrics:
-            - Pending Incidents: ${data.kpis.pending} total, with ${data.kpis.critical} critical incidents.
-            - Service Health Anomalies: ${heatmapAnomalies || "None detected"}.
-            - Resource Group Anomalies: ${resourceGroupAnomalies || "None detected"}.
-
-            Based on these metrics, generate the briefing.
-        `;
-    };
 
     const fetchBriefing = useCallback(async () => {
         setIsBriefingLoading(true);
@@ -102,48 +45,9 @@ const SREWarRoomPage: React.FC = () => {
     const handleRefreshBriefing = useCallback(async () => {
         setIsBriefingLoading(true);
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-            const prompt = generateDynamicPrompt(dashboardData);
-            
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: prompt,
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: Type.OBJECT,
-                        properties: {
-                            stability_summary: { type: Type.STRING },
-                            key_anomaly: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    description: { type: Type.STRING },
-                                    resource_name: { type: Type.STRING },
-                                    resource_path: { type: Type.STRING },
-                                },
-                                required: ['description', 'resource_name', 'resource_path']
-                            },
-                            recommendation: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    action_text: { type: Type.STRING },
-                                    button_text: { type: Type.STRING },
-                                    button_link: { type: Type.STRING },
-                                },
-                                required: ['action_text', 'button_text', 'button_link']
-                            }
-                        },
-                        required: ['stability_summary', 'key_anomaly', 'recommendation']
-                    }
-                }
-            });
-
-            const result: BriefingData = JSON.parse(response.text);
-
-            // Save the newly generated briefing to the mock backend
-            await api.post('/sre-war-room/briefing', result);
-
-            setAiBriefing(result); // Update UI with the new briefing
+             // The backend now handles the AI generation logic.
+            const { data } = await api.post<BriefingData>('/sre-war-room/briefing/generate');
+            setAiBriefing(data);
         } catch (error) {
             console.error("AI Briefing Generation Error:", error);
             setAiBriefing(null);
@@ -192,36 +96,7 @@ const SREWarRoomPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-6">
-        <ContextualKPICard 
-            title="待處理事件"
-            value={dashboardData.kpis.pending.toString()}
-            description={<><span className="text-red-400 font-semibold">{dashboardData.kpis.critical} 嚴重</span></>}
-            icon="shield-alert"
-            iconBgColor="bg-red-500"
-        />
-        <ContextualKPICard 
-            title="處理中"
-            value={dashboardData.kpis.inProgress.toString()}
-            description={<><span className={dashboardData.kpis.inProgressTrend > 0 ? "text-red-400" : "text-green-400"}>{dashboardData.kpis.inProgressTrend > 0 ? '↑' : '↓'}{Math.abs(dashboardData.kpis.inProgressTrend * 100)}%</span> vs 昨日</>}
-            icon="clock"
-            iconBgColor="bg-yellow-500"
-        />
-        <ContextualKPICard 
-            title="今日已解決"
-            value={dashboardData.kpis.resolvedToday.toString()}
-            description={<><span className={dashboardData.kpis.resolvedTrend > 0 ? "text-green-400" : "text-red-400"}>{dashboardData.kpis.resolvedTrend > 0 ? '↑' : '↓'}{Math.abs(dashboardData.kpis.resolvedTrend * 100)}%</span> vs 昨日</>}
-            icon="check-circle"
-            iconBgColor="bg-green-500"
-        />
-        <ContextualKPICard 
-            title="自動化率"
-            value={`${dashboardData.kpis.automationRate}%`}
-            description={<>{dashboardData.kpis.autoResolved} 事件自動解決</>}
-            icon="bot"
-            iconBgColor="bg-sky-500"
-        />
-      </div>
+      <PageKPIs pageName="SREWarRoom" />
 
       <div className="glass-card rounded-xl p-6">
         <div className="flex justify-between items-center mb-4">

@@ -7,7 +7,6 @@ import TestRuleModal from '../../components/TestRuleModal';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
 import Modal from '../../components/Modal';
-import PlaceholderModal from '../../components/PlaceholderModal';
 import api from '../../services/api';
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
@@ -26,13 +25,6 @@ const AlertRulePage: React.FC = () => {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingRule, setDeletingRule] = useState<AlertRule | null>(null);
-    const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
-    const [modalFeatureName, setModalFeatureName] = useState('');
-
-    const showPlaceholderModal = (featureName: string) => {
-        setModalFeatureName(featureName);
-        setIsPlaceholderModalOpen(true);
-    };
 
     const fetchRules = useCallback(async () => {
         setIsLoading(true);
@@ -174,9 +166,9 @@ const AlertRulePage: React.FC = () => {
                 leftActions={<ToolbarButton icon="search" text="搜索和篩選" onClick={() => setIsSearchModalOpen(true)} />}
                 rightActions={
                     <>
-                        <ToolbarButton icon="upload" text="匯入" onClick={() => showPlaceholderModal('匯入告警規則')} />
-                        <ToolbarButton icon="download" text="匯出" onClick={() => showPlaceholderModal('匯出告警規則')} />
-                        <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => showPlaceholderModal('欄位設定')} />
+                        <ToolbarButton icon="upload" text="匯入" disabled title="功能開發中" />
+                        <ToolbarButton icon="download" text="匯出" disabled title="功能開發中" />
+                        <ToolbarButton icon="settings-2" text="欄位設定" disabled title="功能開發中" />
                         <ToolbarButton icon="plus" text="新增規則" primary onClick={handleNewRule} />
                     </>
                 }
@@ -281,11 +273,6 @@ const AlertRulePage: React.FC = () => {
                 <p>您確定要刪除規則 <strong className="text-amber-400">{deletingRule?.name}</strong> 嗎？</p>
                 <p className="mt-2 text-slate-400">此操作無法復原。</p>
             </Modal>
-             <PlaceholderModal
-                isOpen={isPlaceholderModalOpen}
-                onClose={() => setIsPlaceholderModalOpen(false)}
-                featureName={modalFeatureName}
-            />
         </div>
     );
 };

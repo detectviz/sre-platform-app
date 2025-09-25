@@ -1,11 +1,9 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { MOCK_USERS } from '../../../constants';
-import { AuditLog } from '../../../types';
+import { AuditLog, User } from '../../../types';
 import Icon from '../../../components/Icon';
 import TableContainer from '../../../components/TableContainer';
 import Drawer from '../../../components/Drawer';
 import Toolbar, { ToolbarButton } from '../../../components/Toolbar';
-import PlaceholderModal from '../../../components/PlaceholderModal';
 import api from '../../../services/api';
 import Pagination from '../../../components/Pagination';
 import TableLoader from '../../../components/TableLoader';
@@ -21,13 +19,13 @@ const AuditLogsPage: React.FC = () => {
 
     const [filters, setFilters] = useState<{ user: string; action: string; startDate: string; endDate: string }>({ user: '', action: '', startDate: '', endDate: '' });
     const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
-    const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
-    const [modalFeatureName, setModalFeatureName] = useState('');
+    const [users, setUsers] = useState<User[]>([]);
 
-    const showPlaceholderModal = (featureName: string) => {
-        setModalFeatureName(featureName);
-        setIsPlaceholderModalOpen(true);
-    };
+    useEffect(() => {
+        api.get<{ items: User[] }>('/iam/users', { params: { page: 1, page_size: 1000 } })
+            .then(res => setUsers(res.data.items))
+            .catch(err => console.error("Failed to fetch users", err));
+    }, []);
     
     const fetchAuditLogs = useCallback(async () => {
         setIsLoading(true);
@@ -61,8 +59,6 @@ const AuditLogsPage: React.FC = () => {
         // In a real app, this might come from an API or be pre-defined
         return ['LOGIN_SUCCESS', 'UPDATE_EVENT_RULE', 'EXECUTE_PLAYBOOK', 'DELETE_USER'];
     }, []);
-    
-    const handleExport = () => showPlaceholderModal('匯出審計日誌');
 
     return (
         <div className="h-full flex flex-col">
@@ -71,7 +67,7 @@ const AuditLogsPage: React.FC = () => {
                     <div className="flex items-center space-x-2">
                         <select value={filters.user} onChange={e => setFilters({...filters, user: e.target.value})} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm">
                             <option value="">所有使用者</option>
-                            {MOCK_USERS.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                            {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                         </select>
                         <select value={filters.action} onChange={e => setFilters({...filters, action: e.target.value})} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm">
                             <option value="">所有操作</option>
@@ -82,7 +78,7 @@ const AuditLogsPage: React.FC = () => {
                         <input type="datetime-local" value={filters.endDate} onChange={e => setFilters({...filters, endDate: e.target.value})} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm" />
                     </div>
                 }
-                rightActions={<ToolbarButton icon="download" text="匯出" onClick={handleExport} />}
+                rightActions={<ToolbarButton icon="download" text="匯出" disabled title="功能開發中" />}
             />
 
             <TableContainer>
@@ -145,11 +141,6 @@ const AuditLogsPage: React.FC = () => {
                     </div>
                 )}
             </Drawer>
-            <PlaceholderModal
-                isOpen={isPlaceholderModalOpen}
-                onClose={() => setIsPlaceholderModalOpen(false)}
-                featureName={modalFeatureName}
-            />
         </div>
     );
 };

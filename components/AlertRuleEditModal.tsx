@@ -3,8 +3,8 @@ import Modal from './Modal';
 import Icon from './Icon';
 import Wizard from './Wizard';
 import FormRow from './FormRow';
-import { AlertRule, ConditionGroup, RuleCondition, AutomationSetting, ParameterDefinition } from '../types';
-import { MOCK_PLAYBOOKS, MOCK_ALERT_RULE_TEMPLATES } from '../constants';
+import { AlertRule, ConditionGroup, RuleCondition, AutomationSetting, ParameterDefinition, AutomationPlaybook, AlertRuleTemplate } from '../types';
+import api from '../services/api';
 
 interface AlertRuleEditModalProps {
   isOpen: boolean;
@@ -115,6 +115,14 @@ const AlertRuleEditModal: React.FC<AlertRuleEditModalProps> = ({ isOpen, onClose
 };
 
 const Step1 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFormData: Function }) => {
+    const [templates, setTemplates] = useState<AlertRuleTemplate[]>([]);
+
+    useEffect(() => {
+        api.get<AlertRuleTemplate[]>('/alert-rules/templates')
+            .then(res => setTemplates(res.data))
+            .catch(err => console.error("Failed to fetch alert rule templates", err));
+    }, []);
+
     const applyTemplate = (templateData: Partial<AlertRule>) => {
         setFormData({ ...formData, ...templateData });
     };
@@ -124,7 +132,7 @@ const Step1 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
             <div>
                 <h3 className="text-sm font-semibold text-slate-300 mb-2">快速套用範本</h3>
                 <div className="flex flex-wrap gap-2">
-                    {MOCK_ALERT_RULE_TEMPLATES.map(tpl => (
+                    {templates.map(tpl => (
                         <button key={tpl.id} onClick={() => applyTemplate(tpl.data)} className="px-3 py-1.5 text-sm bg-slate-700/50 hover:bg-slate-700 rounded-md flex items-center">
                            <span className="mr-2">{tpl.emoji}</span> {tpl.name}
                         </button>
@@ -238,6 +246,14 @@ const Step3 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
 };
 
 const Step4 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFormData: Function }) => {
+    const [playbooks, setPlaybooks] = useState<AutomationPlaybook[]>([]);
+    
+    useEffect(() => {
+        api.get<AutomationPlaybook[]>('/automation/scripts')
+            .then(res => setPlaybooks(res.data))
+            .catch(err => console.error("Failed to fetch playbooks", err));
+    }, []);
+
     const handleAutomationChange = (field: keyof AutomationSetting, value: any) => {
         const newAutomation = { ...(formData.automation || { enabled: false }), [field]: value };
         if (field === 'scriptId') {
@@ -251,7 +267,7 @@ const Step4 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
         handleAutomationChange('parameters', newParams);
     };
 
-    const selectedPlaybook = MOCK_PLAYBOOKS.find(p => p.id === formData.automation?.scriptId);
+    const selectedPlaybook = playbooks.find(p => p.id === formData.automation?.scriptId);
 
     const renderParameterInput = (param: ParameterDefinition) => {
         const value = formData.automation?.parameters?.[param.name] ?? param.defaultValue;
@@ -305,7 +321,7 @@ const Step4 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
                     <FormRow label="選擇腳本">
                         <select value={formData.automation.scriptId || ''} onChange={e => handleAutomationChange('scriptId', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
                             <option value="">選擇一個腳本...</option>
-                            {MOCK_PLAYBOOKS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                            {playbooks.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                         </select>
                     </FormRow>
                      {selectedPlaybook?.parameters && selectedPlaybook.parameters.length > 0 && (

@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import FormRow from './FormRow';
 import Icon from './Icon';
-import { AutomationTrigger, TriggerType } from '../types';
-import { MOCK_PLAYBOOKS } from '../constants';
+import { AutomationTrigger, TriggerType, AutomationPlaybook } from '../types';
+import api from '../services/api';
 
 interface AutomationTriggerEditModalProps {
   isOpen: boolean;
@@ -14,10 +15,15 @@ interface AutomationTriggerEditModalProps {
 
 const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({ isOpen, onClose, onSave, trigger }) => {
     const [formData, setFormData] = useState<Partial<AutomationTrigger>>({});
+    const [playbooks, setPlaybooks] = useState<AutomationPlaybook[]>([]);
 
     useEffect(() => {
         if (isOpen) {
             setFormData(trigger || { name: '', description: '', type: 'Schedule', enabled: true, targetPlaybookId: '', config: {} });
+            
+            api.get<AutomationPlaybook[]>('/automation/scripts')
+                .then(res => setPlaybooks(res.data))
+                .catch(err => console.error("Failed to fetch playbooks", err));
         }
     }, [isOpen, trigger]);
 
@@ -93,7 +99,7 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
                 <FormRow label="目標腳本 *">
                     <select value={formData.targetPlaybookId || ''} onChange={e => handleChange('targetPlaybookId', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
                         <option value="">選擇一個腳本...</option>
-                        {MOCK_PLAYBOOKS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        {playbooks.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select>
                 </FormRow>
                  <div className="pt-4 mt-4 border-t border-slate-700/50 space-y-4">

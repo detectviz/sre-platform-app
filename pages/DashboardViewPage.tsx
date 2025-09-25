@@ -1,24 +1,55 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
-import { MOCK_DASHBOARDS } from '../constants';
 import DashboardViewer from '../components/DashboardViewer';
-import { DashboardType } from '../types';
+import { Dashboard, DashboardType } from '../types';
+import api from '../services/api';
+import Icon from '../components/Icon';
 
 const DashboardViewPage: React.FC = () => {
   const { dashboardId } = useParams<{ dashboardId: string }>();
-  const dashboard = MOCK_DASHBOARDS.find(d => d.id === dashboardId);
+  const [dashboard, setDashboard] = useState<Dashboard | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!dashboard) {
-    return <div className="text-center text-red-500">Dashboard not found!</div>;
+  useEffect(() => {
+    if (!dashboardId) {
+        setError('No dashboard ID provided.');
+        setIsLoading(false);
+        return;
+    }
+
+    const fetchDashboard = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const { data } = await api.get<Dashboard>(`/dashboards/${dashboardId}`);
+            setDashboard(data);
+        } catch (err) {
+            setError('Dashboard not found!');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    fetchDashboard();
+  }, [dashboardId]);
+
+  if (isLoading) {
+    return (
+        <div className="flex items-center justify-center h-full">
+            <Icon name="loader-circle" className="w-8 h-8 animate-spin text-slate-400" />
+        </div>
+    );
+  }
+
+  if (error || !dashboard) {
+    return <div className="text-center text-red-500">{error || 'Dashboard not found!'}</div>;
   }
   
   if (dashboard.type === DashboardType.BuiltIn) {
-    // Built-in dashboards have their own routes (e.g., /sre-war-room)
-    // Redirect to its dedicated path.
     return <Navigate to={dashboard.path} replace />;
   }
 
-  // For Grafana dashboards, render the viewer
   return (
     <div className="h-full flex flex-col">
        <div className="flex justify-between items-center mb-4">

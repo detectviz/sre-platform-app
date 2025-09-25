@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import FormRow from './FormRow';
-import { User } from '../types';
+import { User, Team } from '../types';
+import api from '../services/api';
 
 interface UserEditModalProps {
   isOpen: boolean;
@@ -12,10 +13,14 @@ interface UserEditModalProps {
 
 const UserEditModal: React.FC<UserEditModalProps> = ({ isOpen, onClose, onSave, user }) => {
     const [formData, setFormData] = useState<Partial<User>>({});
+    const [teams, setTeams] = useState<Team[]>([]);
 
     useEffect(() => {
-        if (isOpen && user) {
-            setFormData(user);
+        if (isOpen) {
+            if(user) setFormData(user);
+            api.get<Team[]>('/iam/teams')
+                .then(res => setTeams(res.data))
+                .catch(err => console.error("Failed to fetch teams", err));
         }
     }, [isOpen, user]);
 
@@ -30,7 +35,6 @@ const UserEditModal: React.FC<UserEditModalProps> = ({ isOpen, onClose, onSave, 
     };
 
     const roles: User['role'][] = ['Admin', 'SRE', 'Developer', 'Viewer'];
-    const teams = ['SRE Platform', 'Core Infrastructure', 'API Services', 'Marketing', 'Web Team', 'DBA Team', 'DevOps'];
     const statuses: User['status'][] = ['active', 'inactive', 'invited'];
 
     return (
@@ -64,7 +68,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({ isOpen, onClose, onSave, 
                 <FormRow label="團隊">
                     <select value={formData.team || ''} onChange={e => handleChange('team', e.target.value)}
                             className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
-                        {teams.map(t => <option key={t} value={t}>{t}</option>)}
+                        {teams.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
                     </select>
                 </FormRow>
                 <FormRow label="狀態">

@@ -6,7 +6,6 @@ import UnifiedSearchModal, { SilenceRuleFilters } from '../../components/Unified
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
 import Modal from '../../components/Modal';
-import PlaceholderModal from '../../components/PlaceholderModal';
 import api from '../../services/api';
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
@@ -23,13 +22,6 @@ const SilenceRulePage: React.FC = () => {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingRule, setDeletingRule] = useState<SilenceRule | null>(null);
-    const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
-    const [modalFeatureName, setModalFeatureName] = useState('');
-
-    const showPlaceholderModal = (featureName: string) => {
-        setModalFeatureName(featureName);
-        setIsPlaceholderModalOpen(true);
-    };
 
     const fetchRules = useCallback(async () => {
         setIsLoading(true);
@@ -132,10 +124,6 @@ const SilenceRulePage: React.FC = () => {
         }
     };
 
-    const handleImport = () => showPlaceholderModal('匯入靜音規則');
-    const handleExport = () => showPlaceholderModal('匯出靜音規則');
-    const handleColumnSettings = () => showPlaceholderModal('欄位設定');
-
     const batchActions = (
         <>
             <ToolbarButton icon="toggle-right" text="啟用" onClick={() => handleBatchAction('enable')} />
@@ -150,9 +138,9 @@ const SilenceRulePage: React.FC = () => {
                 leftActions={<ToolbarButton icon="search" text="搜索和篩選" onClick={() => setIsSearchModalOpen(true)} />}
                 rightActions={
                     <>
-                        <ToolbarButton icon="upload" text="匯入" onClick={handleImport} />
-                        <ToolbarButton icon="download" text="匯出" onClick={handleExport} />
-                        <ToolbarButton icon="settings-2" text="欄位設定" onClick={handleColumnSettings} />
+                        <ToolbarButton icon="upload" text="匯入" disabled title="功能開發中" />
+                        <ToolbarButton icon="download" text="匯出" disabled title="功能開發中" />
+                        <ToolbarButton icon="settings-2" text="欄位設定" disabled title="功能開發中" />
                         <ToolbarButton icon="plus" text="新增静音规则" primary onClick={handleNewRule} />
                     </>
                 }
@@ -246,11 +234,6 @@ const SilenceRulePage: React.FC = () => {
                 <p>您確定要刪除靜音規則 <strong className="text-amber-400">{deletingRule?.name}</strong> 嗎？</p>
                 <p className="mt-2 text-slate-400">此操作無法復原。</p>
             </Modal>
-            <PlaceholderModal
-                isOpen={isPlaceholderModalOpen}
-                onClose={() => setIsPlaceholderModalOpen(false)}
-                featureName={modalFeatureName}
-            />
         </div>
     );
 };

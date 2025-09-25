@@ -10,7 +10,6 @@ import UnifiedSearchModal from '../../components/UnifiedSearchModal';
 import Pagination from '../../components/Pagination';
 import ResourceEditModal from '../../components/ResourceEditModal';
 import Modal from '../../components/Modal';
-import PlaceholderModal from '../../components/PlaceholderModal';
 import api from '../../services/api';
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
@@ -30,16 +29,9 @@ const ResourceListPage: React.FC = () => {
     const [editingResource, setEditingResource] = useState<Resource | null>(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingResource, setDeletingResource] = useState<Resource | null>(null);
-    const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
-    const [modalFeatureName, setModalFeatureName] = useState('');
     
     const { resourceId } = useParams<{ resourceId: string }>();
     const navigate = useNavigate();
-
-    const showPlaceholderModal = (featureName: string) => {
-        setModalFeatureName(featureName);
-        setIsPlaceholderModalOpen(true);
-    };
 
     const fetchResources = useCallback(async () => {
         setIsLoading(true);
@@ -167,9 +159,9 @@ const ResourceListPage: React.FC = () => {
                 leftActions={leftActions}
                 rightActions={
                     <>
-                        <ToolbarButton icon="upload" text="匯入" onClick={() => showPlaceholderModal('匯入資源')} />
-                        <ToolbarButton icon="download" text="匯出" onClick={() => showPlaceholderModal('匯出資源')} />
-                        <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => showPlaceholderModal('欄位設定')} />
+                        <ToolbarButton icon="upload" text="匯入" disabled title="功能開發中" />
+                        <ToolbarButton icon="download" text="匯出" disabled title="功能開發中" />
+                        <ToolbarButton icon="settings-2" text="欄位設定" disabled title="功能開發中" />
                         <ToolbarButton icon="plus" text="新增資源" primary onClick={handleNewResource} />
                     </>
                 }
@@ -284,11 +276,6 @@ const ResourceListPage: React.FC = () => {
                 <p>您確定要刪除資源 <strong className="text-amber-400">{deletingResource?.name}</strong> 嗎？</p>
                 <p className="mt-2 text-slate-400">此操作無法復原。</p>
             </Modal>
-             <PlaceholderModal
-                isOpen={isPlaceholderModalOpen}
-                onClose={() => setIsPlaceholderModalOpen(false)}
-                featureName={modalFeatureName}
-            />
         </div>
     );
 };

@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import Modal from './Modal';
 import FormRow from './FormRow';
 import Icon from './Icon';
-import { ResourceGroup, Resource } from '../types';
-import { MOCK_RESOURCES } from '../constants';
+import { ResourceGroup, Resource, Team } from '../types';
+import api from '../services/api';
 
 interface ResourceGroupEditModalProps {
   isOpen: boolean;
@@ -34,15 +33,31 @@ const ResourceListItem: React.FC<ResourceListItemProps> = ({ resource, onAction,
 const ResourceGroupEditModal: React.FC<ResourceGroupEditModalProps> = ({ isOpen, onClose, onSave, group }) => {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [ownerTeam, setOwnerTeam] = useState('SRE Team');
+    const [ownerTeam, setOwnerTeam] = useState('');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [allResources, setAllResources] = useState<Resource[]>([]);
+    const [teams, setTeams] = useState<Team[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
             setName(group?.name || '');
             setDescription(group?.description || '');
-            setOwnerTeam(group?.ownerTeam || 'SRE Team');
+            setOwnerTeam(group?.ownerTeam || '');
             setSelectedIds(group?.memberIds || []);
+
+            setIsLoading(true);
+            Promise.all([
+                api.get<{ items: Resource[] }>('/resources', { params: { page: 1, page_size: 1000 } }),
+                api.get<Team[]>('/iam/teams')
+            ]).then(([resourcesRes, teamsRes]) => {
+                setAllResources(resourcesRes.data.items);
+                setTeams(teamsRes.data);
+                if (!group?.ownerTeam && teamsRes.data.length > 0) {
+                    setOwnerTeam(teamsRes.data[0].name);
+                }
+            }).catch(err => console.error("Failed to fetch data for modal", err))
+              .finally(() => setIsLoading(false));
         }
     }, [isOpen, group]);
 
@@ -58,10 +73,8 @@ const ResourceGroupEditModal: React.FC<ResourceGroupEditModalProps> = ({ isOpen,
         onSave(savedGroup);
     };
 
-    const availableResources = useMemo(() => MOCK_RESOURCES.filter(r => !selectedIds.includes(r.id)), [selectedIds]);
-    const selectedResources = useMemo(() => MOCK_RESOURCES.filter(r => selectedIds.includes(r.id)), [selectedIds]);
-
-    const teams = ['SRE Team', 'Web Team', 'DBA Team', 'DevOps', 'Core Infrastructure'];
+    const availableResources = useMemo(() => allResources.filter(r => !selectedIds.includes(r.id)), [selectedIds, allResources]);
+    const selectedResources = useMemo(() => allResources.filter(r => selectedIds.includes(r.id)), [selectedIds, allResources]);
 
     return (
         <Modal
@@ -82,8 +95,8 @@ const ResourceGroupEditModal: React.FC<ResourceGroupEditModalProps> = ({ isOpen,
                         <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
                     </FormRow>
                      <FormRow label="擁有團隊">
-                        <select value={ownerTeam} onChange={e => setOwnerTeam(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
-                            {teams.map(t => <option key={t} value={t}>{t}</option>)}
+                        <select value={ownerTeam} onChange={e => setOwnerTeam(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoading}>
+                           {isLoading ? <option>載入中...</option> : teams.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
                         </select>
                     </FormRow>
                 </div>
@@ -96,15 +109,19 @@ const ResourceGroupEditModal: React.FC<ResourceGroupEditModalProps> = ({ isOpen,
                     <div className="grid grid-cols-2 gap-4 h-72">
                         <div className="border border-slate-700 rounded-lg p-3 flex flex-col">
                             <h3 className="font-semibold mb-2 text-white">可用的資源 ({availableResources.length})</h3>
-                            <div className="space-y-1 overflow-y-auto flex-grow">
-                                {availableResources.map(r => <ResourceListItem key={r.id} resource={r} onAction={(id) => setSelectedIds(ids => [...ids, id])} iconName="chevron-right" />)}
-                            </div>
+                             {isLoading ? <Icon name="loader-circle" className="animate-spin text-slate-400 mx-auto mt-4" /> : (
+                                <div className="space-y-1 overflow-y-auto flex-grow">
+                                    {availableResources.map(r => <ResourceListItem key={r.id} resource={r} onAction={(id) => setSelectedIds(ids => [...ids, id])} iconName="chevron-right" />)}
+                                </div>
+                             )}
                         </div>
                         <div className="border border-slate-700 rounded-lg p-3 flex flex-col">
                             <h3 className="font-semibold mb-2 text-white">已選擇的資源 ({selectedResources.length})</h3>
-                            <div className="space-y-1 overflow-y-auto flex-grow">
-                                {selectedResources.map(r => <ResourceListItem key={r.id} resource={r} onAction={(id) => setSelectedIds(ids => ids.filter(i => i !== id))} iconName="chevron-left" />)}
-                            </div>
+                            {isLoading ? <Icon name="loader-circle" className="animate-spin text-slate-400 mx-auto mt-4" /> : (
+                                <div className="space-y-1 overflow-y-auto flex-grow">
+                                    {selectedResources.map(r => <ResourceListItem key={r.id} resource={r} onAction={(id) => setSelectedIds(ids => ids.filter(i => i !== id))} iconName="chevron-left" />)}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

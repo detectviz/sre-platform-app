@@ -1,6 +1,4 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { LAYOUT_WIDGETS } from '../../../constants';
 import { LayoutWidget } from '../../../types';
 import Icon from '../../../components/Icon';
 import Modal from '../../../components/Modal';
@@ -84,11 +82,12 @@ interface AccordionItemProps {
     pageName: string;
     layouts: Record<string, string[]>;
     handleEditClick: (pageName: string) => void;
+    allWidgets: LayoutWidget[];
 }
-const AccordionItem: React.FC<AccordionItemProps> = ({ pageName, layouts, handleEditClick }) => {
+const AccordionItem: React.FC<AccordionItemProps> = ({ pageName, layouts, handleEditClick, allWidgets }) => {
     const [isOpen, setIsOpen] = useState(false);
     const widgetIds = layouts[pageName] || [];
-    const getWidgetById = (id: string) => LAYOUT_WIDGETS.find(w => w.id === id);
+    const getWidgetById = (id: string) => allWidgets.find(w => w.id === id);
 
     return (
         <div className="border-b border-slate-800">
@@ -126,6 +125,7 @@ const AccordionItem: React.FC<AccordionItemProps> = ({ pageName, layouts, handle
 // Main Page Component
 const LayoutSettingsPage: React.FC = () => {
     const [layouts, setLayouts] = useState<Record<string, string[]>>({});
+    const [allWidgets, setAllWidgets] = useState<LayoutWidget[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -133,24 +133,28 @@ const LayoutSettingsPage: React.FC = () => {
     const [editingPage, setEditingPage] = useState<string | null>(null);
     const [modalWidgets, setModalWidgets] = useState<LayoutWidget[]>([]);
 
-    const fetchLayouts = useCallback(async () => {
+    const fetchData = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
-            const { data } = await api.get<Record<string, string[]>>('/settings/layouts');
-            setLayouts(data);
+            const [layoutsRes, widgetsRes] = await Promise.all([
+                api.get<Record<string, string[]>>('/settings/layouts'),
+                api.get<LayoutWidget[]>('/settings/widgets')
+            ]);
+            setLayouts(layoutsRes.data);
+            setAllWidgets(widgetsRes.data);
         } catch (err) {
-            setError('無法獲取版面配置。');
+            setError('無法獲取版面配置資料。');
         } finally {
             setIsLoading(false);
         }
     }, []);
 
     useEffect(() => {
-        fetchLayouts();
-    }, [fetchLayouts]);
+        fetchData();
+    }, [fetchData]);
 
-    const getWidgetById = (id: string) => LAYOUT_WIDGETS.find(w => w.id === id);
+    const getWidgetById = (id: string) => allWidgets.find(w => w.id === id);
 
     const handleEditClick = (pageName: string) => {
         setEditingPage(pageName);
@@ -178,7 +182,7 @@ const LayoutSettingsPage: React.FC = () => {
         }
     };
 
-    const availableWidgetsForModal = LAYOUT_WIDGETS.filter(w => 
+    const availableWidgetsForModal = allWidgets.filter(w => 
         !modalWidgets.some(selected => selected.id === w.id) &&
         w.supportedPages.includes(editingPage || '')
     );
@@ -196,7 +200,7 @@ const LayoutSettingsPage: React.FC = () => {
             <div className="flex flex-col items-center justify-center h-full text-red-400">
                 <Icon name="alert-circle" className="w-12 h-12 mb-4" />
                 <h2 className="text-xl font-bold">{error}</h2>
-                <button onClick={fetchLayouts} className="mt-4 px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md">
+                <button onClick={fetchData} className="mt-4 px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md">
                     重試
                 </button>
             </div>
@@ -211,7 +215,7 @@ const LayoutSettingsPage: React.FC = () => {
             </div>
 
             <div className="glass-card rounded-xl">
-                {Object.keys(layouts).map(pageName => <AccordionItem key={pageName} pageName={pageName} layouts={layouts} handleEditClick={handleEditClick} />)}
+                {Object.keys(layouts).map(pageName => <AccordionItem key={pageName} pageName={pageName} layouts={layouts} handleEditClick={handleEditClick} allWidgets={allWidgets}/>)}
             </div>
 
             <Modal

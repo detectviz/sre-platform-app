@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { MOCK_PLAYBOOKS } from '../../constants';
-import { AutomationTrigger, TriggerType } from '../../types';
+import { AutomationTrigger, TriggerType, AutomationPlaybook } from '../../types';
 import Icon from '../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
@@ -12,6 +11,7 @@ const AutomationTriggersPage: React.FC = () => {
     const [triggers, setTriggers] = useState<AutomationTrigger[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [playbooks, setPlaybooks] = useState<AutomationPlaybook[]>([]);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTrigger, setEditingTrigger] = useState<AutomationTrigger | null>(null);
@@ -19,22 +19,30 @@ const AutomationTriggersPage: React.FC = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingTrigger, setDeletingTrigger] = useState<AutomationTrigger | null>(null);
 
-    const fetchTriggers = useCallback(async () => {
+    const fetchTriggersAndPlaybooks = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
-            const { data } = await api.get<AutomationTrigger[]>('/automation/triggers');
-            setTriggers(data);
+            const [triggersRes, playbooksRes] = await Promise.all([
+                api.get<AutomationTrigger[]>('/automation/triggers'),
+                api.get<AutomationPlaybook[]>('/automation/scripts')
+            ]);
+            setTriggers(triggersRes.data);
+            setPlaybooks(playbooksRes.data);
         } catch (err) {
-            setError('Failed to fetch triggers.');
+            setError('Failed to fetch triggers or playbooks.');
         } finally {
             setIsLoading(false);
         }
     }, []);
 
     useEffect(() => {
-        fetchTriggers();
-    }, [fetchTriggers]);
+        fetchTriggersAndPlaybooks();
+    }, [fetchTriggersAndPlaybooks]);
+
+    const playbookNameMap = useMemo(() => {
+        return new Map(playbooks.map(p => [p.id, p.name]));
+    }, [playbooks]);
 
     const handleNewTrigger = () => {
         setEditingTrigger(null);
@@ -53,7 +61,7 @@ const AutomationTriggersPage: React.FC = () => {
             } else {
                 await api.post('/automation/triggers', triggerData);
             }
-            fetchTriggers();
+            fetchTriggersAndPlaybooks();
         } catch (err) {
             alert('Failed to save trigger.');
         } finally {
@@ -70,7 +78,7 @@ const AutomationTriggersPage: React.FC = () => {
         if (deletingTrigger) {
             try {
                 await api.del(`/automation/triggers/${deletingTrigger.id}`);
-                fetchTriggers();
+                fetchTriggersAndPlaybooks();
             } catch (err) {
                 alert('Failed to delete trigger.');
             } finally {
@@ -83,7 +91,7 @@ const AutomationTriggersPage: React.FC = () => {
     const handleToggleEnable = async (trigger: AutomationTrigger) => {
         try {
             await api.patch(`/automation/triggers/${trigger.id}`, { ...trigger, enabled: !trigger.enabled });
-            fetchTriggers();
+            fetchTriggersAndPlaybooks();
         } catch (err) {
             alert('Failed to toggle trigger status.');
         }
@@ -97,7 +105,7 @@ const AutomationTriggersPage: React.FC = () => {
         }
     };
     
-    const findPlaybookName = (playbookId: string) => MOCK_PLAYBOOKS.find(p => p.id === playbookId)?.name || 'Unknown Playbook';
+    const findPlaybookName = (playbookId: string) => playbookNameMap.get(playbookId) || 'Unknown Playbook';
     
     const filteredTriggers = useMemo(() => {
         return triggers.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()));

@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Outlet } from 'react-router-dom';
 import PageKPIs from '../components/PageKPIs';
 import Tabs from '../components/Tabs';
 import Icon from '../components/Icon';
-import PlaceholderModal from '../components/PlaceholderModal';
 
 interface PageWithTabsLayoutProps {
   title: string;
@@ -14,15 +13,10 @@ interface PageWithTabsLayoutProps {
 }
 
 const PageWithTabsLayout: React.FC<PageWithTabsLayoutProps> = ({ title, description, kpiPageName, tabs, showRefresh = false }) => {
-  const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
-  const [modalFeatureName, setModalFeatureName] = useState('');
-
-  const showPlaceholderModal = (featureName: string) => {
-    setModalFeatureName(featureName);
-    setIsPlaceholderModalOpen(true);
+  const handleRefresh = () => {
+    // A simple page reload is a robust way to refresh data for a mock app.
+    window.location.reload();
   };
-  
-  const handleRefresh = () => showPlaceholderModal(`刷新頁面: ${title}`);
 
   return (
     <div className="h-full flex flex-col">
@@ -42,11 +36,6 @@ const PageWithTabsLayout: React.FC<PageWithTabsLayoutProps> = ({ title, descript
       <div className="mt-6 flex-grow flex flex-col">
         <Outlet />
       </div>
-      <PlaceholderModal
-        isOpen={isPlaceholderModalOpen}
-        onClose={() => setIsPlaceholderModalOpen(false)}
-        featureName={modalFeatureName}
-      />
     </div>
   );
 };

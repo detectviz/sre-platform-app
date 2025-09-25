@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import FormRow from './FormRow';
 import { TagDefinition } from '../types';
-import { TAG_CATEGORIES } from '../constants';
+import api from '../services/api';
 
 interface TagDefinitionEditModalProps {
   isOpen: boolean;
@@ -13,10 +13,18 @@ interface TagDefinitionEditModalProps {
 
 const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen, onClose, onSave, tag }) => {
     const [formData, setFormData] = useState<Partial<TagDefinition>>({});
+    const [categories, setCategories] = useState<string[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
             setFormData(tag || { key: '', category: 'Infrastructure', description: '', required: false });
+            
+            setIsLoading(true);
+            api.get<{ categories: string[] }>('/settings/tags/options')
+                .then(res => setCategories(res.data.categories))
+                .catch(err => console.error("Failed to load tag categories", err))
+                .finally(() => setIsLoading(false));
         }
     }, [isOpen, tag]);
 
@@ -57,8 +65,9 @@ const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen,
                         value={formData.category || 'Infrastructure'} 
                         onChange={e => handleChange('category', e.target.value)}
                         className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
+                        disabled={isLoading}
                     >
-                        {TAG_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                        {isLoading ? <option>載入中...</option> : categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                     </select>
                 </FormRow>
                 <FormRow label="描述">

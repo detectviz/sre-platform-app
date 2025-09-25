@@ -1,7 +1,3 @@
-<div align="center">
-<img width="1200" height="475" alt="SRE Platform Banner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
-
 # SRE 平台
 
 一個現代化的 Site Reliability Engineering (SRE) 平台，提供全面的系統監控、事件管理、資源管理與自動化運維功能。

@@ -3,8 +3,8 @@ import Modal from './Modal';
 import Icon from './Icon';
 import Wizard from './Wizard';
 import FormRow from './FormRow';
-import { NotificationStrategy } from '../types';
-import { MOCK_TEAMS, MOCK_NOTIFICATION_CHANNELS } from '../constants';
+import { NotificationStrategy, Team, NotificationChannel, TagDefinition } from '../types';
+import api from '../services/api';
 
 interface StrategyCondition {
   key: string;
@@ -125,31 +125,43 @@ const Step1: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Fu
     </div>
 );
 
-const Step2: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Function }> = ({ formData, setFormData }) => (
-    <div className="space-y-4 px-4">
-        <FormRow label="接收團隊">
-            <select className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
-                {MOCK_TEAMS.map(team => <option key={team.id} value={team.id}>{team.name}</option>)}
-            </select>
-        </FormRow>
-        <FormRow label="通知管道">
-            <div className="space-y-2">
-                {MOCK_NOTIFICATION_CHANNELS.map(channel => (
-                    <label key={channel.id} className="flex items-center space-x-3 p-2 bg-slate-800/50 rounded-md">
-                        <input type="checkbox" className="form-checkbox h-4 w-4 rounded bg-slate-800 border-slate-600 text-sky-500" />
-                        <span>{channel.name} ({channel.type})</span>
-                    </label>
-                ))}
-            </div>
-        </FormRow>
-    </div>
-);
+const Step2: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Function }> = ({ formData, setFormData }) => {
+    const [teams, setTeams] = useState<Team[]>([]);
+    const [channels, setChannels] = useState<NotificationChannel[]>([]);
+
+    useEffect(() => {
+        api.get<Team[]>('/iam/teams').then(res => setTeams(res.data));
+        api.get<NotificationChannel[]>('/settings/notification-channels').then(res => setChannels(res.data));
+    }, []);
+
+    return (
+        <div className="space-y-4 px-4">
+            <FormRow label="接收團隊">
+                <select className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
+                    {teams.map(team => <option key={team.id} value={team.id}>{team.name}</option>)}
+                </select>
+            </FormRow>
+            <FormRow label="通知管道">
+                <div className="space-y-2">
+                    {channels.map(channel => (
+                        <label key={channel.id} className="flex items-center space-x-3 p-2 bg-slate-800/50 rounded-md">
+                            <input type="checkbox" className="form-checkbox h-4 w-4 rounded bg-slate-800 border-slate-600 text-sky-500" />
+                            <span>{channel.name} ({channel.type})</span>
+                        </label>
+                    ))}
+                </div>
+            </FormRow>
+        </div>
+    );
+};
 
 const Step3: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Function }> = ({ formData, setFormData }) => {
     const [conditions, setConditions] = useState<StrategyCondition[]>([]);
+    const [tagDefs, setTagDefs] = useState<TagDefinition[]>([]);
     
     useEffect(() => {
         setConditions(parseConditions(formData.triggerCondition));
+        api.get<TagDefinition[]>('/settings/tags').then(res => setTagDefs(res.data));
     }, [formData.triggerCondition]);
 
     const updateTriggerCondition = (newConditions: StrategyCondition[]) => {
@@ -172,9 +184,8 @@ const Step3: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Fu
         updateTriggerCondition(newConditions);
     };
 
-    const conditionKeys = ['severity', 'env', 'resource_type', 'tag'];
+    const conditionKeys = ['severity', 'resource_type', ...tagDefs.map(t => t.key)];
     const severityValues = ['critical', 'warning', 'info'];
-    const envValues = ['production', 'staging', 'development'];
 
     const renderValueInput = (condition: StrategyCondition, index: number) => {
         const commonProps = {
@@ -191,11 +202,13 @@ const Step3: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Fu
                 </select>
             );
         }
-        if (condition.key === 'env') {
-            return (
+        
+        const tagDef = tagDefs.find(t => t.key === condition.key);
+        if (tagDef && tagDef.allowedValues.length > 0) {
+             return (
                 <select {...commonProps}>
-                    <option value="">選擇環境...</option>
-                    {envValues.map(v => <option key={v} value={v}>{v}</option>)}
+                    <option value="">選擇值...</option>
+                    {tagDef.allowedValues.map(v => <option key={v.id} value={v.value}>{v.value}</option>)}
                 </select>
             );
         }

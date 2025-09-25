@@ -1,4 +1,4 @@
-# SRE 平台功能規格 v2.2
+# SRE 平台功能規格 v2.5
 
 本文件旨在記錄 SRE 平台在持續開發過程中的重要功能規格與架構決策，作為開發與測試的依據。
 
@@ -111,3 +111,80 @@
 -   `GET /api/v1/logs`: (新增) 取得日誌數據，支援篩選與分頁。
 -   `GET /api/v1/traces`: (新增) 取得追蹤列表。
 -   `GET /api/v1/traces/{trace_id}`: (新增) 取得單一追蹤的詳細資訊，包含所有 Spans。
+---
+
+## 5. 功能: 全面 API 化 - 詳情、表單與配置 (Full API Integration)
+
+-   **模組**: 全局
+-   **版本**: v2.4
+-   **狀態**: ✅ 已完成
+
+### 5.1 使用者故事
+
+**身為** 一名平台使用者，
+**我想要** 應用程式中所有的動態內容，包括詳情頁的圖表、編輯表單的下拉選單、以及列表頁的篩選條件，都能從後端 API 動態載入，
+**使得** 平台完全擺脫前端的靜態資料依賴，確保我看到的永遠是最新、最準確的資訊，並提升系統的整體可維護性。
+
+### 5.2 行為變更
+
+-   **資源詳情頁 (`ResourceDetailPage`)**:
+    -   **動態指標圖表**: 頁面中的 CPU 和記憶體圖表，不再使用前端生成的模擬數據。現在，它們會在載入時向新增的 `GET /resources/{resourceId}/metrics` 端點發起請求，以獲取真實的歷史指標數據並進行渲染。
+
+-   **編輯與新增模態框 (`Edit/Add Modals`)**:
+    -   **通用模式**: 所有先前使用 `constants.ts` 中硬編碼陣列來填充下拉選單的模態框，都已被重構為在開啟時向對應的 API 端點發起 `GET` 請求。
+    -   **受影響的元件**:
+        -   `ResourceEditModal`: 從 `GET /resources/options` 獲取資源類型、提供商、區域和擁有者列表。
+        -   `ResourceGroupEditModal`: 從 `GET /iam/teams` 獲取擁有團隊列表。
+        -   `DashboardEditModal`: 從 `GET /dashboards/options` 獲取儀表板類別和擁有者列表。
+        -   `InviteUserModal`: 從 `GET /iam/roles` 和 `GET /iam/teams` 分別獲取角色和團隊列表。
+        -   `NotificationStrategyEditModal`: 從 `GET /settings/tags` 獲取觸發條件的可用標籤鍵。
+
+-   **列表頁篩選器 (`List Page Filters`)**:
+    -   `DashboardListPage`: 頁面頂部的「類別」篩選按鈕，現在基於 `GET /dashboards/options` 的回應動態生成。
+    -   `UnifiedSearchModal`: 用於篩選資源的下拉選單選項，現在基於 `GET /resources/options` 的回應動態生成。
+
+### 5.3 新增的 API 端點
+
+-   `GET /resources/options`: (新增) 集中提供資源相關的所有可選項（類型、提供商、區域、擁有者），優化前端請求效率。
+-   `GET /dashboards/options`: (新增) 提供儀表板相關的可選項（類別、擁有者）。
+-   `GET /resources/{resourceId}/metrics`: (新增) 提供特定資源的歷史指標數據。
+-   (重用) `GET /iam/teams`, `GET /iam/roles`, `GET /settings/tags` 等現有端點被更廣泛地用於填充各類表單選項。
+
+---
+
+## 6. 功能: 最終 API 化 - 範本、權限與通知 (Final API Integration)
+
+-   **模組**: 全局
+-   **版本**: v2.5
+-   **狀態**: ✅ 已完成
+
+### 6.1 使用者故事
+
+**身為** 一名平台使用者，
+**我想要** 平台中所有剩餘的靜態配置數據，例如儀表板範本、可用權限、通知列表、以及 KPI 卡片數據，都能從後端 API 動態載入，
+**使得** 整個應用程式達到 100% API 驅動，最大化系統的靈活性、可維護性，並確保所有使用者介面元素都反映了後端的唯一真實來源 (SSOT)。
+
+### 6.2 行為變更
+
+-   **儀表板範本 (`DashboardTemplatesPage`)**: 頁面不再讀取 `MOCK_DASHBOARD_TEMPLATES`，而是向 `GET /dashboards/templates` 發起請求來動態獲取所有可用的儀表板範本。
+-   **角色權限配置 (`RoleEditModal`)**: 角色編輯器中的權限列表，不再依賴 `AVAILABLE_PERMISSIONS` 常數，而是向 `GET /iam/permissions` 請求，以獲取後端定義的所有可用模組與操作權限。
+-   **規則範本 (`AlertRuleEditModal`, `SilenceRuleEditModal`)**: 這兩個編輯器現在分別向 `GET /alert-rules/templates` 和 `GET /silence-rules/templates` 發起請求，以動態載入可用的規則範本，取代了原有的靜態常數。
+-   **通知中心 (`NotificationCenter`)**: 頂部導航列的通知中心，不再顯示 `MOCK_NOTIFICATIONS`。它現在會向 `GET /notifications` 端點發起請求，以獲取當前使用者的即時通知列表。
+-   **KPI 卡片數據 (`PageKPIs`)**:
+    -   遍佈於各個頁面的 KPI 卡片，其顯示的數值不再來自前端的 `KPI_DATA` 常數。現在，`PageKPIs` 元件會向 `GET /kpi-data` 端點發起請求，獲取所有 KPI 的即時數值。
+    -   `SREWarRoomPage` 和 `InfrastructureInsightsPage` 已被重構，移除其內部硬編碼的 KPI 卡片，轉而使用統一的、由 API 驅動的 `PageKPIs` 元件。
+-   **版面小工具定義 (`LayoutSettingsPage`)**: 版面設定頁面中「可用的小工具」列表，不再依賴 `LAYOUT_WIDGETS` 常數，而是向 `GET /settings/widgets` 發起請求來動態獲取。
+-   **標籤分類 (`TagDefinitionEditModal`)**: 標籤編輯器中的「分類」下拉選單，現在透過 `GET /settings/tags/options` 獲取可選項，取代了 `constants.ts` 中的靜態陣列。
+
+### 6.3 新增的 API 端點
+
+-   `GET /dashboards/templates`: (新增) 取得所有儀表板範本。
+-   `GET /iam/permissions`: (新增) 取得所有可用於角色的權限定義。
+-   `GET /alert-rules/templates`: (新增) 取得所有告警規則範本。
+-   `GET /silence-rules/templates`: (新增) 取得所有靜音規則範本。
+-   `GET /notifications`: (新增) 取得使用者的通知列表。
+-   `GET /settings/widgets`: (新增) 取得所有可用的版面小工具定義。
+-   `GET /kpi-data`: (新增) 取得所有 KPI 卡片的即時數據。
+-   `GET /settings/tags/options`: (新增) 取得標籤定義的可用選項（如分類）。
+-   `GET /dashboards/{dashboard_id}`: (擴充) `DashboardViewPage` 現在使用此端點獲取儀表板詳情。
+-   `GET /resources`: (擴充) 支援 `bookmarked=true` 參數，用於基礎設施洞察頁。

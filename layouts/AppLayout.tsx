@@ -4,7 +4,8 @@ import { NAV_ITEMS } from '../constants';
 import { NavItem } from '../types';
 import Icon from '../components/Icon';
 import NotificationCenter from '../components/NotificationCenter';
-import PlaceholderModal from '../components/PlaceholderModal';
+import GlobalSearchModal from '../components/GlobalSearchModal';
+import { showToast } from '../services/toast';
 
 const findLongestPrefixMatch = (pathname: string, items: NavItem[]): string | null => {
   let bestMatch: string | null = null;
@@ -34,13 +35,7 @@ const AppLayout: React.FC = () => {
   const navigate = useNavigate();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
-  const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
-  const [modalFeatureName, setModalFeatureName] = useState('');
-
-  const showPlaceholderModal = (featureName: string) => {
-    setModalFeatureName(featureName);
-    setIsPlaceholderModalOpen(true);
-  };
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -58,7 +53,7 @@ const AppLayout: React.FC = () => {
     const handleKeyDown = (event: KeyboardEvent) => {
         if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
             event.preventDefault();
-            showPlaceholderModal('全局搜索 (Ctrl+K)');
+            setIsSearchModalOpen(true);
         }
     };
 
@@ -119,14 +114,16 @@ const AppLayout: React.FC = () => {
   
   const handleLogout = (e: React.MouseEvent) => { 
       e.preventDefault();
-      showPlaceholderModal('登出');
       setIsProfileMenuOpen(false); 
+      console.log('Logout action triggered.');
+      showToast('您已成功登出。', 'success');
   };
   
   const handleHelp = (e: React.MouseEvent) => { 
       e.preventDefault(); 
-      showPlaceholderModal('幫助中心');
       setIsProfileMenuOpen(false); 
+      console.log('Help Center action triggered.');
+      window.open('https://cloud.google.com/sre', '_blank');
   };
 
   const renderNavItem = (item: NavItem, level = 0) => {
@@ -244,7 +241,7 @@ const AppLayout: React.FC = () => {
                     placeholder="Search... (Ctrl+K)" 
                     className="w-64 bg-slate-800/80 border border-slate-700 rounded-md pl-9 pr-4 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" 
                     readOnly 
-                    onClick={() => showPlaceholderModal('全局搜索')}
+                    onClick={() => setIsSearchModalOpen(true)}
                 />
              </div>
              <NotificationCenter />
@@ -288,10 +285,9 @@ const AppLayout: React.FC = () => {
           <Outlet />
         </main>
       </div>
-       <PlaceholderModal
-            isOpen={isPlaceholderModalOpen}
-            onClose={() => setIsPlaceholderModalOpen(false)}
-            featureName={modalFeatureName}
+       <GlobalSearchModal
+            isOpen={isSearchModalOpen}
+            onClose={() => setIsSearchModalOpen(false)}
         />
     </div>
   );

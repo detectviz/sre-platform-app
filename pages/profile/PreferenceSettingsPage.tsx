@@ -1,8 +1,8 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import FormRow from '../../components/FormRow';
-import { MOCK_DASHBOARDS } from '../../constants';
-import { UserPreferences } from '../../types';
+import { UserPreferences, Dashboard } from '../../types';
 import api from '../../services/api';
 import Icon from '../../components/Icon';
 
@@ -10,6 +10,7 @@ const PreferenceSettingsPage: React.FC = () => {
     const [preferences, setPreferences] = useState<UserPreferences | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [dashboards, setDashboards] = useState<Dashboard[]>([]);
 
     const fetchPreferences = useCallback(async () => {
         setIsLoading(true);
@@ -26,6 +27,9 @@ const PreferenceSettingsPage: React.FC = () => {
 
     useEffect(() => {
         fetchPreferences();
+        api.get<{ items: Dashboard[] }>('/dashboards', { params: { page_size: 100 } })
+            .then(res => setDashboards(res.data.items))
+            .catch(err => console.error("Failed to fetch dashboards", err));
     }, [fetchPreferences]);
 
     const handleSave = async () => {
@@ -78,7 +82,7 @@ const PreferenceSettingsPage: React.FC = () => {
                     </FormRow>
                      <FormRow label="預設首頁">
                         <select value={preferences.defaultPage} onChange={e => handleChange('defaultPage', e.target.value)} className="w-full md:w-1/2 bg-slate-800 border-slate-700 rounded-md px-3 py-2 text-sm">
-                           {MOCK_DASHBOARDS.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                           {dashboards.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                         </select>
                     </FormRow>
                      <FormRow label="語言">

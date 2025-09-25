@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { GoogleGenAI, Type } from "@google/genai";
-import ContextualKPICard from '../../components/ContextualKPICard';
 import EChartsReact from '../../components/EChartsReact';
 import Icon from '../../components/Icon';
 import Dropdown from '../../components/Dropdown';
-import { MOCK_RESOURCES } from '../../constants';
 import PlaceholderModal from '../../components/PlaceholderModal';
+import api from '../../services/api';
+import { Resource } from '../../types';
+import PageKPIs from '../../components/PageKPIs';
 
 // AI Response Types
 interface RiskPrediction {
@@ -27,91 +27,26 @@ const InfrastructureInsightsPage: React.FC = () => {
     const [isRiskLoading, setIsRiskLoading] = useState(true);
     const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
     const [modalFeatureName, setModalFeatureName] = useState('');
+    const [bookmarkedResources, setBookmarkedResources] = useState<Resource[]>([]);
+
+    useEffect(() => {
+        api.get<{items: Resource[]}>('/resources', { params: { bookmarked: true } })
+            .then(res => setBookmarkedResources(res.data.items))
+            .catch(err => console.error("Failed to fetch bookmarked resources", err));
+    }, []);
 
     const showPlaceholderModal = (featureName: string) => {
         setModalFeatureName(featureName);
         setIsPlaceholderModalOpen(true);
     };
 
-    const generateRiskPrediction = useCallback(async () => {
+    const fetchRiskPrediction = useCallback(async () => {
         setIsRiskLoading(true);
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-            const mockInfraMetrics = `
-- Total Resources: 120
-- Critical Alerts (last 24h): 5
-- High CPU Resources (>80%): 8 (api-gateway-prod-01, k8s-node-3, ...)
-- High Memory Resources (>90%): 3 (rds-prod-main, ...)
-- Network Latency Spikes: 2 events on 'api-gateway-prod-01'
-- Recent Deployments: 'user-service v3.1.0' (failed rollback)
-            `;
-
-            const prompt = `
-You are an expert SRE AI providing risk predictions for an infrastructure dashboard.
-Analyze the following live infrastructure metrics and generate a risk assessment for the next 24 hours.
-Your response must be in Traditional Chinese and follow this specific JSON format.
-
-Live Metrics:
-${mockInfraMetrics}
-
-JSON Response Format:
-{
-  "summary": "<A concise summary of potential risks for the next 24 hours>",
-  "risk_breakdown": { "low": <percentage>, "medium": <percentage>, "high": <percentage> },
-  "top_risky_resources": [ { "name": "<resource_name>", "risk": "<brief risk description>" } ]
-}
-Example:
-{
-  "summary": "預計 API 閘道因延遲尖峰與部署失敗，可能在接下來的 24 小時內發生服務降級。資料庫資源因高記憶體使用率也存在風險。",
-  "risk_breakdown": { "low": 60, "medium": 30, "high": 10 },
-  "top_risky_resources": [
-    { "name": "api-gateway-prod-01", "risk": "服務降級或中斷" },
-    { "name": "user-service", "risk": "因部署失敗導致功能異常" },
-    { "name": "rds-prod-main", "risk": "資料庫效能緩慢或無回應" }
-  ]
-}
-`;
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: prompt,
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: Type.OBJECT,
-                        properties: {
-                            summary: { type: Type.STRING },
-                            risk_breakdown: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    low: { type: Type.NUMBER },
-                                    medium: { type: Type.NUMBER },
-                                    high: { type: Type.NUMBER },
-                                },
-                                required: ['low', 'medium', 'high']
-                            },
-                            top_risky_resources: {
-                                type: Type.ARRAY,
-                                items: {
-                                    type: Type.OBJECT,
-                                    properties: {
-                                        name: { type: Type.STRING },
-                                        risk: { type: Type.STRING },
-                                    },
-                                    required: ['name', 'risk']
-                                }
-                            }
-                        },
-                        required: ['summary', 'risk_breakdown', 'top_risky_resources']
-                    }
-                }
-            });
-
-            const result: RiskPrediction = JSON.parse(response.text);
-            setRiskPrediction(result);
-
+            const { data } = await api.get<RiskPrediction>('/dashboards/infrastructure-insights/risk-prediction');
+            setRiskPrediction(data);
         } catch (error) {
             console.error("AI Risk Prediction Error:", error);
-            // Provide a fallback in case of API error
             setRiskPrediction({
                 summary: "無法生成 AI 風險預測。API 連線可能發生問題。",
                 risk_breakdown: { low: 70, medium: 20, high: 10 },
@@ -123,8 +58,8 @@ Example:
     }, []);
 
     useEffect(() => {
-        generateRiskPrediction();
-    }, [generateRiskPrediction]);
+        fetchRiskPrediction();
+    }, [fetchRiskPrediction]);
 
     // Chart Options
     const riskBreakdownOption = {
@@ -156,8 +91,6 @@ Example:
         ]
     };
 
-    const bookmarkedResources = MOCK_RESOURCES.slice(0, 4);
-
     const timeOptions = [
         { label: 'Last 6 hours', value: 'from=now-6h&to=now' },
         { label: 'Last 12 hours', value: 'from=now-12h&to=now' },
@@ -180,18 +113,13 @@ Example:
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <ContextualKPICard title="總資源數" value="120" description="跨雲供應商" icon="database-zap" iconBgColor="bg-blue-500" />
-                <ContextualKPICard title="運行中" value="115" description="95.8% 健康" icon="heart-pulse" iconBgColor="bg-green-500" />
-                <ContextualKPICard title="異常" value="5" description="4.2% 需要關注" icon="siren" iconBgColor="bg-orange-500" />
-                <ContextualKPICard title="離線" value="0" description="0% 離線" icon="cloud-off" iconBgColor="bg-slate-500" />
-            </div>
+            <PageKPIs pageName="InfrastructureInsights" />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 glass-card rounded-xl p-6">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-xl font-bold flex items-center"><Icon name="brain-circuit" className="w-6 h-6 mr-2 text-sky-400"/> AI 風險預測</h2>
-                        <button onClick={generateRiskPrediction} disabled={isRiskLoading} className="p-2 rounded-full hover:bg-slate-700 disabled:opacity-50">
+                        <button onClick={fetchRiskPrediction} disabled={isRiskLoading} className="p-2 rounded-full hover:bg-slate-700 disabled:opacity-50">
                             <Icon name="refresh-cw" className={`w-4 h-4 ${isRiskLoading ? 'animate-spin' : ''}`} />
                         </button>
                     </div>

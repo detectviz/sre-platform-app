@@ -4,7 +4,7 @@ import Modal from './Modal';
 import FormRow from './FormRow';
 import Icon from './Icon';
 import { Team, User } from '../types';
-import { MOCK_USERS } from '../constants';
+import api from '../services/api';
 
 interface TeamEditModalProps {
   isOpen: boolean;
@@ -42,13 +42,26 @@ const TeamEditModal: React.FC<TeamEditModalProps> = ({ isOpen, onClose, onSave, 
     const [description, setDescription] = useState('');
     const [ownerId, setOwnerId] = useState('');
     const [memberIds, setMemberIds] = useState<string[]>([]);
+    const [allUsers, setAllUsers] = useState<User[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
             setName(team?.name || '');
             setDescription(team?.description || '');
-            setOwnerId(team?.ownerId || MOCK_USERS[0]?.id || '');
+            setOwnerId(team?.ownerId || '');
             setMemberIds(team?.memberIds || []);
+
+            setIsLoading(true);
+            api.get<{ items: User[] }>('/iam/users', { params: { page: 1, page_size: 1000 } })
+                .then(res => {
+                    setAllUsers(res.data.items);
+                    if (!team?.ownerId && res.data.items.length > 0) {
+                        setOwnerId(res.data.items[0].id);
+                    }
+                })
+                .catch(err => console.error("Failed to fetch users", err))
+                .finally(() => setIsLoading(false));
         }
     }, [isOpen, team]);
 
@@ -64,8 +77,8 @@ const TeamEditModal: React.FC<TeamEditModalProps> = ({ isOpen, onClose, onSave, 
         onSave(savedTeam);
     };
 
-    const availableUsers = useMemo(() => MOCK_USERS.filter(u => !memberIds.includes(u.id)), [memberIds]);
-    const selectedUsers = useMemo(() => MOCK_USERS.filter(u => memberIds.includes(u.id)), [memberIds]);
+    const availableUsers = useMemo(() => allUsers.filter(u => !memberIds.includes(u.id)), [memberIds, allUsers]);
+    const selectedUsers = useMemo(() => allUsers.filter(u => memberIds.includes(u.id)), [memberIds, allUsers]);
 
     return (
         <Modal
@@ -87,7 +100,7 @@ const TeamEditModal: React.FC<TeamEditModalProps> = ({ isOpen, onClose, onSave, 
                     </FormRow>
                     <FormRow label="擁有者">
                         <select value={ownerId} onChange={e => setOwnerId(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
-                            {MOCK_USERS.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                            {allUsers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                         </select>
                     </FormRow>
                 </div>
@@ -100,15 +113,19 @@ const TeamEditModal: React.FC<TeamEditModalProps> = ({ isOpen, onClose, onSave, 
                     <div className="grid grid-cols-2 gap-4 h-72">
                         <div className="border border-slate-700 rounded-lg p-3 flex flex-col">
                             <h3 className="font-semibold mb-2 text-white">可用的人員 ({availableUsers.length})</h3>
-                            <div className="space-y-1 overflow-y-auto flex-grow">
-                                {availableUsers.map(u => <UserListItem key={u.id} user={u} onAction={(id) => setMemberIds(ids => [...ids, id])} iconName="chevron-right" />)}
-                            </div>
+                            {isLoading ? <Icon name="loader-circle" className="animate-spin text-slate-400 mx-auto mt-4" /> : (
+                                <div className="space-y-1 overflow-y-auto flex-grow">
+                                    {availableUsers.map(u => <UserListItem key={u.id} user={u} onAction={(id) => setMemberIds(ids => [...ids, id])} iconName="chevron-right" />)}
+                                </div>
+                            )}
                         </div>
                         <div className="border border-slate-700 rounded-lg p-3 flex flex-col">
                             <h3 className="font-semibold mb-2 text-white">團隊成員 ({selectedUsers.length})</h3>
-                            <div className="space-y-1 overflow-y-auto flex-grow">
-                                {selectedUsers.map(u => <UserListItem key={u.id} user={u} onAction={(id) => setMemberIds(ids => ids.filter(i => i !== id))} iconName="chevron-left" />)}
-                            </div>
+                            {isLoading ? <Icon name="loader-circle" className="animate-spin text-slate-400 mx-auto mt-4" /> : (
+                                <div className="space-y-1 overflow-y-auto flex-grow">
+                                    {selectedUsers.map(u => <UserListItem key={u.id} user={u} onAction={(id) => setMemberIds(ids => ids.filter(i => i !== id))} iconName="chevron-left" />)}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -1,13 +1,13 @@
 openapi: 3.1.0
 info:
   title: SRE 平台 API 契約
-  version: 4.0.7
+  version: 2.5.1
   description: |
-    # 版本 4.0.7 (個人設定與分析中心 API 化)
-    - **新增模組**: 為「分析中心」新增 `/logs` 與 `/traces` 端點，實現數據動態化。
-    - **擴充端點**: 為「個人設定」新增 `/me`, `/me/login-history` 與 `/me/preferences` 端點。
-    - **版本回顧 (v4.0.6)**: 完成了自動化、告警規則等核心模組的 API 化。
-    
+    # 版本 2.5.1 (最終 API 化)
+    - **新增端點**: 增加 `/settings/tags/options`，提供動態標籤分類。
+    - **擴充 Mock Data**: 為 `SREWarRoom` 和 `InfrastructureInsights` 頁面新增 KPI 數據與版面配置。
+    - **目標**: 達成 100% API 驅動，根除所有前端靜態設定。
+
     本文件定義 SRE 平台前後端之間的資料契約，作為後端開發的唯一真實來源 (SSOT)。
 servers:
   - url: http://localhost:4000/api/v1
@@ -122,8 +122,34 @@ paths:
           $ref: "#/components/responses/Unauthorized"
 
   # ===========================================================================
-  # DASHBOARDS
+  # DASHBOARDS & SRE WAR ROOM
   # ===========================================================================
+  /sre-war-room/briefing:
+    get:
+      tags: [儀表板]
+      summary: 取得 AI 每日簡報
+      operationId: getAIBriefing
+      responses:
+        "200":
+          description: 回傳最新的 AI 簡報內容。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BriefingData'
+
+  /sre-war-room/briefing/generate:
+    post:
+      tags: [儀表板]
+      summary: 觸發生成新的 AI 每日簡報
+      operationId: generateAIBriefing
+      responses:
+        "200":
+          description: 回傳新生成的 AI 簡報內容。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BriefingData'
+
   /dashboards:
     get:
       tags: [儀表板]
@@ -169,6 +195,41 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Dashboard"
+  
+  /dashboards/options:
+    get:
+      tags: [儀表板]
+      summary: 取得儀表板相關選項
+      operationId: getDashboardOptions
+      responses:
+        "200":
+          description: 回傳儀表板的類別與擁有者選項。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  categories:
+                    type: array
+                    items: { type: string }
+                  owners:
+                    type: array
+                    items: { type: string }
+
+  /dashboards/templates:
+    get:
+      tags: [儀表板]
+      summary: 取得儀表板範本列表
+      operationId: listDashboardTemplates
+      responses:
+        "200":
+          description: 回傳儀表板範本列表。
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DashboardTemplate"
 
   /dashboards/{dashboard_id}:
     parameters:
@@ -221,6 +282,19 @@ paths:
         "200":
           description: 操作成功。
 
+  /dashboards/infrastructure-insights/risk-prediction:
+    get:
+      tags: [儀表板]
+      summary: 取得基礎設施 AI 風險預測
+      operationId: getInfraRiskPrediction
+      responses:
+        "200":
+          description: 回傳風險預測資料。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskPrediction'
+
   # ===========================================================================
   # INCIDENTS, RULES, SILENCES
   # ===========================================================================
@@ -264,6 +338,32 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Incident"
+
+  /events/ai-analysis:
+    post:
+      tags: [事件管理]
+      summary: 產生事件的 AI 分析報告
+      operationId: generateIncidentAIAnalysis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                incident_ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: 回傳 AI 分析報告。
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/IncidentAnalysis'
+                  - $ref: '#/components/schemas/MultiIncidentAnalysis'
 
   /events/batch-actions:
     post:
@@ -336,6 +436,21 @@ paths:
         content: { application/json: { schema: { $ref: "#/components/schemas/AlertRule" } } }
       responses:
         "201": { $ref: "#/components/responses/AlertRuleDetail" }
+  
+  /alert-rules/templates:
+    get:
+      tags: [告警規則 (Grafana 代理)]
+      summary: 取得告警規則範本
+      operationId: listAlertRuleTemplates
+      responses:
+        "200":
+          description: 回傳告警規則範本列表。
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AlertRuleTemplate"
 
   /alert-rules/{rule_id}:
     parameters:
@@ -407,6 +522,21 @@ paths:
       responses:
         "201": { $ref: "#/components/responses/SilenceRuleDetail" }
 
+  /silence-rules/templates:
+    get:
+      tags: [靜音規則]
+      summary: 取得靜音規則範本
+      operationId: listSilenceRuleTemplates
+      responses:
+        "200":
+          description: 回傳靜音規則範本列表。
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SilenceRuleTemplate'
+
   /silence-rules/{silence_id}:
     parameters:
       - name: silence_id
@@ -465,6 +595,9 @@ paths:
       parameters:
         - $ref: "#/components/parameters/PageParam"
         - $ref: "#/components/parameters/PageSizeParam"
+        - name: bookmarked
+          in: query
+          schema: { type: boolean }
       responses:
         "200":
           description: 回傳資源列表。
@@ -493,6 +626,32 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Resource" }
+
+  /resources/options:
+    get:
+      tags: [資源管理]
+      summary: 取得資源相關選項
+      operationId: getResourceOptions
+      responses:
+        "200":
+          description: 回傳資源的類型、提供商、區域、擁有者選項。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  types:
+                    type: array
+                    items: { type: string }
+                  providers:
+                    type: array
+                    items: { type: string }
+                  regions:
+                    type: array
+                    items: { type: string }
+                  owners:
+                    type: array
+                    items: { type: string }
 
   /resources/{resource_id}:
     parameters:
@@ -530,6 +689,37 @@ paths:
       operationId: deleteResource
       responses:
         "204": { description: "資源已刪除。" }
+
+  /resources/{resource_id}/metrics:
+    get:
+      tags: [資源管理]
+      summary: 取得資源的指標數據
+      operationId: getResourceMetrics
+      parameters:
+        - name: resource_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: 回傳 CPU 和 Memory 的時序數據。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cpu:
+                    type: array
+                    items:
+                      type: array
+                      items:
+                        oneOf: [{type: string, format: date-time}, {type: number}]
+                  memory:
+                    type: array
+                    items:
+                      type: array
+                      items:
+                        oneOf: [{type: string, format: date-time}, {type: number}]
         
   /resources/batch-actions:
     post:
@@ -674,6 +864,26 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AutomationPlaybook" }
+
+  /automation/scripts/generate-with-ai:
+    post:
+      tags: [自動化]
+      summary: 使用 AI 生成自動化腳本
+      operationId: generatePlaybookWithAI
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prompt: { type: string }
+      responses:
+        "200":
+          description: 回傳 AI 生成的腳本內容。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedPlaybook'
 
   /automation/scripts/{script_id}:
     parameters:
@@ -857,6 +1067,49 @@ paths:
   # ===========================================================================
   # ANALYSIS
   # ===========================================================================
+  /analysis/ai-insights/health-score:
+    get:
+      tags: [分析中心]
+      summary: 取得 AI 系統健康評分
+      operationId: getAIHealthScore
+      responses:
+        "200":
+          description: 回傳健康評分與摘要。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthScore'
+  
+  /analysis/ai-insights/anomalies:
+    get:
+      tags: [分析中心]
+      summary: 取得 AI 異常檢測結果
+      operationId: getAIAnomalies
+      responses:
+        "200":
+          description: 回傳偵測到的異常列表。
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Anomaly'
+
+  /analysis/ai-insights/suggestions:
+    get:
+      tags: [分析中心]
+      summary: 取得 AI 優化建議
+      operationId: getAISuggestions
+      responses:
+        "200":
+          description: 回傳優化建議列表。
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Suggestion'
+
   /logs:
     get:
       tags: [分析中心]
@@ -1157,6 +1410,21 @@ paths:
       responses:
         "204": { description: "角色已刪除。" }
 
+  /iam/permissions:
+    get:
+      tags: [身份與存取 (IAM)]
+      summary: 取得所有可用的權限
+      operationId: listAvailablePermissions
+      responses:
+        "200":
+          description: 回傳所有模組及其可用權限。
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AvailablePermission'
+
   /iam/audit-logs:
     get:
       tags: [身份與存取 (IAM)]
@@ -1193,8 +1461,23 @@ paths:
                           $ref: "#/components/schemas/AuditLog"
 
   # ===========================================================================
-  # SETTINGS
+  # NOTIFICATIONS & SETTINGS
   # ===========================================================================
+  /notifications:
+    get:
+      tags: [通知管理]
+      summary: 取得通知中心項目
+      operationId: listNotifications
+      responses:
+        "200":
+          description: 回傳通知列表。
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NotificationItem'
+  
   /settings/notification-strategies:
     get:
       tags: [通知管理]
@@ -1403,6 +1686,23 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/TagDefinition" }
 
+  /settings/tags/options:
+    get:
+      tags: [平台設定]
+      summary: 取得標籤相關選項
+      operationId: getTagOptions
+      responses:
+        "200":
+          description: 回傳標籤分類。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  categories:
+                    type: array
+                    items: { type: string }
+
   /settings/tags/{id}:
     parameters:
       - name: id
@@ -1491,6 +1791,21 @@ paths:
                   type: array
                   items:
                     type: string
+  
+  /settings/widgets:
+    get:
+      tags: [平台設定]
+      summary: 取得所有可用的版面小工具
+      operationId: listLayoutWidgets
+      responses:
+        "200":
+          description: 回傳所有小工具的定義。
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LayoutWidget'
 
   /settings/mail:
     get:
@@ -1539,6 +1854,23 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/AuthSettings" }
 
+  # ===========================================================================
+  # GLOBAL
+  # ===========================================================================
+  /kpi-data:
+    get:
+      tags: [全局功能]
+      summary: 取得所有 KPI 卡片的數值
+      operationId: getKpiData
+      responses:
+        "200":
+          description: 回傳所有 KPI 卡片的即時數據。
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/KpiDataItem'
 components:
   parameters:
     PageParam:
@@ -1596,20 +1928,94 @@ components:
         page_size: { type: integer }
         total: { type: integer }
         items: { type: array, items: {} }
+    BriefingData:
+      type: object
+      properties:
+        stability_summary: { type: string }
+        key_anomaly:
+          type: object
+          properties:
+            description: { type: string }
+            resource_name: { type: string }
+            resource_path: { type: string }
+        recommendation:
+          type: object
+          properties:
+            action_text: { type: string }
+            button_text: { type: string }
+            button_link: { type: string }
+    RiskPrediction:
+      type: object
+      properties:
+        summary: { type: string }
+        risk_breakdown:
+          type: object
+          properties:
+            low: { type: number }
+            medium: { type: number }
+            high: { type: number }
+        top_risky_resources:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              risk: { type: string }
+    HealthScore:
+      type: object
+      properties:
+        score: { type: number }
+        summary: { type: string }
+    Anomaly:
+      type: object
+      properties:
+        severity: { type: string, enum: [critical, warning, info] }
+        description: { type: string }
+        timestamp: { type: string }
+    Suggestion:
+      type: object
+      properties:
+        title: { type: string }
+        impact: { type: string, enum: ['高', '中', '低'] }
+        effort: { type: string, enum: ['高', '中', '低'] }
+        details: { type: string }
+        action_button_text: { type: string }
+        action_link: { type: string }
+    GeneratedPlaybook:
+      type: object
+      properties:
+        type: { type: string, enum: [shell, python, ansible, terraform] }
+        content: { type: string }
+        parameters:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterDefinition'
     Dashboard:
       $ref: "./types.ts#/components/schemas/Dashboard"
+    DashboardTemplate:
+      $ref: "./types.ts#/components/schemas/DashboardTemplate"
     Incident:
       $ref: "./types.ts#/components/schemas/Incident"
+    IncidentAnalysis:
+      $ref: "./types.ts#/components/schemas/IncidentAnalysis"
+    MultiIncidentAnalysis:
+      $ref: "./types.ts#/components/schemas/MultiIncidentAnalysis"
     AlertRule:
       $ref: "./types.ts#/components/schemas/AlertRule"
+    AlertRuleTemplate:
+      $ref: "./types.ts#/components/schemas/AlertRuleTemplate"
     SilenceRule:
       $ref: "./types.ts#/components/schemas/SilenceRule"
+    SilenceRuleTemplate:
+      $ref: "./types.ts#/components/schemas/SilenceRuleTemplate"
     Resource:
       $ref: "./types.ts#/components/schemas/Resource"
     ResourceGroup:
       $ref: "./types.ts#/components/schemas/ResourceGroup"
     AutomationPlaybook:
       $ref: "./types.ts#/components/schemas/AutomationPlaybook"
+    ParameterDefinition:
+      $ref: "./types.ts#/components/schemas/ParameterDefinition"
     AutomationTrigger:
       $ref: "./types.ts#/components/schemas/AutomationTrigger"
     AutomationExecution:
@@ -1620,12 +2026,26 @@ components:
       $ref: "./types.ts#/components/schemas/Team"
     Role:
       $ref: "./types.ts#/components/schemas/Role"
+    AvailablePermission:
+      type: object
+      properties:
+        module: { type: string }
+        description: { type: string }
+        actions:
+          type: array
+          items:
+            type: object
+            properties:
+              key: { type: string }
+              label: { type: string }
     AuditLog:
       $ref: "./types.ts#/components/schemas/AuditLog"
     TagDefinition:
       $ref: "./types.ts#/components/schemas/TagDefinition"
     TagValue:
       $ref: "./types.ts#/components/schemas/TagValue"
+    NotificationItem:
+      $ref: "./types.ts#/components/schemas/NotificationItem"
     NotificationStrategy:
       $ref: "./types.ts#/components/schemas/NotificationStrategy"
     NotificationChannel:
@@ -1642,6 +2062,15 @@ components:
       $ref: "./types.ts#/components/schemas/UserPreferences"
     LoginHistoryRecord:
       $ref: "./types.ts#/components/schemas/LoginHistoryRecord"
+    LayoutWidget:
+      $ref: "./types.ts#/components/schemas/LayoutWidget"
+    KpiDataItem:
+      type: object
+      properties:
+        value: { type: string }
+        description: { type: string }
+        icon: { type: string }
+        iconBgColor: { type: string }
     LogEntry:
       $ref: "./types.ts#/components/schemas/LogEntry"
     Trace:

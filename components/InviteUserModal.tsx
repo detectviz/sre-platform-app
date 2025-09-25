@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import FormRow from './FormRow';
-import { User } from '../types';
+import { User, Role, Team } from '../types';
+import api from '../services/api';
 
 interface InviteDetails {
   email: string;
@@ -20,7 +21,29 @@ const InviteUserModal: React.FC<InviteUserModalProps> = ({ isOpen, onClose, onIn
     const [email, setEmail] = useState('');
     const [name, setName] = useState('');
     const [role, setRole] = useState<User['role']>('Developer');
-    const [team, setTeam] = useState('API Services');
+    const [team, setTeam] = useState('');
+    
+    const [roles, setRoles] = useState<Role[]>([]);
+    const [teams, setTeams] = useState<Team[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setIsLoading(true);
+            Promise.all([
+                api.get<Role[]>('/iam/roles'),
+                api.get<Team[]>('/iam/teams')
+            ]).then(([rolesRes, teamsRes]) => {
+                setRoles(rolesRes.data);
+                setTeams(teamsRes.data);
+                if (teamsRes.data.length > 0) {
+                    setTeam(teamsRes.data[0].name);
+                }
+            }).catch(err => console.error("Failed to load roles/teams for invite modal", err))
+            .finally(() => setIsLoading(false));
+        }
+    }, [isOpen]);
+
 
     const handleSubmit = () => {
         if (email) { // Basic validation
@@ -29,12 +52,9 @@ const InviteUserModal: React.FC<InviteUserModalProps> = ({ isOpen, onClose, onIn
             setEmail('');
             setName('');
             setRole('Developer');
-            setTeam('API Services');
+            setTeam(teams[0]?.name || '');
         }
     };
-
-    const roles: User['role'][] = ['Admin', 'SRE', 'Developer', 'Viewer'];
-    const teams = ['SRE Platform', 'Core Infrastructure', 'API Services', 'Marketing', 'Web Team', 'DBA Team', 'DevOps'];
 
     return (
         <Modal
@@ -60,14 +80,14 @@ const InviteUserModal: React.FC<InviteUserModalProps> = ({ isOpen, onClose, onIn
                 </FormRow>
                 <FormRow label="角色">
                     <select value={role} onChange={e => setRole(e.target.value as User['role'])}
-                            className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
-                        {roles.map(r => <option key={r} value={r}>{r}</option>)}
+                            className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoading}>
+                        {isLoading ? <option>載入中...</option> : roles.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
                     </select>
                 </FormRow>
                 <FormRow label="團隊">
                     <select value={team} onChange={e => setTeam(e.target.value)}
-                            className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
-                        {teams.map(t => <option key={t} value={t}>{t}</option>)}
+                            className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoading}>
+                        {isLoading ? <option>載入中...</option> : teams.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
                     </select>
                 </FormRow>
             </div>

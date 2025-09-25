@@ -3,8 +3,8 @@ import Modal from './Modal';
 import Icon from './Icon';
 import Wizard from './Wizard';
 import FormRow from './FormRow';
-import { SilenceRule, SilenceMatcher, SilenceSchedule } from '../types';
-import { MOCK_SILENCE_RULE_TEMPLATES } from '../constants';
+import { SilenceRule, SilenceMatcher, SilenceSchedule, SilenceRuleTemplate } from '../types';
+import api from '../services/api';
 
 interface SilenceRuleEditModalProps {
   isOpen: boolean;
@@ -94,6 +94,14 @@ const SilenceRuleEditModal: React.FC<SilenceRuleEditModalProps> = ({ isOpen, onC
 };
 
 const Step1 = ({ formData, setFormData }: { formData: Partial<SilenceRule>, setFormData: Function }) => {
+    const [templates, setTemplates] = useState<SilenceRuleTemplate[]>([]);
+
+    useEffect(() => {
+        api.get<SilenceRuleTemplate[]>('/silence-rules/templates')
+            .then(res => setTemplates(res.data))
+            .catch(err => console.error("Failed to fetch silence rule templates", err));
+    }, []);
+
      const applyTemplate = (templateData: Partial<SilenceRule>) => {
         setFormData({ ...formData, ...templateData });
     };
@@ -102,7 +110,7 @@ const Step1 = ({ formData, setFormData }: { formData: Partial<SilenceRule>, setF
             <div>
                 <h3 className="text-sm font-semibold text-slate-300 mb-2">快速套用範本</h3>
                 <div className="flex flex-wrap gap-2">
-                    {MOCK_SILENCE_RULE_TEMPLATES.map(tpl => (
+                    {templates.map(tpl => (
                         <button key={tpl.id} onClick={() => applyTemplate(tpl.data)} className="px-3 py-1.5 text-sm bg-slate-700/50 hover:bg-slate-700 rounded-md flex items-center">
                            <span className="mr-2">{tpl.emoji}</span> {tpl.name}
                         </button>

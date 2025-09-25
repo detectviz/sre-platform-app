@@ -1,21 +1,39 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MOCK_DASHBOARD_TEMPLATES } from '../../constants';
+import { DashboardTemplate } from '../../types';
 import Icon from '../../components/Icon';
+import api from '../../services/api';
 
 const DashboardTemplatesPage: React.FC = () => {
     const navigate = useNavigate();
+    const [templates, setTemplates] = useState<DashboardTemplate[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        setIsLoading(true);
+        api.get<DashboardTemplate[]>('/dashboards/templates')
+            .then(res => setTemplates(res.data))
+            .catch(err => console.error("Failed to fetch dashboard templates", err))
+            .finally(() => setIsLoading(false));
+    }, []);
 
     const handleUseTemplate = (templateId: string) => {
-        // In a real app, this would pass the template config to the new dashboard page
         console.log(`Using template ${templateId}`);
         navigate('/dashboards/new'); 
     };
 
+    if (isLoading) {
+        return (
+            <div className="h-full flex items-center justify-center">
+                <Icon name="loader-circle" className="w-8 h-8 animate-spin text-slate-400" />
+            </div>
+        );
+    }
+
     return (
         <div className="h-full flex flex-col">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {MOCK_DASHBOARD_TEMPLATES.map((template) => (
+                {templates.map((template) => (
                     <div key={template.id} className="glass-card rounded-xl p-6 flex flex-col justify-between group hover:border-sky-500/50 transition-all duration-300">
                         <div>
                             <div className="flex items-start justify-between">

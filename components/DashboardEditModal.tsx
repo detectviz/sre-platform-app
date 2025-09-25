@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import FormRow from './FormRow';
 import { Dashboard } from '../types';
+import api from '../services/api';
+
+interface DashboardOptions {
+    categories: string[];
+    owners: string[];
+}
 
 interface DashboardEditModalProps {
   isOpen: boolean;
@@ -12,10 +18,17 @@ interface DashboardEditModalProps {
 
 const DashboardEditModal: React.FC<DashboardEditModalProps> = ({ isOpen, onClose, onSave, dashboard }) => {
     const [formData, setFormData] = useState<Partial<Dashboard>>({});
+    const [options, setOptions] = useState<DashboardOptions>({ categories: [], owners: [] });
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (isOpen && dashboard) {
             setFormData(dashboard);
+            setIsLoading(true);
+            api.get<DashboardOptions>('/dashboards/options')
+                .then(res => setOptions(res.data))
+                .catch(err => console.error("Failed to fetch dashboard options", err))
+                .finally(() => setIsLoading(false));
         }
     }, [isOpen, dashboard]);
 
@@ -28,9 +41,6 @@ const DashboardEditModal: React.FC<DashboardEditModalProps> = ({ isOpen, onClose
     const handleChange = (field: keyof Dashboard, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
-    
-    const categories = ['業務與 SLA', '基礎設施', '營運與容量', '團隊自訂'];
-    const owners = ['SRE 平台團隊', '事件指揮中心', '前端團隊', 'DevOps'];
 
     return (
         <Modal
@@ -57,14 +67,14 @@ const DashboardEditModal: React.FC<DashboardEditModalProps> = ({ isOpen, onClose
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormRow label="類別">
                         <select value={formData.category || ''} onChange={e => handleChange('category', e.target.value)}
-                                className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
-                            {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                                className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoading}>
+                            {isLoading ? <option>載入中...</option> : options.categories.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
                     </FormRow>
                     <FormRow label="擁有者">
                          <select value={formData.owner || ''} onChange={e => handleChange('owner', e.target.value)}
-                                className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
-                            {owners.map(o => <option key={o} value={o}>{o}</option>)}
+                                className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoading}>
+                            {isLoading ? <option>載入中...</option> : options.owners.map(o => <option key={o} value={o}>{o}</option>)}
                         </select>
                     </FormRow>
                 </div>

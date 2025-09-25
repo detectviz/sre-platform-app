@@ -7,7 +7,6 @@ import Pagination from '../../../components/Pagination';
 import InviteUserModal from '../../../components/InviteUserModal';
 import UserEditModal from '../../../components/UserEditModal';
 import Modal from '../../../components/Modal';
-import PlaceholderModal from '../../../components/PlaceholderModal';
 import api from '../../../services/api';
 import TableLoader from '../../../components/TableLoader';
 import TableError from '../../../components/TableError';
@@ -31,14 +30,6 @@ const PersonnelManagementPage: React.FC = () => {
     
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    
-    const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
-    const [modalFeatureName, setModalFeatureName] = useState('');
-
-    const showPlaceholderModal = (featureName: string) => {
-        setModalFeatureName(featureName);
-        setIsPlaceholderModalOpen(true);
-    };
 
     const fetchUsers = useCallback(async () => {
         setIsLoading(true);
@@ -128,10 +119,6 @@ const PersonnelManagementPage: React.FC = () => {
             }
         }
     };
-    
-    const handleImport = () => showPlaceholderModal('匯入人員');
-    const handleExport = () => showPlaceholderModal('匯出人員');
-    const handleColumnSettings = () => showPlaceholderModal('欄位設定');
 
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.checked) {
@@ -188,9 +175,9 @@ const PersonnelManagementPage: React.FC = () => {
                 leftActions={leftActions}
                 rightActions={
                     <>
-                        <ToolbarButton icon="upload" text="匯入" onClick={handleImport} />
-                        <ToolbarButton icon="download" text="匯出" onClick={handleExport} />
-                        <ToolbarButton icon="settings-2" text="欄位設定" onClick={handleColumnSettings} />
+                        <ToolbarButton icon="upload" text="匯入" disabled title="功能開發中" />
+                        <ToolbarButton icon="download" text="匯出" disabled title="功能開發中" />
+                        <ToolbarButton icon="settings-2" text="欄位設定" disabled title="功能開發中" />
                         <ToolbarButton icon="user-plus" text="邀請人員" primary onClick={() => setIsInviteModalOpen(true)} />
                     </>
                 }
@@ -311,11 +298,6 @@ const PersonnelManagementPage: React.FC = () => {
                 <p>您確定要刪除使用者 <strong className="text-amber-400">{deletingUser?.name}</strong> 嗎？</p>
                 <p className="mt-2 text-slate-400">此操作無法復原。</p>
             </Modal>
-            <PlaceholderModal
-                isOpen={isPlaceholderModalOpen}
-                onClose={() => setIsPlaceholderModalOpen(false)}
-                featureName={modalFeatureName}
-            />
         </div>
     );
 };

@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Modal from './Modal';
-import Icon from './Icon';
-import FormRow from './FormRow';
-import { Dashboard, DashboardType } from '../types';
-import api from '../services/api';
+import Modal from '../../components/Modal';
+import Icon from '../../components/Icon';
+import FormRow from '../../components/FormRow';
+import { Dashboard, DashboardType } from '../../types';
+import api from '../../services/api';
 
 interface AvailableGrafanaDashboard {
   uid: string;

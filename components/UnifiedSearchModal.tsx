@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import Modal from './Modal';
 import Icon from './Icon';
-import { MOCK_RESOURCES } from '../constants';
 import { Resource, ResourceFilters } from '../types';
+import api from '../services/api';
 
 export interface IncidentFilters {
   keyword?: string;
@@ -45,12 +44,16 @@ const FormRow = ({ label, children }: { label: string; children?: React.ReactNod
 
 const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, onClose, onSearch, initialFilters }) => {
   const [filters, setFilters] = useState<Filters>(initialFilters);
+  const [resourceOptions, setResourceOptions] = useState<{ types: string[], providers: string[], regions: string[] }>({ types: [], providers: [], regions: [] });
 
   useEffect(() => {
     if (isOpen) {
       setFilters(initialFilters);
+      if (page === 'resources') {
+        api.get<any>('/resources/options').then(res => setResourceOptions(res.data));
+      }
     }
-  }, [isOpen, initialFilters]);
+  }, [isOpen, initialFilters, page]);
 
   const handleSearch = () => {
     onSearch(filters);
@@ -59,15 +62,6 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
   const handleClear = () => {
       setFilters({});
   }
-
-  const resourceOptions = useMemo(() => {
-    if (page !== 'resources') return null;
-    const types = [...new Set(MOCK_RESOURCES.map(r => r.type))];
-    const providers = [...new Set(MOCK_RESOURCES.map(r => r.provider))];
-    const regions = [...new Set(MOCK_RESOURCES.map(r => r.region))];
-    return { types, providers, regions };
-  }, [page]);
-
 
   const renderIncidentFilters = () => (
     <>

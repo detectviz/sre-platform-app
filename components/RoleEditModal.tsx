@@ -3,7 +3,13 @@ import Modal from './Modal';
 import FormRow from './FormRow';
 import Icon from './Icon';
 import { Role, RolePermission } from '../types';
-import { AVAILABLE_PERMISSIONS } from '../constants';
+import api from '../services/api';
+
+interface AvailablePermission {
+    module: string;
+    description: string;
+    actions: { key: RolePermission['actions'][0], label: string }[];
+}
 
 interface RoleEditModalProps {
   isOpen: boolean;
@@ -16,16 +22,24 @@ const RoleEditModal: React.FC<RoleEditModalProps> = ({ isOpen, onClose, onSave, 
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [permissions, setPermissions] = useState<RolePermission[]>([]);
+    const [availablePermissions, setAvailablePermissions] = useState<AvailablePermission[]>([]);
     const [openModules, setOpenModules] = useState<string[]>([]);
-
-    const getInitialPermissions = (): RolePermission[] => 
-        AVAILABLE_PERMISSIONS.map(p => ({ module: p.module, actions: [] }));
-
+    
     useEffect(() => {
-        if (isOpen) {
+        if(isOpen) {
+            api.get<AvailablePermission[]>('/iam/permissions')
+                .then(res => {
+                    setAvailablePermissions(res.data);
+                    const initialPermissions = res.data.map(p => ({
+                        module: p.module,
+                        actions: role?.permissions.find(rp => rp.module === p.module)?.actions || []
+                    }));
+                    setPermissions(initialPermissions);
+                })
+                .catch(err => console.error("Failed to fetch permissions", err));
+
             setName(role?.name || '');
             setDescription(role?.description || '');
-            setPermissions(role?.permissions || getInitialPermissions());
             setOpenModules([]);
         }
     }, [isOpen, role]);
@@ -90,7 +104,7 @@ const RoleEditModal: React.FC<RoleEditModalProps> = ({ isOpen, onClose, onSave, 
                 <div className="flex-grow overflow-y-auto pr-2 -mr-4">
                     <h3 className="text-lg font-semibold text-white mb-2">權限設定</h3>
                     <div className="space-y-2">
-                        {AVAILABLE_PERMISSIONS.map(permModule => {
+                        {availablePermissions.map(permModule => {
                             const rolePerm = permissions.find(p => p.module === permModule.module);
                             const allActions = permModule.actions.map(a => a.key);
                             const isAllSelected = rolePerm && allActions.every(a => rolePerm.actions.includes(a));

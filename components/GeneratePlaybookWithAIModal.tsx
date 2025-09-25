@@ -1,10 +1,9 @@
-
 import React, { useState, useCallback } from 'react';
-import { GoogleGenAI, Type } from "@google/genai";
 import Modal from './Modal';
 import Icon from './Icon';
 import { ParameterDefinition, AutomationPlaybook } from '../types';
 import FormRow from './FormRow';
+import api from '../services/api';
 
 interface GeneratedPlaybook {
   type: AutomationPlaybook['type'];
@@ -30,70 +29,8 @@ const GeneratePlaybookWithAIModal: React.FC<GeneratePlaybookWithAIModalProps> = 
         setResult(null);
         setError(null);
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-            const apiPrompt = `
-You are an expert automation engineer. Based on the user's request, generate an automation playbook script and define its parameters.
-
-User request: "${prompt}"
-
-The script 'type' must be one of: 'shell', 'python', 'ansible', 'terraform'. Determine the most appropriate type.
-
-The 'parameters' must be an array of objects, where each object has:
-- name: string (snake_case)
-- label: string (user-friendly name)
-- type: 'string' | 'number' | 'enum' | 'boolean'
-- required: boolean
-- defaultValue?: string | number | boolean
-- options?: { value: string; label: string }[] (only for 'enum' type)
-- placeholder?: string
-
-Your response MUST be a single JSON object with the exact following structure. Do not add any other text or explanations.
-`;
-            
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: apiPrompt,
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: Type.OBJECT,
-                        properties: {
-                            type: { type: Type.STRING, enum: ['shell', 'python', 'ansible', 'terraform'] },
-                            content: { type: Type.STRING },
-                            parameters: {
-                                type: Type.ARRAY,
-                                items: {
-                                    type: Type.OBJECT,
-                                    properties: {
-                                        name: { type: Type.STRING },
-                                        label: { type: Type.STRING },
-                                        type: { type: Type.STRING, enum: ['string', 'number', 'enum', 'boolean'] },
-                                        required: { type: Type.BOOLEAN },
-                                        options: {
-                                            type: Type.ARRAY,
-                                            items: {
-                                                type: Type.OBJECT,
-                                                properties: {
-                                                    value: { type: Type.STRING },
-                                                    label: { type: Type.STRING }
-                                                },
-                                                required: ['value', 'label']
-                                            }
-                                        },
-                                        placeholder: { type: Type.STRING }
-                                    },
-                                    required: ['name', 'label', 'type', 'required']
-                                }
-                            }
-                        },
-                        required: ['type', 'content']
-                    }
-                }
-            });
-
-            const generated = JSON.parse(response.text) as GeneratedPlaybook;
-            setResult(generated);
-
+            const { data } = await api.post<GeneratedPlaybook>('/automation/scripts/generate-with-ai', { prompt });
+            setResult(data);
         } catch (e) {
             console.error("AI Generation Error:", e);
             setError("Failed to generate playbook. Please check your prompt or API key and try again.");

@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { MOCK_USERS } from '../../../constants';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Team, User } from '../../../types';
 import Icon from '../../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../../components/Toolbar';
@@ -12,6 +11,7 @@ import TableError from '../../../components/TableError';
 
 const TeamManagementPage: React.FC = () => {
     const [teams, setTeams] = useState<Team[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -21,27 +21,37 @@ const TeamManagementPage: React.FC = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingTeam, setDeletingTeam] = useState<Team | null>(null);
 
-    const fetchTeams = useCallback(async () => {
+    const fetchTeamsAndUsers = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
-            const { data } = await api.get<Team[]>('/iam/teams');
-            // Mock search since API doesn't support it yet
-            const filtered = data.filter(team =>
+            const [teamsRes, usersRes] = await Promise.all([
+                api.get<Team[]>('/iam/teams'),
+                api.get<{ items: User[] }>('/iam/users', { params: { page: 1, page_size: 1000 } })
+            ]);
+            
+            setUsers(usersRes.data.items);
+            
+            // Mock search locally as API doesn't support it yet
+            const filteredTeams = teamsRes.data.filter(team =>
                 team.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 team.description.toLowerCase().includes(searchTerm.toLowerCase())
             );
-            setTeams(filtered);
+            setTeams(filteredTeams);
+
         } catch (err) {
-            setError('無法獲取團隊列表。');
+            setError('無法獲取團隊或使用者列表。');
         } finally {
             setIsLoading(false);
         }
     }, [searchTerm]);
 
     useEffect(() => {
-        fetchTeams();
-    }, [fetchTeams]);
+        fetchTeamsAndUsers();
+    }, [fetchTeamsAndUsers]);
+    
+    const userMap = useMemo(() => new Map(users.map(u => [u.id, u])), [users]);
+    const findUserById = (id: string): User | undefined => userMap.get(id);
 
     const handleNewTeam = () => {
         setEditingTeam(null);
@@ -60,7 +70,7 @@ const TeamManagementPage: React.FC = () => {
             } else {
                 await api.post('/iam/teams', team);
             }
-            fetchTeams();
+            fetchTeamsAndUsers();
         } catch (err) {
             alert('Failed to save team.');
         } finally {
@@ -77,7 +87,7 @@ const TeamManagementPage: React.FC = () => {
         if (deletingTeam) {
             try {
                 await api.del(`/iam/teams/${deletingTeam.id}`);
-                fetchTeams();
+                fetchTeamsAndUsers();
             } catch (err) {
                 alert('Failed to delete team.');
             } finally {
@@ -87,8 +97,6 @@ const TeamManagementPage: React.FC = () => {
         }
     };
 
-    const findUserById = (id: string): User | undefined => MOCK_USERS.find(u => u.id === id);
-    
     const leftActions = (
          <div className="relative">
             <Icon name="search" className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400 w-4 h-4" />
@@ -125,7 +133,7 @@ const TeamManagementPage: React.FC = () => {
                             {isLoading ? (
                                 <TableLoader colSpan={5} />
                             ) : error ? (
-                                <TableError colSpan={5} message={error} onRetry={fetchTeams} />
+                                <TableError colSpan={5} message={error} onRetry={fetchTeamsAndUsers} />
                             ) : teams.map((team) => (
                                 <tr key={team.id} className="border-b border-slate-800 hover:bg-slate-800/40">
                                     <td className="px-6 py-4 font-medium text-white">

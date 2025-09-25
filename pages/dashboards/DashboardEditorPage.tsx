@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../../components/Icon';
-import { LAYOUT_WIDGETS, KPI_DATA } from '../../constants';
+import api from '../../services/api';
 import { LayoutWidget } from '../../types';
 import ContextualKPICard from '../../components/ContextualKPICard';
 import Modal from '../../components/Modal';
@@ -12,7 +12,30 @@ const DashboardEditorPage: React.FC = () => {
     const [widgets, setWidgets] = useState<LayoutWidget[]>([]);
     const [isAddWidgetModalOpen, setIsAddWidgetModalOpen] = useState(false);
 
-    const availableWidgets = LAYOUT_WIDGETS.filter(
+    const [allWidgets, setAllWidgets] = useState<LayoutWidget[]>([]);
+    const [kpiData, setKpiData] = useState<Record<string, any>>({});
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            setIsLoading(true);
+            try {
+                const [widgetsRes, kpiDataRes] = await Promise.all([
+                    api.get<LayoutWidget[]>('/settings/widgets'),
+                    api.get<Record<string, any>>('/kpi-data'),
+                ]);
+                setAllWidgets(widgetsRes.data);
+                setKpiData(kpiDataRes.data);
+            } catch (error) {
+                console.error("Failed to fetch dashboard editor data", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
+
+    const availableWidgets = allWidgets.filter(
         w => !widgets.some(sw => sw.id === w.id)
     );
 
@@ -30,10 +53,26 @@ const DashboardEditorPage: React.FC = () => {
             name: dashboardName,
             widgetIds: widgets.map(w => w.id),
         });
-        // In a real app, this would make an API call.
-        // For now, just navigate back to the list.
-        // The new dashboard won't appear due to mock data re-initialization on page load.
         navigate('/dashboards');
+    };
+
+    const renderDescription = (descriptionText: string): React.ReactNode => {
+      if (!descriptionText) return null;
+      
+      const parts = descriptionText.split(/(↑\d+(\.\d+)?%|↓\d+(\.\d+)?%|\d+ 嚴重)/g);
+      
+      return parts.map((part, index) => {
+          if (part?.startsWith('↑')) {
+              return <span key={index} className="text-green-400">{part}</span>;
+          }
+          if (part?.startsWith('↓')) {
+              return <span key={index} className="text-red-400">{part}</span>;
+          }
+          if (part?.endsWith('嚴重')) {
+              return <span key={index} className="text-red-400 font-semibold">{part}</span>;
+          }
+          return part;
+      });
     };
 
     return (
@@ -70,19 +109,23 @@ const DashboardEditorPage: React.FC = () => {
 
             {/* Grid Area */}
             <div className="flex-grow glass-card rounded-xl p-4 overflow-y-auto">
-                {widgets.length > 0 ? (
+                 {isLoading ? (
+                    <div className="h-full flex flex-col items-center justify-center text-slate-500">
+                        <Icon name="loader-circle" className="w-12 h-12 animate-spin" />
+                    </div>
+                ) : widgets.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {widgets.map(widget => {
-                            const kpiData = KPI_DATA[widget.id];
-                            if (!kpiData) return null;
+                            const data = kpiData[widget.id];
+                            if (!data) return null;
                             return (
                                 <div key={widget.id} className="relative group">
                                     <ContextualKPICard
                                         title={widget.name}
-                                        value={kpiData.value}
-                                        description={kpiData.description}
-                                        icon={kpiData.icon}
-                                        iconBgColor={kpiData.iconBgColor}
+                                        value={data.value}
+                                        description={renderDescription(data.description)}
+                                        icon={data.icon}
+                                        iconBgColor={data.iconBgColor}
                                     />
                                     <button
                                         onClick={() => removeWidget(widget.id)}
