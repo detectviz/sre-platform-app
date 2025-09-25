@@ -1,0 +1,197 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { AutomationPlaybook } from '../../types';
+import Icon from '../../components/Icon';
+import TableContainer from '../../components/TableContainer';
+import RunPlaybookModal from '../../components/RunPlaybookModal';
+import Toolbar, { ToolbarButton } from '../../components/Toolbar';
+import AutomationPlaybookEditModal from '../../components/AutomationPlaybookEditModal';
+import Modal from '../../components/Modal';
+import api from '../../services/api';
+import TableLoader from '../../components/TableLoader';
+import TableError from '../../components/TableError';
+
+const AutomationPlaybooksPage: React.FC = () => {
+    const [playbooks, setPlaybooks] = useState<AutomationPlaybook[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const [isRunModalOpen, setIsRunModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [runningPlaybook, setRunningPlaybook] = useState<AutomationPlaybook | null>(null);
+    const [editingPlaybook, setEditingPlaybook] = useState<AutomationPlaybook | null>(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [deletingPlaybook, setDeletingPlaybook] = useState<AutomationPlaybook | null>(null);
+
+    const fetchPlaybooks = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const { data } = await api.get<AutomationPlaybook[]>('/automation/scripts');
+            setPlaybooks(data);
+        } catch (err) {
+            setError('無法獲取自動化腳本。');
+            console.error(err);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchPlaybooks();
+    }, [fetchPlaybooks]);
+
+    const handleRunClick = (playbook: AutomationPlaybook) => {
+        setRunningPlaybook(playbook);
+        setIsRunModalOpen(true);
+    };
+
+    const handleNewPlaybook = () => {
+        setEditingPlaybook(null);
+        setIsEditModalOpen(true);
+    };
+
+    const handleEditPlaybook = (playbook: AutomationPlaybook) => {
+        setEditingPlaybook(playbook);
+        setIsEditModalOpen(true);
+    };
+    
+    const handleSavePlaybook = async (playbookData: Partial<AutomationPlaybook>) => {
+        try {
+            if (editingPlaybook) {
+                 await api.patch(`/automation/scripts/${editingPlaybook.id}`, playbookData);
+            } else {
+                await api.post('/automation/scripts', playbookData);
+            }
+            setIsEditModalOpen(false);
+            fetchPlaybooks();
+        } catch (err) {
+            alert('Failed to save playbook.');
+        }
+    };
+
+    const handleDeleteClick = (playbook: AutomationPlaybook) => {
+        setDeletingPlaybook(playbook);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (deletingPlaybook) {
+            try {
+                await api.del(`/automation/scripts/${deletingPlaybook.id}`);
+                setIsDeleteModalOpen(false);
+                setDeletingPlaybook(null);
+                fetchPlaybooks();
+            } catch (err) {
+                alert('Failed to delete playbook.');
+            }
+        }
+    };
+
+    const handleConfirmRun = async (playbookId: string, params: Record<string, any>) => {
+        try {
+            await api.post(`/automation/scripts/${playbookId}/execute`, { parameters: params });
+            setIsRunModalOpen(false);
+            fetchPlaybooks(); // Re-fetch to update run status, etc.
+        } catch(err) {
+            alert('Failed to run playbook.');
+        }
+    };
+
+    const getStatusPill = (status: AutomationPlaybook['lastRunStatus']) => {
+        switch (status) {
+            case 'success': return 'bg-green-500/20 text-green-400';
+            case 'failed': return 'bg-red-500/20 text-red-400';
+            case 'running': return 'bg-sky-500/20 text-sky-400 animate-pulse';
+        }
+    };
+
+    return (
+        <div className="h-full flex flex-col">
+            <Toolbar 
+                rightActions={
+                    <ToolbarButton icon="plus" text="新增腳本" primary onClick={handleNewPlaybook} />
+                }
+            />
+            <TableContainer>
+                <div className="h-full overflow-y-auto">
+                    <table className="w-full text-sm text-left text-slate-300">
+                        <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
+                            <tr>
+                                <th scope="col" className="px-6 py-3">腳本名稱</th>
+                                <th scope="col" className="px-6 py-3">觸發器</th>
+                                <th scope="col" className="px-6 py-3">上次運行狀態</th>
+                                <th scope="col" className="px-6 py-3">上次運行時間</th>
+                                <th scope="col" className="px-6 py-3">運行次數</th>
+                                <th scope="col" className="px-6 py-3 text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {isLoading ? (
+                                <TableLoader colSpan={6} />
+                            ) : error ? (
+                                <TableError colSpan={6} message={error} onRetry={fetchPlaybooks} />
+                            ) : playbooks.map((pb) => (
+                                <tr key={pb.id} className="border-b border-slate-800 hover:bg-slate-800/40">
+                                    <td className="px-6 py-4 font-medium text-white">
+                                        {pb.name}
+                                        <p className="text-xs text-slate-400 font-normal">{pb.description}</p>
+                                    </td>
+                                    <td className="px-6 py-4">{pb.trigger}</td>
+                                    <td className="px-6 py-4">
+                                        <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusPill(pb.lastRunStatus)}`}>
+                                            {pb.lastRunStatus}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4">{pb.lastRun}</td>
+                                    <td className="px-6 py-4">{pb.runCount}</td>
+                                    <td className="px-6 py-4 text-center space-x-1">
+                                        <button onClick={() => handleRunClick(pb)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="運行">
+                                            <Icon name="play" className="w-4 h-4" />
+                                        </button>
+                                        <button onClick={() => handleEditPlaybook(pb)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯">
+                                            <Icon name="edit-3" className="w-4 h-4" />
+                                        </button>
+                                        <button onClick={() => handleDeleteClick(pb)} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除">
+                                            <Icon name="trash-2" className="w-4 h-4" />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </TableContainer>
+            <RunPlaybookModal 
+                isOpen={isRunModalOpen} 
+                onClose={() => setIsRunModalOpen(false)}
+                playbook={runningPlaybook}
+                onRun={handleConfirmRun}
+            />
+            {isEditModalOpen && (
+                 <AutomationPlaybookEditModal
+                    isOpen={isEditModalOpen}
+                    onClose={() => setIsEditModalOpen(false)}
+                    onSave={handleSavePlaybook}
+                    playbook={editingPlaybook}
+                />
+            )}
+             <Modal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                title="確認刪除"
+                width="w-1/3"
+                footer={
+                    <div className="flex justify-end space-x-2">
+                        <button onClick={() => setIsDeleteModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">取消</button>
+                        <button onClick={handleConfirmDelete} className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md">刪除</button>
+                    </div>
+                }
+            >
+                <p>您確定要刪除腳本 <strong className="text-amber-400">{deletingPlaybook?.name}</strong> 嗎？</p>
+                <p className="mt-2 text-slate-400">此操作無法復原。</p>
+            </Modal>
+        </div>
+    );
+};
+
+export default AutomationPlaybooksPage;

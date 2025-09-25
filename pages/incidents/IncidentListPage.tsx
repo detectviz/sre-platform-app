@@ -1,0 +1,279 @@
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { GoogleGenAI, Type } from "@google/genai";
+import { Incident, IncidentAnalysis, MultiIncidentAnalysis } from '../../types';
+import Icon from '../../components/Icon';
+import Toolbar, { ToolbarButton } from '../../components/Toolbar';
+import TableContainer from '../../components/TableContainer';
+import Drawer from '../../components/Drawer';
+import Pagination from '../../components/Pagination';
+import IncidentDetailPage from './IncidentDetailPage';
+import UnifiedSearchModal, { IncidentFilters } from '../../components/UnifiedSearchModal';
+import IncidentAnalysisModal from '../../components/IncidentAnalysisModal';
+import QuickSilenceModal from '../../components/QuickSilenceModal';
+import api from '../../services/api';
+import TableLoader from '../../components/TableLoader';
+import TableError from '../../components/TableError';
+
+const IncidentListPage: React.FC = () => {
+    const [incidents, setIncidents] = useState<Incident[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [totalIncidents, setTotalIncidents] = useState(0);
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [filters, setFilters] = useState<IncidentFilters>({});
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+    const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
+    const [isQuickSilenceModalOpen, setIsQuickSilenceModalOpen] = useState(false);
+    const [silencingIncident, setSilencingIncident] = useState<Incident | null>(null);
+    const [analysisReport, setAnalysisReport] = useState<IncidentAnalysis | MultiIncidentAnalysis | string | null>(null);
+    const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
+
+    const { incidentId } = useParams<{ incidentId: string }>();
+    const navigate = useNavigate();
+
+    const fetchIncidents = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const params = {
+                page: currentPage,
+                page_size: pageSize,
+                ...filters,
+            };
+            const { data } = await api.get<{ items: Incident[], total: number }>('/events', { params });
+            setIncidents(data.items);
+            setTotalIncidents(data.total);
+        } catch (err) {
+            setError('無法獲取事件列表。');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [currentPage, pageSize, filters]);
+
+    useEffect(() => {
+        fetchIncidents();
+    }, [fetchIncidents]);
+    
+    useEffect(() => {
+        setSelectedIds([]);
+    }, [currentPage, pageSize, filters]);
+
+    const handleAcknowledge = async (ids: string[]) => {
+        await Promise.all(ids.map(id => api.post(`/events/${id}/actions`, { action: 'acknowledge' })));
+        fetchIncidents();
+    };
+
+    const handleResolve = async (ids: string[]) => {
+        await Promise.all(ids.map(id => api.post(`/events/${id}/actions`, { action: 'resolve' })));
+        fetchIncidents();
+    };
+
+    const handleQuickSilence = (incident: Incident) => {
+        setSilencingIncident(incident);
+        setIsQuickSilenceModalOpen(true);
+    };
+
+    const handleConfirmSilence = async (id: string, durationHours: number) => {
+        const incidentToSilence = incidents.find(inc => inc.id === id);
+        if (!incidentToSilence) return;
+        const now = new Date();
+        const endsAt = new Date(now.getTime() + durationHours * 3600 * 1000);
+
+        const newSilenceRule = {
+            name: `Silence for ${incidentToSilence.id}`,
+            description: `Quick silence for incident: ${incidentToSilence.summary}`,
+            enabled: true,
+            type: 'single',
+            matchers: [{ key: 'resource', operator: '=', value: incidentToSilence.resource }, { key: 'rule', operator: '=', value: incidentToSilence.rule }],
+            schedule: { type: 'single', startsAt: now.toISOString(), endsAt: endsAt.toISOString() },
+            creator: 'Admin User',
+            createdAt: now.toISOString(),
+        };
+
+        try {
+            await api.post('/silence-rules', newSilenceRule);
+            setIsQuickSilenceModalOpen(false);
+            fetchIncidents();
+        } catch (err) {
+            alert('Failed to create silence rule.');
+        }
+    };
+    
+    const handleRunAIAnalysis = async () => {
+        const selectedIncidents = incidents.filter(i => selectedIds.includes(i.id));
+        if (selectedIncidents.length === 0) return;
+
+        setIsAnalysisModalOpen(true);
+        setIsAnalysisLoading(true);
+        setAnalysisReport(null);
+
+        try {
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+            
+            if (selectedIncidents.length === 1) {
+                const incident = selectedIncidents[0];
+                const prompt = `Analyze this incident and provide a root cause analysis and recommendations in Traditional Chinese. Incident: ${JSON.stringify(incident, null, 2)}`;
+                const response = await ai.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: prompt,
+                    config: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: Type.OBJECT,
+                            properties: {
+                                summary: { type: Type.STRING },
+                                root_causes: { type: Type.ARRAY, items: { type: Type.STRING } },
+                                recommendations: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { description: { type: Type.STRING }, action_text: { type: Type.STRING }, action_link: { type: Type.STRING }, playbook_id: { type: Type.STRING } }, required: ['description'] } }
+                            },
+                            required: ['summary', 'root_causes', 'recommendations']
+                        }
+                    }
+                });
+                setAnalysisReport(JSON.parse(response.text));
+            } else {
+                const prompt = `Analyze these incidents to find common patterns and suggest group actions in Traditional Chinese. Incidents: ${JSON.stringify(selectedIncidents, null, 2)}`;
+                const response = await ai.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: prompt,
+                    config: {
+                         responseMimeType: "application/json",
+                         responseSchema: {
+                            type: Type.OBJECT,
+                            properties: {
+                                summary: { type: Type.STRING },
+                                common_patterns: { type: Type.ARRAY, items: { type: Type.STRING } },
+                                group_actions: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { description: { type: Type.STRING }, action_text: { type: Type.STRING }, playbook_id: { type: Type.STRING } }, required: ['description'] } }
+                            },
+                            required: ['summary', 'common_patterns', 'group_actions']
+                        }
+                    }
+                });
+                setAnalysisReport(JSON.parse(response.text));
+            }
+        } catch (err) {
+            console.error(err);
+            setAnalysisReport("Failed to generate AI analysis.");
+        } finally {
+            setIsAnalysisLoading(false);
+        }
+    };
+
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => setSelectedIds(e.target.checked ? incidents.map(i => i.id) : []);
+    const handleSelectOne = (e: React.ChangeEvent<HTMLInputElement>, id: string) => setSelectedIds(prev => e.target.checked ? [...prev, id] : prev.filter(sid => sid !== id));
+    
+    const isAllSelected = incidents.length > 0 && selectedIds.length === incidents.length;
+    const isIndeterminate = selectedIds.length > 0 && selectedIds.length < incidents.length;
+    
+    const getStatusPill = (status: Incident['status']) => {
+        switch (status) {
+            case 'new': return 'bg-orange-500/20 text-orange-400';
+            case 'acknowledged': return 'bg-sky-500/20 text-sky-400';
+            case 'resolved': return 'bg-green-500/20 text-green-400';
+            case 'silenced': return 'bg-slate-500/20 text-slate-400';
+        }
+    };
+    
+    const getSeverityPill = (severity: Incident['severity']) => {
+        switch (severity) {
+            case 'critical': return 'border-red-500 text-red-500';
+            case 'warning': return 'border-orange-500 text-orange-500';
+            case 'info': return 'border-sky-500 text-sky-500';
+        }
+    };
+
+    const leftActions = <ToolbarButton icon="search" text="搜索和篩選" onClick={() => setIsSearchModalOpen(true)} />;
+    
+    const batchActions = (
+        <>
+            <ToolbarButton icon="brain-circuit" text="AI 分析" onClick={handleRunAIAnalysis} ai />
+            <ToolbarButton icon="user-check" text="認領" onClick={() => handleAcknowledge(selectedIds)} />
+            <ToolbarButton icon="check-circle" text="解決" onClick={() => handleResolve(selectedIds)} />
+        </>
+    );
+
+    return (
+        <div className="h-full flex flex-col">
+            <Toolbar 
+                leftActions={leftActions}
+                selectedCount={selectedIds.length}
+                onClearSelection={() => setSelectedIds([])}
+                batchActions={batchActions}
+            />
+            
+            <TableContainer>
+                <div className="flex-1 overflow-y-auto">
+                    <table className="w-full text-sm text-left text-slate-300">
+                        <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
+                            <tr>
+                                <th scope="col" className="p-4 w-12">
+                                     <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded" checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
+                                </th>
+                                <th scope="col" className="px-6 py-3">摘要</th>
+                                <th scope="col" className="px-6 py-3">狀態</th>
+                                <th scope="col" className="px-6 py-3">嚴重程度</th>
+                                <th scope="col" className="px-6 py-3">服務影響</th>
+                                <th scope="col" className="px-6 py-3">處理人</th>
+                                <th scope="col" className="px-6 py-3">觸發時間</th>
+                                <th scope="col" className="px-6 py-3 text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {isLoading ? (
+                                <TableLoader colSpan={8} />
+                            ) : error ? (
+                                <TableError colSpan={8} message={error} onRetry={fetchIncidents} />
+                            ) : incidents.map((inc) => (
+                                <tr key={inc.id} onClick={() => navigate(`/incidents/${inc.id}`)} className={`border-b border-slate-800 cursor-pointer ${selectedIds.includes(inc.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
+                                    <td className="p-4 w-12" onClick={e => e.stopPropagation()}>
+                                        <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded" checked={selectedIds.includes(inc.id)} onChange={(e) => handleSelectOne(e, inc.id)} />
+                                    </td>
+                                    <td className="px-6 py-4 font-medium text-white">{inc.summary}<p className="text-xs text-slate-400 font-normal">{inc.resource}</p></td>
+                                    <td className="px-6 py-4"><span className={`px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusPill(inc.status)}`}>{inc.status}</span></td>
+                                    <td className="px-6 py-4"><span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getSeverityPill(inc.severity)}`}>{inc.severity}</span></td>
+                                    <td className="px-6 py-4">{inc.serviceImpact}</td>
+                                    <td className="px-6 py-4">
+                                        {inc.status === 'new' ? (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleAcknowledge([inc.id]);
+                                                }}
+                                                className="px-3 py-1 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-md transition-colors"
+                                            >
+                                                認領
+                                            </button>
+                                        ) : (
+                                            inc.assignee
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-4">{inc.triggeredAt}</td>
+                                    <td className="px-6 py-4 text-center" onClick={e => e.stopPropagation()}>
+                                        <button onClick={() => handleQuickSilence(inc)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="靜音"><Icon name="bell-off" className="w-4 h-4" /></button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+                <Pagination total={totalIncidents} page={currentPage} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
+            </TableContainer>
+
+            <Drawer isOpen={!!incidentId} onClose={() => navigate('/incidents')} title={`事件詳情: ${incidentId}`} width="w-3/5" extra={<ToolbarButton icon="brain-circuit" text="AI 分析" onClick={() => { if(incidentId) { setSelectedIds([incidentId]); handleRunAIAnalysis(); }}} ai />}>
+                {incidentId && <IncidentDetailPage incidentId={incidentId} />}
+            </Drawer>
+            
+            <UnifiedSearchModal page="incidents" isOpen={isSearchModalOpen} onClose={() => setIsSearchModalOpen(false)} onSearch={(newFilters) => { setFilters(newFilters as IncidentFilters); setIsSearchModalOpen(false); setCurrentPage(1); }} initialFilters={filters} />
+            
+            <IncidentAnalysisModal isOpen={isAnalysisModalOpen} onClose={() => setIsAnalysisModalOpen(false)} title="AI 分析報告" report={analysisReport} isLoading={isAnalysisLoading} />
+            
+            <QuickSilenceModal isOpen={isQuickSilenceModalOpen} onClose={() => setIsQuickSilenceModalOpen(false)} onSave={handleConfirmSilence} incident={silencingIncident} />
+        </div>
+    );
+};
+
+export default IncidentListPage;

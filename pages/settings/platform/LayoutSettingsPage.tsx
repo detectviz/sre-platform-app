@@ -1,0 +1,241 @@
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { LAYOUT_WIDGETS } from '../../../constants';
+import { LayoutWidget } from '../../../types';
+import Icon from '../../../components/Icon';
+import Modal from '../../../components/Modal';
+import api from '../../../services/api';
+
+// FIX: Moved ListItem component outside of DualListSelector to prevent re-creation on every render and fix type errors.
+interface ListItemProps {
+    widget: LayoutWidget;
+    onAction: () => void;
+    actionIcon: string;
+    onMoveUp?: () => void;
+    onMoveDown?: () => void;
+    isSelectedList?: boolean;
+}
+const ListItem: React.FC<ListItemProps> = ({ widget, onAction, actionIcon, onMoveUp, onMoveDown, isSelectedList = false }) => (
+    <div className="flex items-center justify-between p-2 rounded-md hover:bg-slate-700/50">
+        <div>
+            <p className="font-medium">{widget.name}</p>
+            <p className="text-xs text-slate-400">{widget.description}</p>
+        </div>
+        <div className="flex items-center space-x-1">
+            {isSelectedList && (
+                <>
+                    <button onClick={onMoveUp} disabled={!onMoveUp} className="p-1 rounded-full text-slate-400 hover:bg-slate-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"><Icon name="arrow-up" className="w-4 h-4" /></button>
+                    <button onClick={onMoveDown} disabled={!onMoveDown} className="p-1 rounded-full text-slate-400 hover:bg-slate-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"><Icon name="arrow-down" className="w-4 h-4" /></button>
+                </>
+            )}
+             <button onClick={onAction} className="p-1 rounded-full text-slate-400 hover:bg-slate-600 hover:text-white"><Icon name={actionIcon} className="w-4 h-4" /></button>
+        </div>
+    </div>
+);
+
+
+// Dual List Selector Component
+interface DualListSelectorProps {
+    available: LayoutWidget[];
+    selected: LayoutWidget[];
+    onChange: (newSelected: LayoutWidget[]) => void;
+}
+
+const DualListSelector: React.FC<DualListSelectorProps> = ({ available, selected, onChange }) => {
+    const handleAdd = (widget: LayoutWidget) => {
+        onChange([...selected, widget]);
+    };
+
+    const handleRemove = (widget: LayoutWidget) => {
+        onChange(selected.filter(w => w.id !== widget.id));
+    };
+
+    const move = (index: number, direction: 'up' | 'down') => {
+        const newSelected = [...selected];
+        if (direction === 'up' && index > 0) {
+            [newSelected[index - 1], newSelected[index]] = [newSelected[index], newSelected[index - 1]];
+        }
+        if (direction === 'down' && index < newSelected.length - 1) {
+            [newSelected[index + 1], newSelected[index]] = [newSelected[index], newSelected[index + 1]];
+        }
+        onChange(newSelected);
+    };
+
+    return (
+        <div className="grid grid-cols-2 gap-4">
+            <div className="border border-slate-700 rounded-lg p-3">
+                <h3 className="font-semibold mb-2">Available Widgets</h3>
+                <div className="space-y-2 h-64 overflow-y-auto">
+                    {available.map(w => <ListItem key={w.id} widget={w} onAction={() => handleAdd(w)} actionIcon="chevron-right" />)}
+                </div>
+            </div>
+            <div className="border border-slate-700 rounded-lg p-3">
+                <h3 className="font-semibold mb-2">Displayed Widgets</h3>
+                <div className="space-y-2 h-64 overflow-y-auto">
+                    {selected.map((w, i) => <ListItem key={w.id} widget={w} onAction={() => handleRemove(w)} actionIcon="chevron-left" onMoveUp={i > 0 ? () => move(i, 'up') : undefined} onMoveDown={i < selected.length - 1 ? () => move(i, 'down') : undefined} isSelectedList={true} />)}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// FIX: Moved AccordionItem outside of LayoutSettingsPage to prevent re-creation on every render and fix type errors.
+interface AccordionItemProps {
+    pageName: string;
+    layouts: Record<string, string[]>;
+    handleEditClick: (pageName: string) => void;
+}
+const AccordionItem: React.FC<AccordionItemProps> = ({ pageName, layouts, handleEditClick }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const widgetIds = layouts[pageName] || [];
+    const getWidgetById = (id: string) => LAYOUT_WIDGETS.find(w => w.id === id);
+
+    return (
+        <div className="border-b border-slate-800">
+            <button onClick={() => setIsOpen(!isOpen)} className="w-full flex justify-between items-center p-4 text-left hover:bg-slate-800/50 transition-colors">
+                <span className="font-semibold text-lg">{pageName}</span>
+                <Icon name={isOpen ? 'chevron-up' : 'chevron-down'} className="w-5 h-5" />
+            </button>
+            {isOpen && (
+                <div className="p-4 bg-slate-900/50">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <h4 className="font-semibold mb-2">Currently Displayed Cards:</h4>
+                            {widgetIds.length > 0 ? (
+                                <ol className="list-decimal list-inside text-slate-300 space-y-1">
+                                    {widgetIds.map(id => {
+                                        const widget = getWidgetById(id);
+                                        return <li key={id}>{widget?.name || 'Unknown Widget'}</li>;
+                                    })}
+                                </ol>
+                            ) : (
+                                <p className="text-slate-400">No cards are displayed on this page.</p>
+                            )}
+                        </div>
+                        <button onClick={() => handleEditClick(pageName)} className="flex items-center text-sm text-sky-400 hover:text-sky-300 px-3 py-1 rounded-md hover:bg-sky-500/20">
+                            <Icon name="edit-3" className="w-4 h-4 mr-1"/> Edit
+                        </button>
+                    </div>
+                     <p className="text-xs text-slate-500 mt-4">Last updated: 2 days ago by Admin</p>
+                </div>
+            )}
+        </div>
+    );
+  };
+
+// Main Page Component
+const LayoutSettingsPage: React.FC = () => {
+    const [layouts, setLayouts] = useState<Record<string, string[]>>({});
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingPage, setEditingPage] = useState<string | null>(null);
+    const [modalWidgets, setModalWidgets] = useState<LayoutWidget[]>([]);
+
+    const fetchLayouts = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const { data } = await api.get<Record<string, string[]>>('/settings/layouts');
+            setLayouts(data);
+        } catch (err) {
+            setError('無法獲取版面配置。');
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchLayouts();
+    }, [fetchLayouts]);
+
+    const getWidgetById = (id: string) => LAYOUT_WIDGETS.find(w => w.id === id);
+
+    const handleEditClick = (pageName: string) => {
+        setEditingPage(pageName);
+        const widgetIds = layouts[pageName] || [];
+        const selected = widgetIds.map(id => getWidgetById(id)).filter(Boolean) as LayoutWidget[];
+        setModalWidgets(selected);
+        setIsModalOpen(true);
+    };
+  
+    const handleSaveLayout = async () => {
+        if (editingPage) {
+            const newSelectedIds = modalWidgets.map(w => w.id);
+            const updatedLayouts = { ...layouts, [editingPage]: newSelectedIds };
+            try {
+                await api.put('/settings/layouts', updatedLayouts);
+                setLayouts(updatedLayouts);
+                // Also update localStorage for immediate UI feedback on other pages via PageKPIs
+                localStorage.setItem('sre-platform-layouts', JSON.stringify(updatedLayouts));
+                window.dispatchEvent(new Event('storage'));
+                setIsModalOpen(false);
+                setEditingPage(null);
+            } catch (err) {
+                alert('Failed to save layout configuration.');
+            }
+        }
+    };
+
+    const availableWidgetsForModal = LAYOUT_WIDGETS.filter(w => 
+        !modalWidgets.some(selected => selected.id === w.id) &&
+        w.supportedPages.includes(editingPage || '')
+    );
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <Icon name="loader-circle" className="w-8 h-8 animate-spin text-slate-400" />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full text-red-400">
+                <Icon name="alert-circle" className="w-12 h-12 mb-4" />
+                <h2 className="text-xl font-bold">{error}</h2>
+                <button onClick={fetchLayouts} className="mt-4 px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md">
+                    重試
+                </button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-6">
+            <div className="p-4 rounded-lg bg-sky-900/30 border border-sky-700/50 text-sky-300 flex items-center">
+                <Icon name="info" className="w-5 h-5 mr-3 text-sky-400 shrink-0" />
+                <p>Adjust the KPI cards and their order for each hub page. Changes take effect immediately after saving.</p>
+            </div>
+
+            <div className="glass-card rounded-xl">
+                {Object.keys(layouts).map(pageName => <AccordionItem key={pageName} pageName={pageName} layouts={layouts} handleEditClick={handleEditClick} />)}
+            </div>
+
+            <Modal
+                title={`Edit "${editingPage}" KPI Cards`}
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                width="w-2/3"
+                footer={
+                    <div className="flex justify-end space-x-2">
+                        <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md transition-colors">Cancel</button>
+                        <button onClick={handleSaveLayout} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md transition-colors">Save</button>
+                    </div>
+                }
+            >
+                {editingPage && (
+                    <DualListSelector
+                        available={availableWidgetsForModal}
+                        selected={modalWidgets}
+                        onChange={setModalWidgets}
+                    />
+                )}
+            </Modal>
+        </div>
+    );
+};
+
+export default LayoutSettingsPage;
