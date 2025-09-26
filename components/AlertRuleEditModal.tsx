@@ -174,33 +174,76 @@ const Step2 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
         newGroups[groupIndex].conditions.splice(condIndex, 1);
         setFormData({ ...formData, conditionGroups: newGroups });
     };
+
+    const addGroup = () => {
+        const newGroups = [...(formData.conditionGroups || [])];
+        newGroups.push({
+            logic: 'OR',
+            severity: 'warning',
+            conditions: [{ metric: '', operator: '>', threshold: 0, durationMinutes: 5 }]
+        });
+        setFormData({ ...formData, conditionGroups: newGroups });
+    };
+
+    const severityLevels: ('info' | 'warning' | 'critical')[] = ['info', 'warning', 'critical'];
+    const severityStyles = {
+        info: {
+            base: 'bg-slate-800 border-slate-700 text-slate-400 hover:border-sky-500 hover:text-white',
+            active: 'bg-sky-900/50 border-sky-500 text-sky-300'
+        },
+        warning: {
+            base: 'bg-slate-800 border-slate-700 text-slate-400 hover:border-orange-500 hover:text-white',
+            active: 'bg-orange-900/50 border-orange-500 text-orange-300'
+        },
+        critical: {
+            base: 'bg-slate-800 border-slate-700 text-slate-400 hover:border-red-500 hover:text-white',
+            active: 'bg-red-900/50 border-red-500 text-red-300'
+        }
+    };
     
     return (
         <div className="space-y-4 px-4">
             {formData.conditionGroups?.map((group, groupIndex) => (
-                <div key={groupIndex} className="p-4 border border-slate-700 rounded-lg space-y-3 bg-slate-800/20">
+                <div key={groupIndex} className="p-4 border border-slate-700 rounded-lg space-y-4 bg-slate-800/20">
                     <div className="flex justify-between items-center">
                          <h4 className="font-semibold text-white">條件群組 #{groupIndex + 1} (OR)</h4>
-                         <select value={group.severity} onChange={e => handleGroupChange(groupIndex, 'severity', e.target.value)} className="bg-slate-700 border border-slate-600 rounded-md px-2 py-1 text-sm">
-                            <option value="info">INFO</option><option value="warning">WARNING</option><option value="critical">CRITICAL</option>
-                        </select>
+                         <div className="flex items-center space-x-2">
+                            <span className="text-sm text-slate-400">事件等級:</span>
+                            {severityLevels.map(level => {
+                                const styles = severityStyles[level];
+                                const isActive = group.severity === level;
+                                return (
+                                    <button
+                                        key={level}
+                                        type="button"
+                                        onClick={() => handleGroupChange(groupIndex, 'severity', level)}
+                                        className={`px-4 py-1.5 text-sm font-semibold rounded-md border transition-colors uppercase ${isActive ? styles.active : styles.base}`}
+                                    >
+                                        {level}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
                     {group.conditions.map((cond, condIndex) => (
                         <div key={condIndex} className="flex items-center space-x-2">
-                            <span className="text-slate-400 text-sm">AND</span>
-                            <input type="text" value={cond.metric} onChange={e => handleConditionChange(groupIndex, condIndex, 'metric', e.target.value)} className="flex-grow bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" placeholder="Metric" />
+                            <span className="text-slate-400 text-sm font-medium">AND</span>
+                            <input type="text" value={cond.metric} onChange={e => handleConditionChange(groupIndex, condIndex, 'metric', e.target.value)} className="flex-grow bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" placeholder="Metric (e.g., cpu.usage)" />
                             <select value={cond.operator} onChange={e => handleConditionChange(groupIndex, condIndex, 'operator', e.target.value)} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
                                 <option value=">">&gt;</option><option value="<">&lt;</option><option value=">=">&gt;=</option><option value="<=">&lt;=</option>
                             </select>
                             <input type="number" value={cond.threshold} onChange={e => handleConditionChange(groupIndex, condIndex, 'threshold', parseFloat(e.target.value))} className="w-24 bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" placeholder="Threshold" />
-                            <input type="number" value={cond.durationMinutes} onChange={e => handleConditionChange(groupIndex, condIndex, 'durationMinutes', parseInt(e.target.value))} className="w-32 bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" placeholder="Duration (min)" />
+                            <div className="relative">
+                                <input type="number" value={cond.durationMinutes} onChange={e => handleConditionChange(groupIndex, condIndex, 'durationMinutes', parseInt(e.target.value))} className="w-28 bg-slate-800 border border-slate-700 rounded-md pl-3 pr-12 py-2 text-sm" placeholder="Duration" />
+                                <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 text-sm">min</span>
+                            </div>
                             <button onClick={() => removeCondition(groupIndex, condIndex)} className="p-2 text-slate-400 hover:text-red-400"><Icon name="trash-2" className="w-4 h-4" /></button>
                         </div>
                     ))}
                     <button onClick={() => addCondition(groupIndex)} className="text-sm text-sky-400 hover:text-sky-300 flex items-center"><Icon name="plus" className="w-4 h-4 mr-1" /> 新增 AND 條件</button>
                 </div>
             ))}
-             <button onClick={() => {/* Add new OR group */}} className="text-sm text-sky-400 hover:text-sky-300 flex items-center"><Icon name="plus-circle" className="w-4 h-4 mr-1" /> 新增 OR 條件群組</button>
+             <button onClick={addGroup} className="text-sm text-sky-400 hover:text-sky-300 flex items-center"><Icon name="plus-circle" className="w-4 h-4 mr-1" /> 新增 OR 條件群組</button>
         </div>
     );
 };

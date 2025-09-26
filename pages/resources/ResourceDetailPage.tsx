@@ -34,7 +34,7 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resourceId }) =
     try {
       const [resourceRes, incidentsRes, metricsRes] = await Promise.all([
           api.get<Resource>(`/resources/${resourceId}`),
-          api.get<{ items: Incident[] }>('/events', { params: { resource_name: resourceId, page_size: 3 } }), // Assuming API can filter by name
+          api.get<{ items: Incident[] }>('/incidents', { params: { resource_name: resourceId, page_size: 3 } }), // Assuming API can filter by name
           api.get<MetricsData>(`/resources/${resourceId}/metrics`)
       ]);
       

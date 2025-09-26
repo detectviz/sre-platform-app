@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { NotificationItem } from '../types';
 import Icon from './Icon';
@@ -24,19 +24,41 @@ const NotificationCenter: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        if (isOpen) {
-            setIsLoading(true);
-            api.get<NotificationItem[]>('/notifications')
-                .then(res => setNotifications(res.data))
-                .catch(err => console.error("Failed to fetch notifications", err))
-                .finally(() => setIsLoading(false));
-        }
-    }, [isOpen]);
+    const [isLoading, setIsLoading] = useState(false); // Only for dropdown content
 
     const unreadCount = notifications.filter(n => n.status === 'unread').length;
+
+    // Fetch notifications function
+    const fetchNotifications = useCallback((setLoading: boolean) => {
+        if (setLoading) {
+            setIsLoading(true);
+        }
+        api.get<NotificationItem[]>('/notifications')
+            .then(res => {
+                setNotifications(res.data);
+            })
+            .catch(err => console.error("Failed to fetch notifications", err))
+            .finally(() => {
+                if (setLoading) {
+                    setIsLoading(false);
+                }
+            });
+    }, []);
+
+    // Effect for polling
+    useEffect(() => {
+        fetchNotifications(false); // Initial fetch without loading spinner
+        const interval = setInterval(() => fetchNotifications(false), 30000); // Poll every 30 seconds
+        return () => clearInterval(interval);
+    }, [fetchNotifications]);
+
+    // Effect to handle dropdown opening
+    useEffect(() => {
+        if (isOpen) {
+            fetchNotifications(true); // Fetch with loading spinner when opened
+        }
+    }, [isOpen, fetchNotifications]);
+
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -59,17 +81,17 @@ const NotificationCenter: React.FC = () => {
         setNotifications(notifications.map(n => ({ ...n, status: 'read' })));
     };
 
-    // FIX: Add JSX return to complete the component, fixing type errors.
     return (
         <div className="relative" ref={dropdownRef}>
-            <button onClick={() => setIsOpen(!isOpen)} className="relative p-2 rounded-full hover:bg-slate-700/50">
-                <Icon name="bell" className="w-5 h-5" />
-                {unreadCount > 0 && (
-                    <span className="absolute top-1.5 right-1.5 flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                    </span>
-                )}
+            <button onClick={() => setIsOpen(!isOpen)} className="p-2 rounded-full hover:bg-slate-700/50">
+                <div className="relative">
+                    <Icon name="bell" className="w-5 h-5 text-slate-300" />
+                    {unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-red-600 text-white text-[10px] font-bold border-2 border-slate-900">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                    )}
+                </div>
             </button>
             {isOpen && (
                 <div className="absolute right-0 mt-2 w-96 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 z-50 flex flex-col animate-fade-in-down" style={{ maxHeight: '80vh' }}>
@@ -123,5 +145,4 @@ const NotificationCenter: React.FC = () => {
     );
 };
 
-// FIX: Add default export to fix module import error.
 export default NotificationCenter;

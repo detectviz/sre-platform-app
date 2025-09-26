@@ -194,7 +194,7 @@ const LogExplorerPage: React.FC = () => {
                 rightActions={rightActions}
             />
             
-            <div className="shrink-0 h-24">
+            <div className="shrink-0 h-40">
                 <EChartsReact option={histogramOption} />
             </div>
 

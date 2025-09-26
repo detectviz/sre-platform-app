@@ -1,12 +1,10 @@
 openapi: 3.1.0
 info:
   title: SRE 平台 API 契約
-  version: 2.9.0
+  version: 2.16.0
   description: |
-    # 版本 2.9.0 (API 契約重構)
-    - **術語統一**: 將所有 `/events` 相關端點重命名為 `/incidents`，以符合 SRE 標準術語。
-    - **AI 功能整合**: 新增 `/ai` 頂層路徑，將所有 AI 功能（簡報、分析、生成）集中管理，提升 API 組織性。
-    - **目標**: 建立一個更清晰、一致且易於維護的 API 契約。
+    # 版本 2.16.0
+    - **功能**: 新增 AI 鏈路追蹤瓶頸分析功能。`POST /ai/traces/analyze`。
 
     本文件定義 SRE 平台前後端之間的資料契約，作為後端開發的唯一真實來源 (SSOT)。
 servers:
@@ -225,6 +223,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LogAnalysis'
+
+  /ai/traces/analyze:
+    post:
+      tags: [AI Copilot]
+      summary: 對指定的鏈路追蹤進行 AI 瓶頸分析
+      operationId: generateTraceAnalysis
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                trace_id: { type: string }
+      responses:
+        "200":
+          description: 回傳 AI 生成的追蹤分析報告。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TraceAnalysis'
 
   /ai/infra/risk-prediction:
     get:
@@ -2244,6 +2262,25 @@ components:
           type: array
           items:
             type: string
+    TraceAnalysis:
+      type: object
+      properties:
+        summary: { type: string }
+        bottlenecks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Bottleneck'
+        recommendations:
+          type: array
+          items:
+            type: string
+    Bottleneck:
+      type: object
+      properties:
+        span_name: { type: string }
+        service_name: { type: string }
+        duration_percent: { type: number }
+        description: { type: string }
     ServiceHealthData:
       type: object
       properties:
@@ -2451,3 +2488,7 @@ components:
       $ref: "./types.ts#/components/schemas/LogEntry"
     Trace:
       $ref: "./types.ts#/components/schemas/Trace"
+    TraceAnalysis:
+      $ref: "./types.ts#/components/schemas/TraceAnalysis"
+    LogAnalysis:
+      $ref: "./types.ts#/components/schemas/LogAnalysis"

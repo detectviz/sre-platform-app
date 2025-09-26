@@ -90,6 +90,9 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 if (id === 'logs' && action === 'summarize') {
                     return DB.logAnalysis;
                 }
+                if (id === 'traces' && action === 'analyze') {
+                    return DB.traceAnalysis;
+                }
                 break;
             }
             
@@ -150,6 +153,9 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 return paginate(DB.incidents, params.page, params.page_size);
             }
             case 'POST /incidents': {
+                if (id === 'import') {
+                    return { message: '成功匯入 12 筆事件。' };
+                }
                 if (action === 'actions') {
                     const { action: incidentAction } = body;
                     const index = DB.incidents.findIndex((i: any) => i.id === id);
@@ -364,6 +370,38 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
             }
 
             // Analysis
+            case 'GET /analysis': {
+                if (id === 'overview') {
+                    return {
+                        health_score_data: Array.from({ length: 60 }, (_, i) => ({ name: new Date(Date.now() - (59 - i) * 60000).toString(), value: [new Date(Date.now() - (59 - i) * 60000), 95 + Math.random() * 5] })),
+                        event_correlation_data: DB.eventCorrelationData,
+                        recent_logs: DB.logs.slice(0, 5)
+                    };
+                }
+                if (id === 'capacity-planning') {
+                    const generateTrendData = (base: number, trend: number, variance: number) => {
+                        const historical: [string, number][] = []; let lastValue = base;
+                        for (let i = 60; i > 0; i--) { historical.push([new Date(Date.now() - i * 24 * 3600 * 1000).toISOString(), Math.max(0, Math.min(100, lastValue += (Math.random() - 0.5) * variance))]); }
+                        const forecast: [string, number][] = [[historical[historical.length - 1][0], historical[historical.length - 1][1]]]; let forecastValue = lastValue;
+                        for (let i = 1; i < 30; i++) { forecast.push([new Date(Date.now() + i * 24 * 3600 * 1000).toISOString(), Math.max(0, Math.min(100, forecastValue += trend + (Math.random() - 0.5) * variance * 1.5))]); }
+                        return { historical, forecast };
+                    };
+                    const cpuForecast = generateTrendData(45, 0.5, 5).forecast;
+                    return {
+                        trends: { cpu: generateTrendData(45, 0.5, 5), memory: generateTrendData(60, 0.2, 3), storage: generateTrendData(70, 0.1, 1) },
+                        forecast_model: {
+                            prediction: cpuForecast,
+                            confidence_band: [
+                                cpuForecast.map(([time, val]) => [time, Math.max(0, val - 5 - Math.random() * 5)]),
+                                cpuForecast.map(([time, val]) => [time, Math.min(100, val + 5 + Math.random() * 5)])
+                            ]
+                        },
+                        suggestions: DB.capacitySuggestions,
+                        resource_analysis: DB.capacityResourceAnalysis,
+                    };
+                }
+                break;
+            }
             case 'GET /logs': return paginate(DB.logs, params.page, params.page_size);
             case 'GET /traces': return DB.traces;
 

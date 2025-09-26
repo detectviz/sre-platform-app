@@ -8,7 +8,9 @@ import {
     IncidentAnalysis,
     MultiIncidentAnalysis,
     LogAnalysis,
-    LogLevel
+    LogLevel,
+    TraceAnalysis,
+    Span
 } from '../types';
 
 // Helper to generate UUIDs
@@ -107,36 +109,105 @@ const MOCK_LOGIN_HISTORY: LoginHistoryRecord[] = [
 const MOCK_LOGS: LogEntry[] = [
     { id: 'log-1', timestamp: new Date().toISOString(), level: 'error', service: 'payment-service', message: 'Failed to process payment', details: { transactionId: 'txn-123' } },
 ];
+const trace1StartTime = Date.now() - 100000;
 const MOCK_TRACES: Trace[] = [
-    { traceId: 'trace-1', spans: [], root: { serviceName: 'api-gateway', operationName: 'POST /checkout' }, duration: 1250.5, services: ['api-gateway', 'payment-service'], errorCount: 1, startTime: Date.now() - 100000 },
+    { 
+        traceId: 'trace-1', 
+        spans: [
+            { traceId: 'trace-1', spanId: 'span-1a', operationName: 'POST /checkout', serviceName: 'api-gateway', startTime: trace1StartTime, duration: 1250, status: 'error', tags: { 'http.status_code': 500 }, logs: [] },
+            { traceId: 'trace-1', spanId: 'span-1b', parentId: 'span-1a', operationName: 'authorize', serviceName: 'auth-service', startTime: trace1StartTime + 50, duration: 200, status: 'ok', tags: {}, logs: [] },
+            { traceId: 'trace-1', spanId: 'span-1c', parentId: 'span-1a', operationName: 'processPayment', serviceName: 'payment-service', startTime: trace1StartTime + 250, duration: 1000, status: 'error', tags: { 'error': true, 'db.statement': 'SELECT * FROM users' }, logs: [] },
+            { traceId: 'trace-1', spanId: 'span-1d', parentId: 'span-1c', operationName: 'DB Query', serviceName: 'payment-db', startTime: trace1StartTime + 300, duration: 800, status: 'error', tags: { 'db.statement': 'SELECT * FROM credit_cards WHERE user_id = ?' }, logs: [] }
+        ], 
+        root: { serviceName: 'api-gateway', operationName: 'POST /checkout' }, 
+        duration: 1250.5, 
+        services: ['api-gateway', 'auth-service', 'payment-service', 'payment-db'], 
+        errorCount: 3, 
+        startTime: trace1StartTime
+    },
+    {
+        traceId: 'trace-2',
+        spans: [
+             { traceId: 'trace-2', spanId: 'span-2a', operationName: 'GET /products', serviceName: 'product-service', startTime: trace1StartTime + 2000, duration: 350, status: 'ok', tags: { 'http.status_code': 200 }, logs: [] }
+        ],
+        root: { serviceName: 'product-service', operationName: 'GET /products' },
+        duration: 350,
+        services: ['product-service'],
+        errorCount: 0,
+        startTime: trace1StartTime + 2000
+    }
 ];
 const MOCK_MAIL_SETTINGS: MailSettings = { smtpServer: 'smtp.example.com', port: 587, username: 'noreply@sre.platform', senderName: 'SRE Platform', senderEmail: 'noreply@sre.platform', encryption: 'tls' };
 const MOCK_AUTH_SETTINGS: AuthSettings = { provider: 'Keycloak', enabled: true, clientId: 'sre-platform-client', clientSecret: '...', realm: 'sre', authUrl: '...', tokenUrl: '...', userInfoUrl: '...' };
 const LAYOUT_WIDGETS: LayoutWidget[] = [
+    // Incident Management
     { id: 'incident_pending_count', name: '待處理事件', description: '顯示目前狀態為「新」的事件總數。', supportedPages: ['事件管理'] },
     { id: 'incident_in_progress', name: '處理中事件', description: '顯示目前狀態為「已認領」的事件總數。', supportedPages: ['事件管理'] },
     { id: 'incident_resolved_today', name: '今日已解決', description: '顯示今天已解決的事件總數。', supportedPages: ['事件管理'] },
+    // SREWarRoom
     { id: 'sre_pending_incidents', name: '待處理事件', description: '顯示待處理的事件總數。', supportedPages: ['SREWarRoom'] },
     { id: 'sre_in_progress', name: '處理中', description: '顯示正在處理中的事件。', supportedPages: ['SREWarRoom'] },
     { id: 'sre_resolved_today', name: '今日已解決', description: '顯示今日已解決的事件。', supportedPages: ['SREWarRoom'] },
     { id: 'sre_automation_rate', name: '自動化率', description: '顯示自動化處理的事件比例。', supportedPages: ['SREWarRoom'] },
+    // InfrastructureInsights
     { id: 'infra_total_resources', name: '總資源數', description: '顯示所有監控的資源總數。', supportedPages: ['InfrastructureInsights'] },
     { id: 'infra_running', name: '運行中', description: '顯示當前運行中的資源數量。', supportedPages: ['InfrastructureInsights'] },
     { id: 'infra_anomalies', name: '異常', description: '顯示存在異常狀態的資源數量。', supportedPages: ['InfrastructureInsights'] },
     { id: 'infra_offline', name: '離線', description: '顯示當前離線的資源數量。', supportedPages: ['InfrastructureInsights'] },
+    
+    // NEW WIDGETS START HERE
+    // Resource Management
+    { id: 'resource_total_count', name: '資源總數', description: '顯示所有已註冊的資源總數。', supportedPages: ['資源管理'] },
+    { id: 'resource_health_rate', name: '資源健康率', description: '處於健康狀態的資源百分比。', supportedPages: ['資源管理'] },
+    { id: 'resource_alerting', name: '告警中資源', description: '目前處於警告或嚴重狀態的資源數。', supportedPages: ['資源管理'] },
+
+    // Dashboard Management
+    { id: 'dashboard_total_count', name: '儀表板總數', description: '平台中所有儀表板的數量。', supportedPages: ['儀表板管理'] },
+    { id: 'dashboard_custom_count', name: '自訂儀表板', description: '使用者自訂的內建儀表板數量。', supportedPages: ['儀表板管理'] },
+    { id: 'dashboard_grafana_count', name: 'Grafana 儀表板', description: '從 Grafana 連結的儀表板數量。', supportedPages: ['儀表板管理'] },
+
+    // Analysis Center
+    { id: 'analysis_critical_anomalies', name: '嚴重異常 (24H)', description: '過去 24 小時內偵測到的嚴重異常事件。', supportedPages: ['分析中心'] },
+    { id: 'analysis_log_volume', name: '日誌量 (24H)', description: '過去 24 小時的總日誌量。', supportedPages: ['分析中心'] },
+    { id: 'analysis_trace_errors', name: '追蹤錯誤率', description: '包含錯誤的追蹤佔比。', supportedPages: ['分析中心'] },
+    
+    // Automation Center
+    { id: 'automation_runs_today', name: '今日運行次數', description: '所有自動化腳本今日的總運行次數。', supportedPages: ['自動化中心'] },
+    { id: 'automation_success_rate', name: '成功率', description: '自動化腳本的整體執行成功率。', supportedPages: ['自動化中心'] },
+    { id: 'automation_suppressed_alerts', name: '已抑制告警', description: '因自動化成功執行而抑制的告警數。', supportedPages: ['自動化中心'] },
+
+    // IAM
+    { id: 'iam_total_users', name: '使用者總數', description: '平台中的總使用者帳號數。', supportedPages: ['身份與存取管理'] },
+    { id: 'iam_active_users', name: '活躍使用者', description: '過去 7 天内有登入活動的使用者。', supportedPages: ['身份與存取管理'] },
+    { id: 'iam_login_failures', name: '登入失敗 (24H)', description: '過去 24 小時內的登入失敗次數。', supportedPages: ['身份與存取管理'] },
+
+    // Notification Management
+    { id: 'notification_sent_today', name: '今日已發送', description: '今日透過所有管道發送的通知總數。', supportedPages: ['通知管理'] },
+    { id: 'notification_failure_rate', name: '發送失敗率', description: '通知發送的整體失敗率。', supportedPages: ['通知管理'] },
+    { id: 'notification_channels', name: '啟用中管道', description: '目前已啟用並可用的通知管道數。', supportedPages: ['通知管理'] },
+
+    // Platform Settings
+    { id: 'platform_tags_defined', name: '標籤總數', description: '平台中定義的標籤鍵總數。', supportedPages: ['平台設定'] },
+    { id: 'platform_auth_provider', name: '認證提供商', description: '目前使用的身份驗證提供商。', supportedPages: ['平台設定'] },
+    { id: 'platform_mail_status', name: '郵件服務狀態', description: '郵件發送服務的健康狀態。', supportedPages: ['平台設定'] },
+
+    // Personal Settings
+    { id: 'profile_login_count_7d', name: '最近 7 日登入次數', description: '過去 7 天內的成功登入次數。', supportedPages: ['個人設定'] },
+    { id: 'profile_last_password_change', name: '上次密碼變更', description: '您的密碼上次更新的時間。', supportedPages: ['個人設定'] },
+    { id: 'profile_mfa_status', name: 'MFA 狀態', description: '多因素驗證 (MFA) 的啟用狀態。', supportedPages: ['個人設定'] },
 ];
 const DEFAULT_LAYOUTS: Record<string, string[]> = {
     "SREWarRoom": ['sre_pending_incidents', 'sre_in_progress', 'sre_resolved_today', 'sre_automation_rate'],
     "InfrastructureInsights": ['infra_total_resources', 'infra_running', 'infra_anomalies', 'infra_offline'],
     "事件管理": ['incident_pending_count', 'incident_in_progress', 'incident_resolved_today'],
     "資源管理": ['resource_total_count', 'resource_health_rate', 'resource_alerting'],
+    "儀表板管理": ['dashboard_total_count', 'dashboard_custom_count', 'dashboard_grafana_count'],
+    "分析中心": ['analysis_critical_anomalies', 'analysis_log_volume', 'analysis_trace_errors'],
     "自動化中心": ['automation_runs_today', 'automation_success_rate', 'automation_suppressed_alerts'],
-    "儀表板管理": [],
-    "分析中心": [],
-    "身份與存取管理": [],
-    "通知管理": [],
-    "平台設定": [],
-    "個人設定": [],
+    "身份與存取管理": ['iam_total_users', 'iam_active_users', 'iam_login_failures'],
+    "通知管理": ['notification_sent_today', 'notification_failure_rate', 'notification_channels'],
+    "平台設定": ['platform_tags_defined', 'platform_auth_provider', 'platform_mail_status'],
+    "個人設定": ['profile_login_count_7d', 'profile_last_password_change', 'profile_mfa_status'],
 };
 const KPI_DATA: Record<string, any> = {
     'incident_pending_count': { value: '5', description: '2 嚴重', icon: 'shield-alert', iconBgColor: 'bg-red-500' },
@@ -150,6 +221,40 @@ const KPI_DATA: Record<string, any> = {
     'infra_running': { value: '115', description: '95.8% 健康', icon: 'heart-pulse', iconBgColor: 'bg-green-500' },
     'infra_anomalies': { value: '5', description: '4.2% 需要關注', icon: 'siren', iconBgColor: 'bg-orange-500' },
     'infra_offline': { value: '0', description: '0% 離線', icon: 'cloud-off', iconBgColor: 'bg-slate-500' },
+    
+    // NEW DATA
+    'resource_total_count': { value: '345', description: '↑2% vs last week', icon: 'database', iconBgColor: 'bg-blue-500' },
+    'resource_health_rate': { value: '98.5%', description: '340 健康', icon: 'heart-pulse', iconBgColor: 'bg-green-500' },
+    'resource_alerting': { value: '5', description: '3 critical, 2 warning', icon: 'siren', iconBgColor: 'bg-orange-500' },
+
+    'dashboard_total_count': { value: '28', description: '↑3 vs last month', icon: 'layout-dashboard', iconBgColor: 'bg-indigo-500' },
+    'dashboard_custom_count': { value: '12', description: 'Built-in dashboards', icon: 'layout', iconBgColor: 'bg-sky-500' },
+    'dashboard_grafana_count': { value: '16', description: 'Linked from Grafana', icon: 'area-chart', iconBgColor: 'bg-green-500' },
+
+    'analysis_critical_anomalies': { value: '3', description: '↑1 vs yesterday', icon: 'zap', iconBgColor: 'bg-red-500' },
+    'analysis_log_volume': { value: '25.1 GB', description: '↓5% vs yesterday', icon: 'file-text', iconBgColor: 'bg-teal-500' },
+    'analysis_trace_errors': { value: '1.2%', description: '↑0.3% vs last hour', icon: 'git-fork', iconBgColor: 'bg-orange-500' },
+    
+    'automation_runs_today': { value: '1,283', description: '↑10% vs yesterday', icon: 'bot', iconBgColor: 'bg-sky-500' },
+    'automation_success_rate': { value: '99.8%', description: '2 failures', icon: 'check-circle', iconBgColor: 'bg-green-500' },
+    'automation_suppressed_alerts': { value: '45', description: 'Saved 2 hours of toil', icon: 'bell-off', iconBgColor: 'bg-purple-500' },
+
+    'iam_total_users': { value: '124', description: '↑5 new users this month', icon: 'users', iconBgColor: 'bg-cyan-500' },
+    'iam_active_users': { value: '98', description: '79% active rate', icon: 'user-check', iconBgColor: 'bg-green-500' },
+    'iam_login_failures': { value: '8', description: 'From 3 unique IPs', icon: 'shield-off', iconBgColor: 'bg-red-500' },
+
+    'notification_sent_today': { value: '342', description: '25 critical alerts', icon: 'send', iconBgColor: 'bg-blue-500' },
+    'notification_failure_rate': { value: '0.5%', description: '2 failed sends', icon: 'alert-triangle', iconBgColor: 'bg-orange-500' },
+    'notification_channels': { value: '8', description: 'Email, Slack, Webhook', icon: 'share-2', iconBgColor: 'bg-teal-500' },
+
+    'platform_tags_defined': { value: '42', description: '12 required tags', icon: 'tags', iconBgColor: 'bg-indigo-500' },
+    'platform_auth_provider': { value: 'Keycloak', description: 'OIDC Enabled', icon: 'key', iconBgColor: 'bg-yellow-500' },
+    'platform_mail_status': { value: 'Healthy', description: 'SMTP service is operational', icon: 'mail', iconBgColor: 'bg-green-500' },
+
+    // Personal Settings
+    'profile_login_count_7d': { value: '8', description: '來自 2 個不同 IP', icon: 'log-in', iconBgColor: 'bg-blue-500' },
+    'profile_last_password_change': { value: '3 天前', description: '建議每 90 天更新一次', icon: 'key', iconBgColor: 'bg-yellow-500' },
+    'profile_mfa_status': { value: '已啟用', description: '您的帳戶受到保護', icon: 'shield-check', iconBgColor: 'bg-green-500' },
 };
 const MOCK_AI_BRIEFING = {
     "stability_summary": "系統整體穩定，但支付 API 錯誤率略高於正常水平，需持續關注。",
@@ -217,6 +322,62 @@ const MOCK_LOG_ANALYSIS: LogAnalysis = {
     ]
 };
 
+const MOCK_TRACE_ANALYSIS: TraceAnalysis = {
+    summary: '此追蹤的主要延遲來自 `payment-service` 中的 `processPayment` 操作，佔總時長的 85%。瓶頸在於對 `payment-db` 的一次慢查詢，耗時超過 1 秒。',
+    bottlenecks: [
+        {
+            span_name: 'SELECT user_balance',
+            service_name: 'payment-db',
+            duration_percent: 60,
+            description: '資料庫查詢耗時 1050ms，缺少索引。'
+        },
+        {
+            span_name: 'HTTP POST /api/v1/receipts',
+            service_name: 'receipt-service',
+            duration_percent: 20,
+            description: '下游收據服務回應緩慢，耗時 350ms。'
+        }
+    ],
+    recommendations: [
+        '為 `user_transactions` 表的 `user_id` 和 `timestamp` 欄位新增複合索引。',
+        '為對 `receipt-service` 的呼叫增加非同步處理或快取機制。',
+        '檢視 `processPayment` 操作中的業務邏輯，確認是否有可優化的部分。'
+    ]
+};
+
+const MOCK_EVENT_CORRELATION_DATA = {
+    nodes: [
+        { id: '0', name: 'High DB CPU', value: 10, symbolSize: 50, category: 0 },
+        { id: '1', name: 'API Latency Spike', value: 8, symbolSize: 40, category: 1 },
+        { id: '2', name: 'Deployment', value: 5, symbolSize: 30, category: 2 },
+        { id: '3', name: '5xx Errors', value: 9, symbolSize: 45, category: 1 },
+        { id: '4', name: 'Low Disk Space', value: 6, symbolSize: 35, category: 0 },
+    ],
+    links: [
+        { source: '0', target: '1' },
+        { source: '1', target: '3' },
+        { source: '2', target: '1' },
+        { source: '0', target: '4' },
+    ],
+    categories: [
+        { name: 'DB Alerts' },
+        { name: 'API Errors' },
+        { name: 'Infra Changes' },
+    ],
+};
+const MOCK_CAPACITY_SUGGESTIONS = [
+    { title: '擴展 Kubernetes 生產集群', impact: '高' as '高', effort: '中' as '中', details: '`k8s-prod-cluster` 的 CPU 預計在 15 天內達到 95%。建議增加 2 個節點以避免效能下降。' },
+    { title: '升級 RDS 資料庫實例類型', impact: '中' as '中', effort: '高' as '高', details: '`rds-prod-main` 的記憶體使用率持續增長。建議從 `db.t3.large` 升級至 `db.t3.xlarge`。' },
+    { title: '清理舊的 S3 儲存桶日誌', impact: '低' as '低', effort: '低' as '低', details: '`s3-log-archive` 儲存桶已超過 5TB。建議設定生命週期規則以降低成本。' },
+];
+const MOCK_CAPACITY_RESOURCE_ANALYSIS = [
+    { name: 'api-gateway-prod-01', current: '55%', predicted: '75%', recommended: '擴展', cost: '+$150/月' },
+    { name: 'rds-prod-main', current: '62%', predicted: '68%', recommended: '觀察', cost: '-' },
+    { name: 'k8s-prod-cluster-node-1', current: '85%', predicted: '98%', recommended: '緊急擴展', cost: '+$200/月' },
+    { name: 'elasticache-prod-03', current: '40%', predicted: '45%', recommended: '觀察', cost: '-' },
+];
+
+
 function createInitialDB() {
     // Deep clone to make it mutable
     return {
@@ -271,6 +432,10 @@ function createInitialDB() {
         multiIncidentAnalysis: JSON.parse(JSON.stringify(MOCK_MULTI_INCIDENT_ANALYSIS)),
         generatedPlaybook: JSON.parse(JSON.stringify(MOCK_GENERATED_PLAYBOOK)),
         logAnalysis: JSON.parse(JSON.stringify(MOCK_LOG_ANALYSIS)),
+        traceAnalysis: JSON.parse(JSON.stringify(MOCK_TRACE_ANALYSIS)),
+        eventCorrelationData: JSON.parse(JSON.stringify(MOCK_EVENT_CORRELATION_DATA)),
+        capacitySuggestions: JSON.parse(JSON.stringify(MOCK_CAPACITY_SUGGESTIONS)),
+        capacityResourceAnalysis: JSON.parse(JSON.stringify(MOCK_CAPACITY_RESOURCE_ANALYSIS)),
     };
 }
 

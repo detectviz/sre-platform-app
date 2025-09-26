@@ -1,79 +1,168 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Modal from './Modal';
 import FormRow from './FormRow';
-import Icon from './Icon';
-import { AutomationTrigger, TriggerType, AutomationPlaybook } from '../types';
+import { AutomationTrigger, TriggerType, AutomationPlaybook, TagDefinition } from '../types';
 import api from '../services/api';
+import Icon from './Icon';
 
 interface AutomationTriggerEditModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (trigger: AutomationTrigger) => void;
+  onSave: (trigger: Partial<AutomationTrigger>) => void;
   trigger: AutomationTrigger | null;
 }
+
+const parseConditions = (str: string | undefined): { key: string; operator: string; value: string }[] => {
+    if (!str || !str.trim()) return [{ key: '', operator: '=', value: '' }];
+    return str.split(' AND ').map(part => {
+        const match = part.match(/([a-zA-Z0-9_.-]+)\s*(!=|~=|=)\s*(.*)/);
+        if (match) {
+            let value = match[3].trim();
+            // remove quotes
+            if ((value.startsWith("'") && value.endsWith("'")) || (value.startsWith('"') && value.endsWith('"'))) {
+                value = value.substring(1, value.length - 1);
+            }
+            return { key: match[1].trim(), operator: match[2].trim(), value: value };
+        }
+        return { key: '', operator: '=', value: '' };
+    });
+};
+
+const serializeConditions = (conditions: { key: string; operator: string; value: string }[]): string => {
+    return conditions
+        .filter(c => c.key.trim() && c.value.trim())
+        .map(c => `${c.key.trim()} ${c.operator} "${c.value.trim()}"`)
+        .join(' AND ');
+};
+
 
 const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({ isOpen, onClose, onSave, trigger }) => {
     const [formData, setFormData] = useState<Partial<AutomationTrigger>>({});
     const [playbooks, setPlaybooks] = useState<AutomationPlaybook[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [tagDefs, setTagDefs] = useState<TagDefinition[]>([]);
+    const [conditions, setConditions] = useState<{ key: string; operator: string; value: string }[]>([]);
+
+    const getInitialFormData = (): Partial<AutomationTrigger> => ({
+        name: '',
+        description: '',
+        type: 'Schedule',
+        enabled: true,
+        targetPlaybookId: '',
+        config: {
+            cron: '0 * * * *',
+        },
+    });
 
     useEffect(() => {
         if (isOpen) {
-            setFormData(trigger || { name: '', description: '', type: 'Schedule', enabled: true, targetPlaybookId: '', config: {} });
-            
-            api.get<AutomationPlaybook[]>('/automation/scripts')
-                .then(res => setPlaybooks(res.data))
-                .catch(err => console.error("Failed to fetch playbooks", err));
+            setFormData(trigger || getInitialFormData());
+            setIsLoading(true);
+            Promise.all([
+                api.get<AutomationPlaybook[]>('/automation/scripts'),
+                api.get<TagDefinition[]>('/settings/tags')
+            ]).then(([playbooksRes, tagsRes]) => {
+                setPlaybooks(playbooksRes.data);
+                setTagDefs(tagsRes.data);
+                if (!trigger && playbooksRes.data.length > 0) {
+                    setFormData(prev => ({...prev, targetPlaybookId: playbooksRes.data[0].id}));
+                }
+            }).catch(err => console.error("Failed to fetch data for modal", err))
+            .finally(() => setIsLoading(false));
         }
     }, [isOpen, trigger]);
 
     const handleSave = () => {
-        onSave(formData as AutomationTrigger);
+        onSave(formData);
     };
+    
+    useEffect(() => {
+        if (formData.type === 'Event') {
+            const parsed = parseConditions(formData.config?.eventConditions);
+            if (JSON.stringify(parsed) !== JSON.stringify(conditions)) {
+                setConditions(parsed);
+            }
+        }
+    }, [formData.type, formData.config?.eventConditions]);
 
     const handleChange = (field: keyof AutomationTrigger, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
-    const handleConfigChange = (field: string, value: any) => {
-        setFormData(prev => ({ ...prev, config: { ...prev.config, [field]: value } }));
+    const handleConfigChange = (field: keyof AutomationTrigger['config'], value: any) => {
+        setFormData(prev => ({
+            ...prev,
+            config: {
+                ...(prev.config || {}),
+                [field]: value,
+            }
+        }));
     };
     
-    const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const newType = e.target.value as TriggerType;
-        setFormData(prev => ({ ...prev, type: newType, config: {} }));
+    const handleTypeChange = (newType: TriggerType) => {
+        const newConfig: Partial<AutomationTrigger['config']> = {};
+        if (newType === 'Schedule') newConfig.cron = '0 * * * *';
+        if (newType === 'Webhook') newConfig.webhookUrl = '';
+        if (newType === 'Event') newConfig.eventConditions = 'severity = critical';
+        setFormData(prev => ({
+            ...prev,
+            type: newType,
+            config: newConfig,
+        }));
     };
 
-    const renderConfigFields = () => {
-        switch (formData.type) {
-            case 'Schedule':
-                return (
-                    <FormRow label="Cron 表達式">
-                        <input type="text" value={formData.config?.cron || ''} onChange={e => handleConfigChange('cron', e.target.value)}
-                               className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm font-mono" placeholder="* * * * *" />
-                        <p className="text-xs text-slate-400 mt-1">範例: '0 3 * * *' 表示每天凌晨 3 點。</p>
-                    </FormRow>
-                );
-            case 'Webhook':
-                return (
-                    <FormRow label="Webhook URL">
-                        <div className="flex items-center space-x-2">
-                            <input type="text" readOnly value={formData.config?.webhookUrl || '儲存後自動生成'}
-                                   className="w-full bg-slate-800/50 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-400" />
-                            <button className="p-2 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="複製"><Icon name="copy" className="w-4 h-4" /></button>
-                        </div>
-                    </FormRow>
-                );
-            case 'Event':
-                 return (
-                    <FormRow label="事件條件">
-                        <textarea value={formData.config?.eventConditions || ''} onChange={e => handleConfigChange('eventConditions', e.target.value)} rows={3}
-                                  className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm font-mono" placeholder="e.g., severity = critical AND resource_type = EC2" />
-                    </FormRow>
-                );
-            default:
-                return null;
+    const updateConditionsInForm = (newConditions: { key: string; operator: string; value: string }[]) => {
+        setConditions(newConditions);
+        handleConfigChange('eventConditions', serializeConditions(newConditions));
+    };
+    const handleConditionChange = (index: number, field: 'key' | 'operator' | 'value', value: string) => {
+        const newConditions = [...conditions];
+        newConditions[index][field] = value;
+        if (field === 'key') {
+            newConditions[index].value = '';
         }
+        updateConditionsInForm(newConditions);
+    };
+    const addCondition = () => {
+        updateConditionsInForm([...conditions, { key: '', operator: '=', value: '' }]);
+    };
+    const removeCondition = (index: number) => {
+        updateConditionsInForm(conditions.filter((_, i) => i !== index));
+    };
+
+    const conditionKeys = useMemo(() => {
+        return ['severity', 'resource_type', ...tagDefs.map(t => t.key)];
+    }, [tagDefs]);
+
+    const renderValueInput = (condition: { key: string; value: string }, index: number) => {
+        const commonProps = {
+            value: condition.value,
+            onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => handleConditionChange(index, 'value', e.target.value),
+            className: "flex-grow bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm",
+        };
+
+        if (condition.key === 'severity') {
+            return (
+                <select {...commonProps}>
+                    <option value="">選擇嚴重性...</option>
+                    <option value="critical">Critical</option>
+                    <option value="warning">Warning</option>
+                    <option value="info">Info</option>
+                </select>
+            );
+        }
+        
+        const tagDef = tagDefs.find(t => t.key === condition.key);
+        if (tagDef && tagDef.allowedValues.length > 0) {
+             return (
+                <select {...commonProps}>
+                    <option value="">選擇值...</option>
+                    {tagDef.allowedValues.map(v => <option key={v.id} value={v.value}>{v.value}</option>)}
+                </select>
+            );
+        }
+    
+        return <input type="text" {...commonProps} placeholder="條件值" />;
     };
 
     return (
@@ -90,28 +179,73 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
             }
         >
             <div className="space-y-4">
-                <FormRow label="名稱 *">
+                <FormRow label="觸發器名稱 *">
                     <input type="text" value={formData.name || ''} onChange={e => handleChange('name', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
                 </FormRow>
                 <FormRow label="描述">
                     <textarea value={formData.description || ''} onChange={e => handleChange('description', e.target.value)} rows={2} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"></textarea>
                 </FormRow>
-                <FormRow label="目標腳本 *">
-                    <select value={formData.targetPlaybookId || ''} onChange={e => handleChange('targetPlaybookId', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
-                        <option value="">選擇一個腳本...</option>
-                        {playbooks.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                <FormRow label="目標腳本">
+                    <select value={formData.targetPlaybookId || ''} onChange={e => handleChange('targetPlaybookId', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoading}>
+                        {isLoading ? <option>載入中...</option> : playbooks.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select>
                 </FormRow>
-                 <div className="pt-4 mt-4 border-t border-slate-700/50 space-y-4">
-                    <FormRow label="觸發器類型">
-                        <select value={formData.type || 'Schedule'} onChange={handleTypeChange} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
-                            <option value="Schedule">排程</option>
-                            <option value="Webhook">Webhook</option>
-                            <option value="Event">事件</option>
-                        </select>
-                    </FormRow>
-                    {renderConfigFields()}
+
+                <FormRow label="觸發器類型">
+                     <div className="flex space-x-2 rounded-lg bg-slate-800 p-1">
+                        {(['Schedule', 'Webhook', 'Event'] as TriggerType[]).map(type => (
+                            <button 
+                                key={type}
+                                onClick={() => handleTypeChange(type)} 
+                                className={`w-full px-3 py-1.5 text-sm font-medium rounded-md ${formData.type === type ? 'bg-sky-600 text-white' : 'text-slate-300 hover:bg-slate-700'}`}
+                            >
+                                {type}
+                            </button>
+                        ))}
+                    </div>
+                </FormRow>
+
+                <div className="pt-4 mt-4 border-t border-slate-700/50">
+                    {formData.type === 'Schedule' && (
+                        <FormRow label="Cron 表達式">
+                            <input type="text" value={formData.config?.cron || ''} onChange={e => handleConfigChange('cron', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm font-mono" />
+                            <p className="text-xs text-slate-400 mt-1">範例: '0 3 * * *' 表示每天凌晨 3 點。</p>
+                        </FormRow>
+                    )}
+                    {formData.type === 'Webhook' && (
+                        <FormRow label="Webhook URL">
+                             <div className="flex items-center space-x-2">
+                                <input type="text" readOnly value={formData.config?.webhookUrl || '儲存後將自動生成...'} className="w-full bg-slate-800/50 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-400" />
+                                <button className="p-2 rounded-md hover:bg-slate-700 text-slate-300" title="複製"><Icon name="copy" className="w-4 h-4" /></button>
+                            </div>
+                        </FormRow>
+                    )}
+                    {formData.type === 'Event' && (
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-semibold text-white">事件條件</h3>
+                            <p className="text-sm text-slate-400 -mt-2">當所有以下條件都滿足時，將觸發此腳本。</p>
+                            <div className="p-4 border border-slate-700 rounded-lg space-y-3 bg-slate-800/20">
+                                {conditions.map((cond, index) => (
+                                    <div key={index} className="flex items-center space-x-2">
+                                        <select value={cond.key} onChange={e => handleConditionChange(index, 'key', e.target.value)} className="w-1/3 bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
+                                            <option value="">選擇鍵...</option>
+                                            {conditionKeys.map(k => <option key={k} value={k}>{k}</option>)}
+                                        </select>
+                                        <select value={cond.operator} onChange={e => handleConditionChange(index, 'operator', e.target.value)} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
+                                            <option value="=">=</option>
+                                            <option value="!=">!=</option>
+                                            <option value="~=">~= (regex)</option>
+                                        </select>
+                                        {renderValueInput(cond, index)}
+                                        <button onClick={() => removeCondition(index)} className="p-2 text-slate-400 hover:text-red-400" title="移除條件"><Icon name="trash-2" className="w-4 h-4" /></button>
+                                    </div>
+                                ))}
+                                <button onClick={addCondition} className="text-sm text-sky-400 hover:text-sky-300 flex items-center"><Icon name="plus" className="w-4 h-4 mr-1" /> 新增條件</button>
+                            </div>
+                        </div>
+                    )}
                 </div>
+
             </div>
         </Modal>
     );

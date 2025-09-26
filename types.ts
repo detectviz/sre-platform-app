@@ -460,6 +460,19 @@ export interface LogAnalysis {
   recommendations: string[];
 }
 
+export interface Bottleneck {
+  span_name: string;
+  service_name: string;
+  duration_percent: number;
+  description: string;
+}
+
+export interface TraceAnalysis {
+  summary: string;
+  bottlenecks: Bottleneck[];
+  recommendations: string[];
+}
+
 export type TimeSeriesData = [string, number][];
 
 export interface ServiceHealthData {

@@ -1,12 +1,12 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Trace, Span } from '../../types';
+import { Trace, Span, TraceAnalysis } from '../../types';
 import Icon from '../../components/Icon';
 import TraceTimelineChart from '../../components/TraceTimelineChart';
 import SpanDetail from '../../components/SpanDetail';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
-import PlaceholderModal from '../../components/PlaceholderModal';
 import api from '../../services/api';
 import { exportToCsv } from '../../services/export';
+import TraceAnalysisModal from '../../components/TraceAnalysisModal';
 
 const TraceAnalysisPage: React.FC = () => {
     const [traces, setTraces] = useState<Trace[]>([]);
@@ -16,13 +16,10 @@ const TraceAnalysisPage: React.FC = () => {
     const [selectedTraceId, setSelectedTraceId] = useState<string | null>(null);
     const [selectedSpanId, setSelectedSpanId] = useState<string | null>(null);
     const [traceSearchTerm, setTraceSearchTerm] = useState('');
-    const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
-    const [modalFeatureName, setModalFeatureName] = useState('');
-
-    const showPlaceholderModal = (featureName: string) => {
-        setModalFeatureName(featureName);
-        setIsPlaceholderModalOpen(true);
-    };
+    
+    const [isTraceAnalysisModalOpen, setIsTraceAnalysisModalOpen] = useState(false);
+    const [traceAnalysisReport, setTraceAnalysisReport] = useState<TraceAnalysis | null>(null);
+    const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
     
     const fetchTraces = useCallback(async () => {
         setIsLoading(true);
@@ -52,11 +49,28 @@ const TraceAnalysisPage: React.FC = () => {
     const handleTraceSelect = (traceId: string) => {
         setSelectedTraceId(traceId);
         setSelectedSpanId(null); // Reset selected span when trace changes
+        setTraceAnalysisReport(null); // Reset analysis report
     };
     
     const handleSpanSelect = (spanId: string) => {
         setSelectedSpanId(prevId => (prevId === spanId ? null : spanId));
     }
+
+    const handleRunTraceAnalysis = async () => {
+        if (!selectedTraceId) return;
+
+        setIsTraceAnalysisModalOpen(true);
+        setIsAnalysisLoading(true);
+        setTraceAnalysisReport(null);
+        try {
+            const { data } = await api.post<TraceAnalysis>('/ai/traces/analyze', { trace_id: selectedTraceId });
+            setTraceAnalysisReport(data);
+        } catch (err) {
+            console.error("Trace Analysis Error:", err);
+        } finally {
+            setIsAnalysisLoading(false);
+        }
+    };
     
     const handleExport = () => {
         if (traces.length === 0) {
@@ -90,12 +104,25 @@ const TraceAnalysisPage: React.FC = () => {
             />
         </div>
     );
+    
+    const rightActions = (
+        <>
+            <ToolbarButton
+                icon="brain-circuit"
+                text="AI 分析瓶頸"
+                ai
+                onClick={handleRunTraceAnalysis}
+                disabled={!selectedTraceId || isAnalysisLoading}
+            />
+            <ToolbarButton icon="download" text="匯出報表" onClick={handleExport} />
+        </>
+    );
 
     return (
         <div className="h-full flex flex-col">
             <Toolbar 
                 leftActions={leftActions} 
-                rightActions={<ToolbarButton icon="download" text="匯出報表" onClick={handleExport} />} 
+                rightActions={rightActions} 
             />
             <div className="flex-grow flex space-x-4 mt-4">
                 {/* Left Panel: Trace List */}
@@ -161,10 +188,11 @@ const TraceAnalysisPage: React.FC = () => {
                     </div>
                 </div>
             </div>
-            <PlaceholderModal
-                isOpen={isPlaceholderModalOpen}
-                onClose={() => setIsPlaceholderModalOpen(false)}
-                featureName={modalFeatureName}
+             <TraceAnalysisModal
+                isOpen={isTraceAnalysisModalOpen}
+                onClose={() => setIsTraceAnalysisModalOpen(false)}
+                report={traceAnalysisReport}
+                isLoading={isAnalysisLoading}
             />
         </div>
     );

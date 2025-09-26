@@ -5,6 +5,7 @@ import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import PlaceholderModal from '../../components/PlaceholderModal';
 import api from '../../services/api';
 import { exportToCsv } from '../../services/export';
+import EChartsReact from '../../components/EChartsReact';
 
 interface HealthScore {
     score: number;
@@ -65,6 +66,64 @@ const AIInsightsPage: React.FC = () => {
     useEffect(() => {
         fetchAllInsights();
     }, [fetchAllInsights]);
+
+    const healthScoreGaugeOption = healthScore ? {
+        series: [{
+            type: 'gauge',
+            radius: '90%',
+            center: ['50%', '55%'],
+            axisLine: {
+                lineStyle: {
+                    width: 18,
+                    color: [
+                        [0.5, '#dc2626'], // red-600
+                        [0.8, '#f97316'], // orange-500
+                        [1, '#10b981']    // green-500
+                    ]
+                }
+            },
+            pointer: {
+                itemStyle: {
+                    color: 'auto'
+                },
+                length: '60%',
+                width: 6,
+            },
+            axisTick: {
+                distance: -18,
+                length: 5,
+                lineStyle: {
+                    color: '#FFF',
+                    width: 1
+                }
+            },
+            splitLine: {
+                distance: -18,
+                length: 12,
+                lineStyle: {
+                    color: '#FFF',
+                    width: 2
+                }
+            },
+            axisLabel: {
+                color: 'auto',
+                distance: 25,
+                fontSize: 12
+            },
+            detail: {
+                valueAnimation: true,
+                formatter: '{value}',
+                color: 'auto',
+                fontSize: 36,
+                fontWeight: 'bold',
+                offsetCenter: [0, '40%']
+            },
+            data: [{
+                value: healthScore.score
+            }]
+        }]
+    } : {};
+
 
     const handleExport = () => {
         const dataToExport = [
@@ -129,25 +188,21 @@ const AIInsightsPage: React.FC = () => {
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-1 glass-card rounded-xl p-6 flex flex-col items-center justify-center text-center">
-                    <h2 className="text-xl font-bold mb-4">系統總體健康評分</h2>
+                 <div className="lg:col-span-1 glass-card rounded-xl p-6 flex flex-col text-center">
                     {isLoading || !healthScore ? (
-                        <div className="animate-pulse flex flex-col items-center justify-center flex-grow">
-                            <div className="w-32 h-32 bg-slate-700 rounded-full"></div>
-                            <div className="h-4 bg-slate-700 rounded w-3/4 mt-4"></div>
+                        <div className="animate-pulse flex flex-col items-center space-y-4">
+                            <div className="h-6 w-3/4 bg-slate-700 rounded"></div>
+                            <div className="w-48 h-32 bg-slate-700 rounded-lg mt-4"></div>
+                            <div className="h-4 w-5/6 bg-slate-700 rounded"></div>
+                             <div className="h-4 w-4/6 bg-slate-700 rounded"></div>
                         </div>
                     ) : (
                         <>
-                            <div className="relative w-32 h-32">
-                                <svg className="w-full h-full" viewBox="0 0 36 36" transform="rotate(-90 18 18)">
-                                    <path className="text-slate-700" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3"></path>
-                                    <path className="text-purple-400 transition-all duration-500" strokeDasharray={`${healthScore.score}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"></path>
-                                </svg>
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <span className="text-4xl font-bold text-white">{healthScore.score}</span>
-                                </div>
+                            <h2 className="text-xl font-bold mb-2">系統總體健康評分</h2>
+                            <div className="flex-grow">
+                                <EChartsReact option={healthScoreGaugeOption} style={{ height: '200px' }} />
                             </div>
-                            <p className="mt-4 text-slate-300">{healthScore.summary}</p>
+                            <p className="text-sm text-slate-400 max-w-xs mx-auto">{healthScore.summary}</p>
                         </>
                     )}
                 </div>

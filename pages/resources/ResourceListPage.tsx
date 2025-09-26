@@ -22,7 +22,8 @@ const ALL_COLUMNS: TableColumn[] = [
     { key: 'status', label: '狀態' },
     { key: 'name', label: '名稱' },
     { key: 'type', label: '類型' },
-    { key: 'provider_region', label: '提供商 / 區域' },
+    { key: 'provider', label: 'PROVIDER' },
+    { key: 'region', label: 'REGION' },
     { key: 'owner', label: '擁有者' },
     { key: 'lastCheckIn', label: '最後簽入' },
 ];
@@ -202,7 +203,8 @@ const ResourceListPage: React.FC = () => {
                 );
             case 'name': return <span className="font-medium text-white">{res.name}</span>;
             case 'type': return res.type;
-            case 'provider_region': return `${res.provider} / ${res.region}`;
+            case 'provider': return res.provider;
+            case 'region': return res.region;
             case 'owner': return res.owner;
             case 'lastCheckIn': return res.lastCheckIn;
             default: return null;

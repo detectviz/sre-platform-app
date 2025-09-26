@@ -463,7 +463,7 @@ https://github.com/grafana/grafana/blob/main/public/api-merged.json
 
 ### 3. 身份認證決策
 **決策內容**：
-- 整合Keycloak進行身份認證
+- 整合 Keycloak 進行身份認證
 - 平台不再自行管理帳號狀態
 
 ** rationale**：
@@ -473,11 +473,11 @@ https://github.com/grafana/grafana/blob/main/public/api-merged.json
 
 ### 4. AI整合決策
 **決策內容**：
-- 所有告警先經平台Webhook服務再分發
-- AI Agent在Webhook服務中進行分析處理
+- 所有告警先經平台 Webhook 服務再分發
+- AI Agent 在 Webhook 服務中進行分析處理
 
 ** rationale**：
-- 實現AI分析的統一入口
+- 實現 AI 分析的統一入口
 - 提供上下文豐富的分析能力
 - 支持自動化修復等功能
 
