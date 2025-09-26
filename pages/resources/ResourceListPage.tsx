@@ -17,6 +17,7 @@ import { exportToCsv } from '../../services/export';
 import ImportFromCsvModal from '../../components/ImportFromCsvModal';
 import ColumnSettingsModal, { TableColumn } from '../../components/ColumnSettingsModal';
 import { showToast } from '../../services/toast';
+import { usePageMetadata } from '../../contexts/PageMetadataContext';
 
 const ALL_COLUMNS: TableColumn[] = [
     { key: 'status', label: '狀態' },
@@ -27,7 +28,7 @@ const ALL_COLUMNS: TableColumn[] = [
     { key: 'owner', label: '擁有者' },
     { key: 'lastCheckIn', label: '最後簽入' },
 ];
-const PAGE_KEY = 'resources';
+const PAGE_IDENTIFIER = 'resources';
 
 const ResourceListPage: React.FC = () => {
     const [resources, setResources] = useState<Resource[]>([]);
@@ -51,7 +52,11 @@ const ResourceListPage: React.FC = () => {
     const { resourceId } = useParams<{ resourceId: string }>();
     const navigate = useNavigate();
 
+    const { metadata: pageMetadata } = usePageMetadata();
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
+
     const fetchResources = useCallback(async () => {
+        if (!pageKey) return;
         setIsLoading(true);
         setError(null);
         try {
@@ -62,7 +67,7 @@ const ResourceListPage: React.FC = () => {
             };
             const [resourcesRes, columnsRes] = await Promise.all([
                 api.get<{ items: Resource[], total: number }>('/resources', { params }),
-                api.get<string[]>(`/settings/column-config/${PAGE_KEY}`)
+                api.get<string[]>(`/settings/column-config/${pageKey}`)
             ]);
             
             setResources(resourcesRes.data.items);
@@ -73,15 +78,21 @@ const ResourceListPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, filters]);
+    }, [currentPage, pageSize, filters, pageKey]);
     
     useEffect(() => {
-        fetchResources();
-    }, [fetchResources]);
+        if (pageKey) {
+            fetchResources();
+        }
+    }, [fetchResources, pageKey]);
 
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
+        if (!pageKey) {
+            showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
+            return;
+        }
         try {
-            await api.put(`/settings/column-config/${PAGE_KEY}`, newColumnKeys);
+            await api.put(`/settings/column-config/${pageKey}`, newColumnKeys);
             setVisibleColumns(newColumnKeys);
             showToast('欄位設定已儲存。', 'success');
         } catch (err) {

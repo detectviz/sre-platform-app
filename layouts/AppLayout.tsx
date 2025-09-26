@@ -1,35 +1,17 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
-import { NAV_ITEMS } from '../constants';
-import { NavItem } from '../types';
+import { NavItem, User, PlatformSettings } from '../types';
 import Icon from '../components/Icon';
 import NotificationCenter from '../components/NotificationCenter';
 import GlobalSearchModal from '../components/GlobalSearchModal';
 import { showToast } from '../services/toast';
-
-const findLongestPrefixMatch = (pathname: string, items: NavItem[]): string | null => {
-  let bestMatch: string | null = null;
-
-  function traverse(items: NavItem[]) {
-    for (const item of items) {
-      if (pathname.startsWith(`/${item.key}`)) {
-        if (!bestMatch || item.key.length > bestMatch.length) {
-          bestMatch = item.key;
-        }
-      }
-      if (item.children) {
-        traverse(item.children);
-      }
-    }
-  }
-
-  traverse(items);
-  return bestMatch;
-};
-
+import api from '../services/api';
+import { useUIConfig } from '../contexts/UIConfigContext';
 
 const AppLayout: React.FC = () => {
+  const { navItems, tabConfigs, isLoading: isNavLoading } = useUIConfig();
   const [collapsed, setCollapsed] = useState(false);
   const [openKeys, setOpenKeys] = useState<string[]>([]);
   const location = useLocation();
@@ -37,6 +19,26 @@ const AppLayout: React.FC = () => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [platformSettings, setPlatformSettings] = useState<PlatformSettings | null>(null);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+        try {
+            const [userRes, settingsRes] = await Promise.all([
+                api.get<User>('/me'),
+                api.get<PlatformSettings>('/settings/platform'),
+            ]);
+            setCurrentUser(userRes.data);
+            setPlatformSettings(settingsRes.data);
+        } catch (error) {
+            console.error("Failed to fetch user and platform data", error);
+            showToast('無法載入使用者資料。', 'error');
+        }
+    };
+    fetchUserData();
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -64,6 +66,24 @@ const AppLayout: React.FC = () => {
     };
   }, []);
 
+  const findLongestPrefixMatch = (pathname: string, items: NavItem[]): string | null => {
+    let bestMatch: string | null = null;
+    function traverse(items: NavItem[]) {
+      for (const item of items) {
+        if (pathname.startsWith(`/${item.key}`)) {
+          if (!bestMatch || item.key.length > bestMatch.length) {
+            bestMatch = item.key;
+          }
+        }
+        if (item.children) {
+          traverse(item.children);
+        }
+      }
+    }
+    traverse(items);
+    return bestMatch;
+  };
+
   const getActiveKey = () => {
     const path = location.pathname;
 
@@ -71,7 +91,7 @@ const AppLayout: React.FC = () => {
       return 'home';
     }
     
-    const bestMatch = findLongestPrefixMatch(path, NAV_ITEMS);
+    const bestMatch = findLongestPrefixMatch(path, navItems);
     
     if (path.startsWith('/profile')) {
       return 'profile';
@@ -127,8 +147,11 @@ const AppLayout: React.FC = () => {
   const handleHelp = (e: React.MouseEvent) => { 
       e.preventDefault(); 
       setIsProfileMenuOpen(false); 
-      console.log('Help Center action triggered.');
-      window.open('https://cloud.google.com/sre', '_blank');
+      if (platformSettings?.helpUrl) {
+          window.open(platformSettings.helpUrl, '_blank');
+      } else {
+          showToast('幫助中心 URL 尚未設定。', 'error');
+      }
   };
 
   const renderNavItem = (item: NavItem, level = 0) => {
@@ -176,42 +199,67 @@ const AppLayout: React.FC = () => {
   };
 
   const Breadcrumbs = () => {
-    const paths = location.pathname.split('/').filter(p => p);
-    const crumbs = [{ label: 'Home', path: '/home' }];
-  
-    const findNavItem = (key: string, items: NavItem[]): NavItem | null => {
-      for (const item of items) {
-        if (item.key.endsWith(key)) return item;
-        if (item.children) {
-          const found = findNavItem(key, item.children);
-          if (found) return found;
-        }
-      }
-      return null;
-    };
+    const { pathname } = useLocation();
 
-    if (location.pathname.startsWith('/profile')) {
-      crumbs.push({ label: '個人設定', path: '/profile' });
-    } else if (paths[0] && paths[0] !== 'home') {
-        let currentPath = '';
-        paths.forEach(p => {
-            currentPath += `/${p}`;
-            const navItem = findNavItem(p, NAV_ITEMS);
-            if (navItem) {
-                crumbs.push({ label: navItem.label, path: currentPath });
-            } else {
-                 const formattedLabel = p.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-                 crumbs.push({ label: formattedLabel, path: currentPath });
+    const crumbs = useMemo(() => {
+        const result: { label: string; path: string }[] = [{ label: 'Home', path: '/home' }];
+        if (pathname === '/home' || pathname === '/') return result;
+        
+        const tempCrumbs: { label: string; path: string }[] = [];
+        let current = pathname;
+        
+        while(current && current !== '/') {
+            let label: string | null = null;
+            
+            // 1. Search in nav items (recursive)
+            const findNav = (items: NavItem[]): NavItem | null => {
+                for (const item of items) {
+                   if (`/${item.key}` === current) return item;
+                   if (item.children) {
+                       const found = findNav(item.children);
+                       if (found) return found;
+                   }
+               }
+               return null;
             }
-        });
-    }
+            const navItem = findNav(navItems);
+            if (navItem) {
+                label = navItem.label;
+            }
+            
+            // 2. Search in tab configs if not found in nav
+            if (!label && tabConfigs) {
+                for (const key in tabConfigs) {
+                   const tab = tabConfigs[key].find(t => t.path === current);
+                   if (tab) {
+                       label = tab.label;
+                       break;
+                   }
+               }
+            }
+            
+            if (label) {
+                // To avoid duplicate parent crumbs (e.g. Settings > Settings), we check if the new crumb is a parent of the last one added.
+                if (!tempCrumbs.length || !tempCrumbs[0].path.startsWith(current)) {
+                    tempCrumbs.unshift({ label, path: current });
+                }
+            }
+            
+            // Go to parent path
+            const parentPath = current.substring(0, current.lastIndexOf('/'));
+            current = parentPath === '' ? '/' : parentPath;
+        }
+
+        return [...result, ...tempCrumbs];
+
+    }, [pathname, navItems, tabConfigs]);
 
     return (
         <div className="flex items-center text-sm text-slate-400">
             {crumbs.map((crumb, index) => (
                 <React.Fragment key={index}>
                     {index > 0 && <Icon name="chevron-right" className="w-4 h-4 mx-1" />}
-                    <Link to={crumb.path} className={`${index === crumbs.length -1 ? 'text-white' : 'hover:text-white'}`}>{crumb.label}</Link>
+                    <Link to={crumb.path} className={`${index === crumbs.length - 1 ? 'text-white' : 'hover:text-white'}`}>{crumb.label}</Link>
                 </React.Fragment>
             ))}
         </div>
@@ -227,7 +275,13 @@ const AppLayout: React.FC = () => {
           {!collapsed && <span className="ml-3 text-xl font-bold">SRE Platform</span>}
         </div>
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          {NAV_ITEMS.map(item => renderNavItem(item))}
+          {isNavLoading ? (
+            <div className="flex justify-center items-center h-full">
+                <Icon name="loader-circle" className="w-6 h-6 animate-spin text-slate-500" />
+            </div>
+          ) : (
+            navItems.map(item => renderNavItem(item))
+          )}
         </nav>
       </aside>
       <div className="flex flex-col flex-1">
@@ -256,16 +310,16 @@ const AppLayout: React.FC = () => {
                         <Icon name="user" className="w-5 h-5 text-slate-300" />
                     </div>
                     <div className="text-sm text-left hidden md:block">
-                        <div className="font-semibold">Admin User</div>
-                        <div className="text-xs text-slate-400">admin@sre.platform</div>
+                        <div className="font-semibold">{currentUser?.name || 'Loading...'}</div>
+                        <div className="text-xs text-slate-400">{currentUser?.email || '...'}</div>
                     </div>
                     <Icon name="chevron-down" className={`w-4 h-4 text-slate-400 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {isProfileMenuOpen && (
                     <div className="absolute right-0 mt-2 w-64 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 z-50 overflow-hidden animate-fade-in-down">
                         <div className="p-4 border-b border-slate-700/50">
-                            <div className="font-semibold text-white">Admin User</div>
-                            <div className="text-sm text-slate-400">admin@sre.platform</div>
+                            <div className="font-semibold text-white">{currentUser?.name}</div>
+                            <div className="text-sm text-slate-400">{currentUser?.email}</div>
                         </div>
                         <div className="p-2">
                             <Link to="/profile" onClick={() => setIsProfileMenuOpen(false)} className="flex items-center w-full px-3 py-2 text-sm rounded-md text-slate-300 hover:bg-slate-700 hover:text-white">

@@ -15,6 +15,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({ isOpen, onClose, onSave, 
     const [formData, setFormData] = useState<Partial<User>>({});
     const [teams, setTeams] = useState<Team[]>([]);
     const [roles, setRoles] = useState<Role[]>([]);
+    const [statuses, setStatuses] = useState<string[]>([]);
     const [isLoadingOptions, setIsLoadingOptions] = useState(false);
 
     useEffect(() => {
@@ -23,10 +24,12 @@ const UserEditModal: React.FC<UserEditModalProps> = ({ isOpen, onClose, onSave, 
             setIsLoadingOptions(true);
             Promise.all([
                 api.get<Team[]>('/iam/teams'),
-                api.get<Role[]>('/iam/roles')
-            ]).then(([teamsRes, rolesRes]) => {
+                api.get<Role[]>('/iam/roles'),
+                api.get<{ statuses: string[] }>('/iam/users/options')
+            ]).then(([teamsRes, rolesRes, optionsRes]) => {
                 setTeams(teamsRes.data);
                 setRoles(rolesRes.data);
+                setStatuses(optionsRes.data.statuses);
             }).catch(err => console.error("Failed to fetch teams or roles", err))
             .finally(() => setIsLoadingOptions(false));
         }
@@ -41,8 +44,6 @@ const UserEditModal: React.FC<UserEditModalProps> = ({ isOpen, onClose, onSave, 
     const handleChange = (field: keyof User, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
-
-    const statuses: User['status'][] = ['active', 'inactive', 'invited'];
 
     return (
         <Modal
@@ -80,8 +81,8 @@ const UserEditModal: React.FC<UserEditModalProps> = ({ isOpen, onClose, onSave, 
                 </FormRow>
                 <FormRow label="狀態">
                     <select value={formData.status || ''} onChange={e => handleChange('status', e.target.value as User['status'])}
-                            className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
-                        {statuses.map(s => <option key={s} value={s} className="capitalize">{s}</option>)}
+                            className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoadingOptions}>
+                        {isLoadingOptions ? <option>載入中...</option> : statuses.map(s => <option key={s} value={s} className="capitalize">{s}</option>)}
                     </select>
                 </FormRow>
             </div>

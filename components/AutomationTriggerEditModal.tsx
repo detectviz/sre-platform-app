@@ -4,6 +4,7 @@ import FormRow from './FormRow';
 import { AutomationTrigger, TriggerType, AutomationPlaybook, TagDefinition } from '../types';
 import api from '../services/api';
 import Icon from './Icon';
+import { showToast } from '../services/toast';
 
 interface AutomationTriggerEditModalProps {
   isOpen: boolean;
@@ -165,6 +166,16 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
         return <input type="text" {...commonProps} placeholder="條件值" />;
     };
 
+    const handleCopyWebhookUrl = () => {
+        if (formData.config?.webhookUrl) {
+            navigator.clipboard.writeText(formData.config.webhookUrl)
+                .then(() => showToast('Webhook URL 已複製到剪貼簿。', 'success'))
+                .catch(err => showToast('無法複製 URL。', 'error'));
+        } else {
+            showToast('Webhook URL 尚未生成。', 'error');
+        }
+    };
+
     return (
         <Modal
             title={trigger ? '編輯觸發器' : '新增觸發器'}
@@ -216,7 +227,7 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
                         <FormRow label="Webhook URL">
                              <div className="flex items-center space-x-2">
                                 <input type="text" readOnly value={formData.config?.webhookUrl || '儲存後將自動生成...'} className="w-full bg-slate-800/50 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-400" />
-                                <button className="p-2 rounded-md hover:bg-slate-700 text-slate-300" title="複製"><Icon name="copy" className="w-4 h-4" /></button>
+                                <button onClick={handleCopyWebhookUrl} className="p-2 rounded-md hover:bg-slate-700 text-slate-300" title="複製"><Icon name="copy" className="w-4 h-4" /></button>
                             </div>
                         </FormRow>
                     )}

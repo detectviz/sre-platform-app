@@ -14,6 +14,7 @@ import { exportToCsv } from '../../../services/export';
 import ImportFromCsvModal from '../../../components/ImportFromCsvModal';
 import { showToast } from '../../../services/toast';
 import ColumnSettingsModal, { TableColumn } from '../../../components/ColumnSettingsModal';
+import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 
 const ALL_COLUMNS: TableColumn[] = [
     { key: 'name', label: '名稱' },
@@ -22,7 +23,7 @@ const ALL_COLUMNS: TableColumn[] = [
     { key: 'status', label: '狀態' },
     { key: 'lastLogin', label: '上次登入' },
 ];
-const PAGE_KEY = 'personnel';
+const PAGE_IDENTIFIER = 'personnel';
 
 const PersonnelManagementPage: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
@@ -48,7 +49,11 @@ const PersonnelManagementPage: React.FC = () => {
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
 
+    const { metadata: pageMetadata } = usePageMetadata();
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
+
     const fetchUsers = useCallback(async () => {
+        if (!pageKey) return;
         setIsLoading(true);
         setError(null);
         try {
@@ -60,7 +65,7 @@ const PersonnelManagementPage: React.FC = () => {
             
             const [usersRes, columnsRes] = await Promise.all([
                 api.get<{ items: User[], total: number }>('/iam/users', { params }),
-                api.get<string[]>(`/settings/column-config/${PAGE_KEY}`)
+                api.get<string[]>(`/settings/column-config/${pageKey}`)
             ]);
 
             setUsers(usersRes.data.items);
@@ -72,11 +77,13 @@ const PersonnelManagementPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, searchTerm]);
+    }, [currentPage, pageSize, searchTerm, pageKey]);
 
     useEffect(() => {
-        fetchUsers();
-    }, [fetchUsers]);
+        if (pageKey) {
+            fetchUsers();
+        }
+    }, [fetchUsers, pageKey]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -91,8 +98,12 @@ const PersonnelManagementPage: React.FC = () => {
     }, []);
 
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
+        if (!pageKey) {
+            showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
+            return;
+        }
         try {
-            await api.put(`/settings/column-config/${PAGE_KEY}`, newColumnKeys);
+            await api.put(`/settings/column-config/${pageKey}`, newColumnKeys);
             setVisibleColumns(newColumnKeys);
             showToast('欄位設定已儲存。', 'success');
         } catch (err) {

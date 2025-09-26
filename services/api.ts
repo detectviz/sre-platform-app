@@ -35,6 +35,24 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
         const subAction = urlParts[3];
 
         switch (`${method} /${resource}`) {
+            // Navigation
+            case 'GET /navigation': {
+                return DB.navItems;
+            }
+            // Page Metadata
+            case 'GET /pages': {
+                if (id === 'metadata') {
+                    return DB.pageMetadata;
+                }
+                break;
+            }
+            // UI Configs
+            case 'GET /ui': {
+                if (id === 'icons') return DB.iconMap;
+                if (id === 'themes' && action === 'charts') return DB.chartColors;
+                if (id === 'tabs') return DB.tabConfigs;
+                break;
+            }
             // Me / Profile
             case 'GET /me': {
                 if (id === 'login-history') {
@@ -149,6 +167,9 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
             // Incidents, Rules, Silences
             case 'GET /incidents': {
+                if (id === 'options') {
+                    return { quickSilenceDurations: DB.quickSilenceDurations };
+                }
                 if (id) {
                     const incident = DB.incidents.find((i: any) => i.id === id);
                     if (!incident) throw { status: 404 };
@@ -371,6 +392,9 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
             // IAM
             case 'GET /iam': {
                 if (id === 'users') {
+                    if(action === 'options') {
+                        return { statuses: DB.userStatuses };
+                    }
                     let users = getActive(DB.users);
                     if (params.keyword) users = users.filter((u: any) => u.name.toLowerCase().includes(params.keyword.toLowerCase()) || u.email.toLowerCase().includes(params.keyword.toLowerCase()));
                     return paginate(users, params.page, params.page_size);
@@ -470,6 +494,17 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                     return DB.columnConfigs[pageKey] || [];
                 }
                 if (id === 'notification-strategies') {
+                    if (action === 'options') {
+                        const options = JSON.parse(JSON.stringify(DB.notificationStrategyOptions));
+                        options.tagKeys = DB.tagDefinitions.map((t: any) => t.key);
+                        options.tagValues = {};
+                        DB.tagDefinitions.forEach((t: any) => {
+                            if (t.allowedValues.length > 0) {
+                                (options.tagValues as any)[t.key] = t.allowedValues.map((v: any) => v.value);
+                            }
+                        });
+                        return options;
+                    }
                     let strategies = getActive(DB.notificationStrategies);
                     if (params.keyword) strategies = strategies.filter((s: any) => s.name.toLowerCase().includes(params.keyword.toLowerCase()));
                     return strategies;
@@ -482,6 +517,9 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 if (id === 'notification-history') return paginate(DB.notificationHistory, params.page, params.page_size);
                 if (id === 'mail') return DB.mailSettings;
                 if (id === 'auth') return DB.authSettings;
+                if (id === 'platform') return DB.platformSettings;
+                if (id === 'preferences' && action === 'options') return DB.preferenceOptions;
+                if (id === 'grafana') return DB.grafanaSettings;
                 break;
             }
             case 'PUT /settings': {
@@ -506,6 +544,10 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                     DB.mailSettings = { ...DB.mailSettings, ...body };
                     return DB.mailSettings;
                 }
+                if (id === 'grafana') {
+                    DB.grafanaSettings = { ...DB.grafanaSettings, ...body };
+                    return DB.grafanaSettings;
+                }
                 if (urlParts[1] === 'tags' && urlParts[3] === 'values') {
                     const tagId = urlParts[2];
                     const tagIndex = DB.tagDefinitions.findIndex((t: any) => t.id === tagId);
@@ -523,6 +565,16 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 }
                 if (id === 'mail' && action === 'test') {
                     return { success: true, message: 'Test email sent successfully.' };
+                }
+                if (id === 'grafana' && action === 'test') {
+                    const { url, apiKey } = body;
+                    if (url.includes('fail')) {
+                        return { success: false, message: '連線失敗：無效的 URL 或網路問題。' };
+                    }
+                    if (apiKey === 'invalid-key') {
+                        return { success: false, message: '連線失敗：API Key 無效或權限不足。' };
+                    }
+                    return { success: true, message: '連線成功！偵測到 Grafana v10.1.2。' };
                 }
                 if (id === 'notification-strategies') {
                     const newStrategy = { ...body, id: `strat-${uuidv4()}`, lastUpdated: new Date().toISOString(), creator: 'Admin User' };

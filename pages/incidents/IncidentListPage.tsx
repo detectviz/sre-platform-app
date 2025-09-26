@@ -16,6 +16,7 @@ import TableError from '../../components/TableError';
 import ColumnSettingsModal, { TableColumn } from '../../components/ColumnSettingsModal';
 import { showToast } from '../../services/toast';
 import { exportToCsv } from '../../services/export';
+import { usePageMetadata } from '../../contexts/PageMetadataContext';
 
 
 const ALL_COLUMNS: TableColumn[] = [
@@ -28,7 +29,7 @@ const ALL_COLUMNS: TableColumn[] = [
     { key: 'assignee', label: '處理人' },
     { key: 'triggeredAt', label: '觸發時間' },
 ];
-const PAGE_KEY = 'incidents';
+const PAGE_IDENTIFIER = 'incidents';
 
 const IncidentListPage: React.FC = () => {
     const [incidents, setIncidents] = useState<Incident[]>([]);
@@ -53,7 +54,11 @@ const IncidentListPage: React.FC = () => {
     const { incidentId } = useParams<{ incidentId: string }>();
     const navigate = useNavigate();
 
+    const { metadata: pageMetadata } = usePageMetadata();
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
+
     const fetchIncidents = useCallback(async () => {
+        if (!pageKey) return;
         setIsLoading(true);
         setError(null);
         try {
@@ -64,7 +69,7 @@ const IncidentListPage: React.FC = () => {
             };
             const [incidentsRes, columnsRes] = await Promise.all([
                 api.get<{ items: Incident[], total: number }>('/incidents', { params }),
-                api.get<string[]>(`/settings/column-config/${PAGE_KEY}`)
+                api.get<string[]>(`/settings/column-config/${pageKey}`)
             ]);
             
             setIncidents(incidentsRes.data.items);
@@ -75,19 +80,25 @@ const IncidentListPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, filters]);
+    }, [currentPage, pageSize, filters, pageKey]);
 
     useEffect(() => {
-        fetchIncidents();
-    }, [fetchIncidents]);
+        if (pageKey) {
+            fetchIncidents();
+        }
+    }, [fetchIncidents, pageKey]);
     
     useEffect(() => {
         setSelectedIds([]);
     }, [currentPage, pageSize, filters]);
 
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
+        if (!pageKey) {
+            showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
+            return;
+        }
         try {
-            await api.put(`/settings/column-config/${PAGE_KEY}`, newColumnKeys);
+            await api.put(`/settings/column-config/${pageKey}`, newColumnKeys);
             setVisibleColumns(newColumnKeys);
             showToast('欄位設定已儲存。', 'success');
         } catch (err) {

@@ -1,31 +1,37 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import FormRow from '../../components/FormRow';
 import Icon from '../../components/Icon';
 import api from '../../services/api';
-import { User } from '../../types';
+import { User, AuthSettings } from '../../types';
 
 const PersonalInfoPage: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authSettings, setAuthSettings] = useState<AuthSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCurrentUser = useCallback(async () => {
+  const fetchPageData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const { data } = await api.get<User>('/me');
-      setCurrentUser(data);
+      const [userRes, authRes] = await Promise.all([
+          api.get<User>('/me'),
+          api.get<AuthSettings>('/settings/auth')
+      ]);
+      setCurrentUser(userRes.data);
+      setAuthSettings(authRes.data);
     } catch (err) {
-      setError('無法獲取個人資訊。');
+      setError('無法獲取個人資訊或驗證設定。');
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchCurrentUser();
-  }, [fetchCurrentUser]);
+    fetchPageData();
+  }, [fetchPageData]);
 
   if (isLoading) {
     return <div className="text-center"><Icon name="loader-circle" className="w-6 h-6 animate-spin inline-block" /></div>;
@@ -59,10 +65,12 @@ const PersonalInfoPage: React.FC = () => {
           </FormRow>
         </div>
          <div className="mt-6 pt-6 border-t border-slate-700/50 text-right">
-            <a href="https://keycloak.example.com/admin/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-sm text-sky-400 hover:text-sky-300 px-3 py-1 rounded-md hover:bg-sky-500/20 ml-auto">
-                <Icon name="external-link" className="w-4 h-4 mr-2" />
-                在 Keycloak 中管理
-            </a>
+            {authSettings?.idpAdminUrl && (
+                <a href={authSettings.idpAdminUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-sm text-sky-400 hover:text-sky-300 px-3 py-1 rounded-md hover:bg-sky-500/20 ml-auto">
+                    <Icon name="external-link" className="w-4 h-4 mr-2" />
+                    在 {authSettings.provider} 中管理
+                </a>
+            )}
          </div>
       </div>
     </div>

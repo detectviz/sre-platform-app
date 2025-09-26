@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Modal from './Modal';
 import Icon from './Icon';
 import Wizard from './Wizard';
@@ -157,12 +157,20 @@ const Step2: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Fu
 
 const Step3: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Function }> = ({ formData, setFormData }) => {
     const [conditions, setConditions] = useState<StrategyCondition[]>([]);
-    const [tagDefs, setTagDefs] = useState<TagDefinition[]>([]);
+    const [options, setOptions] = useState<{
+        conditionKeys: Record<string, string[]>,
+        tagKeys: string[],
+        tagValues: Record<string, string[]>
+    }>({ conditionKeys: {}, tagKeys: [], tagValues: {} });
     
     useEffect(() => {
         setConditions(parseConditions(formData.triggerCondition));
-        api.get<TagDefinition[]>('/settings/tags').then(res => setTagDefs(res.data));
+        api.get<any>('/settings/notification-strategies/options').then(res => setOptions(res.data));
     }, [formData.triggerCondition]);
+
+    const allConditionKeys = useMemo(() => {
+        return [...Object.keys(options.conditionKeys), ...options.tagKeys];
+    }, [options]);
 
     const updateTriggerCondition = (newConditions: StrategyCondition[]) => {
         setConditions(newConditions);
@@ -172,6 +180,7 @@ const Step3: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Fu
     const handleConditionChange = (index: number, field: keyof StrategyCondition, value: any) => {
         const newConditions = [...conditions];
         newConditions[index] = { ...newConditions[index], [field]: value };
+        if (field === 'key') newConditions[index].value = ''; // Reset value when key changes
         updateTriggerCondition(newConditions);
     };
     
@@ -183,10 +192,7 @@ const Step3: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Fu
         const newConditions = conditions.filter((_, i) => i !== index);
         updateTriggerCondition(newConditions);
     };
-
-    const conditionKeys = ['severity', 'resource_type', ...tagDefs.map(t => t.key)];
-    const severityValues = ['critical', 'warning', 'info'];
-
+    
     const renderValueInput = (condition: StrategyCondition, index: number) => {
         const commonProps = {
             value: condition.value,
@@ -194,21 +200,13 @@ const Step3: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Fu
             className: "flex-grow bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
         };
     
-        if (condition.key === 'severity') {
+        const keyOptions = options.conditionKeys[condition.key] || options.tagValues[condition.key];
+
+        if (keyOptions && Array.isArray(keyOptions) && keyOptions.length > 0) {
             return (
                 <select {...commonProps}>
-                    <option value="">選擇嚴重性...</option>
-                    {severityValues.map(v => <option key={v} value={v}>{v}</option>)}
-                </select>
-            );
-        }
-        
-        const tagDef = tagDefs.find(t => t.key === condition.key);
-        if (tagDef && tagDef.allowedValues.length > 0) {
-             return (
-                <select {...commonProps}>
                     <option value="">選擇值...</option>
-                    {tagDef.allowedValues.map(v => <option key={v.id} value={v.value}>{v.value}</option>)}
+                    {keyOptions.map(v => <option key={v} value={v}>{v}</option>)}
                 </select>
             );
         }
@@ -225,7 +223,7 @@ const Step3: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Fu
                     <div key={index} className="flex items-center space-x-2">
                         <select value={cond.key} onChange={e => handleConditionChange(index, 'key', e.target.value)} className="w-1/3 bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
                             <option value="">選擇標籤鍵...</option>
-                            {conditionKeys.map(k => <option key={k} value={k}>{k}</option>)}
+                            {allConditionKeys.map(k => <option key={k} value={k}>{k}</option>)}
                         </select>
                         <select value={cond.operator} onChange={e => handleConditionChange(index, 'operator', e.target.value)} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
                             <option value="=">=</option>

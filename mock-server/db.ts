@@ -10,7 +10,12 @@ import {
     LogAnalysis,
     LogLevel,
     TraceAnalysis,
-    Span
+    Span,
+    NavItem,
+    TabConfigMap,
+    PlatformSettings,
+    PreferenceOptions,
+    GrafanaSettings,
 } from '../types';
 
 // Helper to generate UUIDs
@@ -24,6 +29,53 @@ export function uuidv4() {
 
 // --- ALL MOCK DATA DEFINITIONS ---
 
+const MOCK_PAGE_METADATA: Record<string, { columnConfigKey: string }> = {
+  'dashboards': { columnConfigKey: 'dashboards' },
+  'incidents': { columnConfigKey: 'incidents' },
+  'resources': { columnConfigKey: 'resources' },
+  'personnel': { columnConfigKey: 'personnel' },
+  'alert_rules': { columnConfigKey: 'alert_rules' },
+  'silence_rules': { columnConfigKey: 'silence_rules' },
+};
+
+const MOCK_ICON_MAP: Record<string, string> = {
+    'home': 'home',
+    'incidents': 'shield-alert',
+    'resources': 'database-zap',
+    'dashboard': 'layout-dashboard',
+    'analyzing': 'activity',
+    'automation': 'bot',
+    'settings': 'settings',
+    'identity-access-management': 'users',
+    'notification-management': 'bell',
+    'platform-settings': 'sliders-horizontal',
+    'MenuFoldOutlined': 'menu',
+    'MenuUnfoldOutlined': 'menu',
+    'menu-fold': 'align-justify',
+    'menu-unfold': 'align-left',
+    'deployment-unit': 'box',
+};
+
+const MOCK_CHART_COLORS: string[] = ['#38bdf8', '#a78bfa', '#34d399', '#f87171', '#fbbf24', '#60a5fa'];
+
+const MOCK_NAV_ITEMS: NavItem[] = [
+    { key: 'home', label: '首頁', icon: 'home' },
+    { key: 'incidents', label: '事件管理', icon: 'shield-alert' },
+    { key: 'resources', label: '資源管理', icon: 'database-zap' },
+    { key: 'dashboards', label: '儀表板管理', icon: 'layout-dashboard' },
+    { key: 'analyzing', label: '分析中心', icon: 'activity' },
+    { key: 'automation', label: '自動化中心', icon: 'bot' },
+    {
+      key: 'settings',
+      label: '設定',
+      icon: 'settings',
+      children: [
+         { key: 'settings/identity-access-management', label: '身份與存取', icon: 'users' },
+         { key: 'settings/notification-management', label: '通知管理', icon: 'bell' },
+         { key: 'settings/platform-settings', label: '平台設定', icon: 'sliders-horizontal' },
+      ],
+    },
+];
 const MOCK_DASHBOARDS: Dashboard[] = [
     { id: 'sre-war-room', name: 'SRE 戰情室', type: DashboardType.BuiltIn, category: '業務與 SLA', description: '跨團隊即時戰情看板，聚焦重大事件與 SLA 指標。', owner: '事件指揮中心', updatedAt: '2025/09/18 17:15', path: '/sre-war-room' },
     { id: 'infrastructure-insights', name: '基礎設施洞察', type: DashboardType.BuiltIn, category: '基礎設施', description: '整合多雲與多中心資源健康狀態。', owner: 'SRE 平台團隊', updatedAt: '2025/09/18 16:30', path: '/dashboard/infrastructure-insights' },
@@ -42,6 +94,7 @@ const MOCK_INCIDENTS: Incident[] = [
     { id: 'INC-001', summary: 'API 延遲超過閾值', resource: 'api-server-01', resourceId: 'res-001', serviceImpact: 'High', rule: 'API 延遲規則', ruleId: 'rule-002', status: 'new', severity: 'warning', priority: 'P1', assignee: '張三', triggeredAt: '2024-01-15 10:30:00', history: [ { timestamp: '2024-01-15 10:30:00', user: 'System', action: 'Incident created from rule "API 延遲規則".' } ] },
     { id: 'INC-002', summary: '資料庫連接超時', resource: 'db-primary', resourceId: 'res-002', serviceImpact: 'High', rule: '資料庫連接規則', ruleId: 'rule-db-conn', status: 'acknowledged', severity: 'critical', priority: 'P0', assignee: '李四', triggeredAt: '2024-01-15 10:15:00', history: [ { timestamp: '2024-01-15 10:15:00', user: 'System', action: 'Incident created from rule "資料庫連接規則".' } ] },
 ];
+const MOCK_QUICK_SILENCE_DURATIONS = [1, 2, 4, 8, 12, 24]; // hours
 const MOCK_ALERT_RULES: AlertRule[] = [
     { id: 'rule-001', name: 'CPU 使用率過高', description: '當任何伺服器的 CPU 使用率連續 5 分鐘超過 90% 時觸發。', enabled: true, target: '所有伺服器', conditionsSummary: 'CPU > 90% for 5m', severity: 'critical', automationEnabled: true, creator: 'Admin User', lastUpdated: '2025-09-22 10:00:00', automation: { enabled: true, scriptId: 'play-002' } },
     { id: 'rule-002', name: 'API 延遲規則', description: 'API Gateway 的 p95 延遲超過 500ms。', enabled: true, target: 'api-gateway-prod', conditionsSummary: 'Latency > 500ms', severity: 'warning', automationEnabled: false, creator: 'Emily White', lastUpdated: '2025-09-21 15:30:00' },
@@ -84,6 +137,7 @@ const MOCK_USERS: User[] = [
     { id: 'usr-001', name: 'Admin User', email: 'admin@sre.platform', role: 'Admin', team: 'SRE Platform', status: 'active', lastLogin: '2分鐘前' },
     { id: 'usr-002', name: 'Emily White', email: 'emily.w@example.com', role: 'SRE', team: 'Core Infrastructure', status: 'active', lastLogin: '1小時前' },
 ];
+const MOCK_USER_STATUSES: User['status'][] = ['active', 'invited', 'inactive'];
 const MOCK_TEAMS: Team[] = [
     { id: 'team-001', name: 'SRE Platform', description: 'Manages the SRE platform itself.', ownerId: 'usr-001', memberIds: ['usr-001'], createdAt: '2024-01-01 10:00:00' },
 ];
@@ -106,6 +160,13 @@ const MOCK_NOTIFICATIONS: NotificationItem[] = [
 const MOCK_NOTIFICATION_STRATEGIES: NotificationStrategy[] = [
     { id: 'strat-1', name: 'Critical Database Alerts', enabled: true, triggerCondition: 'severity = critical AND resource_type = RDS', channelCount: 2, priority: 'High', creator: 'Admin', lastUpdated: '2025-09-20 10:00:00' }
 ];
+const MOCK_NOTIFICATION_STRATEGY_OPTIONS = {
+    priorities: ['High', 'Medium', 'Low'],
+    conditionKeys: {
+        severity: ['critical', 'warning', 'info'],
+        resource_type: ['API Gateway', 'RDS Database', 'EKS Cluster'],
+    }
+};
 const MOCK_NOTIFICATION_CHANNELS: NotificationChannel[] = [
     { id: 'chan-1', name: 'SRE On-call Email', type: 'Email', enabled: true, config: { smtpServer: 'smtp.example.com' }, lastTestResult: 'success', lastTestedAt: '2025-09-22 11:00:00' },
 ];
@@ -147,7 +208,8 @@ const MOCK_TRACES: Trace[] = [
     }
 ];
 const MOCK_MAIL_SETTINGS: MailSettings = { smtpServer: 'smtp.example.com', port: 587, username: 'noreply@sre.platform', senderName: 'SRE Platform', senderEmail: 'noreply@sre.platform', encryption: 'tls' };
-const MOCK_AUTH_SETTINGS: AuthSettings = { provider: 'Keycloak', enabled: true, clientId: 'sre-platform-client', clientSecret: '...', realm: 'sre', authUrl: '...', tokenUrl: '...', userInfoUrl: '...' };
+const MOCK_GRAFANA_SETTINGS: GrafanaSettings = { enabled: true, url: 'http://localhost:3000', apiKey: 'glsa_xxxxxxxxxxxxxxxxxxxxxxxx', orgId: 1 };
+const MOCK_AUTH_SETTINGS: AuthSettings = { provider: 'Keycloak', enabled: true, clientId: 'sre-platform-client', clientSecret: '...', realm: 'sre', authUrl: '...', tokenUrl: '...', userInfoUrl: '...', idpAdminUrl: 'http://localhost:8080/admin/master/console/' };
 const LAYOUT_WIDGETS: LayoutWidget[] = [
     // Incident Management
     { id: 'incident_pending_count', name: '待處理事件', description: '顯示目前狀態為「新」的事件總數。', supportedPages: ['事件管理'] },
@@ -176,7 +238,7 @@ const LAYOUT_WIDGETS: LayoutWidget[] = [
     { id: 'dashboard_grafana_count', name: 'Grafana 儀表板', description: '從 Grafana 連結的儀表板數量。', supportedPages: ['儀表板管理'] },
 
     // Analysis Center
-    { id: 'analysis_critical_anomalies', name: '嚴重異常 (24H)', description: '過去 24 小時內偵測到的嚴重異常事件。', supportedPages: ['分析中心'] },
+    { id: 'analysis_critical_anomalies', name: '嚴重異常 (24H)', description: '過去 24 小時内偵測到的嚴重異常事件。', supportedPages: ['分析中心'] },
     { id: 'analysis_log_volume', name: '日誌量 (24H)', description: '過去 24 小時的總日誌量。', supportedPages: ['分析中心'] },
     { id: 'analysis_trace_errors', name: '追蹤錯誤率', description: '包含錯誤的追蹤佔比。', supportedPages: ['分析中心'] },
     
@@ -293,7 +355,7 @@ const MOCK_AI_ANOMALIES = [
 ];
 
 const MOCK_AI_SUGGESTIONS = [
-    { title: '擴展 Kubernetes API 服務', impact: '高', effort: '中', details: '`api-service` 的 CPU 使用率持續偏高，建議增加副本數以應對流量。', action_button_text: '查看資源', action_link: '/resources/res-007' },
+    { title: '擴展 Kubernetes API 服務', impact: '高' as '高', effort: '中' as '中', details: '`api-service` 的 CPU 使用率持續偏高，建議增加副本數以應對流量。', action_button_text: '查看資源', action_link: '/resources/res-007' },
 ];
 
 const MOCK_SINGLE_INCIDENT_ANALYSIS: IncidentAnalysis = {
@@ -350,7 +412,7 @@ const MOCK_TRACE_ANALYSIS: TraceAnalysis = {
     recommendations: [
         '為 `user_transactions` 表的 `user_id` 和 `timestamp` 欄位新增複合索引。',
         '為對 `receipt-service` 的呼叫增加非同步處理或快取機制。',
-        '檢視 `processPayment` 操作中的業務邏輯，確認是否有可優化的部分。'
+        '檢視 `processPayment` 操作中的業務 logique，確認是否有可優化的部分。'
     ]
 };
 
@@ -375,7 +437,7 @@ const MOCK_EVENT_CORRELATION_DATA = {
     ],
 };
 const MOCK_CAPACITY_SUGGESTIONS = [
-    { title: '擴展 Kubernetes 生產集群', impact: '高' as '高', effort: '中' as '中', details: '`k8s-prod-cluster` 的 CPU 預計在 15 天內達到 95%。建議增加 2 個節點以避免效能下降。' },
+    { title: '擴展 Kubernetes 生產集群', impact: '高' as '高', effort: '中' as '中', details: '`k8s-prod-cluster` 的 CPU 預計在 15 天内達到 95%。建議增加 2 個節點以避免效能下降。' },
     { title: '升級 RDS 資料庫實例類型', impact: '中' as '中', effort: '高' as '高', details: '`rds-prod-main` 的記憶體使用率持續增長。建議從 `db.t3.large` 升級至 `db.t3.xlarge`。' },
     { title: '清理舊的 S3 儲存桶日誌', impact: '低' as '低', effort: '低' as '低', details: '`s3-log-archive` 儲存桶已超過 5TB。建議設定生命週期規則以降低成本。' },
 ];
@@ -385,7 +447,6 @@ const MOCK_CAPACITY_RESOURCE_ANALYSIS = [
     { name: 'k8s-prod-cluster-node-1', current: '85%', predicted: '98%', recommended: '緊急擴展', cost: '+$200/月' },
     { name: 'elasticache-prod-03', current: '40%', predicted: '45%', recommended: '觀察', cost: '-' },
 ];
-// FIX: Add missing mock data definitions to resolve API handler errors.
 const MOCK_SERVICE_HEALTH_DATA = {
     heatmap_data: [
         [0,0,98],[0,1,100],[0,2,95],[0,3,99],
@@ -416,14 +477,86 @@ const MOCK_ANALYSIS_OVERVIEW_DATA = {
     recent_logs: MOCK_LOGS.slice(0, 10),
 };
 
+const MOCK_PLATFORM_SETTINGS: PlatformSettings = {
+    helpUrl: 'https://docs.sre-platform.dev/help-center'
+};
+
+const MOCK_PREFERENCE_OPTIONS: PreferenceOptions = {
+    defaults: {
+        theme: 'dark',
+        language: 'zh-TW',
+        timezone: 'Asia/Taipei',
+        defaultPage: 'sre-war-room',
+    },
+    timezones: ['Asia/Taipei', 'UTC', 'America/New_York', 'Europe/London'],
+    languages: [{ value: 'en', label: 'English' }, { value: 'zh-TW', label: '繁體中文' }],
+    themes: [{ value: 'dark', label: '深色' }, { value: 'light', label: '淺色' }, { value: 'system', label: '跟隨系統' }],
+};
+
+const MOCK_TAB_CONFIGS: TabConfigMap = {
+    incidents: [
+        { label: '事件列表', path: '/incidents', icon: 'list' },
+        { label: '告警規則', path: '/incidents/rules', icon: 'settings-2' },
+        { label: '靜音規則', path: '/incidents/silence', icon: 'bell-off' },
+    ],
+    resources: [
+        { label: '資源列表', path: '/resources', icon: 'database' },
+        { label: '資源群組', path: '/resources/groups', icon: 'layout-grid' },
+        { label: '拓撲視圖', path: '/resources/topology', icon: 'share-2' },
+    ],
+    dashboards: [
+        { label: '儀表板列表', path: '/dashboards', icon: 'layout-dashboard' },
+        { label: '範本市集', path: '/dashboards/templates', icon: 'album' },
+    ],
+    analysis: [
+        { label: '分析總覽', path: '/analyzing', icon: 'bar-chart-2' },
+        { label: '日誌探索', path: '/analyzing/logs', icon: 'search' },
+        { label: '鏈路追蹤', path: '/analyzing/traces', icon: 'git-fork' },
+        { label: '容量規劃', path: '/analyzing/capacity', icon: 'bar-chart-big' },
+        { label: 'AI 洞察', path: '/analyzing/insights', icon: 'brain-circuit' },
+    ],
+    automation: [
+        { label: '腳本庫', path: '/automation', icon: 'notebook-tabs' },
+        { label: '運行歷史', path: '/automation/history', icon: 'history' },
+        { label: '觸發器', path: '/automation/triggers', icon: 'zap' },
+    ],
+    iam: [
+        { label: '人員管理', path: '/settings/identity-access-management', icon: 'users' },
+        { label: '團隊管理', path: '/settings/identity-access-management/teams', icon: 'users-2' },
+        { label: '角色管理', path: '/settings/identity-access-management/roles', icon: 'shield' },
+        { label: '審計日誌', path: '/settings/identity-access-management/audit-logs', icon: 'file-text' },
+    ],
+    notification: [
+        { label: '通知策略', path: '/settings/notification-management', icon: 'list-checks' },
+        { label: '通知管道', path: '/settings/notification-management/channels', icon: 'share-2' },
+        { label: '發送歷史', path: '/settings/notification-management/history', icon: 'history' },
+    ],
+    platformSettings: [
+        { label: '標籤管理', path: '/settings/platform-settings', icon: 'tags' },
+        { label: '郵件設定', path: '/settings/platform-settings/mail', icon: 'mail' },
+        { label: '身份驗證', path: '/settings/platform-settings/auth', icon: 'key' },
+        { label: '版面管理', path: '/settings/platform-settings/layout', icon: 'layout' },
+        { label: 'Grafana 設定', path: '/settings/platform-settings/grafana', icon: 'area-chart' },
+    ],
+    profile: [
+        { label: '個人資訊', path: '/profile', icon: 'user' },
+        { label: '安全設定', path: '/profile/security', icon: 'lock' },
+        { label: '偏好設定', path: '/profile/preferences', icon: 'sliders-horizontal' },
+    ]
+};
 
 function createInitialDB() {
     // Deep clone to make it mutable
     return {
+        pageMetadata: JSON.parse(JSON.stringify(MOCK_PAGE_METADATA)),
+        iconMap: JSON.parse(JSON.stringify(MOCK_ICON_MAP)),
+        chartColors: JSON.parse(JSON.stringify(MOCK_CHART_COLORS)),
+        navItems: JSON.parse(JSON.stringify(MOCK_NAV_ITEMS)),
         dashboards: JSON.parse(JSON.stringify(MOCK_DASHBOARDS)),
         availableGrafanaDashboards: JSON.parse(JSON.stringify(MOCK_AVAILABLE_GRAFANA_DASHBOARDS)),
         dashboardTemplates: JSON.parse(JSON.stringify(MOCK_DASHBOARD_TEMPLATES)),
         incidents: JSON.parse(JSON.stringify(MOCK_INCIDENTS)),
+        quickSilenceDurations: JSON.parse(JSON.stringify(MOCK_QUICK_SILENCE_DURATIONS)),
         alertRules: JSON.parse(JSON.stringify(MOCK_ALERT_RULES)),
         alertRuleTemplates: JSON.parse(JSON.stringify(MOCK_ALERT_RULE_TEMPLATES)),
         silenceRules: JSON.parse(JSON.stringify(MOCK_SILENCE_RULES)),
@@ -436,6 +569,7 @@ function createInitialDB() {
         automationExecutions: JSON.parse(JSON.stringify(MOCK_AUTOMATION_EXECUTIONS)),
         automationTriggers: JSON.parse(JSON.stringify(MOCK_AUTOMATION_TRIGGERS)),
         users: JSON.parse(JSON.stringify(MOCK_USERS)),
+        userStatuses: JSON.parse(JSON.stringify(MOCK_USER_STATUSES)),
         teams: JSON.parse(JSON.stringify(MOCK_TEAMS)),
         roles: JSON.parse(JSON.stringify(MOCK_ROLES)),
         availablePermissions: JSON.parse(JSON.stringify(AVAILABLE_PERMISSIONS)),
@@ -444,12 +578,14 @@ function createInitialDB() {
         tagCategories: JSON.parse(JSON.stringify(MOCK_TAG_CATEGORIES)),
         notifications: JSON.parse(JSON.stringify(MOCK_NOTIFICATIONS)),
         notificationStrategies: JSON.parse(JSON.stringify(MOCK_NOTIFICATION_STRATEGIES)),
+        notificationStrategyOptions: JSON.parse(JSON.stringify(MOCK_NOTIFICATION_STRATEGY_OPTIONS)),
         notificationChannels: JSON.parse(JSON.stringify(MOCK_NOTIFICATION_CHANNELS)),
         notificationHistory: JSON.parse(JSON.stringify(MOCK_NOTIFICATION_HISTORY)),
         loginHistory: JSON.parse(JSON.stringify(MOCK_LOGIN_HISTORY)),
         logs: JSON.parse(JSON.stringify(MOCK_LOGS)),
         traces: JSON.parse(JSON.stringify(MOCK_TRACES)),
         mailSettings: JSON.parse(JSON.stringify(MOCK_MAIL_SETTINGS)),
+        grafanaSettings: JSON.parse(JSON.stringify(MOCK_GRAFANA_SETTINGS)),
         authSettings: JSON.parse(JSON.stringify(MOCK_AUTH_SETTINGS)),
         userPreferences: JSON.parse(JSON.stringify(MOCK_USER_PREFERENCES)),
         layouts: JSON.parse(JSON.stringify(DEFAULT_LAYOUTS)),
@@ -462,6 +598,10 @@ function createInitialDB() {
             alert_rules: ['name', 'target', 'conditionsSummary', 'severity', 'automationEnabled', 'creator', 'lastUpdated'],
             silence_rules: ['name', 'type', 'matchers', 'schedule', 'creator', 'createdAt'],
         },
+        // NEW DYNAMIC UI CONFIGS
+        tabConfigs: JSON.parse(JSON.stringify(MOCK_TAB_CONFIGS)),
+        platformSettings: JSON.parse(JSON.stringify(MOCK_PLATFORM_SETTINGS)),
+        preferenceOptions: JSON.parse(JSON.stringify(MOCK_PREFERENCE_OPTIONS)),
         // AI DATA
         aiBriefing: JSON.parse(JSON.stringify(MOCK_AI_BRIEFING)),
         aiRiskPrediction: JSON.parse(JSON.stringify(MOCK_AI_RISK_PREDICTION)),

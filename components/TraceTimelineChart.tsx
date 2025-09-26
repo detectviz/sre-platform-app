@@ -1,7 +1,8 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import EChartsReact from './EChartsReact';
 import { Span } from '../types';
+import api from '../services/api';
 
 interface TraceTimelineChartProps {
   spans: Span[];
@@ -9,14 +10,31 @@ interface TraceTimelineChartProps {
   onSpanSelect: (spanId: string) => void;
 }
 
+const FALLBACK_COLORS = ['#38bdf8', '#a78bfa', '#34d399', '#f87171', '#fbbf24', '#60a5fa'];
+
 const TraceTimelineChart: React.FC<TraceTimelineChartProps> = ({ spans, selectedSpanId, onSpanSelect }) => {
-    const { chartOption, yAxisData } = useMemo(() => {
-        if (!spans || spans.length === 0) return { chartOption: {}, yAxisData: [] };
+    const [colors, setColors] = useState<string[]>([]);
+    const [isLoadingColors, setIsLoadingColors] = useState(true);
+    
+    useEffect(() => {
+        setIsLoadingColors(true);
+        api.get<string[]>('/ui/themes/charts')
+            .then(res => setColors(res.data))
+            .catch(err => {
+                console.error("Failed to fetch chart colors, using fallback.", err);
+                setColors(FALLBACK_COLORS);
+            })
+            .finally(() => setIsLoadingColors(false));
+    }, []);
+
+    const { chartOption } = useMemo(() => {
+        if (!spans || spans.length === 0 || colors.length === 0) {
+            return { chartOption: {} };
+        }
 
         const sortedSpans = [...spans].sort((a, b) => a.startTime - b.startTime);
         const traceStartTime = sortedSpans[0].startTime;
 
-        const colors = ['#38bdf8', '#a78bfa', '#34d399', '#f87171', '#fbbf24', '#60a5fa'];
         const serviceColorMap = new Map<string, string>();
         let colorIndex = 0;
         const getServiceColor = (serviceName: string): string => {
@@ -53,8 +71,8 @@ const TraceTimelineChart: React.FC<TraceTimelineChartProps> = ({ spans, selected
         const seriesData = flattenedSpans.map(item => ({
             name: item.span.spanId,
             value: [
-                item.span.startTime - traceStartTime, // Transparent offset
-                item.span.duration, // Actual duration
+                item.span.startTime - traceStartTime,
+                item.span.duration,
             ],
             itemStyle: {
                 color: item.span.status === 'error' ? '#ef4444' : getServiceColor(item.span.serviceName),
@@ -68,9 +86,7 @@ const TraceTimelineChart: React.FC<TraceTimelineChartProps> = ({ spans, selected
                 trigger: 'axis',
                 axisPointer: { type: 'shadow' },
                 formatter: (params: any[]) => {
-                    if (!params || params.length === 0) {
-                        return '';
-                    }
+                    if (!params || params.length === 0) return '';
                     const spanIndex = params[0].dataIndex;
                     const { span } = flattenedSpans[spanIndex];
                     return `
@@ -113,8 +129,8 @@ const TraceTimelineChart: React.FC<TraceTimelineChartProps> = ({ spans, selected
             ],
         };
 
-        return { chartOption, yAxisData };
-    }, [spans, selectedSpanId]);
+        return { chartOption };
+    }, [spans, selectedSpanId, colors]);
     
     const echartsEvents = useMemo(() => ({
         'click': (params: any) => {
@@ -123,7 +139,10 @@ const TraceTimelineChart: React.FC<TraceTimelineChartProps> = ({ spans, selected
             }
         }
     }), [onSpanSelect]);
-
+    
+    if (isLoadingColors) {
+        return <div className="h-[400px] flex items-center justify-center text-slate-400">Loading Chart...</div>;
+    }
 
     return <EChartsReact option={chartOption} style={{ height: '400px' }} onEvents={echartsEvents}/>;
 };

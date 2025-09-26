@@ -13,6 +13,7 @@ import { exportToCsv } from '../../services/export';
 import ImportFromCsvModal from '../../components/ImportFromCsvModal';
 import ColumnSettingsModal, { TableColumn } from '../../components/ColumnSettingsModal';
 import { showToast } from '../../services/toast';
+import { usePageMetadata } from '../../contexts/PageMetadataContext';
 
 const ALL_COLUMNS: TableColumn[] = [
     { key: 'enabled', label: '' },
@@ -23,7 +24,7 @@ const ALL_COLUMNS: TableColumn[] = [
     { key: 'creator', label: '創建者' },
     { key: 'createdAt', label: '創建時間' },
 ];
-const PAGE_KEY = 'silence_rules';
+const PAGE_IDENTIFIER = 'silence_rules';
 
 const SilenceRulePage: React.FC = () => {
     const [rules, setRules] = useState<SilenceRule[]>([]);
@@ -41,13 +42,17 @@ const SilenceRulePage: React.FC = () => {
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
 
+    const { metadata: pageMetadata } = usePageMetadata();
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
+
     const fetchRules = useCallback(async () => {
+        if (!pageKey) return;
         setIsLoading(true);
         setError(null);
         try {
             const [rulesRes, columnsRes] = await Promise.all([
                 api.get<SilenceRule[]>('/silence-rules', { params: filters }),
-                api.get<string[]>(`/settings/column-config/${PAGE_KEY}`)
+                api.get<string[]>(`/settings/column-config/${pageKey}`)
             ]);
             setRules(rulesRes.data);
             setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
@@ -56,19 +61,25 @@ const SilenceRulePage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [filters]);
+    }, [filters, pageKey]);
 
     useEffect(() => {
-        fetchRules();
-    }, [fetchRules]);
+        if (pageKey) {
+            fetchRules();
+        }
+    }, [fetchRules, pageKey]);
     
     useEffect(() => {
         setSelectedIds([]);
     }, [filters]);
 
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
+        if (!pageKey) {
+            showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
+            return;
+        }
         try {
-            await api.put(`/settings/column-config/${PAGE_KEY}`, newColumnKeys);
+            await api.put(`/settings/column-config/${pageKey}`, newColumnKeys);
             setVisibleColumns(newColumnKeys);
             showToast('欄位設定已儲存。', 'success');
         } catch (err) {

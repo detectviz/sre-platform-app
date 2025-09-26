@@ -14,6 +14,7 @@ import { exportToCsv } from '../../services/export';
 import ImportFromCsvModal from '../../components/ImportFromCsvModal';
 import ColumnSettingsModal, { TableColumn } from '../../components/ColumnSettingsModal';
 import { showToast } from '../../services/toast';
+import { usePageMetadata } from '../../contexts/PageMetadataContext';
 
 const ALL_COLUMNS: TableColumn[] = [
     { key: 'enabled', label: '' },
@@ -25,7 +26,7 @@ const ALL_COLUMNS: TableColumn[] = [
     { key: 'creator', label: '創建者' },
     { key: 'lastUpdated', label: '最後更新' },
 ];
-const PAGE_KEY = 'alert_rules';
+const PAGE_IDENTIFIER = 'alert_rules';
 
 const AlertRulePage: React.FC = () => {
     const [rules, setRules] = useState<AlertRule[]>([]);
@@ -45,13 +46,17 @@ const AlertRulePage: React.FC = () => {
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
 
+    const { metadata: pageMetadata } = usePageMetadata();
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
+
     const fetchRules = useCallback(async () => {
+        if (!pageKey) return;
         setIsLoading(true);
         setError(null);
         try {
             const [rulesRes, columnsRes] = await Promise.all([
                 api.get<AlertRule[]>('/alert-rules', { params: filters }),
-                api.get<string[]>(`/settings/column-config/${PAGE_KEY}`)
+                api.get<string[]>(`/settings/column-config/${pageKey}`)
             ]);
             setRules(rulesRes.data);
             setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
@@ -60,15 +65,21 @@ const AlertRulePage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [filters]);
+    }, [filters, pageKey]);
 
     useEffect(() => {
-        fetchRules();
-    }, [fetchRules]);
+        if (pageKey) {
+            fetchRules();
+        }
+    }, [fetchRules, pageKey]);
     
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
+        if (!pageKey) {
+            showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
+            return;
+        }
         try {
-            await api.put(`/settings/column-config/${PAGE_KEY}`, newColumnKeys);
+            await api.put(`/settings/column-config/${pageKey}`, newColumnKeys);
             setVisibleColumns(newColumnKeys);
             showToast('欄位設定已儲存。', 'success');
         } catch (err) {
@@ -317,11 +328,12 @@ const AlertRulePage: React.FC = () => {
                 footer={
                     <div className="flex justify-end space-x-2">
                         <button onClick={() => setIsDeleteModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">取消</button>
+                        {/* FIX: Remove extra '>' character that was causing a JSX parsing error. */}
                         <button onClick={handleConfirmDelete} className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md">刪除</button>
                     </div>
                 }
             >
-                <p>您確定要刪除規則 <strong className="text-amber-400">{deletingRule?.name}</strong> 嗎？</p>
+                <p>您確定要刪除告警規則 <strong className="text-amber-400">{deletingRule?.name}</strong> 嗎？</p>
                 <p className="mt-2 text-slate-400">此操作無法復原。</p>
             </Modal>
             <ColumnSettingsModal
@@ -337,7 +349,7 @@ const AlertRulePage: React.FC = () => {
                 onImportSuccess={fetchRules}
                 itemName="告警規則"
                 importEndpoint="/alert-rules/import"
-                templateHeaders={['id', 'name', 'enabled', 'severity', 'conditionsSummary', 'automationEnabled', 'creator']}
+                templateHeaders={['name', 'description', 'enabled', 'severity', 'conditionsSummary']}
                 templateFilename="alert-rules-template.csv"
             />
         </div>

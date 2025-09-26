@@ -195,6 +195,13 @@ export interface MailSettings {
     encryption: 'none' | 'tls' | 'ssl';
 }
 
+export interface GrafanaSettings {
+  enabled: boolean;
+  url: string;
+  apiKey: string;
+  orgId: number;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -392,6 +399,7 @@ export interface AuthSettings {
   authUrl: string;
   tokenUrl: string;
   userInfoUrl: string;
+  idpAdminUrl: string;
 }
 
 export interface TagValue {
@@ -534,4 +542,27 @@ export interface CapacityPlanningData {
         recommended: string;
         cost: string;
     }[];
+}
+
+export interface PageMetadata {
+  columnConfigKey: string;
+}
+export type PageMetadataMap = Record<string, PageMetadata>;
+
+export interface TabItemConfig {
+  label: string;
+  path: string;
+  icon?: string;
+}
+export type TabConfigMap = Record<string, TabItemConfig[]>;
+
+export interface PlatformSettings {
+  helpUrl: string;
+}
+
+export interface PreferenceOptions {
+  defaults: UserPreferences;
+  timezones: string[];
+  languages: { value: string; label: string }[];
+  themes: { value: string; label: string }[];
 }

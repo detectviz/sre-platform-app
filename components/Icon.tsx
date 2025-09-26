@@ -1,6 +1,41 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import api from '../services/api';
 
-// FIX: Extend React.HTMLAttributes<HTMLElement> to allow passing standard HTML attributes like 'title'.
+// --- Caching Mechanism ---
+// Module-level cache to store the fetched icon map.
+let iconMapCache: Record<string, string> | null = null;
+// Promise to prevent multiple fetches while one is already in flight.
+let fetchPromise: Promise<Record<string, string>> | null = null;
+
+const fetchAndCacheIconMap = (): Promise<Record<string, string>> => {
+    if (iconMapCache) {
+        return Promise.resolve(iconMapCache);
+    }
+    if (fetchPromise) {
+        return fetchPromise;
+    }
+    fetchPromise = api.get<Record<string, string>>('/ui/icons')
+        .then(response => {
+            iconMapCache = response.data;
+            return iconMapCache;
+        })
+        .catch(err => {
+            console.error("Fatal: Failed to fetch icon map. Icons may not render correctly.", err);
+            // On failure, set an empty cache to prevent retries
+            iconMapCache = {};
+            return iconMapCache;
+        })
+        .finally(() => {
+            fetchPromise = null;
+        });
+    return fetchPromise;
+};
+
+// Pre-fetch the map when the module is loaded.
+fetchAndCacheIconMap();
+// --- End Caching Mechanism ---
+
+
 interface IconProps extends React.HTMLAttributes<HTMLElement> {
   name: string;
   className?: string;
@@ -8,34 +43,21 @@ interface IconProps extends React.HTMLAttributes<HTMLElement> {
 
 const Icon: React.FC<IconProps> = ({ name, className, ...rest }) => {
   const containerRef = useRef<HTMLSpanElement>(null);
+  const [iconMap, setIconMap] = useState<Record<string, string> | null>(iconMapCache);
   
-  // A map for Ant Design icon names to Lucide names
-  const iconNameMap: { [key: string]: string } = {
-    'home': 'home',
-    'incidents': 'shield-alert',
-    'resources': 'database-zap',
-    'dashboard': 'layout-dashboard',
-    'analyzing': 'activity',
-    'automation': 'bot',
-    'settings': 'settings',
-    'identity-access-management': 'users',
-    'notification-management': 'bell',
-    'platform-settings': 'sliders-horizontal',
-    'MenuFoldOutlined': 'menu',
-    'MenuUnfoldOutlined': 'menu',
-    'menu-fold': 'align-justify',
-    'menu-unfold': 'align-left',
-    'deployment-unit': 'box',
-  };
+  useEffect(() => {
+    if (!iconMap) {
+        fetchAndCacheIconMap().then(setIconMap);
+    }
+  }, [iconMap]);
 
-  const lucidName = iconNameMap[name] || name;
+  const lucidName = (iconMap && iconMap[name]) || name;
 
   useEffect(() => {
     if (containerRef.current) {
       const iconEl = document.createElement('i');
       iconEl.setAttribute('data-lucide', lucidName);
       
-      // Clear previous icon from the container
       containerRef.current.innerHTML = '';
       containerRef.current.appendChild(iconEl);
 
@@ -43,8 +65,7 @@ const Icon: React.FC<IconProps> = ({ name, className, ...rest }) => {
       if (window.lucide) {
         // @ts-ignore
         window.lucide.createIcons({
-          nodes: [iconEl], // Tell lucide to only process this new element
-          // FIX: Add attributes to make the generated SVG inherit size from its container.
+          nodes: [iconEl],
           attrs: {
             width: '100%',
             height: '100%',
@@ -52,11 +73,8 @@ const Icon: React.FC<IconProps> = ({ name, className, ...rest }) => {
         });
       }
     }
-  }, [lucidName]); // Re-run effect when the icon name changes
+  }, [lucidName]);
 
-  // The container will handle the className for sizing and color.
-  // The SVG inside will inherit color, and size will be constrained.
-  // FIX: Use inline-flex and centering to ensure the icon is properly contained and sized.
   return <span ref={containerRef} className={`${className || ''} inline-flex items-center justify-center`} {...rest} />;
 };
 
