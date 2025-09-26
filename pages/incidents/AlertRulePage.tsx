@@ -10,6 +10,22 @@ import Modal from '../../components/Modal';
 import api from '../../services/api';
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
+import { exportToCsv } from '../../services/export';
+import ImportFromCsvModal from '../../components/ImportFromCsvModal';
+import ColumnSettingsModal, { TableColumn } from '../../components/ColumnSettingsModal';
+import { showToast } from '../../services/toast';
+
+const ALL_COLUMNS: TableColumn[] = [
+    { key: 'enabled', label: '' },
+    { key: 'name', label: '規則名稱' },
+    { key: 'target', label: '監控對象' },
+    { key: 'conditionsSummary', label: '觸發條件' },
+    { key: 'severity', label: '嚴重程度' },
+    { key: 'automationEnabled', label: '自動化' },
+    { key: 'creator', label: '創建者' },
+    { key: 'lastUpdated', label: '最後更新' },
+];
+const PAGE_KEY = 'alert_rules';
 
 const AlertRulePage: React.FC = () => {
     const [rules, setRules] = useState<AlertRule[]>([]);
@@ -25,13 +41,20 @@ const AlertRulePage: React.FC = () => {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingRule, setDeletingRule] = useState<AlertRule | null>(null);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
+    const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
 
     const fetchRules = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
-            const { data } = await api.get<AlertRule[]>('/alert-rules');
-            setRules(data);
+            const [rulesRes, columnsRes] = await Promise.all([
+                api.get<AlertRule[]>('/alert-rules'),
+                api.get<string[]>(`/settings/column-config/${PAGE_KEY}`)
+            ]);
+            setRules(rulesRes.data);
+            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
         } catch (err) {
             setError('無法獲取告警規則。');
         } finally {
@@ -42,6 +65,18 @@ const AlertRulePage: React.FC = () => {
     useEffect(() => {
         fetchRules();
     }, [fetchRules]);
+    
+    const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
+        try {
+            await api.put(`/settings/column-config/${PAGE_KEY}`, newColumnKeys);
+            setVisibleColumns(newColumnKeys);
+            showToast('欄位設定已儲存。', 'success');
+        } catch (err) {
+            showToast('無法儲存欄位設定。', 'error');
+        } finally {
+            setIsColumnSettingsModalOpen(false);
+        }
+    };
 
     const handleNewRule = () => {
         setEditingRule(null);
@@ -144,11 +179,57 @@ const AlertRulePage: React.FC = () => {
         }
     };
 
+    const handleExport = () => {
+        const dataToExport = selectedIds.length > 0
+            ? filteredRules.filter(r => selectedIds.includes(r.id))
+            : filteredRules;
+
+        if (dataToExport.length === 0) {
+            alert("沒有可匯出的資料。");
+            return;
+        }
+
+        exportToCsv({
+            filename: `alert-rules-${new Date().toISOString().split('T')[0]}.csv`,
+            headers: ['id', 'name', 'enabled', 'severity', 'conditionsSummary', 'automationEnabled', 'creator', 'lastUpdated'],
+            data: dataToExport.map(r => ({
+                id: r.id,
+                name: r.name,
+                enabled: r.enabled,
+                severity: r.severity,
+                conditionsSummary: r.conditionsSummary,
+                automationEnabled: r.automationEnabled,
+                creator: r.creator,
+                lastUpdated: r.lastUpdated,
+            })),
+        });
+    };
+
     const getSeverityPill = (severity: AlertRule['severity']) => {
         switch (severity) {
             case 'critical': return 'border-red-500 text-red-500';
             case 'warning': return 'border-orange-500 text-orange-500';
             case 'info': return 'border-sky-500 text-sky-500';
+        }
+    };
+
+    const renderCellContent = (rule: AlertRule, columnKey: string) => {
+        switch(columnKey) {
+            case 'enabled':
+                return (
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked={rule.enabled} className="sr-only peer" onChange={() => handleToggleEnable(rule)} />
+                        <div className="w-11 h-6 bg-slate-700 rounded-full peer peer-focus:ring-4 peer-focus:ring-sky-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
+                    </label>
+                );
+            case 'name': return <span className="font-medium text-white">{rule.name}</span>;
+            case 'target': return rule.target;
+            case 'conditionsSummary': return rule.conditionsSummary;
+            case 'severity': return <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getSeverityPill(rule.severity)}`}>{rule.severity.toUpperCase()}</span>;
+            case 'automationEnabled': return rule.automationEnabled ? <Icon name="check-circle" className="w-5 h-5 text-green-400"/> : <Icon name="x-circle" className="w-5 h-5 text-slate-500" />;
+            case 'creator': return rule.creator;
+            case 'lastUpdated': return rule.lastUpdated;
+            default: return null;
         }
     };
 
@@ -166,9 +247,9 @@ const AlertRulePage: React.FC = () => {
                 leftActions={<ToolbarButton icon="search" text="搜索和篩選" onClick={() => setIsSearchModalOpen(true)} />}
                 rightActions={
                     <>
-                        <ToolbarButton icon="upload" text="匯入" disabled title="功能開發中" />
-                        <ToolbarButton icon="download" text="匯出" disabled title="功能開發中" />
-                        <ToolbarButton icon="settings-2" text="欄位設定" disabled title="功能開發中" />
+                        <ToolbarButton icon="upload" text="匯入" onClick={() => setIsImportModalOpen(true)} />
+                        <ToolbarButton icon="download" text="匯出" onClick={handleExport} />
+                        <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => setIsColumnSettingsModalOpen(true)} />
                         <ToolbarButton icon="plus" text="新增規則" primary onClick={handleNewRule} />
                     </>
                 }
@@ -190,22 +271,17 @@ const AlertRulePage: React.FC = () => {
                                            onChange={handleSelectAll}
                                     />
                                 </th>
-                                <th scope="col" className="px-6 py-3"></th>
-                                <th scope="col" className="px-6 py-3">規則名稱</th>
-                                <th scope="col" className="px-6 py-3">監控對象</th>
-                                <th scope="col" className="px-6 py-3">觸發條件</th>
-                                <th scope="col" className="px-6 py-3">嚴重程度</th>
-                                <th scope="col" className="px-6 py-3">自動化</th>
-                                <th scope="col" className="px-6 py-3">創建者</th>
-                                <th scope="col" className="px-6 py-3">最後更新</th>
+                                {visibleColumns.map(key => (
+                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                ))}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <TableLoader colSpan={10} />
+                                <TableLoader colSpan={visibleColumns.length + 2} />
                             ) : error ? (
-                                <TableError colSpan={10} message={error} onRetry={fetchRules} />
+                                <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchRules} />
                             ) : filteredRules.map((rule) => (
                                 <tr key={rule.id} className={`border-b border-slate-800 ${selectedIds.includes(rule.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
                                     <td className="p-4 w-12">
@@ -215,25 +291,9 @@ const AlertRulePage: React.FC = () => {
                                                onChange={(e) => handleSelectOne(e, rule.id)}
                                         />
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <label className="relative inline-flex items-center cursor-pointer">
-                                            <input type="checkbox" checked={rule.enabled} className="sr-only peer" onChange={() => handleToggleEnable(rule)} />
-                                            <div className="w-11 h-6 bg-slate-700 rounded-full peer peer-focus:ring-4 peer-focus:ring-sky-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
-                                        </label>
-                                    </td>
-                                    <td className="px-6 py-4 font-medium text-white">{rule.name}</td>
-                                    <td className="px-6 py-4">{rule.target}</td>
-                                    <td className="px-6 py-4">{rule.conditionsSummary}</td>
-                                    <td className="px-6 py-4">
-                                         <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getSeverityPill(rule.severity)}`}>
-                                            {rule.severity.toUpperCase()}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        {rule.automationEnabled ? <Icon name="check-circle" className="w-5 h-5 text-green-400"/> : <Icon name="x-circle" className="w-5 h-5 text-slate-500" />}
-                                    </td>
-                                    <td className="px-6 py-4">{rule.creator}</td>
-                                    <td className="px-6 py-4">{rule.lastUpdated}</td>
+                                    {visibleColumns.map(key => (
+                                        <td key={key} className="px-6 py-4">{renderCellContent(rule, key)}</td>
+                                    ))}
                                     <td className="px-6 py-4 text-center space-x-1">
                                          <button onClick={() => handleEditRule(rule)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯"><Icon name="edit-3" className="w-4 h-4" /></button>
                                          <button onClick={() => handleTestRule(rule)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="測試"><Icon name="flask-conical" className="w-4 h-4" /></button>
@@ -273,6 +333,22 @@ const AlertRulePage: React.FC = () => {
                 <p>您確定要刪除規則 <strong className="text-amber-400">{deletingRule?.name}</strong> 嗎？</p>
                 <p className="mt-2 text-slate-400">此操作無法復原。</p>
             </Modal>
+            <ColumnSettingsModal
+                isOpen={isColumnSettingsModalOpen}
+                onClose={() => setIsColumnSettingsModalOpen(false)}
+                onSave={handleSaveColumnConfig}
+                allColumns={ALL_COLUMNS}
+                visibleColumnKeys={visibleColumns}
+            />
+            <ImportFromCsvModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                onImportSuccess={fetchRules}
+                itemName="告警規則"
+                importEndpoint="/alert-rules/import"
+                templateHeaders={['id', 'name', 'enabled', 'severity', 'conditionsSummary', 'automationEnabled', 'creator']}
+                templateFilename="alert-rules-template.csv"
+            />
         </div>
     );
 };

@@ -9,6 +9,7 @@ import api from '../../../services/api';
 import Pagination from '../../../components/Pagination';
 import TableLoader from '../../../components/TableLoader';
 import TableError from '../../../components/TableError';
+import { exportToCsv } from '../../../services/export';
 
 const NotificationHistoryPage: React.FC = () => {
     const [history, setHistory] = useState<NotificationHistoryRecord[]>([]);
@@ -80,7 +81,17 @@ const NotificationHistoryPage: React.FC = () => {
         }
     };
 
-    const handleExport = () => showPlaceholderModal('匯出通知歷史');
+    const handleExport = () => {
+        if (history.length === 0) {
+            alert("沒有可匯出的資料。");
+            return;
+        }
+        exportToCsv({
+            filename: `notification-history-${new Date().toISOString().split('T')[0]}.csv`,
+            headers: ['id', 'timestamp', 'strategy', 'channel', 'channelType', 'recipient', 'status', 'content'],
+            data: history,
+        });
+    };
     
     return (
         <div className="h-full flex flex-col">

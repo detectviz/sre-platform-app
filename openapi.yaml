@@ -1,12 +1,12 @@
 openapi: 3.1.0
 info:
   title: SRE 平台 API 契約
-  version: 2.5.1
+  version: 2.9.0
   description: |
-    # 版本 2.5.1 (最終 API 化)
-    - **新增端點**: 增加 `/settings/tags/options`，提供動態標籤分類。
-    - **擴充 Mock Data**: 為 `SREWarRoom` 和 `InfrastructureInsights` 頁面新增 KPI 數據與版面配置。
-    - **目標**: 達成 100% API 驅動，根除所有前端靜態設定。
+    # 版本 2.9.0 (API 契約重構)
+    - **術語統一**: 將所有 `/events` 相關端點重命名為 `/incidents`，以符合 SRE 標準術語。
+    - **AI 功能整合**: 新增 `/ai` 頂層路徑，將所有 AI 功能（簡報、分析、生成）集中管理，提升 API 組織性。
+    - **目標**: 建立一個更清晰、一致且易於維護的 API 契約。
 
     本文件定義 SRE 平台前後端之間的資料契約，作為後端開發的唯一真實來源 (SSOT)。
 servers:
@@ -15,10 +15,12 @@ servers:
 tags:
   - name: 認證與個人設定
     description: 登入、個人資訊與偏好設定。
+  - name: AI Copilot
+    description: 整合平台所有 AI 驅動的功能。
   - name: 儀表板
     description: 儀表板的 CRUD 與戰情室設定。
-  - name: 事件管理
-    description: 事件列表、詳情、狀態變更與 AI 分析。
+  - name: 事故管理 (Incidents)
+    description: 事故列表、詳情、狀態變更。
   - name: 告警規則 (Grafana 代理)
     description: 告警偵測規則設定 (代理 Grafana API)。
   - name: 靜音規則
@@ -121,13 +123,41 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /me/change-password:
+    post:
+      tags:
+        - 認證與個人設定
+      summary: 變更目前登入者的密碼
+      operationId: changePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [oldPassword, newPassword]
+              properties:
+                oldPassword:
+                  type: string
+                  format: password
+                newPassword:
+                  type: string
+                  format: password
+      responses:
+        "204":
+          description: 密碼已成功更新。
+        "400":
+          description: "請求無效（例如，舊密碼不正確）。"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  
   # ===========================================================================
-  # DASHBOARDS & SRE WAR ROOM
+  # AI COPILOT
   # ===========================================================================
-  /sre-war-room/briefing:
+  /ai/briefing:
     get:
-      tags: [儀表板]
-      summary: 取得 AI 每日簡報
+      tags: [AI Copilot]
+      summary: 取得 SRE 戰情室 AI 每日簡報
       operationId: getAIBriefing
       responses:
         "200":
@@ -136,11 +166,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BriefingData'
-
-  /sre-war-room/briefing/generate:
+  
+  /ai/briefing/generate:
     post:
-      tags: [儀表板]
-      summary: 觸發生成新的 AI 每日簡報
+      tags: [AI Copilot]
+      summary: 觸發生成新的 SRE 戰情室 AI 每日簡報
       operationId: generateAIBriefing
       responses:
         "200":
@@ -149,6 +179,131 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BriefingData'
+
+  /ai/incidents/analyze:
+    post:
+      tags: [AI Copilot]
+      summary: 產生事故的 AI 分析報告
+      operationId: generateIncidentAIAnalysis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                incident_ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: 回傳 AI 分析報告。
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/IncidentAnalysis'
+                  - $ref: '#/components/schemas/MultiIncidentAnalysis'
+
+  /ai/infra/risk-prediction:
+    get:
+      tags: [AI Copilot]
+      summary: 取得基礎設施 AI 風險預測
+      operationId: getInfraRiskPrediction
+      responses:
+        "200":
+          description: 回傳風險預測資料。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskPrediction'
+
+  /ai/insights/health-score:
+    get:
+      tags: [AI Copilot]
+      summary: 取得 AI 系統健康評分
+      operationId: getAIHealthScore
+      responses:
+        "200":
+          description: 回傳健康評分與摘要。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthScore'
+  
+  /ai/insights/anomalies:
+    get:
+      tags: [AI Copilot]
+      summary: 取得 AI 異常檢測結果
+      operationId: getAIAnomalies
+      responses:
+        "200":
+          description: 回傳偵測到的異常列表。
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Anomaly'
+
+  /ai/insights/suggestions:
+    get:
+      tags: [AI Copilot]
+      summary: 取得 AI 優化建議
+      operationId: getAISuggestions
+      responses:
+        "200":
+          description: 回傳優化建議列表。
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Suggestion'
+  
+  /ai/automation/generate-script:
+    post:
+      tags: [AI Copilot]
+      summary: 使用 AI 生成自動化腳本
+      operationId: generatePlaybookWithAI
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prompt: { type: string }
+      responses:
+        "200":
+          description: 回傳 AI 生成的腳本內容。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedPlaybook'
+
+  # ===========================================================================
+  # DASHBOARDS & SRE WAR ROOM
+  # ===========================================================================
+  /sre-war-room/briefing:
+    get:
+      tags: [儀表板]
+      summary: 取得 AI 每日簡報 (已棄用)
+      operationId: getAIBriefing_deprecated
+      deprecated: true
+      responses:
+        "301":
+          description: 此端點已遷移至 /ai/briefing
+          
+  /sre-war-room/briefing/generate:
+    post:
+      tags: [儀表板]
+      summary: 觸發生成新的 AI 每日簡報 (已棄用)
+      operationId: generateAIBriefing_deprecated
+      deprecated: true
+      responses:
+        "301":
+          description: 此端點已遷移至 /ai/briefing/generate
 
   /dashboards:
     get:
@@ -282,33 +437,20 @@ paths:
         "200":
           description: 操作成功。
 
-  /dashboards/infrastructure-insights/risk-prediction:
-    get:
-      tags: [儀表板]
-      summary: 取得基礎設施 AI 風險預測
-      operationId: getInfraRiskPrediction
-      responses:
-        "200":
-          description: 回傳風險預測資料。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RiskPrediction'
-
   # ===========================================================================
   # INCIDENTS, RULES, SILENCES
   # ===========================================================================
-  /events:
+  /incidents:
     get:
-      tags: [事件管理]
-      summary: 取得事件列表
-      operationId: listEvents
+      tags: [事故管理 (Incidents)]
+      summary: 取得事故列表
+      operationId: listIncidents
       parameters:
         - $ref: "#/components/parameters/PageParam"
         - $ref: "#/components/parameters/PageSizeParam"
       responses:
         "200":
-          description: 回傳事件分頁列表。
+          description: 回傳事故分頁列表。
           content:
             application/json:
               schema:
@@ -321,55 +463,29 @@ paths:
                         items:
                           $ref: "#/components/schemas/Incident"
   
-  /events/{event_id}:
+  /incidents/{incident_id}:
     get:
-      tags: [事件管理]
-      summary: 取得單一事件詳情
-      operationId: getEventById
+      tags: [事故管理 (Incidents)]
+      summary: 取得單一事故詳情
+      operationId: getIncidentById
       parameters:
-        - name: event_id
+        - name: incident_id
           in: path
           required: true
           schema: { type: string }
       responses:
         "200":
-          description: 回傳事件詳情。
+          description: 回傳事故詳情。
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Incident"
 
-  /events/ai-analysis:
+  /incidents/batch-actions:
     post:
-      tags: [事件管理]
-      summary: 產生事件的 AI 分析報告
-      operationId: generateIncidentAIAnalysis
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                incident_ids:
-                  type: array
-                  items:
-                    type: string
-      responses:
-        "200":
-          description: 回傳 AI 分析報告。
-          content:
-            application/json:
-              schema:
-                oneOf:
-                  - $ref: '#/components/schemas/IncidentAnalysis'
-                  - $ref: '#/components/schemas/MultiIncidentAnalysis'
-
-  /events/batch-actions:
-    post:
-      tags: [事件管理]
-      summary: 批次操作事件
-      operationId: batchUpdateEvents
+      tags: [事故管理 (Incidents)]
+      summary: 批次操作事故
+      operationId: batchUpdateIncidents
       requestBody:
         content:
           application/json:
@@ -387,13 +503,13 @@ paths:
         "200":
           description: 操作成功。
 
-  /events/{event_id}/actions:
+  /incidents/{incident_id}/actions:
     post:
-      tags: [事件管理]
-      summary: 對事件執行狀態操作
-      operationId: performEventAction
+      tags: [事故管理 (Incidents)]
+      summary: 對事故執行狀態操作
+      operationId: performIncidentAction
       parameters:
-        - name: event_id
+        - name: incident_id
           in: path
           required: true
           schema: { type: string }
@@ -409,7 +525,7 @@ paths:
                   enum: [acknowledge, resolve]
       responses:
         "200":
-          description: 事件狀態已更新。
+          description: 事故狀態已更新。
           content:
             application/json:
               schema:
@@ -436,6 +552,30 @@ paths:
         content: { application/json: { schema: { $ref: "#/components/schemas/AlertRule" } } }
       responses:
         "201": { $ref: "#/components/responses/AlertRuleDetail" }
+  
+  /alert-rules/import:
+    post:
+      tags: [告警規則 (Grafana 代理)]
+      summary: 從 CSV 匯入告警規則
+      operationId: importAlertRulesFromCsv
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: 匯入成功。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
   
   /alert-rules/templates:
     get:
@@ -521,6 +661,30 @@ paths:
         content: { application/json: { schema: { $ref: "#/components/schemas/SilenceRule" } } }
       responses:
         "201": { $ref: "#/components/responses/SilenceRuleDetail" }
+
+  /silence-rules/import:
+    post:
+      tags: [靜音規則]
+      summary: 從 CSV 匯入靜音規則
+      operationId: importSilenceRulesFromCsv
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: 匯入成功。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
 
   /silence-rules/templates:
     get:
@@ -626,6 +790,30 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Resource" }
+
+  /resources/import:
+    post:
+      tags: [資源管理]
+      summary: 從 CSV 匯入資源
+      operationId: importResourcesFromCsv
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: 匯入成功。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
 
   /resources/options:
     get:
@@ -865,26 +1053,6 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/AutomationPlaybook" }
 
-  /automation/scripts/generate-with-ai:
-    post:
-      tags: [自動化]
-      summary: 使用 AI 生成自動化腳本
-      operationId: generatePlaybookWithAI
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                prompt: { type: string }
-      responses:
-        "200":
-          description: 回傳 AI 生成的腳本內容。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GeneratedPlaybook'
-
   /automation/scripts/{script_id}:
     parameters:
       - name: script_id
@@ -1067,49 +1235,6 @@ paths:
   # ===========================================================================
   # ANALYSIS
   # ===========================================================================
-  /analysis/ai-insights/health-score:
-    get:
-      tags: [分析中心]
-      summary: 取得 AI 系統健康評分
-      operationId: getAIHealthScore
-      responses:
-        "200":
-          description: 回傳健康評分與摘要。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HealthScore'
-  
-  /analysis/ai-insights/anomalies:
-    get:
-      tags: [分析中心]
-      summary: 取得 AI 異常檢測結果
-      operationId: getAIAnomalies
-      responses:
-        "200":
-          description: 回傳偵測到的異常列表。
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Anomaly'
-
-  /analysis/ai-insights/suggestions:
-    get:
-      tags: [分析中心]
-      summary: 取得 AI 優化建議
-      operationId: getAISuggestions
-      responses:
-        "200":
-          description: 回傳優化建議列表。
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Suggestion'
-
   /logs:
     get:
       tags: [分析中心]
@@ -1221,6 +1346,30 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/User" }
+  
+  /iam/users/import:
+    post:
+      tags: [身份與存取 (IAM)]
+      summary: 從 CSV 匯入人員
+      operationId: importUsersFromCsv
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: 匯入成功。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
   
   /iam/users/{user_id}:
     parameters:
@@ -1806,6 +1955,43 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/LayoutWidget'
+  
+  /settings/column-config/{pageKey}:
+    parameters:
+      - name: pageKey
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [平台設定]
+      summary: 取得指定頁面的欄位配置
+      operationId: getColumnConfig
+      responses:
+        "200":
+          description: 欄位鍵值陣列。
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: string }
+    put:
+      tags: [平台設定]
+      summary: 儲存指定頁面的欄位配置
+      operationId: saveColumnConfig
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items: { type: string }
+      responses:
+        "200":
+          description: 已儲存的欄位鍵值陣列。
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: string }
 
   /settings/mail:
     get:

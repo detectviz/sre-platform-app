@@ -87,6 +87,7 @@ CREATE TABLE "audit_logs" (
     "client_ip" INET,
     "details" JSONB
 );
+
 COMMENT ON TABLE "audit_logs" IS '記錄系統中的所有重要操作，用於追蹤與稽核。';
 COMMENT ON COLUMN "audit_logs"."user_name_snapshot" IS '操作當下使用者名稱的快照，避免使用者改名後無法追溯。';
 COMMENT ON COLUMN "audit_logs"."target_type" IS '操作目標的類型，如 "Team", "Role"。';
@@ -141,10 +142,12 @@ CREATE TABLE "user_preferences" (
     "language" VARCHAR(10) NOT NULL DEFAULT 'zh-TW' CHECK (language IN ('en', 'zh-TW')),
     "timezone" VARCHAR(100) NOT NULL DEFAULT 'Asia/Taipei',
     "default_page" VARCHAR(255) NOT NULL DEFAULT '/dashboard',
+    "layouts" JSONB,
     "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-COMMENT ON TABLE "user_preferences" IS '儲存使用者的個人化偏好，如主題、語言等。';
+COMMENT ON TABLE "user_preferences" IS '儲存使用者的個人化偏好，如主題、語言、版面配置等。';
 COMMENT ON COLUMN "user_preferences"."user_id" IS '關聯的使用者 ID。';
+COMMENT ON COLUMN "user_preferences"."layouts" IS '儲存使用者自訂的頁面版面配置，格式為 {"page_id": ["widget1", "widget2"]}。';
 
 -- 使用者登入歷史紀錄
 CREATE TABLE "login_history" (
@@ -240,18 +243,6 @@ CREATE TABLE "dashboards" (
 );
 COMMENT ON TABLE "dashboards" IS '儲存儀表板的設定與資訊。';
 COMMENT ON COLUMN "dashboards"."layout" IS '儲存 built-in 類型儀表板的網格與元件佈局。';
-
--- 頁面版面配置
-CREATE TABLE "page_layouts" (
-    "page_id" VARCHAR(255) PRIMARY KEY,
-    "layout" JSONB NOT NULL,
-    "user_id" UUID NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
-    "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE("page_id", "user_id")
-);
-COMMENT ON TABLE "page_layouts" IS '儲存使用者自訂的特定頁面 KPI 卡片版面配置。';
-COMMENT ON COLUMN "page_layouts"."page_id" IS '頁面的唯一識別碼，如 "HomePage", "ResourceListPage"。';
-COMMENT ON COLUMN "page_layouts"."layout" IS '儲存該頁面要顯示的元件 ID 陣列。';
 
 -- 為核心資產建立索引
 CREATE INDEX "idx_resources_type" ON "resources"("type");

@@ -44,11 +44,11 @@ const IncidentListPage: React.FC = () => {
                 page_size: pageSize,
                 ...filters,
             };
-            const { data } = await api.get<{ items: Incident[], total: number }>('/events', { params });
+            const { data } = await api.get<{ items: Incident[], total: number }>('/incidents', { params });
             setIncidents(data.items);
             setTotalIncidents(data.total);
         } catch (err) {
-            setError('無法獲取事件列表。');
+            setError('無法獲取事故列表。');
         } finally {
             setIsLoading(false);
         }
@@ -63,12 +63,12 @@ const IncidentListPage: React.FC = () => {
     }, [currentPage, pageSize, filters]);
 
     const handleAcknowledge = async (ids: string[]) => {
-        await Promise.all(ids.map(id => api.post(`/events/${id}/actions`, { action: 'acknowledge' })));
+        await Promise.all(ids.map(id => api.post(`/incidents/${id}/actions`, { action: 'acknowledge' })));
         fetchIncidents();
     };
 
     const handleResolve = async (ids: string[]) => {
-        await Promise.all(ids.map(id => api.post(`/events/${id}/actions`, { action: 'resolve' })));
+        await Promise.all(ids.map(id => api.post(`/incidents/${id}/actions`, { action: 'resolve' })));
         fetchIncidents();
     };
 
@@ -111,7 +111,7 @@ const IncidentListPage: React.FC = () => {
         setAnalysisReport(null);
 
         try {
-            const { data } = await api.post<IncidentAnalysis | MultiIncidentAnalysis>('/events/ai-analysis', {
+            const { data } = await api.post<IncidentAnalysis | MultiIncidentAnalysis>('/ai/incidents/analyze', {
                 incident_ids: selectedIds,
             });
             setAnalysisReport(data);
@@ -223,7 +223,7 @@ const IncidentListPage: React.FC = () => {
                 <Pagination total={totalIncidents} page={currentPage} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
             </TableContainer>
 
-            <Drawer isOpen={!!incidentId} onClose={() => navigate('/incidents')} title={`事件詳情: ${incidentId}`} width="w-3/5" extra={<ToolbarButton icon="brain-circuit" text="AI 分析" onClick={() => { if(incidentId) { setSelectedIds([incidentId]); handleRunAIAnalysis(); }}} ai />}>
+            <Drawer isOpen={!!incidentId} onClose={() => navigate('/incidents')} title={`事故詳情: ${incidentId}`} width="w-3/5" extra={<ToolbarButton icon="brain-circuit" text="AI 分析" onClick={() => { if(incidentId) { setSelectedIds([incidentId]); handleRunAIAnalysis(); }}} ai />}>
                 {incidentId && <IncidentDetailPage incidentId={incidentId} />}
             </Drawer>
             

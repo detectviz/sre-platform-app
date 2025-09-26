@@ -8,6 +8,8 @@ import api from '../../../services/api';
 import Pagination from '../../../components/Pagination';
 import TableLoader from '../../../components/TableLoader';
 import TableError from '../../../components/TableError';
+import PlaceholderModal from '../../../components/PlaceholderModal';
+import { exportToCsv } from '../../../services/export';
 
 const AuditLogsPage: React.FC = () => {
     const [logs, setLogs] = useState<AuditLog[]>([]);
@@ -20,6 +22,13 @@ const AuditLogsPage: React.FC = () => {
     const [filters, setFilters] = useState<{ user: string; action: string; startDate: string; endDate: string }>({ user: '', action: '', startDate: '', endDate: '' });
     const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
     const [users, setUsers] = useState<User[]>([]);
+    const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
+    const [modalFeatureName, setModalFeatureName] = useState('');
+
+    const showPlaceholderModal = (featureName: string) => {
+        setModalFeatureName(featureName);
+        setIsPlaceholderModalOpen(true);
+    };
 
     useEffect(() => {
         api.get<{ items: User[] }>('/iam/users', { params: { page: 1, page_size: 1000 } })
@@ -55,6 +64,27 @@ const AuditLogsPage: React.FC = () => {
         setCurrentPage(1);
     }, [filters]);
     
+    const handleExport = () => {
+        if (logs.length === 0) {
+            alert("沒有可匯出的資料。");
+            return;
+        }
+        exportToCsv({
+            filename: `audit-logs-${new Date().toISOString().split('T')[0]}.csv`,
+            headers: ['id', 'timestamp', 'user_name', 'action', 'target_type', 'target_name', 'result', 'ip'],
+            data: logs.map(log => ({
+                id: log.id,
+                timestamp: log.timestamp,
+                user_name: log.user.name,
+                action: log.action,
+                target_type: log.target.type,
+                target_name: log.target.name,
+                result: log.result,
+                ip: log.ip,
+            })),
+        });
+    };
+
     const uniqueActions = useMemo(() => {
         // In a real app, this might come from an API or be pre-defined
         return ['LOGIN_SUCCESS', 'UPDATE_EVENT_RULE', 'EXECUTE_PLAYBOOK', 'DELETE_USER'];
@@ -78,7 +108,7 @@ const AuditLogsPage: React.FC = () => {
                         <input type="datetime-local" value={filters.endDate} onChange={e => setFilters({...filters, endDate: e.target.value})} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm" />
                     </div>
                 }
-                rightActions={<ToolbarButton icon="download" text="匯出" disabled title="功能開發中" />}
+                rightActions={<ToolbarButton icon="download" text="匯出" onClick={handleExport} />}
             />
 
             <TableContainer>
@@ -141,6 +171,11 @@ const AuditLogsPage: React.FC = () => {
                     </div>
                 )}
             </Drawer>
+            <PlaceholderModal
+                isOpen={isPlaceholderModalOpen}
+                onClose={() => setIsPlaceholderModalOpen(false)}
+                featureName={modalFeatureName}
+            />
         </div>
     );
 };

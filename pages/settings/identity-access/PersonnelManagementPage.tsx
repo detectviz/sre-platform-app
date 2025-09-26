@@ -10,6 +10,19 @@ import Modal from '../../../components/Modal';
 import api from '../../../services/api';
 import TableLoader from '../../../components/TableLoader';
 import TableError from '../../../components/TableError';
+import { exportToCsv } from '../../../services/export';
+import ImportFromCsvModal from '../../../components/ImportFromCsvModal';
+import { showToast } from '../../../services/toast';
+import ColumnSettingsModal, { TableColumn } from '../../../components/ColumnSettingsModal';
+
+const ALL_COLUMNS: TableColumn[] = [
+    { key: 'name', label: '名稱' },
+    { key: 'role', label: '角色' },
+    { key: 'team', label: '團隊' },
+    { key: 'status', label: '狀態' },
+    { key: 'lastLogin', label: '上次登入' },
+];
+const PAGE_KEY = 'personnel';
 
 const PersonnelManagementPage: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
@@ -31,6 +44,10 @@ const PersonnelManagementPage: React.FC = () => {
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
+    const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+
     const fetchUsers = useCallback(async () => {
         setIsLoading(true);
         setError(null);
@@ -40,9 +57,15 @@ const PersonnelManagementPage: React.FC = () => {
                 page_size: pageSize,
                 keyword: searchTerm,
             };
-            const { data } = await api.get<{ items: User[], total: number }>('/iam/users', { params });
-            setUsers(data.items);
-            setTotalUsers(data.total);
+            
+            const [usersRes, columnsRes] = await Promise.all([
+                api.get<{ items: User[], total: number }>('/iam/users', { params }),
+                api.get<string[]>(`/settings/column-config/${PAGE_KEY}`)
+            ]);
+
+            setUsers(usersRes.data.items);
+            setTotalUsers(usersRes.data.total);
+            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
         } catch (err) {
             setError('無法獲取人員列表。');
             console.error(err);
@@ -66,6 +89,18 @@ const PersonnelManagementPage: React.FC = () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, []);
+
+    const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
+        try {
+            await api.put(`/settings/column-config/${PAGE_KEY}`, newColumnKeys);
+            setVisibleColumns(newColumnKeys);
+            showToast('欄位設定已儲存。', 'success');
+        } catch (err) {
+            showToast('無法儲存欄位設定。', 'error');
+        } finally {
+            setIsColumnSettingsModalOpen(false);
+        }
+    };
 
     const getStatusPill = (status: User['status']) => {
         switch (status) {
@@ -149,6 +184,45 @@ const PersonnelManagementPage: React.FC = () => {
         }
     };
     
+    const handleExport = () => {
+        const dataToExport = selectedIds.length > 0
+            ? users.filter(u => selectedIds.includes(u.id))
+            : users;
+
+        if (dataToExport.length === 0) {
+            alert("沒有可匯出的資料。");
+            return;
+        }
+
+        exportToCsv({
+            filename: `personnel-${new Date().toISOString().split('T')[0]}.csv`,
+            headers: ['id', 'name', 'email', 'role', 'team', 'status', 'lastLogin'],
+            data: dataToExport.map(({ avatar, ...rest }) => rest), // Exclude avatar
+        });
+    };
+    
+    const renderCellContent = (user: User, columnKey: string) => {
+        switch (columnKey) {
+            case 'name':
+                return (
+                    <div className="flex items-center">
+                        <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mr-3 shrink-0">
+                            <Icon name="user" className="w-5 h-5 text-slate-300" />
+                        </div>
+                        <div>
+                            <div className="font-medium text-white">{user.name}</div>
+                            <div className="text-xs text-slate-400 font-normal">{user.email}</div>
+                        </div>
+                    </div>
+                );
+            case 'role': return user.role;
+            case 'team': return user.team;
+            case 'status': return <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusPill(user.status)}`}>{user.status}</span>;
+            case 'lastLogin': return user.lastLogin;
+            default: return null;
+        }
+    };
+
     const leftActions = (
          <div className="relative">
             <Icon name="search" className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400 w-4 h-4" />
@@ -175,9 +249,9 @@ const PersonnelManagementPage: React.FC = () => {
                 leftActions={leftActions}
                 rightActions={
                     <>
-                        <ToolbarButton icon="upload" text="匯入" disabled title="功能開發中" />
-                        <ToolbarButton icon="download" text="匯出" disabled title="功能開發中" />
-                        <ToolbarButton icon="settings-2" text="欄位設定" disabled title="功能開發中" />
+                        <ToolbarButton icon="upload" text="匯入" onClick={() => setIsImportModalOpen(true)} />
+                        <ToolbarButton icon="download" text="匯出" onClick={handleExport} />
+                        <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => setIsColumnSettingsModalOpen(true)} />
                         <ToolbarButton icon="user-plus" text="邀請人員" primary onClick={() => setIsInviteModalOpen(true)} />
                     </>
                 }
@@ -199,19 +273,17 @@ const PersonnelManagementPage: React.FC = () => {
                                            onChange={handleSelectAll}
                                     />
                                 </th>
-                                <th scope="col" className="px-6 py-3">名稱</th>
-                                <th scope="col" className="px-6 py-3">角色</th>
-                                <th scope="col" className="px-6 py-3">團隊</th>
-                                <th scope="col" className="px-6 py-3">狀態</th>
-                                <th scope="col" className="px-6 py-3">上次登入</th>
+                                {visibleColumns.map(key => (
+                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                ))}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <TableLoader colSpan={7} />
+                                <TableLoader colSpan={visibleColumns.length + 2} />
                             ) : error ? (
-                                <TableError colSpan={7} message={error} onRetry={fetchUsers} />
+                                <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchUsers} />
                             ) : users.map((user) => (
                                 <tr key={user.id} className={`border-b border-slate-800 ${selectedIds.includes(user.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
                                     <td className="p-4 w-12">
@@ -221,25 +293,9 @@ const PersonnelManagementPage: React.FC = () => {
                                                onChange={(e) => handleSelectOne(e, user.id)}
                                         />
                                     </td>
-                                    <td className="px-6 py-4 font-medium text-white">
-                                        <div className="flex items-center">
-                                            <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mr-3 shrink-0">
-                                                <Icon name="user" className="w-5 h-5 text-slate-300" />
-                                            </div>
-                                            <div>
-                                                <div>{user.name}</div>
-                                                <div className="text-xs text-slate-400 font-normal">{user.email}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">{user.role}</td>
-                                    <td className="px-6 py-4">{user.team}</td>
-                                    <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusPill(user.status)}`}>
-                                            {user.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">{user.lastLogin}</td>
+                                    {visibleColumns.map(key => (
+                                        <td key={key} className="px-6 py-4">{renderCellContent(user, key)}</td>
+                                    ))}
                                     <td className="px-6 py-4 text-center">
                                         <div className="relative" ref={activeDropdown === user.id ? dropdownRef : null}>
                                             <button onClick={() => setActiveDropdown(activeDropdown === user.id ? null : user.id)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white">
@@ -298,6 +354,22 @@ const PersonnelManagementPage: React.FC = () => {
                 <p>您確定要刪除使用者 <strong className="text-amber-400">{deletingUser?.name}</strong> 嗎？</p>
                 <p className="mt-2 text-slate-400">此操作無法復原。</p>
             </Modal>
+            <ColumnSettingsModal
+                isOpen={isColumnSettingsModalOpen}
+                onClose={() => setIsColumnSettingsModalOpen(false)}
+                onSave={handleSaveColumnConfig}
+                allColumns={ALL_COLUMNS}
+                visibleColumnKeys={visibleColumns}
+            />
+            <ImportFromCsvModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                onImportSuccess={fetchUsers}
+                itemName="人員"
+                importEndpoint="/iam/users/import"
+                templateHeaders={['id', 'name', 'email', 'role', 'team', 'status']}
+                templateFilename="personnel-template.csv"
+            />
         </div>
     );
 };

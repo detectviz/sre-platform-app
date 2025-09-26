@@ -6,6 +6,7 @@ import PlaceholderModal from '../../components/PlaceholderModal';
 import api from '../../services/api';
 import { Resource } from '../../types';
 import PageKPIs from '../../components/PageKPIs';
+import { exportToCsv } from '../../services/export';
 
 // AI Response Types
 interface RiskPrediction {
@@ -25,15 +26,10 @@ const InfrastructureInsightsPage: React.FC = () => {
     // State for AI-generated content
     const [riskPrediction, setRiskPrediction] = useState<RiskPrediction | null>(null);
     const [isRiskLoading, setIsRiskLoading] = useState(true);
+    const [bookmarkedResources, setBookmarkedResources] = useState<Resource[]>([]);
+    const [isBookmarkLoading, setIsBookmarkLoading] = useState(true);
     const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
     const [modalFeatureName, setModalFeatureName] = useState('');
-    const [bookmarkedResources, setBookmarkedResources] = useState<Resource[]>([]);
-
-    useEffect(() => {
-        api.get<{items: Resource[]}>('/resources', { params: { bookmarked: true } })
-            .then(res => setBookmarkedResources(res.data.items))
-            .catch(err => console.error("Failed to fetch bookmarked resources", err));
-    }, []);
 
     const showPlaceholderModal = (featureName: string) => {
         setModalFeatureName(featureName);
@@ -43,7 +39,7 @@ const InfrastructureInsightsPage: React.FC = () => {
     const fetchRiskPrediction = useCallback(async () => {
         setIsRiskLoading(true);
         try {
-            const { data } = await api.get<RiskPrediction>('/dashboards/infrastructure-insights/risk-prediction');
+            const { data } = await api.get<RiskPrediction>('/ai/infra/risk-prediction');
             setRiskPrediction(data);
         } catch (error) {
             console.error("AI Risk Prediction Error:", error);
@@ -57,9 +53,56 @@ const InfrastructureInsightsPage: React.FC = () => {
         }
     }, []);
 
-    useEffect(() => {
+    const fetchBookmarkedResources = useCallback(async () => {
+        setIsBookmarkLoading(true);
+        try {
+            const { data } = await api.get<{items: Resource[]}>('/resources', { params: { bookmarked: true } });
+            setBookmarkedResources(data.items);
+        } catch (error) {
+            console.error("Failed to fetch bookmarked resources", error);
+            setBookmarkedResources([]);
+        } finally {
+            setIsBookmarkLoading(false);
+        }
+    }, []);
+
+    const fetchData = useCallback(() => {
         fetchRiskPrediction();
-    }, [fetchRiskPrediction]);
+        fetchBookmarkedResources();
+    }, [fetchRiskPrediction, fetchBookmarkedResources]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    const handleRefresh = () => {
+        fetchData();
+    };
+
+    const handleExport = () => {
+        if (!riskPrediction && bookmarkedResources.length === 0) {
+           alert("沒有可匯出的資料。");
+           return;
+       }
+       const dataToExport = [
+           ...(riskPrediction?.top_risky_resources.map(r => ({
+               type: 'Risky Resource',
+               name: r.name,
+               details: r.risk,
+               status: ''
+           })) || []),
+           ...bookmarkedResources.map(r => ({
+               type: 'Bookmarked Resource',
+               name: r.name,
+               details: r.type,
+               status: r.status
+           }))
+       ];
+        exportToCsv({
+           filename: `infra-insights-${new Date().toISOString().split('T')[0]}.csv`,
+           data: dataToExport,
+       });
+   };
 
     // Chart Options
     const riskBreakdownOption = {
@@ -97,10 +140,6 @@ const InfrastructureInsightsPage: React.FC = () => {
         { label: 'Last 24 hours', value: 'from=now-24h&to=now' },
     ];
     const [timeRange, setTimeRange] = useState('from=now-6h&to=now');
-    
-    const handleRefresh = () => showPlaceholderModal('刷新洞察');
-    const handleExport = () => showPlaceholderModal('匯出洞察報表');
-
 
     return (
         <div className="space-y-6">
@@ -160,7 +199,11 @@ const InfrastructureInsightsPage: React.FC = () => {
                 <div className="lg:col-span-1 glass-card rounded-xl p-6">
                     <h2 className="text-xl font-bold mb-4">關注的資源</h2>
                     <div className="space-y-3">
-                        {bookmarkedResources.map(res => (
+                        {isBookmarkLoading ? (
+                            <div className="flex items-center justify-center h-full text-slate-400">
+                                <Icon name="loader-circle" className="w-6 h-6 animate-spin" />
+                            </div>
+                        ) : bookmarkedResources.map(res => (
                             <div key={res.id} className="flex items-center justify-between p-2 bg-slate-800/50 rounded-lg">
                                 <div>
                                     <p className="font-semibold text-white">{res.name}</p>

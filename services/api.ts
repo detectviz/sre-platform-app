@@ -1,3 +1,4 @@
+
 import { DB, uuidv4 } from '../mock-server/db';
 import { Dashboard } from '../types';
 import { showToast } from './toast';
@@ -53,21 +54,43 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 }
                 break;
             }
-
-            // SRE War Room
-            case 'GET /sre-war-room': {
-                if (id === 'briefing') return DB.aiBriefing;
-                break;
-            }
-            case 'POST /sre-war-room': {
-                if (id === 'briefing' && action === 'generate') {
-                    // In a real backend, this would trigger a new LLM call.
-                    // Here, we just return the stored mock data.
-                    return DB.aiBriefing;
+            case 'POST /me': {
+                if (id === 'change-password') {
+                    const { oldPassword, newPassword } = body;
+                    // Mock validation: In a real app, this would be a secure check.
+                    if (oldPassword === 'wrongpassword') {
+                        throw { status: 400, message: '舊密碼不正確。' };
+                    }
+                    if (!newPassword || newPassword.length < 6) {
+                        throw { status: 400, message: '新密碼長度至少需要 6 個字元。' };
+                    }
+                    // Success, return empty object which will result in a 204 No Content.
+                    return {};
                 }
                 break;
             }
 
+            // AI Copilot
+            case 'GET /ai': {
+                if (id === 'briefing') return DB.aiBriefing;
+                if (id === 'infra' && action === 'risk-prediction') return DB.aiRiskPrediction;
+                if (id === 'insights') {
+                    if (action === 'health-score') return DB.aiHealthScore;
+                    if (action === 'anomalies') return DB.aiAnomalies;
+                    if (action === 'suggestions') return DB.aiSuggestions;
+                }
+                break;
+            }
+            case 'POST /ai': {
+                if (id === 'briefing' && action === 'generate') return DB.aiBriefing;
+                if (id === 'incidents' && action === 'analyze') {
+                    const { incident_ids } = body;
+                    return incident_ids.length > 1 ? DB.multiIncidentAnalysis : DB.singleIncidentAnalysis;
+                }
+                if (id === 'automation' && action === 'generate-script') return DB.generatedPlaybook;
+                break;
+            }
+            
             // Dashboards
             case 'GET /dashboards': {
                 if (id === 'available-grafana') {
@@ -80,9 +103,6 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                      return { categories, owners };
                 }
                 if (id === 'templates') return DB.dashboardTemplates;
-                if (id === 'infrastructure-insights' && action === 'risk-prediction') {
-                    return DB.aiRiskPrediction;
-                }
                 if (id) {
                     const dashboard = DB.dashboards.find((d: any) => d.id === id);
                     if (!dashboard) throw { status: 404 };
@@ -93,15 +113,19 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 if (params.keyword) dashboards = dashboards.filter((d: any) => d.name.toLowerCase().includes(params.keyword.toLowerCase()));
                 return paginate(dashboards, params.page, params.page_size);
             }
-            case 'POST /dashboards':
+            case 'POST /dashboards': {
                 if (id === 'batch-actions') {
                     const { action, ids } = body;
                     if (action === 'delete') DB.dashboards.forEach((d: any) => { if (ids.includes(d.id)) d.deleted_at = new Date().toISOString(); });
                     return { success: true };
                 }
-                const newDashboard = { ...body, id: `db-${uuidv4()}` };
-                DB.dashboards.unshift(newDashboard);
-                return newDashboard;
+                const newDashboardData = { ...body, id: `db-${uuidv4()}` };
+                if (!newDashboardData.path) {
+                    newDashboardData.path = `/dashboard/${newDashboardData.id}`;
+                }
+                DB.dashboards.unshift(newDashboardData);
+                return newDashboardData;
+            }
             case 'PATCH /dashboards': {
                 const index = DB.dashboards.findIndex((d: any) => d.id === id);
                 if (index === -1) throw { status: 404 };
@@ -115,7 +139,7 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
             }
 
             // Incidents, Rules, Silences
-            case 'GET /events': {
+            case 'GET /incidents': {
                 if (id) {
                     const incident = DB.incidents.find((i: any) => i.id === id);
                     if (!incident) throw { status: 404 };
@@ -123,20 +147,13 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 }
                 return paginate(DB.incidents, params.page, params.page_size);
             }
-            case 'POST /events': {
-                if (id === 'ai-analysis') {
-                    const { incident_ids } = body;
-                    if (incident_ids.length > 1) {
-                        return DB.multiIncidentAnalysis;
-                    }
-                    return DB.singleIncidentAnalysis;
-                }
+            case 'POST /incidents': {
                 if (action === 'actions') {
-                    const { action: eventAction } = body;
+                    const { action: incidentAction } = body;
                     const index = DB.incidents.findIndex((i: any) => i.id === id);
                     if (index === -1) throw { status: 404 };
-                    if (eventAction === 'acknowledge') DB.incidents[index].status = 'acknowledged';
-                    if (eventAction === 'resolve') DB.incidents[index].status = 'resolved';
+                    if (incidentAction === 'acknowledge') DB.incidents[index].status = 'acknowledged';
+                    if (incidentAction === 'resolve') DB.incidents[index].status = 'resolved';
                     return DB.incidents[index];
                 }
                 break;
@@ -146,6 +163,9 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 if (id === 'templates') return DB.alertRuleTemplates;
                 return DB.alertRules;
             case 'POST /alert-rules':
+                if (id === 'import') {
+                    return { message: '成功匯入 8 條告警規則。' };
+                }
                 const newRule = { ...body, id: `rule-${uuidv4()}` };
                 DB.alertRules.unshift(newRule);
                 return newRule;
@@ -162,6 +182,9 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 if (id === 'templates') return DB.silenceRuleTemplates;
                 return DB.silenceRules;
             case 'POST /silence-rules':
+                if (id === 'import') {
+                    return { message: '成功匯入 3 條靜音規則。' };
+                }
                 const newSilenceRule = { ...body, id: `sil-${uuidv4()}` };
                 DB.silenceRules.unshift(newSilenceRule);
                 return newSilenceRule;
@@ -203,6 +226,9 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                      const { action: batchAction, ids } = body;
                     if (batchAction === 'delete') DB.resources.forEach((r: any) => { if (ids.includes(r.id)) r.deleted_at = new Date().toISOString(); });
                     return { success: true };
+                }
+                if (id === 'import') {
+                    return { message: '成功匯入 15 筆資源。' };
                 } else {
                      const newResource = { ...body, id: `res-${uuidv4()}` };
                      DB.resources.unshift(newResource);
@@ -242,9 +268,6 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
             }
              case 'POST /automation': {
                 if (id === 'scripts') {
-                    if (action === 'generate-with-ai') {
-                        return DB.generatedPlaybook;
-                    }
                     if (action === 'execute') {
                         const scriptId = urlParts[2];
                         const script = DB.playbooks.find((p: any) => p.id === scriptId);
@@ -301,6 +324,9 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                         if (batchAction === 'delete') DB.users.forEach((u: any) => { if (ids.includes(u.id)) u.deleted_at = new Date().toISOString(); });
                         if (batchAction === 'disable') DB.users.forEach((u: any) => { if (ids.includes(u.id)) u.status = 'inactive'; });
                         return { success: true };
+                    }
+                    if (action === 'import') {
+                        return { message: '成功匯入 25 位人員。' };
                     } else {
                         const newUser = { ...body, id: `usr-${uuidv4()}`, status: 'invited', lastLogin: 'N/A' };
                         DB.users.unshift(newUser);
@@ -336,14 +362,6 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
             }
 
             // Analysis
-            case 'GET /analysis': {
-                if (id === 'ai-insights') {
-                    if (action === 'health-score') return DB.aiHealthScore;
-                    if (action === 'anomalies') return DB.aiAnomalies;
-                    if (action === 'suggestions') return DB.aiSuggestions;
-                }
-                break;
-            }
             case 'GET /logs': return paginate(DB.logs, params.page, params.page_size);
             case 'GET /traces': return DB.traces;
 
@@ -354,6 +372,10 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 if (id === 'tags') {
                     if (action === 'options') return { categories: DB.tagCategories };
                     return DB.tagDefinitions;
+                }
+                if (id === 'column-config') {
+                    const pageKey = action as keyof typeof DB.columnConfigs;
+                    return DB.columnConfigs[pageKey] || [];
                 }
                 if (id === 'notification-strategies') return DB.notificationStrategies;
                 if (id === 'notification-channels') return DB.notificationChannels;
@@ -366,6 +388,11 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 if (id === 'layouts') {
                     DB.layouts = body;
                     return DB.layouts;
+                }
+                if (id === 'column-config') {
+                    const pageKey = action as keyof typeof DB.columnConfigs;
+                    DB.columnConfigs[pageKey] = body;
+                    return DB.columnConfigs[pageKey];
                 }
                 if (id === 'mail') {
                     DB.mailSettings = { ...DB.mailSettings, ...body };
@@ -412,7 +439,7 @@ const api = {
             const data = await handleRequest('GET', url, config?.params, null);
             return { data };
         } catch (err: any) {
-            showToast(`GET ${url.split('?')[0]} failed!`);
+            console.error(`[API GET Error] ${url}`, err);
             throw err;
         }
     },
@@ -421,7 +448,7 @@ const api = {
             const data = await handleRequest('POST', url, null, body);
             return { data };
         } catch (err: any) {
-            showToast(`POST ${url.split('?')[0]} failed!`);
+            console.error(`[API POST Error] ${url}`, err);
             throw err;
         }
     },
@@ -430,7 +457,7 @@ const api = {
             const data = await handleRequest('PUT', url, null, body);
             return { data };
         } catch (err: any) {
-            showToast(`PUT ${url.split('?')[0]} failed!`);
+            console.error(`[API PUT Error] ${url}`, err);
             throw err;
         }
     },
@@ -439,7 +466,7 @@ const api = {
             const data = await handleRequest('PATCH', url, null, body);
             return { data };
         } catch (err: any) {
-            showToast(`PATCH ${url.split('?')[0]} failed!`);
+            console.error(`[API PATCH Error] ${url}`, err);
             throw err;
         }
     },
@@ -448,7 +475,7 @@ const api = {
             const data = await handleRequest('DELETE', url, null, null);
             return { data };
         } catch (err: any) {
-            showToast(`DELETE ${url.split('?')[0]} failed!`);
+            console.error(`[API DELETE Error] ${url}`, err);
             throw err;
         }
     }

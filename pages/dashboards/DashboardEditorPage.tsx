@@ -1,14 +1,19 @@
+
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import Icon from '../../components/Icon';
 import api from '../../services/api';
-import { LayoutWidget } from '../../types';
+import { LayoutWidget, DashboardType, Dashboard } from '../../types';
 import ContextualKPICard from '../../components/ContextualKPICard';
 import Modal from '../../components/Modal';
+import { showToast } from '../../services/toast';
 
 const DashboardEditorPage: React.FC = () => {
+    const { dashboardId } = useParams<{ dashboardId: string }>();
     const navigate = useNavigate();
-    const [dashboardName, setDashboardName] = useState('新的儀表板');
+    const isEditMode = !!dashboardId;
+
+    const [dashboardName, setDashboardName] = useState('');
     const [widgets, setWidgets] = useState<LayoutWidget[]>([]);
     const [isAddWidgetModalOpen, setIsAddWidgetModalOpen] = useState(false);
 
@@ -17,23 +22,39 @@ const DashboardEditorPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchAllData = async () => {
             setIsLoading(true);
             try {
                 const [widgetsRes, kpiDataRes] = await Promise.all([
                     api.get<LayoutWidget[]>('/settings/widgets'),
                     api.get<Record<string, any>>('/kpi-data'),
                 ]);
-                setAllWidgets(widgetsRes.data);
+                const allFetchedWidgets = widgetsRes.data;
+                setAllWidgets(allFetchedWidgets);
                 setKpiData(kpiDataRes.data);
+
+                if (isEditMode) {
+                    const { data: dashboardData } = await api.get<Dashboard>(`/dashboards/${dashboardId}`);
+                    setDashboardName(dashboardData.name);
+                    const dashboardWidgets = (dashboardData.layout || [])
+                        .map(widgetId => allFetchedWidgets.find(w => w.id === widgetId))
+                        .filter((w): w is LayoutWidget => !!w);
+                    setWidgets(dashboardWidgets);
+                } else {
+                    setDashboardName('新的儀表板');
+                    setWidgets([]);
+                }
+
             } catch (error) {
                 console.error("Failed to fetch dashboard editor data", error);
+                showToast(isEditMode ? '無法載入儀表板資料。' : '無法載入編輯器所需資料。', 'error');
+                navigate('/dashboards');
             } finally {
                 setIsLoading(false);
             }
         };
-        fetchData();
-    }, []);
+        fetchAllData();
+    }, [dashboardId, isEditMode, navigate]);
 
     const availableWidgets = allWidgets.filter(
         w => !widgets.some(sw => sw.id === w.id)
@@ -48,12 +69,35 @@ const DashboardEditorPage: React.FC = () => {
         setWidgets(widgets.filter(w => w.id !== widgetId));
     };
 
-    const handleSave = () => {
-        console.log('Saving new dashboard:', {
+    const handleSave = async () => {
+        if (!dashboardName.trim()) {
+            showToast('儀表板名稱為必填。', 'error');
+            return;
+        }
+
+        const dashboardPayload: Partial<Dashboard> = {
             name: dashboardName,
-            widgetIds: widgets.map(w => w.id),
-        });
-        navigate('/dashboards');
+            type: DashboardType.BuiltIn,
+            layout: widgets.map(w => w.id),
+        };
+
+        try {
+            if (isEditMode) {
+                const { data: updatedDashboard } = await api.patch<Dashboard>(`/dashboards/${dashboardId}`, dashboardPayload);
+                showToast(`儀表板 "${updatedDashboard.name}" 已成功更新。`, 'success');
+            } else {
+                dashboardPayload.category = '團隊自訂';
+                dashboardPayload.description = '使用者建立的內建儀表板。';
+                dashboardPayload.owner = 'Admin User';
+                dashboardPayload.updatedAt = new Date().toISOString().slice(0, 16).replace('T', ' ');
+                const { data: createdDashboard } = await api.post<Dashboard>('/dashboards', dashboardPayload);
+                showToast(`儀表板 "${createdDashboard.name}" 已成功儲存。`, 'success');
+            }
+            navigate('/dashboards');
+        } catch (error) {
+            console.error('Failed to save dashboard', error);
+            showToast(isEditMode ? '更新儀表板失敗。' : '儲存儀表板失敗。', 'error');
+        }
     };
 
     const renderDescription = (descriptionText: string): React.ReactNode => {
@@ -80,7 +124,7 @@ const DashboardEditorPage: React.FC = () => {
             {/* Header */}
             <div className="flex justify-between items-center shrink-0">
                 <div className="flex items-center space-x-4">
-                    <h1 className="text-3xl font-bold text-slate-400">建立儀表板:</h1>
+                    <h1 className="text-3xl font-bold text-slate-400">{isEditMode ? '編輯儀表板:' : '建立儀表板:'}</h1>
                     <input
                         type="text"
                         value={dashboardName}

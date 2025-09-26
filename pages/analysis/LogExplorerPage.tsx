@@ -7,6 +7,7 @@ import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import PlaceholderModal from '../../components/PlaceholderModal';
 import { LogEntry, LogLevel } from '../../types';
 import api from '../../services/api';
+import { exportToCsv } from '../../services/export';
 
 const LogExplorerPage: React.FC = () => {
     const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -110,6 +111,24 @@ const LogExplorerPage: React.FC = () => {
         setExpandedLogId(prevId => (prevId === id ? null : id));
     };
 
+    const handleExport = () => {
+        if (logs.length === 0) {
+            alert("沒有可匯出的資料。");
+            return;
+        }
+        exportToCsv({
+            filename: `logs-${new Date().toISOString().split('T')[0]}.csv`,
+            headers: ['id', 'timestamp', 'level', 'service', 'message'],
+            data: logs.map(log => ({
+                id: log.id,
+                timestamp: log.timestamp,
+                level: log.level,
+                service: log.service,
+                message: log.message,
+            })),
+        });
+    };
+
     const leftActions = (
         <>
             <div className="relative flex-grow">
@@ -143,7 +162,7 @@ const LogExplorerPage: React.FC = () => {
         <div className="h-full flex flex-col space-y-4">
             <Toolbar 
                 leftActions={leftActions}
-                rightActions={<ToolbarButton icon="download" text="匯出報表" onClick={() => showPlaceholderModal('匯出日誌報表')} />}
+                rightActions={<ToolbarButton icon="download" text="匯出報表" onClick={handleExport} />}
             />
             
             <div className="shrink-0 h-24">

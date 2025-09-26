@@ -9,6 +9,21 @@ import Modal from '../../components/Modal';
 import api from '../../services/api';
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
+import { exportToCsv } from '../../services/export';
+import ImportFromCsvModal from '../../components/ImportFromCsvModal';
+import ColumnSettingsModal, { TableColumn } from '../../components/ColumnSettingsModal';
+import { showToast } from '../../services/toast';
+
+const ALL_COLUMNS: TableColumn[] = [
+    { key: 'enabled', label: '' },
+    { key: 'name', label: '規則名稱' },
+    { key: 'type', label: '類型' },
+    { key: 'matchers', label: '靜音條件' },
+    { key: 'schedule', label: '排程' },
+    { key: 'creator', label: '創建者' },
+    { key: 'createdAt', label: '創建時間' },
+];
+const PAGE_KEY = 'silence_rules';
 
 const SilenceRulePage: React.FC = () => {
     const [rules, setRules] = useState<SilenceRule[]>([]);
@@ -18,17 +33,24 @@ const SilenceRulePage: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [editingRule, setEditingRule] = useState<SilenceRule | null>(null);
+    const [deletingRule, setDeletingRule] = useState<SilenceRule | null>(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [filters, setFilters] = useState<SilenceRuleFilters>({});
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [deletingRule, setDeletingRule] = useState<SilenceRule | null>(null);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
+    const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
 
     const fetchRules = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
-            const { data } = await api.get<SilenceRule[]>('/silence-rules');
-            setRules(data);
+            const [rulesRes, columnsRes] = await Promise.all([
+                api.get<SilenceRule[]>('/silence-rules'),
+                api.get<string[]>(`/settings/column-config/${PAGE_KEY}`)
+            ]);
+            setRules(rulesRes.data);
+            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
         } catch (err) {
             setError('無法獲取靜音規則。');
         } finally {
@@ -40,6 +62,18 @@ const SilenceRulePage: React.FC = () => {
         fetchRules();
     }, [fetchRules]);
 
+    const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
+        try {
+            await api.put(`/settings/column-config/${PAGE_KEY}`, newColumnKeys);
+            setVisibleColumns(newColumnKeys);
+            showToast('欄位設定已儲存。', 'success');
+        } catch (err) {
+            showToast('無法儲存欄位設定。', 'error');
+        } finally {
+            setIsColumnSettingsModalOpen(false);
+        }
+    };
+
     const handleNewRule = () => {
         setEditingRule(null);
         setIsModalOpen(true);
@@ -50,21 +84,22 @@ const SilenceRulePage: React.FC = () => {
         setIsModalOpen(true);
     };
 
-    const handleSaveRule = async (rule: SilenceRule) => {
+    const handleSaveRule = async (savedRule: SilenceRule) => {
         try {
             if (editingRule) {
-                await api.patch(`/silence-rules/${rule.id}`, rule);
+                await api.patch(`/silence-rules/${savedRule.id}`, savedRule);
             } else {
-                await api.post('/silence-rules', rule);
+                await api.post('/silence-rules', savedRule);
             }
             fetchRules();
         } catch (err) {
             alert('Failed to save rule.');
         } finally {
             setIsModalOpen(false);
+            setEditingRule(null);
         }
     };
-    
+
     const handleDeleteClick = (rule: SilenceRule) => {
         setDeletingRule(rule);
         setIsDeleteModalOpen(true);
@@ -84,6 +119,15 @@ const SilenceRulePage: React.FC = () => {
         }
     };
 
+    const handleToggleEnable = async (rule: SilenceRule) => {
+        try {
+            await api.patch(`/silence-rules/${rule.id}`, { ...rule, enabled: !rule.enabled });
+            fetchRules();
+        } catch (err) {
+            alert('Failed to toggle rule status.');
+        }
+    };
+
     const filteredRules = useMemo(() => {
         return rules.filter(rule => {
             if (filters.keyword && !rule.name.toLowerCase().includes(filters.keyword.toLowerCase())) return false;
@@ -93,114 +137,77 @@ const SilenceRulePage: React.FC = () => {
         });
     }, [rules, filters]);
 
-    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setSelectedIds(e.target.checked ? filteredRules.map(r => r.id) : []);
+    const handleExport = () => {
+        if (filteredRules.length === 0) {
+            alert("沒有可匯出的資料。");
+            return;
+        }
+        exportToCsv({
+            filename: `silence-rules-${new Date().toISOString().split('T')[0]}.csv`,
+            headers: ['id', 'name', 'enabled', 'type', 'creator', 'createdAt'],
+            data: filteredRules.map(r => ({ ...r, matchers: JSON.stringify(r.matchers), schedule: JSON.stringify(r.schedule) })),
+        });
     };
     
-    const handleSelectOne = (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
-        setSelectedIds(prev => e.target.checked ? [...prev, id] : prev.filter(selectedId => selectedId !== id));
-    };
-
-    const isAllSelected = filteredRules.length > 0 && selectedIds.length === filteredRules.length;
-    const isIndeterminate = selectedIds.length > 0 && selectedIds.length < filteredRules.length;
-    
-    const handleBatchAction = async (action: 'enable' | 'disable' | 'delete') => {
-        try {
-            await api.post('/silence-rules/batch-actions', { action, ids: selectedIds });
-            fetchRules();
-        } catch (err) {
-            alert(`Failed to ${action} selected rules.`);
-        } finally {
-            setSelectedIds([]);
+    const renderCellContent = (rule: SilenceRule, columnKey: string) => {
+        switch(columnKey) {
+            case 'enabled':
+                return (
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked={rule.enabled} className="sr-only peer" onChange={() => handleToggleEnable(rule)} />
+                        <div className="w-11 h-6 bg-slate-700 rounded-full peer peer-focus:ring-4 peer-focus:ring-sky-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
+                    </label>
+                );
+            case 'name': return <span className="font-medium text-white">{rule.name}</span>;
+            case 'type': return <span className="capitalize">{rule.type}</span>;
+            case 'matchers': return <code className="text-xs">{rule.matchers.map(m => `${m.key}${m.operator}"${m.value}"`).join(', ')}</code>;
+            case 'schedule':
+                 if (rule.schedule.type === 'single') return `${rule.schedule.startsAt} -> ${rule.schedule.endsAt}`;
+                 if (rule.schedule.type === 'recurring') return `Cron: ${rule.schedule.cron}`;
+                 return 'N/A';
+            case 'creator': return rule.creator;
+            case 'createdAt': return rule.createdAt;
+            default: return null;
         }
     };
-    
-    const handleToggleEnable = async (rule: SilenceRule) => {
-        try {
-            await api.patch(`/silence-rules/${rule.id}`, { ...rule, enabled: !rule.enabled });
-            fetchRules();
-        } catch(err) {
-            alert('Failed to toggle rule status.');
-        }
-    };
-
-    const batchActions = (
-        <>
-            <ToolbarButton icon="toggle-right" text="啟用" onClick={() => handleBatchAction('enable')} />
-            <ToolbarButton icon="toggle-left" text="停用" onClick={() => handleBatchAction('disable')} />
-            <ToolbarButton icon="trash-2" text="刪除" danger onClick={() => handleBatchAction('delete')} />
-        </>
-    );
 
     return (
         <div className="h-full flex flex-col">
-             <Toolbar 
+            <Toolbar
                 leftActions={<ToolbarButton icon="search" text="搜索和篩選" onClick={() => setIsSearchModalOpen(true)} />}
                 rightActions={
                     <>
-                        <ToolbarButton icon="upload" text="匯入" disabled title="功能開發中" />
-                        <ToolbarButton icon="download" text="匯出" disabled title="功能開發中" />
-                        <ToolbarButton icon="settings-2" text="欄位設定" disabled title="功能開發中" />
-                        <ToolbarButton icon="plus" text="新增静音规则" primary onClick={handleNewRule} />
+                        <ToolbarButton icon="upload" text="匯入" onClick={() => setIsImportModalOpen(true)} />
+                        <ToolbarButton icon="download" text="匯出" onClick={handleExport} />
+                        <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => setIsColumnSettingsModalOpen(true)} />
+                        <ToolbarButton icon="plus" text="新增規則" primary onClick={handleNewRule} />
                     </>
                 }
-                selectedCount={selectedIds.length}
-                onClearSelection={() => setSelectedIds([])}
-                batchActions={batchActions}
             />
-            
             <TableContainer>
                 <div className="flex-1 overflow-y-auto">
                     <table className="w-full text-sm text-left text-slate-300">
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
-                                <th scope="col" className="p-4 w-12">
-                                     <input type="checkbox"
-                                           className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded text-sky-500 focus:ring-sky-500"
-                                           checked={isAllSelected}
-                                           ref={el => { if (el) el.indeterminate = isIndeterminate; }}
-                                           onChange={handleSelectAll}
-                                    />
-                                </th>
-                                <th scope="col" className="px-6 py-3"></th>
-                                <th scope="col" className="px-6 py-3">規則名稱</th>
-                                <th scope="col" className="px-6 py-3">類型</th>
-                                <th scope="col" className="px-6 py-3">靜音條件</th>
-                                <th scope="col" className="px-6 py-3">排程</th>
-                                <th scope="col" className="px-6 py-3">創建者</th>
-                                <th scope="col" className="px-6 py-3">創建時間</th>
+                                {visibleColumns.map(key => (
+                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                ))}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <TableLoader colSpan={9} />
+                                <TableLoader colSpan={visibleColumns.length + 1} />
                             ) : error ? (
-                                <TableError colSpan={9} message={error} onRetry={fetchRules} />
+                                <TableError colSpan={visibleColumns.length + 1} message={error} onRetry={fetchRules} />
                             ) : filteredRules.map((rule) => (
-                                <tr key={rule.id} className={`border-b border-slate-800 ${selectedIds.includes(rule.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
-                                    <td className="p-4 w-12">
-                                        <input type="checkbox"
-                                               className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded text-sky-500 focus:ring-sky-500"
-                                               checked={selectedIds.includes(rule.id)}
-                                               onChange={(e) => handleSelectOne(e, rule.id)}
-                                        />
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <label className="relative inline-flex items-center cursor-pointer">
-                                            <input type="checkbox" checked={rule.enabled} className="sr-only peer" onChange={() => handleToggleEnable(rule)} />
-                                            <div className="w-11 h-6 bg-slate-700 rounded-full peer peer-focus:ring-4 peer-focus:ring-sky-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
-                                        </label>
-                                    </td>
-                                    <td className="px-6 py-4 font-medium text-white">{rule.name}</td>
-                                    <td className="px-6 py-4 capitalize">{rule.type}</td>
-                                    <td className="px-6 py-4 font-mono text-xs">{rule.matchers.map(m => `${m.key}${m.operator}"${m.value}"`).join(' & ')}</td>
-                                    <td className="px-6 py-4">{rule.schedule.type === 'single' ? `${rule.schedule.startsAt} - ${rule.schedule.endsAt}` : rule.schedule.cron}</td>
-                                    <td className="px-6 py-4">{rule.creator}</td>
-                                    <td className="px-6 py-4">{rule.createdAt}</td>
-                                    <td className="px-6 py-4 text-center space-x-1">
-                                         <button onClick={() => handleEditRule(rule)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯"><Icon name="edit-3" className="w-4 h-4" /></button>
-                                         <button onClick={() => handleDeleteClick(rule)} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除"><Icon name="trash-2" className="w-4 h-4" /></button>
+                                <tr key={rule.id} className="border-b border-slate-800 hover:bg-slate-800/40">
+                                    {visibleColumns.map(key => (
+                                        <td key={key} className="px-6 py-4">{renderCellContent(rule, key)}</td>
+                                    ))}
+                                    <td className="px-6 py-4 text-center">
+                                        <button onClick={() => handleEditRule(rule)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯"><Icon name="edit-3" className="w-4 h-4" /></button>
+                                        <button onClick={() => handleDeleteClick(rule)} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除"><Icon name="trash-2" className="w-4 h-4" /></button>
                                     </td>
                                 </tr>
                             ))}
@@ -219,7 +226,7 @@ const SilenceRulePage: React.FC = () => {
                 }}
                 initialFilters={filters}
             />
-            <Modal
+             <Modal
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 title="確認刪除"
@@ -234,6 +241,22 @@ const SilenceRulePage: React.FC = () => {
                 <p>您確定要刪除靜音規則 <strong className="text-amber-400">{deletingRule?.name}</strong> 嗎？</p>
                 <p className="mt-2 text-slate-400">此操作無法復原。</p>
             </Modal>
+             <ColumnSettingsModal
+                isOpen={isColumnSettingsModalOpen}
+                onClose={() => setIsColumnSettingsModalOpen(false)}
+                onSave={handleSaveColumnConfig}
+                allColumns={ALL_COLUMNS}
+                visibleColumnKeys={visibleColumns}
+            />
+            <ImportFromCsvModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                onImportSuccess={fetchRules}
+                itemName="靜音規則"
+                importEndpoint="/silence-rules/import"
+                templateHeaders={['id', 'name', 'enabled', 'type', 'creator']}
+                templateFilename="silence-rules-template.csv"
+            />
         </div>
     );
 };

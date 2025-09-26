@@ -1,19 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import FormRow from '../../components/FormRow';
 import Icon from '../../components/Icon';
-import PlaceholderModal from '../../components/PlaceholderModal';
 import api from '../../services/api';
 import { LoginHistoryRecord } from '../../types';
 import Pagination from '../../components/Pagination';
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
+import { showToast } from '../../services/toast';
 
 const SecuritySettingsPage: React.FC = () => {
     const [oldPassword, setOldPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
-    const [modalFeatureName, setModalFeatureName] = useState('');
+    const [isUpdating, setIsUpdating] = useState(false);
 
     const [loginHistory, setLoginHistory] = useState<LoginHistoryRecord[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -42,13 +41,33 @@ const SecuritySettingsPage: React.FC = () => {
         fetchLoginHistory();
     }, [fetchLoginHistory]);
 
-    const showPlaceholderModal = (featureName: string) => {
-        setModalFeatureName(featureName);
-        setIsPlaceholderModalOpen(true);
-    };
-
-    const handlePasswordChange = () => {
-        showPlaceholderModal('變更密碼');
+    const handlePasswordChange = async () => {
+        if (!oldPassword || !newPassword || !confirmPassword) {
+            showToast('所有欄位皆為必填。', 'error');
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            showToast('新密碼與確認密碼不符。', 'error');
+            return;
+        }
+        if (newPassword.length < 6) {
+            showToast('新密碼長度至少需要 6 個字元。', 'error');
+            return;
+        }
+    
+        setIsUpdating(true);
+        try {
+            await api.post('/me/change-password', { oldPassword, newPassword });
+            showToast('密碼已成功更新。', 'success');
+            setOldPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+        } catch (err: any) {
+            const errorMessage = err.message || '更新密碼失敗，請稍後再試。';
+            showToast(errorMessage, 'error');
+        } finally {
+            setIsUpdating(false);
+        }
     };
 
     return (
@@ -69,7 +88,17 @@ const SecuritySettingsPage: React.FC = () => {
                         </FormRow>
                     </div>
                     <div className="mt-6 pt-6 border-t border-slate-700/50">
-                        <button onClick={handlePasswordChange} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md">更新密碼</button>
+                        <button 
+                            onClick={handlePasswordChange} 
+                            disabled={isUpdating}
+                            className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md flex items-center justify-center w-32 disabled:bg-slate-600 disabled:cursor-not-allowed"
+                        >
+                            {isUpdating ? (
+                                <><Icon name="loader-circle" className="w-4 h-4 mr-2 animate-spin" /> 更新中...</>
+                            ) : (
+                                '更新密碼'
+                            )}
+                        </button>
                     </div>
                 </div>
 
@@ -110,11 +139,6 @@ const SecuritySettingsPage: React.FC = () => {
                     <Pagination total={total} page={currentPage} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
                 </div>
             </div>
-            <PlaceholderModal
-                isOpen={isPlaceholderModalOpen}
-                onClose={() => setIsPlaceholderModalOpen(false)}
-                featureName={modalFeatureName}
-            />
         </div>
     );
 };

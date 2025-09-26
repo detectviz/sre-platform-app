@@ -4,6 +4,7 @@ import Icon from '../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import Dropdown from '../../components/Dropdown';
 import PlaceholderModal from '../../components/PlaceholderModal';
+import { exportToCsv } from '../../services/export';
 
 // Mock data generation
 const generateTrendData = (base: number, trend: number, variance: number, historicalPoints = 60, forecastPoints = 30) => {
@@ -104,7 +105,12 @@ const CapacityPlanningPage: React.FC = () => {
     };
 
     const handleTriggerAI = () => showPlaceholderModal('觸發 AI 容量分析');
-    const handleExport = () => showPlaceholderModal('匯出容量規劃報表');
+    const handleExport = () => {
+        exportToCsv({
+            filename: `capacity-planning-${new Date().toISOString().split('T')[0]}.csv`,
+            data: MOCK_RESOURCES_CAPACITY,
+        });
+    };
 
     return (
         <div className="space-y-6">

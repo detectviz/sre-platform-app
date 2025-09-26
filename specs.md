@@ -188,3 +188,318 @@
 -   `GET /settings/tags/options`: (新增) 取得標籤定義的可用選項（如分類）。
 -   `GET /dashboards/{dashboard_id}`: (擴充) `DashboardViewPage` 現在使用此端點獲取儀表板詳情。
 -   `GET /resources`: (擴充) 支援 `bookmarked=true` 參數，用於基礎設施洞察頁。
+---
+
+## 7. 功能: 通用列表頁面操作 (Common List Page Actions)
+
+-   **模組**: 全局
+-   **版本**: v2.5.1
+-   **狀態**: ✅ 已完成
+
+### 7.1 使用者故事
+
+**身為** 一名平台使用者，
+**我想要** 在點擊列表頁面上目前尚未啟用的功能按鈕（如「匯入」、「匯出」、「欄位設定」）時，能收到一個明確的提示，
+**使得** 我能知道這些功能正在開發中，而不是誤以為按鈕無效或系統出錯，從而提升使用者體驗的一致性與可預測性。
+
+### 7.2 行為變更
+
+-   **啟用禁用按鈕**: 在多個核心列表頁面的工具列 (`Toolbar`) 中，原先被設定為 `disabled` 並帶有 `title="功能開發中"` 的按鈕，現在已被啟用。
+-   **統一提示框**: 點擊這些按鈕後，會觸發一個統一的 `PlaceholderModal` 元件。
+-   **動態內容**: 該提示框會動態顯示被點擊的功能名稱（例如「匯出報表」），告知使用者「此功能目前正在開發中，敬請期待！」。
+-   **受影響的頁面**:
+    -   `DashboardListPage`: 「欄位設定」按鈕。
+    -   `ResourceListPage`: 「匯入」、「匯出」、「欄位設定」按鈕。
+    -   `PersonnelManagementPage`: 「匯入」、「匯出」、「欄位設定」按鈕。
+    -   `AlertRulePage`: 「匯入」、「匯出」、「欄位設定」按鈕。
+    -   `SilenceRulePage`: 「匯入」、「匯出」、「欄位設定」按鈕。
+    -   `AuditLogsPage`: 「匯出」按鈕。
+    -   `AnalysisOverviewPage`, `NotificationHistoryPage`: 原有的「匯出」功能也統一使用此模式。
+
+### 7.3 使用的元件
+
+-   `components/Toolbar.tsx`: 修改 `ToolbarButton` 的 `disabled` 屬性為 `onClick` 事件。
+-   `components/PlaceholderModal.tsx`: 重用現有的佔位提示框元件，以提供一致的使用者回饋。
+---
+
+## 8. 功能: 資料匯出 (Data Export)
+
+-   **模組**: 全局
+-   **版本**: v2.6 / v2.10 (擴充)
+-   **狀態**: ✅ 已完成
+
+### 8.1 使用者故事
+
+**身為** 一名 SRE 工程師或平台管理員，
+**我想要** 將各個列表與分析頁面的數據匯出為 CSV 檔案，
+**使得** 我可以進行離線分析、製作報告或將數據導入其他系統。
+
+### 8.2 行為變更
+
+-   **通用匯出邏輯**:
+    -   在多個核心頁面中，原先顯示「功能開發中」的「匯出」按鈕現在已啟用並實作功能。
+    -   點擊「匯出」按鈕會觸發一個 CSV 檔案的下載。
+    -   如果列表支援多選，且有項目被選中，則只匯出選中的項目。若無，則匯出當前頁面顯示的所有項目。
+    -   對於分析頁面，則匯出當前檢視的主要數據。
+    -   匯出的檔案名稱格式為 `[page-name]-[YYYY-MM-DD].csv`。
+
+-   **已實作匯出的頁面**:
+    -   **列表頁**:
+        -   資源列表 (`ResourceListPage`)
+        -   人員管理 (`PersonnelManagementPage`)
+        -   告警規則 (`AlertRulePage`)
+        -   靜音規則 (`SilenceRulePage`)
+        -   審計日誌 (`AuditLogsPage`)
+        -   通知歷史 (`NotificationHistoryPage`)
+    -   **分析與洞察頁 (v2.10 新增)**:
+        -   日誌探索 (`LogExplorerPage`)
+        -   追蹤分析 (`TraceAnalysisPage`)
+        -   分析概覽 (`AnalysisOverviewPage`)
+        -   容量規劃 (`CapacityPlanningPage`)
+        -   AI 洞察 (`AIInsightsPage`)
+        -   基礎設施洞察 (`InfrastructureInsightsPage`)
+
+### 8.3 使用的元件與服務
+
+-   `services/export.ts`: 提供一個通用的 `exportToCsv` 輔助函式，用於處理數據到 CSV 的轉換和下載。
+-   所有受影響的頁面元件都已更新，以調用此匯出服務。
+---
+
+## 9. 功能: 表格欄位自訂 (Table Column Customization)
+
+-   **模組**: 全局
+-   **版本**: v2.7
+-   **狀態**: ✅ 已完成
+
+### 9.1 使用者故事
+
+**身為** 一名平台使用者，
+**我想要** 在各個列表頁面上自訂顯示的欄位及其順序，
+**使得** 我可以專注於對我最重要的資訊，隱藏不必要的欄位，從而提升我的工作效率和資訊瀏覽體驗。
+
+### 9.2 行為變更
+
+-   **功能啟用**: 在以下五個核心列表頁面，原先顯示「功能開發中」的「欄位設定」按鈕現在已啟用並實作功能：
+    -   `DashboardListPage`
+    -   `ResourceListPage`
+    -   `PersonnelManagementPage`
+    -   `AlertRulePage`
+    -   `SilenceRulePage`
+
+-   **互動介面**:
+    -   點擊「欄位設定」按鈕會開啟一個新的 `ColumnSettingsModal` 模態框。
+    -   模態框中提供一個雙欄選擇器，左側為「可用欄位」，右側為「顯示欄位」。
+    -   使用者可以將欄位在兩欄之間移動，並使用上下箭頭按鈕調整「顯示欄位」中的順序。
+
+-   **數據持久化**:
+    -   使用者的欄位配置會透過新的 API 端點儲存在後端。
+    -   前端在頁面載入時會請求對應的欄位配置，若無個人配置則使用系統預設值。
+
+-   **即時更新**:
+    -   儲存設定後，模態框關閉，對應的列表頁表格會**立即**根據新的配置重新渲染，無需刷新頁面。
+    -   表格的標頭 (`<thead>`) 和內容 (`<tbody>`) 都會動態生成，以符合使用者選擇的欄位和順序。
+
+### 9.3 使用的元件與服務
+
+-   `components/ColumnSettingsModal.tsx`: (新增) 提供一個可重用的、用於管理表格欄位的模態框元件。
+-   `services/api.ts`: (擴充) 新增了 `GET` 和 `PUT` `/settings/column-config/{pageKey}` 的 API 處理邏輯。
+-   `openapi.yaml`: (擴充) 新增了 `/settings/column-config/{pageKey}` 的 API 端點定義。
+-   `mock-server/db.ts`: (擴充) 新增了 `columnConfigs` 的預設資料。
+-   所有受影響的列表頁面元件都已更新，以整合欄位設定功能。
+---
+
+## 10. 功能: 密碼管理 (Password Management)
+
+-   **模組**: 個人設定 (Profile)
+-   **版本**: v2.8
+-   **狀態**: ✅ 已完成
+
+### 10.1 使用者故事
+
+**身為** 一名已登入的使用者，
+**我想要** 在「安全設定」頁面中安全地變更我的登入密碼，
+**使得** 我可以定期更新我的憑證，保障帳戶安全。
+
+### 10.2 行為變更
+
+-   **功能啟用**: 「安全設定」頁面 (`SecuritySettingsPage.tsx`) 中的「更新密碼」功能已從佔位行為改為完整實作。
+-   **前端驗證**: 在提交前，前端會進行基本驗證：
+    -   所有密碼欄位（舊、新、確認）皆為必填。
+    -   新密碼與確認密碼必須相符。
+    -   新密碼有最小長度限制。
+-   **API 整合**: 驗證通過後，前端會向新增的 `POST /me/change-password` 端點發起請求，並傳送舊密碼與新密碼。
+-   **使用者回饋**:
+    -   API 請求期間，「更新密碼」按鈕會顯示載入中狀態。
+    -   操作成功後，會顯示成功的 toast 提示，並清空所有密碼欄位。
+    -   若操作失敗（例如，舊密碼錯誤），則會顯示從後端回傳的具體錯誤訊息 toast。
+
+### 10.3 使用的 API 端點
+
+-   `POST /me/change-password`: (新增) 用於變更當前登入者的密碼。
+---
+
+## 11. 功能: API 契約重構 (API Contract Refactoring)
+
+-   **模組**: 全局
+-   **版本**: v2.9
+-   **狀態**: ✅ 已完成
+
+### 11.1 重構目標
+
+此版本重構旨在提升 API 契約的一致性、組織性與可維護性，主要解決兩個問題：
+1.  **術語不一致**：`Event` (事件) 與 `Incident` (事故) 混用，`Incident` 是 SRE 領域更標準的術語。
+2.  **AI 功能分散**：AI 相關的端點散落在各個業務模組下，缺乏統一的管理與識別性。
+
+### 11.2 行為變更
+
+-   **術語統一 (Event → Incident)**:
+    -   所有 API 端點中的 `/events` 路徑已全部重命名為 `/incidents`。
+    -   相關的 API 標籤從「事件管理」更新為「事故管理 (Incidents)」。
+    -   受影響的前端頁面 (`IncidentListPage`, `IncidentDetailPage`) 已同步更新 API 請求路徑。
+
+-   **AI 功能整合**:
+    -   新增了一個頂層的 `/ai` 路由，用於統一管理所有 AI 驅動的功能。
+    -   新增了 `AI Copilot` API 標籤。
+    -   所有原先分散的 AI 端點已遷移至新路徑下：
+        -   `GET /sre-war-room/briefing` → `GET /ai/briefing`
+        -   `POST /events/ai-analysis` → `POST /ai/incidents/analyze`
+        -   `POST /automation/scripts/generate-with-ai` → `POST /ai/automation/generate-script`
+        -   `GET /dashboards/infrastructure-insights/risk-prediction` → `GET /ai/infra/risk-prediction`
+        -   `GET /analysis/ai-insights/*` → `GET /ai/insights/*`
+    -   所有相關的前端元件 (`SREWarRoomPage`, `IncidentListPage`, `GeneratePlaybookWithAIModal` 等) 已同步更新 API 請求路徑。
+
+### 11.3 影響的 API 端點
+
+-   **更名**:
+    -   `/events` → `/incidents`
+    -   `/events/{id}` → `/incidents/{id}`
+    -   `/events/{id}/actions` → `/incidents/{id}/actions`
+-   **遷移與重組**:
+    -   所有 AI 功能端點遷移至 `/ai/*`。
+---
+
+## 12. 功能: 資料匯入 (CSV)
+
+-   **模組**: 全局
+-   **版本**: v2.11
+-   **狀態**: ✅ 已完成
+
+### 12.1 使用者故事
+
+**身為** 一名平台管理員，
+**我想要** 從 CSV 檔案批次匯入資源、人員、告警規則和靜音規則的資料，
+**使得** 我可以快速地初始化或大量更新系統配置，而無需逐條手動輸入。
+
+### 12.2 行為變更
+
+-   **功能啟用**: 在以下四個核心列表頁面，原先顯示「功能開發中」的「匯入」按鈕現在已啟用並實作功能：
+    -   資源列表 (`ResourceListPage`)
+    -   人員管理 (`PersonnelManagementPage`)
+    -   告警規則 (`AlertRulePage`)
+    -   靜音規則 (`SilenceRulePage`)
+
+-   **可重用元件**: 新增了一個 `ImportFromCsvModal.tsx` 元件，提供統一的匯入體驗。
+
+-   **使用者流程**:
+    1.  使用者點擊「匯入」按鈕，開啟匯入模態框。
+    2.  模態框內提供一個連結，供使用者下載對應資料類型的 CSV 範本，以確保格式正確。
+    3.  使用者可以透過拖曳檔案或點擊上傳區域來選擇已填寫好的 CSV 檔案。
+    4.  上傳後，模態框會顯示檔案名稱和大小，供使用者確認。
+    5.  點擊「開始匯入」按鈕，前端會向後端對應的 `/import` 端點發起請求。
+
+-   **使用者回饋**:
+    -   匯入過程中，按鈕會顯示載入中狀態。
+    -   操作成功後，會顯示成功的 toast 提示，說明匯入結果，並自動刷新頁面上的列表。
+    -   若操作失敗（如檔案格式錯誤），則會顯示錯誤的 toast 提示。
+
+### 12.3 新增的 API 端點
+
+-   `POST /resources/import`
+-   `POST /iam/users/import`
+-   `POST /alert-rules/import`
+-   `POST /silence-rules/import`
+---
+
+## 13. 功能: 儀表板管理 CRUD (Dashboard Management CRUD)
+
+-   **模組**: 儀表板管理 (Dashboard Management)
+-   **版本**: v2.12
+-   **狀態**: ✅ 已完成
+
+### 13.1 使用者故事
+
+**身為** 一名 SRE 工程師或團隊主管，
+**我想要** 能夠自由地建立、查看、編輯和刪除儀表板，包括連結外部的 Grafana 儀表板和使用平台內建工具建立自訂儀表板，
+**使得** 我可以為我的團隊或特定場景打造專屬的監控視圖，提升監控效率與洞察力。
+
+### 13.2 行為變更
+
+-   **儀表板建立 (`DashboardEditorPage`, `AddDashboardModal`)**:
+    -   使用者現在可以透過「新增儀表板」流程，選擇建立「內建儀表板」或連結「Grafana 儀表板」。
+    -   **內建儀表板**:
+        -   提供了一個儀表板編輯器 (`DashboardEditorPage`)，使用者可以為新的儀表板命名，並從可用的小工具 (Widgets) 列表中選擇要顯示的 KPI 卡片。
+        -   點擊「儲存儀表板」後，系統會透過 `POST /dashboards` API 將新的儀表板配置（包含其版面 `layout` 中的小工具 ID 列表）持久化到後端。
+        -   儲存成功後，使用者會被導向儀表板列表頁，並能看到新建立的儀表板。
+    -   **Grafana 儀表板**: 流程與之前相同，從可用的 Grafana 儀表板列表中選擇並連結。
+
+-   **儀表板查看 (`DashboardViewPage`)**:
+    -   `DashboardViewPage` 現在能夠智能地渲染不同類型的儀表板。
+    -   點擊一個**使用者建立的內建儀表板**時，頁面會動態地根據其儲存的 `layout` 屬性，渲染出一個包含正確 KPI 卡片的通用儀表板視圖 (`GenericBuiltInDashboardPage`)。
+    -   點擊一個**連結的 Grafana 儀表板**時，頁面會渲染 `DashboardViewer` 元件，以 iframe 形式嵌入 Grafana 儀表板。
+    -   特殊的系統級儀表板（如「SRE 戰情室」）仍會導向其專屬的頁面。
+
+-   **儀表板更新與刪除 (`DashboardListPage`)**:
+    -   使用者可以透過列表中的操作選單來「設定」（編輯）或「刪除」任何儀表板。
+    -   **差異化編輯流程**:
+        -   **內建儀表板**: 點擊「設定」會將使用者導向至完整的儀表板編輯器 (`/dashboards/{id}/edit`)，允許他們視覺化地修改儀表板名稱、以及新增、移除或重新排序 KPI 小工具。儲存後會透過 `PATCH /dashboards/{id}` API 更新儀表板的 `layout`。
+        -   **Grafana 儀表板**: 點擊「設定」會開啟 `DashboardEditModal`，僅允許修改儀表板的元數據（如名稱、描述）。
+    -   刪除操作會彈出確認框，並透過 `DELETE /dashboards/{id}` API 進行軟刪除。
+
+### 13.3 使用的 API 端點
+
+-   `POST /dashboards`: (擴充) 現在支援建立 `type: 'built-in'` 的儀表板，並接受 `layout` 屬性。
+-   `GET /dashboards/{id}`: (擴充) 對於內建儀表板，現在會回傳 `layout` 屬性。
+-   (重用) `GET /dashboards`, `PATCH /dashboards/{id}`, `DELETE /dashboards/{id}`。
+---
+
+## 14. 功能: 表格欄位自訂 (Table Column Customization)
+
+-   **模組**: 全局
+-   **版本**: v2.13
+-   **狀態**: ✅ 已完成
+
+### 14.1 使用者故事
+
+**身為** 一名平台使用者，
+**我想要** 在各個列表頁面上自訂顯示的欄位及其順序，
+**使得** 我可以專注於對我最重要的資訊，隱藏不必要的欄位，從而提升我的工作效率和資訊瀏覽體驗。
+
+### 14.2 行為變更
+
+-   **功能啟用**: 在以下五個核心列表頁面，原先的佔位「欄位設定」按鈕現在已實作完整功能：
+    -   `DashboardListPage`
+    -   `ResourceListPage`
+    -   `PersonnelManagementPage`
+    -   `AlertRulePage`
+    -   `SilenceRulePage`
+
+-   **互動介面**:
+    -   點擊「欄位設定」按鈕會開啟一個新的 `ColumnSettingsModal` 模態框。
+    -   模態框中提供一個雙欄選擇器，左側為「可用欄位」，右側為「顯示欄位」。
+    -   使用者可以將欄位在兩欄之間移動，並使用上下箭頭按鈕調整「顯示欄位」中的順序。
+
+-   **數據持久化**:
+    -   使用者的欄位配置會透過新的 API 端點儲存在後端。
+    -   前端在頁面載入時會請求對應的欄位配置，若無個人配置則使用系統預設值。
+
+-   **即時更新**:
+    -   儲存設定後，模態框關閉，對應的列表頁表格會**立即**根據新的配置重新渲染，無需刷新頁面。
+    -   表格的標頭 (`<thead>`) 和內容 (`<tbody>`) 都會動態生成，以符合使用者選擇的欄位和順序。
+
+### 14.3 使用的元件與服務
+
+-   `components/ColumnSettingsModal.tsx`: (新增) 提供一個可重用的、用於管理表格欄位的模態框元件。
+-   `services/api.ts`: (擴充) 新增了 `GET` 和 `PUT` `/settings/column-config/{pageKey}` 的 API 處理邏輯。
+-   `openapi.yaml`: (擴充) 新增了 `/settings/column-config/{pageKey}` 的 API 端點定義。
+-   `mock-server/db.ts`: (擴充) 新增了 `columnConfigs` 的預設資料。
+-   所有受影響的列表頁面元件都已更新，以整合欄位設定功能。

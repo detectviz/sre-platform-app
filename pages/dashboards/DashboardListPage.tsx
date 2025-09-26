@@ -11,6 +11,17 @@ import api from '../../services/api';
 import Pagination from '../../components/Pagination';
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
+import ColumnSettingsModal, { TableColumn } from '../../components/ColumnSettingsModal';
+import { showToast } from '../../services/toast';
+
+const ALL_COLUMNS: TableColumn[] = [
+    { key: 'name', label: '名稱' },
+    { key: 'type', label: '類型' },
+    { key: 'category', label: '類別' },
+    { key: 'owner', label: '擁有者' },
+    { key: 'updatedAt', label: '最後更新' },
+];
+const PAGE_KEY = 'dashboards';
 
 const DashboardListPage: React.FC = () => {
     const [dashboards, setDashboards] = useState<Dashboard[]>([]);
@@ -33,6 +44,8 @@ const DashboardListPage: React.FC = () => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingDashboard, setEditingDashboard] = useState<Dashboard | null>(null);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
+    const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
 
     useEffect(() => {
         api.get<{ categories: string[] }>('/dashboards/options')
@@ -47,10 +60,15 @@ const DashboardListPage: React.FC = () => {
             const params: any = { page: currentPage, page_size: pageSize };
             if (activeCategory !== 'All') params.category = activeCategory;
             if (searchTerm) params.keyword = searchTerm;
-
-            const { data } = await api.get<{ items: Dashboard[], total: number }>('/dashboards', { params });
-            setDashboards(data.items);
-            setTotalDashboards(data.total);
+            
+            const [dashboardsRes, columnsRes] = await Promise.all([
+                 api.get<{ items: Dashboard[], total: number }>('/dashboards', { params }),
+                 api.get<string[]>(`/settings/column-config/${PAGE_KEY}`)
+            ]);
+            
+            setDashboards(dashboardsRes.data.items);
+            setTotalDashboards(dashboardsRes.data.total);
+            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
         } catch (err) {
             setError('無法獲取儀表板列表。');
             console.error(err);
@@ -67,6 +85,18 @@ const DashboardListPage: React.FC = () => {
         const storedDefault = localStorage.getItem('default-dashboard') || 'sre-war-room';
         setDefaultDashboard(storedDefault);
     }, []);
+
+    const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
+        try {
+            await api.put(`/settings/column-config/${PAGE_KEY}`, newColumnKeys);
+            setVisibleColumns(newColumnKeys);
+            showToast('欄位設定已儲存。', 'success');
+        } catch (err) {
+            showToast('無法儲存欄位設定。', 'error');
+        } finally {
+            setIsColumnSettingsModalOpen(false);
+        }
+    };
 
     const handleSetDefault = (dashboardId: string) => {
         localStorage.setItem('default-dashboard', dashboardId);
@@ -111,8 +141,12 @@ const DashboardListPage: React.FC = () => {
     };
 
     const handleEditClick = (dashboard: Dashboard) => {
-        setEditingDashboard(dashboard);
-        setIsEditModalOpen(true);
+        if (dashboard.type === DashboardType.BuiltIn) {
+            navigate(`/dashboards/${dashboard.id}/edit`);
+        } else {
+            setEditingDashboard(dashboard);
+            setIsEditModalOpen(true);
+        }
     };
 
     const handleUpdateDashboard = async (updatedDashboard: Dashboard) => {
@@ -147,6 +181,34 @@ const DashboardListPage: React.FC = () => {
         }
     };
 
+    const renderCellContent = (dashboard: Dashboard, columnKey: string) => {
+        switch (columnKey) {
+            case 'name':
+                return (
+                    <>
+                        <div className="flex items-center space-x-3 cursor-pointer">
+                            <div title={dashboard.type === 'built-in' ? '內建儀表板' : 'Grafana 儀表板'}>
+                                <Icon name={dashboard.type === 'built-in' ? "layout-dashboard" : "area-chart"} className={`w-5 h-5 ${dashboard.type === 'built-in' ? 'text-sky-400' : 'text-green-400'}`} />
+                            </div>
+                            <span>{dashboard.name}</span>
+                            {defaultDashboard === dashboard.id && <span className="text-xs bg-sky-500 text-white px-2 py-0.5 rounded-full">首頁</span>}
+                        </div>
+                        <div className="text-xs text-slate-400 pl-8">{dashboard.description}</div>
+                    </>
+                );
+            case 'type':
+                return <span className={`px-2 py-1 text-xs rounded-full ${dashboard.type === 'built-in' ? 'bg-cyan-900 text-cyan-300' : 'bg-green-900 text-green-300'}`}>{dashboard.type}</span>;
+            case 'category':
+                return dashboard.category;
+            case 'owner':
+                return dashboard.owner;
+            case 'updatedAt':
+                return dashboard.updatedAt;
+            default:
+                return null;
+        }
+    };
+
     const leftActions = (
         <div className="relative">
             <Icon name="search" className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400 w-4 h-4" />
@@ -157,7 +219,7 @@ const DashboardListPage: React.FC = () => {
     
     const rightActions = (
         <>
-            <ToolbarButton icon="settings-2" text="欄位設定" disabled title="功能開發中" />
+            <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => setIsColumnSettingsModalOpen(true)} />
             <ToolbarButton icon="plus" text="新增儀表板" primary onClick={() => setIsAddModalOpen(true)} />
         </>
     );
@@ -194,39 +256,28 @@ const DashboardListPage: React.FC = () => {
                                     <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
                                            checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
-                                <th scope="col" className="px-6 py-3">名稱</th>
-                                <th scope="col" className="px-6 py-3">類型</th>
-                                <th scope="col" className="px-6 py-3">類別</th>
-                                <th scope="col" className="px-6 py-3">擁有者</th>
-                                <th scope="col" className="px-6 py-3">最後更新</th>
+                                {visibleColumns.map(key => (
+                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                ))}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
                         </thead>
                         <tbody>
                            {isLoading ? (
-                                <TableLoader colSpan={7} />
+                                <TableLoader colSpan={visibleColumns.length + 2} />
                             ) : error ? (
-                                <TableError colSpan={7} message={error} onRetry={fetchDashboards} />
+                                <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchDashboards} />
                             ) : dashboards.map((d) => (
                                 <tr key={d.id} className={`border-b border-slate-800 ${selectedIds.includes(d.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
                                     <td className="p-4 w-12">
                                         <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
                                                checked={selectedIds.includes(d.id)} onChange={(e) => handleSelectOne(e, d.id)} />
                                     </td>
-                                    <td className="px-6 py-4 font-medium text-white whitespace-nowrap" onClick={() => handleRowClick(d)}>
-                                        <div className="flex items-center space-x-3 cursor-pointer">
-                                            <div title={d.type === 'built-in' ? '內建儀表板' : 'Grafana 儀表板'}>
-                                                <Icon name={d.type === 'built-in' ? "layout-dashboard" : "area-chart"} className={`w-5 h-5 ${d.type === 'built-in' ? 'text-sky-400' : 'text-green-400'}`} />
-                                            </div>
-                                            <span>{d.name}</span>
-                                            {defaultDashboard === d.id && <span className="text-xs bg-sky-500 text-white px-2 py-0.5 rounded-full">首頁</span>}
-                                        </div>
-                                        <div className="text-xs text-slate-400 pl-8">{d.description}</div>
-                                    </td>
-                                    <td className="px-6 py-4"><span className={`px-2 py-1 text-xs rounded-full ${d.type === 'built-in' ? 'bg-cyan-900 text-cyan-300' : 'bg-green-900 text-green-300'}`}>{d.type}</span></td>
-                                    <td className="px-6 py-4">{d.category}</td>
-                                    <td className="px-6 py-4">{d.owner}</td>
-                                    <td className="px-6 py-4">{d.updatedAt}</td>
+                                    {visibleColumns.map(key => (
+                                        <td key={key} className="px-6 py-4" onClick={() => key === 'name' && handleRowClick(d)}>
+                                            {renderCellContent(d, key)}
+                                        </td>
+                                    ))}
                                     <td className="px-6 py-4 text-center">
                                         <div className="relative group" onClick={e => e.stopPropagation()}>
                                             <button className="p-1 rounded-full hover:bg-slate-700"><Icon name="more-horizontal" className="w-5 h-5" /></button>
@@ -251,6 +302,13 @@ const DashboardListPage: React.FC = () => {
                 <p>您確定要刪除儀表板 <strong className="text-amber-400">{deletingDashboard?.name}</strong> 嗎？</p>
                 <p className="mt-2 text-slate-400">此操作無法復原。</p>
             </Modal>
+            <ColumnSettingsModal
+                isOpen={isColumnSettingsModalOpen}
+                onClose={() => setIsColumnSettingsModalOpen(false)}
+                onSave={handleSaveColumnConfig}
+                allColumns={ALL_COLUMNS}
+                visibleColumnKeys={visibleColumns}
+            />
         </div>
     );
 };

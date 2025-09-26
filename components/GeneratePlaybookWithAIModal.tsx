@@ -29,7 +29,7 @@ const GeneratePlaybookWithAIModal: React.FC<GeneratePlaybookWithAIModalProps> = 
         setResult(null);
         setError(null);
         try {
-            const { data } = await api.post<GeneratedPlaybook>('/automation/scripts/generate-with-ai', { prompt });
+            const { data } = await api.post<GeneratedPlaybook>('/ai/automation/generate-script', { prompt });
             setResult(data);
         } catch (e) {
             console.error("AI Generation Error:", e);

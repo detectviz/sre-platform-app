@@ -25,6 +25,7 @@ export interface Dashboard {
   grafanaUrl?: string;
   grafana_dashboard_uid?: string;
   grafana_folder_uid?: string;
+  layout?: string[];
 }
 
 export interface DashboardTemplate {

@@ -141,6 +141,7 @@ const App: React.FC = () => {
             <Route index element={<DashboardListPage />} />
             <Route path="templates" element={<DashboardTemplatesPage />} />
             <Route path="new" element={<DashboardEditorPage />} />
+            <Route path=":dashboardId/edit" element={<DashboardEditorPage />} />
           </Route>
           
           <Route path="analyzing" element={<PageWithTabsLayout title="分析中心" description="深入了解系統趨勢、效能瓶頸和運營數據" kpiPageName="分析中心" tabs={analysisTabs} />}>

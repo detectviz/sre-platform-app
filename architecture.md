@@ -125,7 +125,7 @@ graph TB
     end
 
     subgraph "🎮 業務服務層 (Business Service)"
-        EventAPI[📊 事件管理 API]
+        IncidentAPI[📊 事故管理 API]
         ResourceAPI[🏗️ 資源管理 API]
         NotifyAPI[📢 通知管理 API]
         AnalyzeAPI[🧠 智能分析 API]
@@ -164,15 +164,15 @@ graph TB
 
     %% API 網關路由
     Gateway --> Auth
-    Gateway --> EventAPI
+    Gateway --> IncidentAPI
     Gateway --> ResourceAPI
     Gateway --> NotifyAPI
     Gateway --> AnalyzeAPI
     Gateway --> AutoAPI
 
     %% 服務到數據層
-    EventAPI --> Database
-    EventAPI --> TimeSeries
+    IncidentAPI --> Database
+    IncidentAPI --> TimeSeries
     ResourceAPI --> Database
     ResourceAPI --> Cache
     NotifyAPI --> Database
@@ -181,7 +181,7 @@ graph TB
     AutoAPI --> Database
 
     %% 監控和追蹤
-    EventAPI --> Tracing
+    IncidentAPI --> Tracing
     ResourceAPI --> Tracing
     NotifyAPI --> Tracing
 
@@ -299,7 +299,7 @@ sequenceDiagram
 
 # 核心 API 模組
 /auth/*          # 認證授權
-/events/*        # 事件管理
+/incidents/*     # 事故管理
 /resources/*     # 資源管理
 /notifications/* # 通知管理
 /analytics/*     # 分析報告
@@ -330,7 +330,7 @@ graph LR
     subgraph "業務數據"
         PG[(PostgreSQL<br/>ACID 事務)]
         PG --> Users[用戶信息]
-        PG --> Events[事件數據]
+        PG --> Incidents[事故數據]
         PG --> Resources[資源清單]
         PG --> Configs[配置信息]
     end
@@ -359,7 +359,7 @@ graph LR
 
 #### 數據模型設計要點
 1. **用戶系統**: 委託 Keycloak 管理，本地僅存儲業務關聯數據
-2. **事件模型**: 支持層級關聯、狀態流轉、AI 分析結果存儲
+2. **事故模型**: 支持層級關聯、狀態流轉、AI 分析結果存儲
 3. **資源模型**: 多維度標籤、動態屬性、批量操作支持
 4. **通知模型**: 多渠道、模板化、條件觸發機制
 
@@ -555,11 +555,6 @@ https://github.com/grafana/grafana/blob/main/public/api-merged.json
 - **維護一致性**: 確保數據架構與系統架構決策保持同步
 - **降低複雜度**: 減少不必要的數據同步和維護負擔
 
-**具體規範**：
-- ❌ 禁止創建 `event_rules` 類型表格（告警管理委託給 Grafana）
-- ❌ 禁止創建 `auth_settings` 類型表格（認證管理委託給 Keycloak）
-- ✅ 鼓勵創建增值功能表格（如 `silence_rules`, `notification_history`, `tag_definitions`）
-
 ### 12. **數據模型設計規範 (Data Model Design Standards)**
 **決策內容**：
 - 所有表格必須包含完整的約束檢查（CHECK constraints）
@@ -605,8 +600,8 @@ CREATE INDEX idx_example_created_at ON example_table (created_at DESC);
 ### 事件與告警分工 (Event Processing vs Alerting)
 - **Grafana 告警規則**：負責告警條件評估、觸發判斷與基礎通知派送。
 - **SRE 平台事件**：聚焦於 AI 根因分析、跨事件關聯、值班處理追蹤與歷史報表。
-- **資料模型落實**：`events` 表新增 `event_source` 枚舉欄位與註解，強調僅承載增值處理，所有告警規則仍交由 Grafana 管理。
-- **快取支援**：新增 `event_rule_snapshots` 表記錄 Grafana 規則快取與同步狀態，提供精靈編輯時的離線回填資料，同時維持 Grafana 作為唯一真實來源。
+- **資料模型落實**：`incidents` 表新增 `source` 枚舉欄位與註解，強調僅承載增值處理，所有告警規則仍交由 Grafana 管理。
+- **快取支援**：新增 `alert_rule_snapshots` 表記錄 Grafana 規則快取與同步狀態，提供精靈編輯時的離線回填資料，同時維持 Grafana 作為唯一真實來源。
 
 ### 通知策略範圍 (Notification Strategy Scope)
 - **Grafana 通知**：專注於告警觸發後的標準聯絡點與 On-Call 流程。
@@ -647,12 +642,6 @@ Grafana 職責: 告警規則引擎、告警評估、通知路由、儀表板渲�
 ```
 平台職責: 用戶偏好、團隊管理、業務權限、平台通知
 Keycloak 職責: 用戶認證、密碼管理、SSO整合、身份協議
-```
-
-#### 數據庫設計原則 📊
-```
-✅ 允許: *_history, *_silence_*, *_tag_*, *_analysis 類型表格
-❌ 禁止: *_rules, *_auth_*, email_settings 類型表格
 ```
 
 ### 🎖️ 架構優勢

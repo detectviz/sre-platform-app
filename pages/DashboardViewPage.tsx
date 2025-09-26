@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import DashboardViewer from '../components/DashboardViewer';
 import { Dashboard, DashboardType } from '../types';
 import api from '../services/api';
 import Icon from '../components/Icon';
+import GenericBuiltInDashboardPage from './dashboards/GenericBuiltInDashboardPage';
 
 const DashboardViewPage: React.FC = () => {
   const { dashboardId } = useParams<{ dashboardId: string }>();
@@ -47,7 +49,16 @@ const DashboardViewPage: React.FC = () => {
   }
   
   if (dashboard.type === DashboardType.BuiltIn) {
-    return <Navigate to={dashboard.path} replace />;
+    // Handle special, hardcoded built-in dashboards that have their own page components
+    if (dashboard.path === '/sre-war-room' || dashboard.path === '/dashboard/infrastructure-insights') {
+      return <Navigate to={dashboard.path} replace />;
+    }
+    // Handle generic, user-created built-in dashboards that have a layout property
+    if (dashboard.layout) {
+      return <GenericBuiltInDashboardPage name={dashboard.name} description={dashboard.description} widgetIds={dashboard.layout} />;
+    }
+    // Fallback for any other built-in dashboard without a specific page or layout
+    return <Navigate to="/home" replace />;
   }
 
   return (

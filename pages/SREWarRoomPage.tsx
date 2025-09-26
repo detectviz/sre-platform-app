@@ -27,7 +27,7 @@ const SREWarRoomPage: React.FC = () => {
     const fetchBriefing = useCallback(async () => {
         setIsBriefingLoading(true);
         try {
-            const { data } = await api.get<BriefingData>('/sre-war-room/briefing');
+            const { data } = await api.get<BriefingData>('/ai/briefing');
             setAiBriefing(data);
         } catch (error) {
             console.error("Fetch Briefing Error:", error);
@@ -46,7 +46,7 @@ const SREWarRoomPage: React.FC = () => {
         setIsBriefingLoading(true);
         try {
              // The backend now handles the AI generation logic.
-            const { data } = await api.post<BriefingData>('/sre-war-room/briefing/generate');
+            const { data } = await api.post<BriefingData>('/ai/briefing/generate');
             setAiBriefing(data);
         } catch (error) {
             console.error("AI Briefing Generation Error:", error);

@@ -19,7 +19,7 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId }) =
       setIsLoading(true);
       setError(null);
       try {
-        const { data } = await api.get<Incident>(`/events/${incidentId}`);
+        const { data } = await api.get<Incident>(`/incidents/${incidentId}`);
         setIncident(data);
       } catch (err) {
         setError(`Failed to fetch incident ${incidentId}.`);
@@ -42,8 +42,8 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId }) =
     return (
       <div className="p-6 text-center text-red-400">
         <Icon name="alert-circle" className="w-12 h-12 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold">事件載入失敗</h2>
-        <p>{error || `找不到 ID 為 "${incidentId}" 的事件。`}</p>
+        <h2 className="text-2xl font-bold">事故載入失敗</h2>
+        <p>{error || `找不到 ID 為 "${incidentId}" 的事故。`}</p>
       </div>
     );
   }
@@ -158,7 +158,7 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId }) =
                     <AIAnalysisDisplay report={incident.aiAnalysis} isLoading={false} />
                 ) : (
                     <div className="text-center text-slate-400 py-4">
-                        <p>此事件尚無 AI 分析報告。</p>
+                        <p>此事故尚無 AI 分析報告。</p>
                         <p className="text-sm mt-1">您可以在頂部操作列點擊「AI 分析」來產生報告。</p>
                     </div>
                 )}

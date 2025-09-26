@@ -1,3 +1,4 @@
+
 import { 
     Dashboard, DashboardTemplate, Incident, AlertRule, AlertRuleTemplate, SilenceRule, SilenceRuleTemplate,
     Resource, ResourceGroup, AutomationPlaybook, AutomationExecution, AutomationTrigger, User, Team, Role, 
@@ -239,6 +240,13 @@ function createInitialDB() {
         layouts: JSON.parse(JSON.stringify(DEFAULT_LAYOUTS)),
         layoutWidgets: JSON.parse(JSON.stringify(LAYOUT_WIDGETS)),
         kpiData: JSON.parse(JSON.stringify(KPI_DATA)),
+        columnConfigs: {
+            dashboards: ['name', 'type', 'category', 'owner', 'updatedAt'],
+            resources: ['status', 'name', 'type', 'provider', 'region', 'owner', 'lastCheckIn'],
+            personnel: ['name', 'role', 'team', 'status', 'lastLogin'],
+            alert_rules: ['name', 'target', 'conditionsSummary', 'severity', 'automationEnabled', 'creator', 'lastUpdated'],
+            silence_rules: ['name', 'type', 'matchers', 'schedule', 'creator', 'createdAt'],
+        },
         // AI DATA
         aiBriefing: JSON.parse(JSON.stringify(MOCK_AI_BRIEFING)),
         aiRiskPrediction: JSON.parse(JSON.stringify(MOCK_AI_RISK_PREDICTION)),

@@ -3,6 +3,7 @@ import EChartsReact from '../../components/EChartsReact';
 import Icon from '../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import PlaceholderModal from '../../components/PlaceholderModal';
+import { exportToCsv } from '../../services/export';
 
 const AnalysisOverviewPage: React.FC = () => {
     const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
@@ -91,7 +92,17 @@ const AnalysisOverviewPage: React.FC = () => {
         color: ['#dc2626', '#f97316', '#10b981']
     };
 
-    const handleExport = () => showPlaceholderModal('匯出分析報表');
+    const handleExport = () => {
+        const dataToExport = [
+            { metric: 'System Health Score', value: '98.5', details: 'System is currently healthy.' },
+            { metric: 'High DB CPU', value: '10 events', details: 'Correlated with API Latency Spike' },
+            { metric: 'API Latency Spike', value: '8 events', details: 'Correlated with High DB CPU, Deployment, 5xx Errors' },
+        ];
+        exportToCsv({
+            filename: `analysis-overview-${new Date().toISOString().split('T')[0]}.csv`,
+            data: dataToExport,
+        });
+    };
     const handleLogSearch = () => showPlaceholderModal('日誌搜尋');
 
     return (

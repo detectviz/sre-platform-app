@@ -13,6 +13,20 @@ import Modal from '../../components/Modal';
 import api from '../../services/api';
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
+import { exportToCsv } from '../../services/export';
+import ImportFromCsvModal from '../../components/ImportFromCsvModal';
+import ColumnSettingsModal, { TableColumn } from '../../components/ColumnSettingsModal';
+import { showToast } from '../../services/toast';
+
+const ALL_COLUMNS: TableColumn[] = [
+    { key: 'status', label: '狀態' },
+    { key: 'name', label: '名稱' },
+    { key: 'type', label: '類型' },
+    { key: 'provider_region', label: '提供商 / 區域' },
+    { key: 'owner', label: '擁有者' },
+    { key: 'lastCheckIn', label: '最後簽入' },
+];
+const PAGE_KEY = 'resources';
 
 const ResourceListPage: React.FC = () => {
     const [resources, setResources] = useState<Resource[]>([]);
@@ -29,6 +43,9 @@ const ResourceListPage: React.FC = () => {
     const [editingResource, setEditingResource] = useState<Resource | null>(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingResource, setDeletingResource] = useState<Resource | null>(null);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
+    const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
     
     const { resourceId } = useParams<{ resourceId: string }>();
     const navigate = useNavigate();
@@ -42,9 +59,14 @@ const ResourceListPage: React.FC = () => {
                 page_size: pageSize,
                 ...filters,
             };
-            const { data } = await api.get<{ items: Resource[], total: number }>('/resources', { params });
-            setResources(data.items);
-            setTotalResources(data.total);
+            const [resourcesRes, columnsRes] = await Promise.all([
+                api.get<{ items: Resource[], total: number }>('/resources', { params }),
+                api.get<string[]>(`/settings/column-config/${PAGE_KEY}`)
+            ]);
+            
+            setResources(resourcesRes.data.items);
+            setTotalResources(resourcesRes.data.total);
+            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
         } catch (err) {
             setError('無法獲取資源列表。');
         } finally {
@@ -56,10 +78,17 @@ const ResourceListPage: React.FC = () => {
         fetchResources();
     }, [fetchResources]);
 
-    const selectedResourceForDrawer = useMemo(() => {
-        // Find in local state first, would be a separate API call in real app
-        return resources.find(res => res.id === resourceId);
-    }, [resourceId, resources]);
+    const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
+        try {
+            await api.put(`/settings/column-config/${PAGE_KEY}`, newColumnKeys);
+            setVisibleColumns(newColumnKeys);
+            showToast('欄位設定已儲存。', 'success');
+        } catch (err) {
+            showToast('無法儲存欄位設定。', 'error');
+        } finally {
+            setIsColumnSettingsModalOpen(false);
+        }
+    };
 
     const handleViewDetails = (id: string) => {
         navigate(`/resources/${id}`);
@@ -144,7 +173,42 @@ const ResourceListPage: React.FC = () => {
             alert('Failed to delete selected resources.');
         }
     };
+
+    const handleExport = () => {
+        const dataToExport = selectedIds.length > 0
+            ? resources.filter(r => selectedIds.includes(r.id))
+            : resources;
+        
+        if (dataToExport.length === 0) {
+            alert("沒有可匯出的資料。");
+            return;
+        }
+        
+        exportToCsv({
+            filename: `resources-${new Date().toISOString().split('T')[0]}.csv`,
+            headers: ['id', 'name', 'status', 'type', 'provider', 'region', 'owner', 'lastCheckIn'],
+            data: dataToExport,
+        });
+    };
     
+    const renderCellContent = (res: Resource, columnKey: string) => {
+        switch (columnKey) {
+            case 'status':
+                return (
+                    <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusPill(res.status)}`}>
+                        <span className={`w-2 h-2 mr-2 rounded-full ${res.status === 'healthy' ? 'bg-green-400' : res.status === 'warning' ? 'bg-yellow-400' : res.status === 'critical' ? 'bg-red-400' : 'bg-slate-400'}`}></span>
+                        {res.status}
+                    </span>
+                );
+            case 'name': return <span className="font-medium text-white">{res.name}</span>;
+            case 'type': return res.type;
+            case 'provider_region': return `${res.provider} / ${res.region}`;
+            case 'owner': return res.owner;
+            case 'lastCheckIn': return res.lastCheckIn;
+            default: return null;
+        }
+    };
+
     const leftActions = (
          <ToolbarButton icon="search" text="搜索和篩選" onClick={() => setIsSearchModalOpen(true)} />
     );
@@ -159,9 +223,9 @@ const ResourceListPage: React.FC = () => {
                 leftActions={leftActions}
                 rightActions={
                     <>
-                        <ToolbarButton icon="upload" text="匯入" disabled title="功能開發中" />
-                        <ToolbarButton icon="download" text="匯出" disabled title="功能開發中" />
-                        <ToolbarButton icon="settings-2" text="欄位設定" disabled title="功能開發中" />
+                        <ToolbarButton icon="upload" text="匯入" onClick={() => setIsImportModalOpen(true)} />
+                        <ToolbarButton icon="download" text="匯出" onClick={handleExport} />
+                        <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => setIsColumnSettingsModalOpen(true)} />
                         <ToolbarButton icon="plus" text="新增資源" primary onClick={handleNewResource} />
                     </>
                 }
@@ -180,20 +244,17 @@ const ResourceListPage: React.FC = () => {
                                            className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded"
                                            checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
-                                <th scope="col" className="px-6 py-3">狀態</th>
-                                <th scope="col" className="px-6 py-3">名稱</th>
-                                <th scope="col" className="px-6 py-3">類型</th>
-                                <th scope="col" className="px-6 py-3">提供商 / 區域</th>
-                                <th scope="col" className="px-6 py-3">擁有者</th>
-                                <th scope="col" className="px-6 py-3">最後簽入</th>
+                                {visibleColumns.map(key => (
+                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                ))}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <TableLoader colSpan={8} />
+                                <TableLoader colSpan={visibleColumns.length + 2} />
                             ) : error ? (
-                                <TableError colSpan={8} message={error} onRetry={fetchResources} />
+                                <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchResources} />
                             ) : resources.map((res) => (
                                 <tr key={res.id} className={`border-b border-slate-800 ${selectedIds.includes(res.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
                                     <td className="p-4 w-12">
@@ -201,17 +262,9 @@ const ResourceListPage: React.FC = () => {
                                                className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded"
                                                checked={selectedIds.includes(res.id)} onChange={(e) => handleSelectOne(e, res.id)} />
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusPill(res.status)}`}>
-                                            <span className={`w-2 h-2 mr-2 rounded-full ${res.status === 'healthy' ? 'bg-green-400' : res.status === 'warning' ? 'bg-yellow-400' : res.status === 'critical' ? 'bg-red-400' : 'bg-slate-400'}`}></span>
-                                            {res.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 font-medium text-white">{res.name}</td>
-                                    <td className="px-6 py-4">{res.type}</td>
-                                    <td className="px-6 py-4">{res.provider} / {res.region}</td>
-                                    <td className="px-6 py-4">{res.owner}</td>
-                                    <td className="px-6 py-4">{res.lastCheckIn}</td>
+                                    {visibleColumns.map(key => (
+                                        <td key={key} className="px-6 py-4">{renderCellContent(res, key)}</td>
+                                    ))}
                                     <td className="px-6 py-4 text-center space-x-1">
                                          <button onClick={() => handleViewDetails(res.id)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="查看詳情">
                                             <Icon name="eye" className="w-4 h-4" />
@@ -239,7 +292,7 @@ const ResourceListPage: React.FC = () => {
             <Drawer
                 isOpen={!!resourceId}
                 onClose={handleCloseDrawer}
-                title={selectedResourceForDrawer ? `${selectedResourceForDrawer.name}` : "載入中..."}
+                title={resources.find(res => res.id === resourceId)?.name || "載入中..."}
                 width="w-3/5"
             >
                 {resourceId && <ResourceDetailPage resourceId={resourceId} />}
@@ -276,6 +329,22 @@ const ResourceListPage: React.FC = () => {
                 <p>您確定要刪除資源 <strong className="text-amber-400">{deletingResource?.name}</strong> 嗎？</p>
                 <p className="mt-2 text-slate-400">此操作無法復原。</p>
             </Modal>
+            <ColumnSettingsModal
+                isOpen={isColumnSettingsModalOpen}
+                onClose={() => setIsColumnSettingsModalOpen(false)}
+                onSave={handleSaveColumnConfig}
+                allColumns={ALL_COLUMNS}
+                visibleColumnKeys={visibleColumns}
+            />
+            <ImportFromCsvModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                onImportSuccess={fetchResources}
+                itemName="資源"
+                importEndpoint="/resources/import"
+                templateHeaders={['id', 'name', 'status', 'type', 'provider', 'region', 'owner']}
+                templateFilename="resources-template.csv"
+            />
         </div>
     );
 };

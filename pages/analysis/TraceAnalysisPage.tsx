@@ -6,6 +6,7 @@ import SpanDetail from '../../components/SpanDetail';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import PlaceholderModal from '../../components/PlaceholderModal';
 import api from '../../services/api';
+import { exportToCsv } from '../../services/export';
 
 const TraceAnalysisPage: React.FC = () => {
     const [traces, setTraces] = useState<Trace[]>([]);
@@ -57,7 +58,25 @@ const TraceAnalysisPage: React.FC = () => {
         setSelectedSpanId(prevId => (prevId === spanId ? null : spanId));
     }
     
-    const handleExport = () => showPlaceholderModal('匯出追蹤分析報表');
+    const handleExport = () => {
+        if (traces.length === 0) {
+            alert("沒有可匯出的資料。");
+            return;
+        }
+        exportToCsv({
+            filename: `traces-${new Date().toISOString().split('T')[0]}.csv`,
+            headers: ['traceId', 'rootServiceName', 'rootOperationName', 'duration', 'services', 'errorCount', 'startTime'],
+            data: traces.map(t => ({
+                traceId: t.traceId,
+                rootServiceName: t.root.serviceName,
+                rootOperationName: t.root.operationName,
+                duration: t.duration,
+                services: t.services.join(';'),
+                errorCount: t.errorCount,
+                startTime: new Date(t.startTime).toISOString(),
+            }))
+        });
+    };
 
     const leftActions = (
         <div className="relative">

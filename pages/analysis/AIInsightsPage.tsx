@@ -4,6 +4,7 @@ import Icon from '../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import PlaceholderModal from '../../components/PlaceholderModal';
 import api from '../../services/api';
+import { exportToCsv } from '../../services/export';
 
 interface HealthScore {
     score: number;
@@ -43,9 +44,9 @@ const AIInsightsPage: React.FC = () => {
         setIsLoading(true);
         try {
             const [scoreRes, anomaliesRes, suggestionsRes] = await Promise.all([
-                api.get<HealthScore>('/analysis/ai-insights/health-score'),
-                api.get<Anomaly[]>('/analysis/ai-insights/anomalies'),
-                api.get<Suggestion[]>('/analysis/ai-insights/suggestions')
+                api.get<HealthScore>('/ai/insights/health-score'),
+                api.get<Anomaly[]>('/ai/insights/anomalies'),
+                api.get<Suggestion[]>('/ai/insights/suggestions')
             ]);
             setHealthScore(scoreRes.data);
             setAnomalies(anomaliesRes.data);
@@ -64,6 +65,36 @@ const AIInsightsPage: React.FC = () => {
     useEffect(() => {
         fetchAllInsights();
     }, [fetchAllInsights]);
+
+    const handleExport = () => {
+        const dataToExport = [
+            ...anomalies.map(a => ({
+                type: 'Anomaly',
+                severity_or_impact: a.severity,
+                description: a.description,
+                timestamp_or_effort: a.timestamp,
+                details: ''
+            })),
+            ...suggestions.map(s => ({
+                type: 'Suggestion',
+                severity_or_impact: s.impact,
+                description: s.title,
+                timestamp_or_effort: s.effort,
+                details: s.details
+            }))
+        ];
+
+        if (dataToExport.length === 0) {
+            alert("沒有可匯出的資料。");
+            return;
+        }
+
+        exportToCsv({
+            filename: `ai-insights-${new Date().toISOString().split('T')[0]}.csv`,
+            headers: ['type', 'severity_or_impact', 'description', 'timestamp_or_effort', 'details'],
+            data: dataToExport,
+        });
+    };
 
     const getSeverityPill = (severity: Anomaly['severity']) => {
         switch (severity) {
@@ -92,7 +123,7 @@ const AIInsightsPage: React.FC = () => {
                             onClick={fetchAllInsights}
                             disabled={isLoading}
                         />
-                        <ToolbarButton icon="download" text="匯出報表" onClick={() => showPlaceholderModal('匯出 AI 洞察報表')} />
+                        <ToolbarButton icon="download" text="匯出報表" onClick={handleExport} />
                     </>
                 }
             />
