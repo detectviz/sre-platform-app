@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Incident } from '../../types';
 import Icon from '../../components/Icon';
 import AIAnalysisDisplay from '../../components/AIAnalysisDisplay';
@@ -135,13 +136,21 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId }) =
             <div className="glass-card rounded-xl p-6">
                 <h2 className="text-xl font-bold mb-4">詳細資訊</h2>
                 <dl className="space-y-4">
-                    <InfoItem label="資源">{incident.resource}</InfoItem>
+                    <InfoItem label="資源">
+                        <Link to={`/resources/${incident.resourceId}`} className="text-sky-400 hover:underline">
+                            {incident.resource}
+                        </Link>
+                    </InfoItem>
                     <InfoItem label="服務影響">
                         <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getServiceImpactPill(incident.serviceImpact)}`}>
                             {incident.serviceImpact}
                         </span>
                     </InfoItem>
-                    <InfoItem label="規則">{incident.rule}</InfoItem>
+                    <InfoItem label="規則">
+                        <Link to={`/incidents/rules`} className="text-sky-400 hover:underline">
+                            {incident.rule}
+                        </Link>
+                    </InfoItem>
                     <InfoItem label="觸發時間">{incident.triggeredAt}</InfoItem>
                 </dl>
             </div>

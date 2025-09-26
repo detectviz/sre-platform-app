@@ -5,6 +5,7 @@ import FormRow from '../../components/FormRow';
 import { UserPreferences, Dashboard } from '../../types';
 import api from '../../services/api';
 import Icon from '../../components/Icon';
+import { showToast } from '../../services/toast';
 
 const PreferenceSettingsPage: React.FC = () => {
     const [preferences, setPreferences] = useState<UserPreferences | null>(null);
@@ -36,9 +37,9 @@ const PreferenceSettingsPage: React.FC = () => {
         if (preferences) {
             try {
                 await api.put('/me/preferences', preferences);
-                // In a real app, show a success toast.
+                showToast('偏好設定已成功儲存。', 'success');
             } catch (err) {
-                // In a real app, show an error toast.
+                showToast('無法儲存偏好設定。', 'error');
             }
         }
     };
@@ -51,6 +52,7 @@ const PreferenceSettingsPage: React.FC = () => {
             defaultPage: 'sre-war-room',
         };
         setPreferences(defaultPrefs);
+        showToast('偏好設定已重置為預設值。', 'success');
     };
 
     const handleChange = (field: keyof UserPreferences, value: string) => {

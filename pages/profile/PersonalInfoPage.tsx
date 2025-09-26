@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import FormRow from '../../components/FormRow';
 import Icon from '../../components/Icon';
@@ -58,10 +59,10 @@ const PersonalInfoPage: React.FC = () => {
           </FormRow>
         </div>
          <div className="mt-6 pt-6 border-t border-slate-700/50 text-right">
-            <button className="flex items-center text-sm text-sky-400 hover:text-sky-300 px-3 py-1 rounded-md hover:bg-sky-500/20 ml-auto">
+            <a href="https://keycloak.example.com/admin/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-sm text-sky-400 hover:text-sky-300 px-3 py-1 rounded-md hover:bg-sky-500/20 ml-auto">
                 <Icon name="external-link" className="w-4 h-4 mr-2" />
                 在 Keycloak 中管理
-            </button>
+            </a>
          </div>
       </div>
     </div>

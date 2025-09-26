@@ -1,4 +1,4 @@
-# SRE 平台功能規格 v2.5
+# SRE 平台功能規格 v2.6
 
 本文件旨在記錄 SRE 平台在持續開發過程中的重要功能規格與架構決策，作為開發與測試的依據。
 
@@ -184,3 +184,111 @@
 -   `GET /dashboards/sre-war-room/resource-group-status`: (新增) 提供 SRE 戰情室「資源群組狀態」長條圖的數據。
 -   `GET /analysis/overview`: (新增) 提供分析總覽頁所需的所有聚合數據。
 -   `POST /alert-rules/{rule_id}/test`: (新增) 接收一個測試用的 Payload，模擬對特定告警規則的評估，並回傳評估結果。
+
+---
+
+## 7. 功能: 平台連動性與操作流程優化 (Platform Interconnectivity & Workflow Optimization)
+
+-   **模組**: 全局
+-   **版本**: v2.6
+-   **狀態**: ✅ 已完成
+
+### 7.1 使用者故事
+
+**身為** 一名正在處理事件的 SRE，
+**我想要** 在事件詳情頁直接點擊關聯的資源或規則名稱，就能跳轉到對應的管理頁面；同樣地，在資源詳情頁我也能快速連結到與該資源相關的歷史事件，
+**使得** 我在進行問題排查時，能夠在不同模組之間無縫穿梭，大幅縮短資訊查找的時間，提升故障排除的效率。
+
+### 7.2 行為變更
+
+-   **事件詳情頁 (`IncidentDetailPage`)**:
+    -   「資源」欄位現在是一個可點擊的連結，點擊後會導向至該資源的詳情頁 (`/resources/{resourceId}`)。
+    -   「規則」欄位現在也是一個可點擊的連結，點擊後會導向至告警規則列表頁 (`/incidents/rules`)。
+
+-   **資源詳情頁 (`ResourceDetailPage`)**:
+    -   「相關事件」列表中的每一個事件，現在都成為一個可點擊的項目，點擊後會開啟該事件的詳情抽屜 (`/incidents/{incidentId}` on the same page)。
+
+-   **API 契約擴充**:
+    -   為了支援上述功能，`Incident` 資料模型已擴充，新增 `resourceId` 和 `ruleId` 欄位，以便前端能夠建立正確的連結。
+
+### 7.3 使用的 API 端點
+
+-   `GET /incidents?resource_name={resource_name}`: (增強) `GET /incidents` 端點現在支援依 `resource_name` 進行篩選，以供資源詳情頁查詢關聯事件。
+
+---
+
+## 8. 功能: 後端篩選與核心功能完善 (Backend Filtering & Core Feature Completion)
+
+-   **模組**: 全局
+-   **版本**: v2.7
+-   **狀態**: ✅ 已完成
+
+### 8.1 使用者故事
+
+**身為** 一名平台使用者，
+**我想要** 在所有列表頁面（如告警規則、靜音規則）上進行搜尋和篩選時，操作能直接由後端處理，並希望平台能補全如「規則測試」、「範本套用」、「執行重試」等核心操作，
+**使得** 我能高效地處理大規模數據，並享受到一個功能完整、流程順暢的維運體驗。
+
+### 8.2 行為變更
+
+-   **後端篩選與搜尋**:
+    -   **受影響頁面**: `AlertRulePage`, `SilenceRulePage`, `NotificationStrategyPage`, `NotificationChannelPage`, `AutomationTriggersPage`。
+    -   **變更內容**: 這些頁面的搜尋框和篩選器現在會觸發帶有查詢參數的後端 API 請求，取代了原有的前端 JavaScript 篩選邏輯。這顯著提升了處理大量資料時的效能，並確保了數據的一致性。
+    -   **使用者體驗**: 在篩選條件變更後，表格會顯示一個載入中狀態，提供明確的數據獲取回饋。
+
+-   **告警規則測試 (`TestRuleModal`)**:
+    -   **後端驗證**: 「測試規則」功能現在會將測試 Payload 發送到 `POST /alert-rules/{id}/test` 端點，由後端模擬真實的規則評估邏輯。
+    -   **真實回饋**: 模態框會顯示由後端回傳的結構化結果，包含是否匹配以及事件內容預覽。
+
+-   **範本套用功能**:
+    -   `AlertRuleEditModal` 和 `SilenceRuleEditModal` 現在會分別從 `GET /alert-rules/templates` 和 `GET /silence-rules/templates` 端點動態獲取可用範本，供使用者快速套用。
+
+-   **自動化執行重試 (`AutomationHistoryPage`)**:
+    -   對於失敗的執行紀錄，表格操作列中新增了「重試」按鈕，該按鈕會呼叫 `POST /automation/executions/{id}/retry` 端點來重新觸發一次執行。
+
+-   **通知管道測試 (`NotificationChannelPage`)**:
+    -   「測試」按鈕現在會呼叫 `POST /settings/notification-channels/{id}/test` 端點，由後端發起一個非同步的測試任務。
+
+-   **CSV 匯入功能**:
+    -   所有支援匯入的頁面 (`PersonnelManagementPage`, `ResourceListPage` 等) 現在都已對接 `POST /.../import` 端點。
+
+### 8.3 新增的 API 端點
+
+-   `GET /alert-rules`, `/silence-rules`, etc. (增強): 新增 `keyword`, `severity`, `enabled` 等後端篩選參數。
+-   `GET /alert-rules/templates`: (新增) 取得告警規則範本。
+-   `GET /silence-rules/templates`: (新增) 取得靜音規則範本。
+-   `POST /alert-rules/{id}/test`: (增強) 完成後端測試邏輯。
+-   `POST /automation/executions/{id}/retry`: (新增) 重試自動化執行。
+-   `POST /.../import`: (新增) 支援各模組的 CSV 匯入功能。
+---
+
+## 9. 功能: CI/CD 與部署工作流程 (CI/CD & Deployment Workflow)
+
+-   **模組**: 開發維運 (DevOps)
+-   **版本**: v2.8
+-   **狀態**: ✅ 已完成
+
+### 9.1 使用者故事
+
+**身為** 一名開發者，
+**我想要** 每當我將最新的程式碼推送到 `main` 分支時，應用程式能夠自動被部署到一個公開的網址，
+**使得** 我可以快速地驗證變更、與團隊成員分享進度，並確保線上版本永遠與主分支的程式碼保持同步。
+
+### 9.2 行為變更
+
+-   **建立 GitHub Actions 工作流程**:
+    -   在專案中新增了一個 `.github/workflows/deploy.yml` 檔案，定義了一個用於持續部署的 GitHub Actions 工作流程。
+    -   **觸發條件**: 此工作流程會在每次有程式碼 `push` 到 `main` 分支時自動執行。同時也支援手動觸發 (`workflow_dispatch`)。
+    -   **部署目標**: 工作流程會將專案中的所有靜態檔案部署到 **GitHub Pages**。
+
+-   **工作流程步驟**:
+    1.  **Checkout**: 使用 `actions/checkout@v4` 拉取最新的程式碼。
+    2.  **Setup Pages**: 使用 `actions/configure-pages@v5` 設定 GitHub Pages 的部署環境。
+    3.  **Upload Artifact**: 使用 `actions/upload-pages-artifact@v3` 將整個專案目錄打包成一個部署產物 (artifact)。
+    4.  **Deploy**: 使用 `actions/deploy-pages@v4` 將上一步產生的產物部署到 GitHub Pages。
+
+-   **權限設定**:
+    -   工作流程被授予了 `pages: write` 和 `id-token: write` 權限，以允許其向 GitHub Pages 寫入內容。
+
+-   **併發控制**:
+    -   設定了併發群組 (`concurrency group`)，確保同一時間只有一個部署任務在執行，避免了因快速連續推送而導致的部署衝突。

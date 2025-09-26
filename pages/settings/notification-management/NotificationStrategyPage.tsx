@@ -24,10 +24,8 @@ const NotificationStrategyPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const { data } = await api.get<NotificationStrategy[]>('/settings/notification-strategies');
-            // Mock search since API doesn't support it yet
-            const filtered = data.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()));
-            setStrategies(filtered);
+            const { data } = await api.get<NotificationStrategy[]>('/settings/notification-strategies', { params: { keyword: searchTerm } });
+            setStrategies(data);
         } catch(err) {
             setError('無法獲取通知策略。');
         } finally {

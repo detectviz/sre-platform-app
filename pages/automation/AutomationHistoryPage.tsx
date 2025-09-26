@@ -35,11 +35,15 @@ const AutomationHistoryPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const params = {
+            const params: any = {
                 page: currentPage,
                 page_size: pageSize,
-                ...filters,
             };
+            if (filters.playbookId) params.playbookId = filters.playbookId;
+            if (filters.status) params.status = filters.status;
+            if (filters.startDate) params.startDate = filters.startDate;
+            if (filters.endDate) params.endDate = filters.endDate;
+
             const { data } = await api.get<{ items: AutomationExecution[], total: number }>('/automation/executions', { params });
             setExecutions(data.items);
             setTotal(data.total);

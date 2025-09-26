@@ -24,10 +24,8 @@ const NotificationChannelPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const { data } = await api.get<NotificationChannel[]>('/settings/notification-channels');
-             // Mock search
-            const filtered = data.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
-            setChannels(filtered);
+            const { data } = await api.get<NotificationChannel[]>('/settings/notification-channels', { params: { keyword: searchTerm } });
+            setChannels(data);
         } catch(err) {
             setError('無法獲取通知管道。');
         } finally {

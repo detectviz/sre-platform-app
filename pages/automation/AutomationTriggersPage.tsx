@@ -24,7 +24,7 @@ const AutomationTriggersPage: React.FC = () => {
         setError(null);
         try {
             const [triggersRes, playbooksRes] = await Promise.all([
-                api.get<AutomationTrigger[]>('/automation/triggers'),
+                api.get<AutomationTrigger[]>('/automation/triggers', { params: { keyword: searchTerm } }),
                 api.get<AutomationPlaybook[]>('/automation/scripts')
             ]);
             setTriggers(triggersRes.data);
@@ -34,7 +34,7 @@ const AutomationTriggersPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [searchTerm]);
 
     useEffect(() => {
         fetchTriggersAndPlaybooks();
@@ -106,10 +106,6 @@ const AutomationTriggersPage: React.FC = () => {
     };
     
     const findPlaybookName = (playbookId: string) => playbookNameMap.get(playbookId) || 'Unknown Playbook';
-    
-    const filteredTriggers = useMemo(() => {
-        return triggers.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()));
-    }, [triggers, searchTerm]);
 
     return (
         <div className="h-full flex flex-col">
@@ -141,7 +137,7 @@ const AutomationTriggersPage: React.FC = () => {
                                 <tr><td colSpan={6} className="text-center py-10"><Icon name="loader-circle" className="w-6 h-6 animate-spin inline-block"/></td></tr>
                             ) : error ? (
                                 <tr><td colSpan={6} className="text-center py-10 text-red-400">{error}</td></tr>
-                            ) : filteredTriggers.map((trigger) => (
+                            ) : triggers.map((trigger) => (
                                 <tr key={trigger.id} className="border-b border-slate-800 hover:bg-slate-800/40">
                                     <td className="px-6 py-4">
                                         <label className="relative inline-flex items-center cursor-pointer">

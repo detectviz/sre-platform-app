@@ -69,8 +69,10 @@ export interface Incident {
   id: string;
   summary: string;
   resource: string;
+  resourceId: string;
   serviceImpact: 'High' | 'Medium' | 'Low';
   rule: string;
+  ruleId: string;
   status: 'new' | 'acknowledged' | 'resolved' | 'silenced';
   severity: 'critical' | 'warning' | 'info';
   priority?: 'P0' | 'P1' | 'P2' | 'P3';

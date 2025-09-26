@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { Resource, Incident } from '../../types';
 import Icon from '../../components/Icon';
 import EChartsReact from '../../components/EChartsReact';
@@ -32,13 +33,14 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resourceId }) =
     setIsLoading(true);
     setError(null);
     try {
-      const [resourceRes, incidentsRes, metricsRes] = await Promise.all([
-          api.get<Resource>(`/resources/${resourceId}`),
-          api.get<{ items: Incident[] }>('/incidents', { params: { resource_name: resourceId, page_size: 3 } }), // Assuming API can filter by name
+      const resourceData = (await api.get<Resource>(`/resources/${resourceId}`)).data;
+
+      const [incidentsRes, metricsRes] = await Promise.all([
+          api.get<{ items: Incident[] }>('/incidents', { params: { resource_name: resourceData.name, page_size: 3 } }),
           api.get<MetricsData>(`/resources/${resourceId}/metrics`)
       ]);
       
-      setResource(resourceRes.data);
+      setResource(resourceData);
       setRelatedIncidents(incidentsRes.data.items);
       setMetrics(metricsRes.data);
 
@@ -128,13 +130,15 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resourceId }) =
         <div className="space-y-2">
           {relatedIncidents.length > 0 ? (
             relatedIncidents.map(inc => (
-              <div key={inc.id} className="glass-card rounded-lg p-3 flex justify-between items-center">
-                <div>
-                  <p className="font-semibold text-white">{inc.summary}</p>
-                  <p className="text-xs text-slate-400">{inc.triggeredAt}</p>
+              <Link to={`/incidents/${inc.id}`} key={inc.id}>
+                <div className="glass-card rounded-lg p-3 flex justify-between items-center hover:bg-slate-700/50 transition-colors">
+                  <div>
+                    <p className="font-semibold text-white">{inc.summary}</p>
+                    <p className="text-xs text-slate-400">{inc.triggeredAt}</p>
+                  </div>
+                  <span className={`px-2 py-1 text-xs font-semibold rounded-full capitalize ${inc.status === 'new' ? 'text-orange-400' : 'text-slate-400'}`}>{inc.status}</span>
                 </div>
-                <span className={`px-2 py-1 text-xs font-semibold rounded-full capitalize ${inc.status === 'new' ? 'text-orange-400' : 'text-slate-400'}`}>{inc.status}</span>
-              </div>
+              </Link>
             ))
           ) : (
             <p className="text-slate-400">沒有相關的事件。</p>

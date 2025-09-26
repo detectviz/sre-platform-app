@@ -154,7 +154,11 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                     if (!incident) throw { status: 404 };
                     return incident;
                 }
-                return paginate(DB.incidents, params.page, params.page_size);
+                let incidents = DB.incidents;
+                if (params.resource_name) {
+                    incidents = incidents.filter((i: any) => i.resource === params.resource_name);
+                }
+                return paginate(incidents, params.page, params.page_size);
             }
             case 'POST /incidents': {
                 if (id === 'import') {
@@ -171,9 +175,14 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 break;
             }
             
-            case 'GET /alert-rules':
+            case 'GET /alert-rules': {
                 if (id === 'templates') return DB.alertRuleTemplates;
-                return DB.alertRules;
+                let rules = getActive(DB.alertRules);
+                if (params.keyword) rules = rules.filter((r: any) => r.name.toLowerCase().includes(params.keyword.toLowerCase()));
+                if (params.severity) rules = rules.filter((r: any) => r.severity === params.severity);
+                if (params.enabled !== undefined) rules = rules.filter((r: any) => String(r.enabled) === params.enabled);
+                return rules;
+            }
             case 'POST /alert-rules':
                 if (id === 'import') {
                     return { message: '成功匯入 8 條告警規則。' };
@@ -208,9 +217,14 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 DB.alertRules = DB.alertRules.filter((r: any) => r.id !== id);
                 return {};
             
-            case 'GET /silence-rules': 
+            case 'GET /silence-rules': {
                 if (id === 'templates') return DB.silenceRuleTemplates;
-                return DB.silenceRules;
+                let rules = getActive(DB.silenceRules);
+                if (params.keyword) rules = rules.filter((r: any) => r.name.toLowerCase().includes(params.keyword.toLowerCase()));
+                if (params.type) rules = rules.filter((r: any) => r.type === params.type);
+                if (params.enabled !== undefined) rules = rules.filter((r: any) => String(r.enabled) === params.enabled);
+                return rules;
+            }
             case 'POST /silence-rules':
                 if (id === 'import') {
                     return { message: '成功匯入 3 條靜音規則。' };
@@ -292,8 +306,17 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
             // Automation
             case 'GET /automation': {
                 if (id === 'scripts') return getActive(DB.playbooks);
-                if (id === 'triggers') return getActive(DB.automationTriggers);
-                if (id === 'executions') return paginate(DB.automationExecutions, params.page, params.page_size);
+                if (id === 'triggers') {
+                    let triggers = getActive(DB.automationTriggers);
+                    if (params.keyword) triggers = triggers.filter((t: any) => t.name.toLowerCase().includes(params.keyword.toLowerCase()));
+                    return triggers;
+                }
+                if (id === 'executions') {
+                    let executions = DB.automationExecutions;
+                    if (params.playbookId) executions = executions.filter((e: any) => e.scriptId === params.playbookId);
+                    if (params.status) executions = executions.filter((e: any) => e.status === params.status);
+                    return paginate(executions, params.page, params.page_size);
+                }
                 break;
             }
              case 'POST /automation': {
@@ -302,8 +325,9 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                         const scriptId = urlParts[2];
                         const script = DB.playbooks.find((p: any) => p.id === scriptId);
                         if (!script) throw { status: 404 };
-                        const newExec = { id: `exec-${uuidv4()}`, scriptId, scriptName: script.name, status: 'success', triggerSource: 'manual', triggeredBy: 'Admin User', startTime: new Date().toISOString(), durationMs: Math.random() * 5000, parameters: body.parameters, logs: { stdout: 'Mock execution successful.', stderr: '' } };
+                        const newExec = { id: `exec-${uuidv4()}`, scriptId, scriptName: script.name, status: 'running', triggerSource: 'manual', triggeredBy: 'Admin User', startTime: new Date().toISOString(), parameters: body.parameters, logs: { stdout: 'Execution started...', stderr: '' } };
                         DB.automationExecutions.unshift(newExec);
+                        setTimeout(() => { const index = DB.automationExecutions.findIndex(e => e.id === newExec.id); if (index > -1) { DB.automationExecutions[index].status = 'success'; DB.automationExecutions[index].endTime = new Date().toISOString(); DB.automationExecutions[index].durationMs = 3000; DB.automationExecutions[index].logs.stdout += '\nExecution finished.'; }}, 3000);
                         return newExec;
                     }
                     const newScript = { ...body, id: `play-${uuidv4()}` };
@@ -314,6 +338,15 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                     const newTrigger = { ...body, id: `trig-${uuidv4()}` };
                     DB.automationTriggers.unshift(newTrigger);
                     return newTrigger;
+                }
+                if (id === 'executions' && action === 'retry') {
+                    const executionId = urlParts[2];
+                    const executionIndex = DB.automationExecutions.findIndex((e: any) => e.id === executionId);
+                    if (executionIndex === -1) throw { status: 404 };
+                    const originalExec = DB.automationExecutions[executionIndex];
+                    const newExec = { ...originalExec, id: `exec-${uuidv4()}`, status: 'pending', startTime: new Date().toISOString(), endTime: undefined, durationMs: undefined };
+                    DB.automationExecutions.unshift(newExec);
+                    return newExec;
                 }
                 break;
             }
@@ -435,8 +468,16 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                     const pageKey = action as keyof typeof DB.columnConfigs;
                     return DB.columnConfigs[pageKey] || [];
                 }
-                if (id === 'notification-strategies') return DB.notificationStrategies;
-                if (id === 'notification-channels') return DB.notificationChannels;
+                if (id === 'notification-strategies') {
+                    let strategies = getActive(DB.notificationStrategies);
+                    if (params.keyword) strategies = strategies.filter((s: any) => s.name.toLowerCase().includes(params.keyword.toLowerCase()));
+                    return strategies;
+                }
+                if (id === 'notification-channels') {
+                    let channels = getActive(DB.notificationChannels);
+                    if (params.keyword) channels = channels.filter((c: any) => c.name.toLowerCase().includes(params.keyword.toLowerCase()));
+                    return channels;
+                }
                 if (id === 'notification-history') return paginate(DB.notificationHistory, params.page, params.page_size);
                 if (id === 'mail') return DB.mailSettings;
                 if (id === 'auth') return DB.authSettings;
