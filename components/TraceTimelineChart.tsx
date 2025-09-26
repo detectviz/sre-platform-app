@@ -68,6 +68,9 @@ const TraceTimelineChart: React.FC<TraceTimelineChartProps> = ({ spans, selected
                 trigger: 'axis',
                 axisPointer: { type: 'shadow' },
                 formatter: (params: any[]) => {
+                    if (!params || params.length === 0) {
+                        return '';
+                    }
                     const spanIndex = params[0].dataIndex;
                     const { span } = flattenedSpans[spanIndex];
                     return `

@@ -5,9 +5,10 @@ import LogLevelPill from '../../components/LogLevelPill';
 import JsonViewer from '../../components/JsonViewer';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import PlaceholderModal from '../../components/PlaceholderModal';
-import { LogEntry, LogLevel } from '../../types';
+import { LogEntry, LogLevel, LogAnalysis } from '../../types';
 import api from '../../services/api';
 import { exportToCsv } from '../../services/export';
+import LogAnalysisModal from '../../components/LogAnalysisModal';
 
 const LogExplorerPage: React.FC = () => {
     const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -22,6 +23,11 @@ const LogExplorerPage: React.FC = () => {
     const logContainerRef = useRef<HTMLDivElement>(null);
     const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
     const [modalFeatureName, setModalFeatureName] = useState('');
+    
+    // New state for AI Log Analysis
+    const [isLogAnalysisModalOpen, setIsLogAnalysisModalOpen] = useState(false);
+    const [logAnalysisReport, setLogAnalysisReport] = useState<LogAnalysis | null>(null);
+    const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
 
     const showPlaceholderModal = (featureName: string) => {
         setModalFeatureName(featureName);
@@ -111,6 +117,22 @@ const LogExplorerPage: React.FC = () => {
         setExpandedLogId(prevId => (prevId === id ? null : id));
     };
 
+    const handleRunLogAnalysis = async () => {
+        setIsLogAnalysisModalOpen(true);
+        setIsAnalysisLoading(true);
+        setLogAnalysisReport(null);
+        try {
+            const { data } = await api.post<LogAnalysis>('/ai/logs/summarize', { query });
+            setLogAnalysisReport(data);
+        } catch (err) {
+            console.error(err);
+            // In a real app, might show an error inside the modal by setting a report string
+            setLogAnalysisReport(null);
+        } finally {
+            setIsAnalysisLoading(false);
+        }
+    };
+
     const handleExport = () => {
         if (logs.length === 0) {
             alert("沒有可匯出的資料。");
@@ -158,11 +180,18 @@ const LogExplorerPage: React.FC = () => {
         </>
     );
 
+    const rightActions = (
+        <>
+            <ToolbarButton icon="brain-circuit" text="AI 總結" ai onClick={handleRunLogAnalysis} disabled={isLoading} />
+            <ToolbarButton icon="download" text="匯出報表" onClick={handleExport} />
+        </>
+    );
+
     return (
         <div className="h-full flex flex-col space-y-4">
             <Toolbar 
                 leftActions={leftActions}
-                rightActions={<ToolbarButton icon="download" text="匯出報表" onClick={handleExport} />}
+                rightActions={rightActions}
             />
             
             <div className="shrink-0 h-24">
@@ -210,6 +239,12 @@ const LogExplorerPage: React.FC = () => {
                 isOpen={isPlaceholderModalOpen}
                 onClose={() => setIsPlaceholderModalOpen(false)}
                 featureName={modalFeatureName}
+            />
+            <LogAnalysisModal
+                isOpen={isLogAnalysisModalOpen}
+                onClose={() => setIsLogAnalysisModalOpen(false)}
+                report={logAnalysisReport}
+                isLoading={isAnalysisLoading}
             />
         </div>
     );

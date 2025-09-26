@@ -18,7 +18,7 @@ const TestRuleModal: React.FC<TestRuleModalProps> = ({ isOpen, onClose, rule }) 
         // This is a mock test. A real implementation would send this to the backend.
         try {
             const parsedPayload = JSON.parse(payload);
-            const condition = rule?.conditionGroups?.[0]?.conditions[0];
+            const condition = rule?.conditionGroups?.[0]?.conditions?.[0];
             if (condition && parsedPayload.metric === condition.metric && parsedPayload.value > condition.threshold) {
                  setResult({
                     matches: true,

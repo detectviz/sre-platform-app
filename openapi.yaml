@@ -206,6 +206,26 @@ paths:
                   - $ref: '#/components/schemas/IncidentAnalysis'
                   - $ref: '#/components/schemas/MultiIncidentAnalysis'
 
+  /ai/logs/summarize:
+    post:
+      tags: [AI Copilot]
+      summary: 產生對當前日誌的 AI 總結
+      operationId: generateLogSummary
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query: { type: string }
+      responses:
+        "200":
+          description: 回傳 AI 生成的日誌總結。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogAnalysis'
+
   /ai/infra/risk-prediction:
     get:
       tags: [AI Copilot]
@@ -285,25 +305,31 @@ paths:
   # ===========================================================================
   # DASHBOARDS & SRE WAR ROOM
   # ===========================================================================
-  /sre-war-room/briefing:
+  /dashboards/sre-war-room/service-health:
     get:
       tags: [儀表板]
-      summary: 取得 AI 每日簡報 (已棄用)
-      operationId: getAIBriefing_deprecated
-      deprecated: true
+      summary: 取得 SRE 戰情室服務健康度圖表資料
+      operationId: getSREServiceHealth
       responses:
-        "301":
-          description: 此端點已遷移至 /ai/briefing
-          
-  /sre-war-room/briefing/generate:
-    post:
+        "200":
+          description: 回傳服務健康度熱圖資料。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceHealthData'
+
+  /dashboards/sre-war-room/resource-group-status:
+    get:
       tags: [儀表板]
-      summary: 觸發生成新的 AI 每日簡報 (已棄用)
-      operationId: generateAIBriefing_deprecated
-      deprecated: true
+      summary: 取得 SRE 戰情室資源群組狀態圖表資料
+      operationId: getSREResourceGroupStatus
       responses:
-        "301":
-          description: 此端點已遷移至 /ai/briefing/generate
+        "200":
+          description: 回傳資源群組狀態長條圖資料。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceGroupStatusData'
 
   /dashboards:
     get:
@@ -1235,6 +1261,32 @@ paths:
   # ===========================================================================
   # ANALYSIS
   # ===========================================================================
+  /analysis/overview:
+    get:
+      tags: [分析中心]
+      summary: 取得分析總覽頁面的所有資料
+      operationId: getAnalysisOverview
+      responses:
+        "200":
+          description: 回傳分析總覽所需的聚合資料。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisOverviewData'
+  
+  /analysis/capacity-planning:
+    get:
+      tags: [分析中心]
+      summary: 取得容量規劃頁面的所有資料
+      operationId: getCapacityPlanningData
+      responses:
+        "200":
+          description: 回傳容量規劃所需的趨勢、預測與建議資料。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapacityPlanningData'
+
   /logs:
     get:
       tags: [分析中心]
@@ -2176,6 +2228,144 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ParameterDefinition'
+    LogAnalysis:
+      type: object
+      properties:
+        summary: { type: string }
+        patterns:
+          type: array
+          items:
+            type: object
+            properties:
+              description: { type: string }
+              count: { type: number }
+              level: { type: string, enum: [info, warning, error, debug] }
+        recommendations:
+          type: array
+          items:
+            type: string
+    ServiceHealthData:
+      type: object
+      properties:
+        heatmap_data:
+          type: array
+          items:
+            type: array
+            items:
+              type: number
+            minItems: 3
+            maxItems: 3
+        x_axis_labels:
+          type: array
+          items: { type: string }
+        y_axis_labels:
+          type: array
+          items: { type: string }
+    ResourceGroupStatusData:
+      type: object
+      properties:
+        group_names:
+          type: array
+          items: { type: string }
+        series:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string, enum: [健康, 警告, 嚴重] }
+              data:
+                type: array
+                items: { type: number }
+    AnalysisOverviewData:
+      type: object
+      properties:
+        health_score_data:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              value:
+                type: array
+                items:
+                  oneOf: [{ type: string, format: 'date-time' }, { type: 'number' }]
+        event_correlation_data:
+          type: object
+          properties:
+            nodes:
+              type: array
+              items:
+                type: object
+                properties:
+                  id: { type: string }
+                  name: { type: string }
+                  value: { type: number }
+                  symbolSize: { type: number }
+                  category: { type: number }
+            links:
+              type: array
+              items:
+                type: object
+                properties:
+                  source: { type: string }
+                  target: { type: string }
+            categories:
+              type: array
+              items:
+                type: object
+                properties:
+                  name: { type: string }
+        recent_logs:
+          type: array
+          items:
+            $ref: '#/components/schemas/LogEntry'
+    CapacityPlanningData:
+      type: object
+      properties:
+        trends:
+          type: object
+          properties:
+            cpu: { $ref: '#/components/schemas/TrendData' }
+            memory: { $ref: '#/components/schemas/TrendData' }
+            storage: { $ref: '#/components/schemas/TrendData' }
+        forecast_model:
+          type: object
+          properties:
+            prediction: { $ref: '#/components/schemas/TimeSeriesData' }
+            confidence_band:
+              type: array
+              items:
+                $ref: '#/components/schemas/TimeSeriesData'
+        suggestions:
+          type: array
+          items:
+            type: object
+            properties:
+              title: { type: string }
+              impact: { type: string, enum: ['高', '中', '低'] }
+              effort: { type: string, enum: ['高', '中', '低'] }
+              details: { type: string }
+        resource_analysis:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              current: { type: string }
+              predicted: { type: string }
+              recommended: { type: string }
+              cost: { type: string }
+    TrendData:
+      type: object
+      properties:
+        historical: { $ref: '#/components/schemas/TimeSeriesData' }
+        forecast: { $ref: '#/components/schemas/TimeSeriesData' }
+    TimeSeriesData:
+      type: array
+      items:
+        type: array
+        items:
+          oneOf: [{ type: string, format: 'date-time' }, { type: number }]
     Dashboard:
       $ref: "./types.ts#/components/schemas/Dashboard"
     DashboardTemplate:

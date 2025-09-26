@@ -1,4 +1,3 @@
-
 import { DB, uuidv4 } from '../mock-server/db';
 import { Dashboard } from '../types';
 import { showToast } from './toast';
@@ -88,6 +87,9 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                     return incident_ids.length > 1 ? DB.multiIncidentAnalysis : DB.singleIncidentAnalysis;
                 }
                 if (id === 'automation' && action === 'generate-script') return DB.generatedPlaybook;
+                if (id === 'logs' && action === 'summarize') {
+                    return DB.logAnalysis;
+                }
                 break;
             }
             

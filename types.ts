@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 export interface NavItem {
@@ -449,4 +448,65 @@ export interface LogEntry {
     service: string;
     message: string;
     details: Record<string, any>;
+}
+
+export interface LogAnalysis {
+  summary: string;
+  patterns: {
+    description: string;
+    count: number;
+    level: LogLevel;
+  }[];
+  recommendations: string[];
+}
+
+export type TimeSeriesData = [string, number][];
+
+export interface ServiceHealthData {
+    heatmap_data: [number, number, number][];
+    x_axis_labels: string[];
+    y_axis_labels: string[];
+}
+
+export interface ResourceGroupStatusData {
+    group_names: string[];
+    series: {
+        name: '健康' | '警告' | '嚴重';
+        data: number[];
+    }[];
+}
+
+export interface AnalysisOverviewData {
+    health_score_data: { name: string; value: [Date, number] }[];
+    event_correlation_data: {
+        nodes: { id: string; name: string; value: number; symbolSize: number; category: number }[];
+        links: { source: string; target: string }[];
+        categories: { name: string }[];
+    };
+    recent_logs: LogEntry[];
+}
+
+export interface CapacityPlanningData {
+    trends: {
+        cpu: { historical: TimeSeriesData; forecast: TimeSeriesData };
+        memory: { historical: TimeSeriesData; forecast: TimeSeriesData };
+        storage: { historical: TimeSeriesData; forecast: TimeSeriesData };
+    };
+    forecast_model: {
+        prediction: TimeSeriesData;
+        confidence_band: [TimeSeriesData, TimeSeriesData];
+    };
+    suggestions: {
+        title: string;
+        impact: '高' | '中' | '低';
+        effort: '高' | '中' | '低';
+        details: string;
+    }[];
+    resource_analysis: {
+        name: string;
+        current: string;
+        predicted: string;
+        recommended: string;
+        cost: string;
+    }[];
 }

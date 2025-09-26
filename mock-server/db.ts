@@ -1,4 +1,3 @@
-
 import { 
     Dashboard, DashboardTemplate, Incident, AlertRule, AlertRuleTemplate, SilenceRule, SilenceRuleTemplate,
     Resource, ResourceGroup, AutomationPlaybook, AutomationExecution, AutomationTrigger, User, Team, Role, 
@@ -7,7 +6,9 @@ import {
     UserPreferences,
     DashboardType,
     IncidentAnalysis,
-    MultiIncidentAnalysis
+    MultiIncidentAnalysis,
+    LogAnalysis,
+    LogLevel
 } from '../types';
 
 // Helper to generate UUIDs
@@ -202,6 +203,19 @@ const MOCK_GENERATED_PLAYBOOK = {
     ]
 };
 
+const MOCK_LOG_ANALYSIS: LogAnalysis = {
+    summary: '在過去 15 分鐘內，系統偵測到大量與支付服務相關的錯誤日誌。主要問題似乎與資料庫連線逾時有關，導致交易處理失敗。同時，API 閘道出現了少量的警告，可能是上游問題的連鎖反應。',
+    patterns: [
+        { description: '`payment-service`: Database connection timeout', count: 42, level: 'error' },
+        { description: '`api-gateway`: Upstream service unavailable', count: 15, level: 'warning' },
+        { description: '`auth-service`: Successful login', count: 120, level: 'info' },
+    ],
+    recommendations: [
+        '立即檢查 `payment-service` 與 `payment-db` 之間的網路連線與防火牆規則。',
+        '檢視 `payment-db` 的連線池設定，確認是否已滿。',
+        '考慮為 `payment-service` 的資料庫查詢增加重試機制與超時控制。',
+    ]
+};
 
 function createInitialDB() {
     // Deep clone to make it mutable
@@ -256,6 +270,7 @@ function createInitialDB() {
         singleIncidentAnalysis: JSON.parse(JSON.stringify(MOCK_SINGLE_INCIDENT_ANALYSIS)),
         multiIncidentAnalysis: JSON.parse(JSON.stringify(MOCK_MULTI_INCIDENT_ANALYSIS)),
         generatedPlaybook: JSON.parse(JSON.stringify(MOCK_GENERATED_PLAYBOOK)),
+        logAnalysis: JSON.parse(JSON.stringify(MOCK_LOG_ANALYSIS)),
     };
 }
 

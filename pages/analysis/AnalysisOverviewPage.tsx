@@ -32,7 +32,10 @@ const AnalysisOverviewPage: React.FC = () => {
     };
 
     const healthScoreOption = {
-        tooltip: { trigger: 'axis', formatter: (params: any) => `${new Date(params[0].value[0]).toLocaleTimeString()}<br/>Score: ${params[0].value[1]}` },
+        tooltip: { trigger: 'axis', formatter: (params: any) => {
+            if (!params || !params[0]) return '';
+            return `${new Date(params[0].value[0]).toLocaleTimeString()}<br/>Score: ${params[0].value[1]}`
+        }},
         xAxis: { type: 'time', splitLine: { show: false }, axisLine: { lineStyle: { color: '#888' } } },
         yAxis: { type: 'value', boundaryGap: [0, '10%'], axisLine: { lineStyle: { color: '#888' } }, splitLine: { lineStyle: { color: '#374151' } } },
         series: [{
