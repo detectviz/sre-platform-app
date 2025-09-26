@@ -8,6 +8,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <!-- Add Babel Standalone for in-browser TSX/JSX transpilation -->
+  <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
   <style>
     body {
       background-color: #020617;
@@ -128,7 +130,8 @@
 
 <body>
   <div id="root"></div>
-  <script type="module" src="./index.tsx"></script>
+  <!-- Use text/babel type to enable in-browser transpilation for TSX -->
+  <script type="text/babel" data-presets="react,typescript" data-type="module" src="./index.tsx"></script>
 </body>
 
 </html>
