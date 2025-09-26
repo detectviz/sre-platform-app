@@ -232,7 +232,7 @@
 ### 8.2 行為變更
 
 -   **後端篩選與搜尋**:
-    -   **受影響頁面**: `AlertRulePage`, `SilenceRulePage`, `NotificationStrategyPage`, `NotificationChannelPage`, `AutomationTriggersPage`。
+    -   **受影響頁面**: `AlertRulePage`, `SilenceRulePage`, `ResourceGroupPage`, `AutomationTriggersPage`。
     -   **變更內容**: 這些頁面的搜尋框和篩選器現在會觸發帶有查詢參數的後端 API 請求，取代了原有的前端 JavaScript 篩選邏輯。這顯著提升了處理大量資料時的效能，並確保了數據的一致性。
     -   **使用者體驗**: 在篩選條件變更後，表格會顯示一個載入中狀態，提供明確的數據獲取回饋。
 
@@ -292,3 +292,95 @@
 
 -   **併發控制**:
     -   設定了併發群組 (`concurrency group`)，確保同一時間只有一個部署任務在執行，避免了因快速連續推送而導致的部署衝突。
+---
+
+## 10. 功能: 批次操作與資料完整性強化 (Batch Operations & Data Integrity Enhancement)
+
+-   **模組**: 全局
+-   **版本**: v2.9
+-   **狀態**: ✅ 已完成
+
+### 10.1 使用者故事
+
+**身為** 一名平台管理員，
+**我想要** 在所有核心資源的管理頁面（如告警規則、團隊、自動化腳本等）上執行批次操作（例如，批次刪除、啟用/停用），並且確保刪除操作都是軟刪除，
+**使得** 我可以更高效地管理大量資源，同時保證了資料的完整性和可恢復性，避免因誤刪除而導致的歷史數據丟失。
+
+### 10.2 行為變更
+
+-   **全面引入批次操作**:
+    -   **受影響頁面**: `AlertRulePage`, `SilenceRulePage`, `AutomationPlaybooksPage`, `AutomationTriggersPage`, `TeamManagementPage`, `RoleManagementPage`, `NotificationStrategyPage`, `NotificationChannelPage`。
+    -   **變更內容**: 所有上述頁面現在都增加了表格複選框功能。當使用者選擇一個或多個項目時，會出現一個批次操作工具列，提供如「批次刪除」、「批次啟用/停用」等上下文相關的操作。
+
+-   **標準化軟刪除機制**:
+    -   **受影響資源**: `Dashboard`, `AlertRule`, `SilenceRule`, `AutomationPlaybook`, `NotificationChannel`, `NotificationStrategy`, `Team`, `Role` 等所有核心資源。
+    -   **變更內容**: 平台現在對所有核心資源的刪除操作統一採用軟刪除 (`soft-delete`) 策略。這意味著被刪除的資料僅被標記為已刪除 (`deleted_at` 時間戳)，但仍保留在資料庫中，確保了與這些資源相關的歷史記錄（如審計日誌、事件記錄）的完整性。
+
+-   **API 契約擴充**:
+    -   `openapi.yaml` 中為所有相關資源新增了批次操作的 `POST /.../batch-actions` 端點。
+    -   `types.ts` 中的多個資料模型已更新，統一增加了 `deleted_at` 可選欄位以支援軟刪除。
+
+### 10.3 使用的 API 端點
+
+-   `POST /*/batch-actions`: (新增) 為多個模組增加了批次操作端點。
+-   `DELETE /*/{id}`: (增強) 所有刪除端點現在統一執行軟刪除操作。
+---
+
+## 11. 功能: 數據源統一與核心邏輯優化 (Data Source Unification & Core Logic Optimization)
+
+-   **模組**: 全局
+-   **版本**: v2.10
+-   **狀態**: ✅ 已完成
+
+### 11.1 使用者故事
+
+**身為** 一名平台開發者與管理員，
+**我想要** 平台中所有用於篩選、編輯和核心導航的關聯數據（如標籤分類、使用者角色）都從唯一的後端 API 端點獲取，並優化核心的數據請求邏輯，
+**使得** 平台完全根除前端的靜態資料依賴，確保了數據源的單一性和一致性，同時提升了應用的啟動效能與可維護性。
+
+### 11.2 行為變更
+
+-   **標籤管理頁面 (`TagManagementPage`)**:
+    -   **數據源統一**: 頁面頂部的「分類」篩選按鈕，不再從 `constants.ts` 中讀取硬編碼的陣列。現在，它會在載入時向 `GET /settings/tags/options` 端點發起請求，動態生成篩選選項。這確保了篩選器與「新增/編輯標籤」模態框中的分類選項來源一致。
+
+-   **人員管理 - 編輯模態框 (`UserEditModal`)**:
+    -   **動態角色載入**: 「編輯使用者」模態框中的「角色」下拉選單，先前使用硬編碼的角色列表。現已重構為在開啟時向 `GET /iam/roles` 端點請求最新的角色列表，確保了與「邀請人員」流程的數據一致性。
+
+-   **首頁儀表板重新導向 (`App.tsx: DashboardRedirector`)**:
+    -   **效能優化**: 平台啟動時決定預設首頁的邏輯被重構。先前，它會獲取**所有**儀表板的列表，然後在前端尋找預設儀表板。現在，它直接使用 `GET /dashboards/{id}` 端點請求單一的預設儀表板，大幅減少了不必要的數據傳輸，提升了首頁的載入速度。
+    -   **健壯性提升**: 增加了當預設儀表板不存在（例如已被刪除）時的回退邏輯，自動重置為「SRE 戰情室」並更新本地設定。
+
+### 11.3 使用的 API 端點
+
+-   `GET /settings/tags/options`: (新增) 提供標籤相關的所有可選項（目前為分類列表）。
+-   (重用) `GET /iam/roles`: 被 `UserEditModal` 重用，以獲取可用的角色列表。
+-   (重用) `GET /dashboards/{id}`: 被 `DashboardRedirector` 用於高效獲取預設儀表板的資訊。
+---
+
+## 12. 功能: 數據驅動互動性與元數據增強 (v2.11)
+
+-   **模組**: 全局
+-   **版本**: v2.11
+-   **狀態**: ✅ 已完成
+
+### 12.1 使用者故事
+
+**身為** 一名平台管理員，
+**我想要** 在設定靜音規則時，能夠從一個由後端提供的、預定義的標籤鍵和值列表中進行選擇，並且在管理頁面佈局時，能夠看到每個佈局的最後修改資訊，
+**使得** 我可以更準確、更快速地完成配置，同時增強了系統設定的可追溯性和透明度。
+
+### 12.2 行為變更
+
+-   **靜音規則編輯模態框 (`SilenceRuleEditModal`)**:
+    -   **動態匹配條件**: 「靜音條件」步驟中的「標籤鍵」欄位，已從一個自由輸入的文字框升級為一個下拉選單。該選單的選項（如 `severity`, `env`, `service`）現在從新增的 `GET /silence-rules/options` API 端點動態獲取。
+    -   **智慧型值輸入**: 當使用者選擇一個有預定義值的標籤鍵時（例如 `severity`），對應的「值」欄位會自動轉換為一個包含所有允許值（如 `critical`, `warning`, `info`）的下拉選單，極大地減少了手動輸入錯誤。
+
+-   **版面管理頁面 (`LayoutSettingsPage`)**:
+    -   **元數據增強**: 頁面中的每一個可折疊的佈局項目，現在都會顯示「最後更新時間」和「修改者」的資訊。
+    -   **API 結構更新**: `GET /settings/layouts` API 的回應結構已從 `Record<string, string[]>` 升級為 `Record<string, { widgetIds: string[]; updatedAt: string; updatedBy: string; }>`，以承載新增的元數據。
+    -   **關聯元件更新**: `PageKPIs.tsx` 元件也已同步更新，以兼容新的 `layouts` 資料結構，確保全平台的 KPI 顯示不受影響。
+
+### 12.3 新增的 API 端點
+
+-   `GET /silence-rules/options`: (新增) 提供建立靜音規則時可用的匹配條件鍵值對選項。
+-   `GET /settings/layouts`: (增強) 回應結構中增加了 `updatedAt` 和 `updatedBy` 欄位。

@@ -18,6 +18,7 @@ const RoleManagementPage: React.FC = () => {
     const [editingRole, setEditingRole] = useState<Role | null>(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingRole, setDeletingRole] = useState<Role | null>(null);
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
     const fetchRoles = useCallback(async () => {
         setIsLoading(true);
@@ -79,15 +80,43 @@ const RoleManagementPage: React.FC = () => {
             }
         }
     };
+    
+    const handleBatchDelete = async () => {
+        try {
+            await api.post('/iam/roles/batch-actions', { action: 'delete', ids: selectedIds });
+            setSelectedIds([]);
+            fetchRoles();
+        } catch (err) {
+            alert('Failed to delete selected roles.');
+        }
+    };
 
     const getStatusPill = (status: Role['status']) => {
         return status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-slate-500/20 text-slate-400';
     };
 
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSelectedIds(e.target.checked ? roles.map(r => r.id) : []);
+    };
+    
+    const handleSelectOne = (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
+        setSelectedIds(prev => e.target.checked ? [...prev, id] : prev.filter(selectedId => selectedId !== id));
+    };
+
+    const isAllSelected = roles.length > 0 && selectedIds.length === roles.length;
+    const isIndeterminate = selectedIds.length > 0 && selectedIds.length < roles.length;
+
+    const batchActions = (
+        <ToolbarButton icon="trash-2" text="刪除" danger onClick={handleBatchDelete} />
+    );
+
     return (
         <div className="h-full flex flex-col">
             <Toolbar 
                 rightActions={<ToolbarButton icon="plus" text="新增角色" primary onClick={handleNewRole} />}
+                selectedCount={selectedIds.length}
+                onClearSelection={() => setSelectedIds([])}
+                batchActions={batchActions}
             />
 
             <TableContainer>
@@ -95,6 +124,10 @@ const RoleManagementPage: React.FC = () => {
                     <table className="w-full text-sm text-left text-slate-300">
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
+                                <th scope="col" className="p-4 w-12">
+                                    <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
+                                           checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
+                                </th>
                                 <th scope="col" className="px-6 py-3">角色名稱</th>
                                 <th scope="col" className="px-6 py-3">使用者數量</th>
                                 <th scope="col" className="px-6 py-3">狀態</th>
@@ -104,11 +137,15 @@ const RoleManagementPage: React.FC = () => {
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <TableLoader colSpan={5} />
+                                <TableLoader colSpan={6} />
                             ) : error ? (
-                                <TableError colSpan={5} message={error} onRetry={fetchRoles} />
+                                <TableError colSpan={6} message={error} onRetry={fetchRoles} />
                             ) : roles.map((role) => (
-                                <tr key={role.id} className="border-b border-slate-800 hover:bg-slate-800/40">
+                                <tr key={role.id} className={`border-b border-slate-800 ${selectedIds.includes(role.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
+                                     <td className="p-4 w-12">
+                                        <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
+                                               checked={selectedIds.includes(role.id)} onChange={(e) => handleSelectOne(e, role.id)} />
+                                    </td>
                                     <td className="px-6 py-4 font-medium text-white">
                                         {role.name}
                                         <p className="text-xs text-slate-400 font-normal">{role.description}</p>

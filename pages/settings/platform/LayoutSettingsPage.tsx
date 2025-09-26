@@ -77,16 +77,24 @@ const DualListSelector: React.FC<DualListSelectorProps> = ({ available, selected
     );
 };
 
+interface LayoutConfig {
+    widgetIds: string[];
+    updatedAt: string;
+    updatedBy: string;
+}
+type LayoutsData = Record<string, LayoutConfig>;
+
 // FIX: Moved AccordionItem outside of LayoutSettingsPage to prevent re-creation on every render and fix type errors.
 interface AccordionItemProps {
     pageName: string;
-    layouts: Record<string, string[]>;
+    layouts: LayoutsData;
     handleEditClick: (pageName: string) => void;
     allWidgets: LayoutWidget[];
 }
 const AccordionItem: React.FC<AccordionItemProps> = ({ pageName, layouts, handleEditClick, allWidgets }) => {
     const [isOpen, setIsOpen] = useState(false);
-    const widgetIds = layouts[pageName] || [];
+    const pageLayout = layouts[pageName];
+    const widgetIds = pageLayout?.widgetIds || [];
     const getWidgetById = (id: string) => allWidgets.find(w => w.id === id);
 
     return (
@@ -115,7 +123,7 @@ const AccordionItem: React.FC<AccordionItemProps> = ({ pageName, layouts, handle
                             <Icon name="edit-3" className="w-4 h-4 mr-1"/> Edit
                         </button>
                     </div>
-                     <p className="text-xs text-slate-500 mt-4">Last updated: 2 days ago by Admin</p>
+                     <p className="text-xs text-slate-500 mt-4">Last updated: {pageLayout?.updatedAt || 'N/A'} by {pageLayout?.updatedBy || 'N/A'}</p>
                 </div>
             )}
         </div>
@@ -124,7 +132,7 @@ const AccordionItem: React.FC<AccordionItemProps> = ({ pageName, layouts, handle
 
 // Main Page Component
 const LayoutSettingsPage: React.FC = () => {
-    const [layouts, setLayouts] = useState<Record<string, string[]>>({});
+    const [layouts, setLayouts] = useState<LayoutsData>({});
     const [allWidgets, setAllWidgets] = useState<LayoutWidget[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -138,7 +146,7 @@ const LayoutSettingsPage: React.FC = () => {
         setError(null);
         try {
             const [layoutsRes, widgetsRes] = await Promise.all([
-                api.get<Record<string, string[]>>('/settings/layouts'),
+                api.get<LayoutsData>('/settings/layouts'),
                 api.get<LayoutWidget[]>('/settings/widgets')
             ]);
             setLayouts(layoutsRes.data);
@@ -158,7 +166,7 @@ const LayoutSettingsPage: React.FC = () => {
 
     const handleEditClick = (pageName: string) => {
         setEditingPage(pageName);
-        const widgetIds = layouts[pageName] || [];
+        const widgetIds = layouts[pageName]?.widgetIds || [];
         const selected = widgetIds.map(id => getWidgetById(id)).filter(Boolean) as LayoutWidget[];
         setModalWidgets(selected);
         setIsModalOpen(true);
@@ -167,12 +175,15 @@ const LayoutSettingsPage: React.FC = () => {
     const handleSaveLayout = async () => {
         if (editingPage) {
             const newSelectedIds = modalWidgets.map(w => w.id);
-            const updatedLayouts = { ...layouts, [editingPage]: newSelectedIds };
+            const currentLayoutConfig = layouts[editingPage] || { widgetIds: [], updatedAt: '', updatedBy: '' };
+            const updatedLayouts = { ...layouts, [editingPage]: { ...currentLayoutConfig, widgetIds: newSelectedIds } };
+            
             try {
-                await api.put('/settings/layouts', updatedLayouts);
-                setLayouts(updatedLayouts);
+                // FIX: Specify the generic type `LayoutsData` for the `api.put` call to resolve the TypeScript error where `savedLayouts` was inferred as `unknown`.
+                const { data: savedLayouts } = await api.put<LayoutsData>('/settings/layouts', updatedLayouts);
+                setLayouts(savedLayouts);
                 // Also update localStorage for immediate UI feedback on other pages via PageKPIs
-                localStorage.setItem('sre-platform-layouts', JSON.stringify(updatedLayouts));
+                localStorage.setItem('sre-platform-layouts', JSON.stringify(savedLayouts));
                 window.dispatchEvent(new Event('storage'));
                 setIsModalOpen(false);
                 setEditingPage(null);

@@ -24,14 +24,14 @@ const ResourceGroupPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const { data } = await api.get<ResourceGroup[]>('/resource-groups');
+            const { data } = await api.get<ResourceGroup[]>('/resource-groups', { params: { keyword: searchTerm } });
             setGroups(data);
         } catch (err) {
             setError('無法獲取資源群組。');
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [searchTerm]);
 
     useEffect(() => {
         fetchGroups();
@@ -85,14 +85,6 @@ const ResourceGroupPage: React.FC = () => {
         }
     };
     
-    const filteredGroups = useMemo(() => {
-        return groups.filter(g => 
-            g.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            g.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            g.ownerTeam.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    }, [groups, searchTerm]);
-
     const leftActions = (
         <div className="relative">
            <Icon name="search" className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400 w-4 h-4" />
@@ -130,7 +122,7 @@ const ResourceGroupPage: React.FC = () => {
                                 <TableLoader colSpan={5} />
                             ) : error ? (
                                 <TableError colSpan={5} message={error} onRetry={fetchGroups} />
-                            ) : filteredGroups.map((group) => (
+                            ) : groups.map((group) => (
                                 <tr key={group.id} className="border-b border-slate-800 hover:bg-slate-800/40">
                                     <td className="px-6 py-4 font-medium text-white">
                                         {group.name}

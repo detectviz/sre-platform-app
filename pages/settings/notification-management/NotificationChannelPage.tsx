@@ -19,6 +19,7 @@ const NotificationChannelPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingChannel, setDeletingChannel] = useState<NotificationChannel | null>(null);
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
     const fetchChannels = useCallback(async () => {
         setIsLoading(true);
@@ -117,6 +118,36 @@ const NotificationChannelPage: React.FC = () => {
             case 'pending': return 'bg-yellow-500/20 text-yellow-400 animate-pulse';
         }
     };
+    
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSelectedIds(e.target.checked ? channels.map(c => c.id) : []);
+    };
+    
+    const handleSelectOne = (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
+        setSelectedIds(prev => e.target.checked ? [...prev, id] : prev.filter(selectedId => selectedId !== id));
+    };
+
+    const isAllSelected = channels.length > 0 && selectedIds.length === channels.length;
+    const isIndeterminate = selectedIds.length > 0 && selectedIds.length < channels.length;
+
+    const handleBatchAction = async (action: 'enable' | 'disable' | 'delete') => {
+        try {
+            await api.post('/settings/notification-channels/batch-actions', { action, ids: selectedIds });
+            fetchChannels();
+        } catch (err) {
+            alert(`Failed to ${action} selected channels.`);
+        } finally {
+            setSelectedIds([]);
+        }
+    };
+    
+    const batchActions = (
+        <>
+            <ToolbarButton icon="toggle-right" text="啟用" onClick={() => handleBatchAction('enable')} />
+            <ToolbarButton icon="toggle-left" text="停用" onClick={() => handleBatchAction('disable')} />
+            <ToolbarButton icon="trash-2" text="刪除" danger onClick={() => handleBatchAction('delete')} />
+        </>
+    );
 
     const leftActions = (
          <div className="relative">
@@ -136,12 +167,19 @@ const NotificationChannelPage: React.FC = () => {
             <Toolbar
                 leftActions={leftActions}
                 rightActions={<ToolbarButton icon="plus" text="新增管道" primary onClick={handleNewChannel} />}
+                selectedCount={selectedIds.length}
+                onClearSelection={() => setSelectedIds([])}
+                batchActions={batchActions}
             />
             <TableContainer>
                 <div className="flex-1 overflow-y-auto">
                     <table className="w-full text-sm text-left text-slate-300">
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
+                                <th scope="col" className="p-4 w-12">
+                                    <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
+                                           checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
+                                </th>
                                 <th scope="col" className="px-6 py-3"></th>
                                 <th scope="col" className="px-6 py-3">管道名稱</th>
                                 <th scope="col" className="px-6 py-3">類型</th>
@@ -152,13 +190,17 @@ const NotificationChannelPage: React.FC = () => {
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <TableLoader colSpan={6} />
+                                <TableLoader colSpan={7} />
                             ) : error ? (
-                                <TableError colSpan={6} message={error} onRetry={fetchChannels} />
+                                <TableError colSpan={7} message={error} onRetry={fetchChannels} />
                             ) : channels.map((channel) => {
                                 const { icon, color } = getChannelTypeIcon(channel.type);
                                 return (
-                                    <tr key={channel.id} className="border-b border-slate-800 hover:bg-slate-800/40">
+                                    <tr key={channel.id} className={`border-b border-slate-800 ${selectedIds.includes(channel.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
+                                        <td className="p-4 w-12">
+                                            <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
+                                                   checked={selectedIds.includes(channel.id)} onChange={(e) => handleSelectOne(e, channel.id)} />
+                                        </td>
                                         <td className="px-6 py-4">
                                             <label className="relative inline-flex items-center cursor-pointer">
                                                 <input type="checkbox" checked={channel.enabled} className="sr-only peer" onChange={() => handleToggleEnable(channel)} />

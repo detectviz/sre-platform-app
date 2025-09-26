@@ -45,7 +45,6 @@ const AlertRuleEditModal: React.FC<AlertRuleEditModalProps> = ({ isOpen, onClose
     }, [isOpen, rule]);
 
     const handleSave = () => {
-        // FIX: Add optional chaining and fallback values to prevent crash when conditions are empty.
         const firstCondition = formData.conditionGroups?.[0]?.conditions?.[0];
         const conditionsSummary = firstCondition
             ? `${firstCondition.metric} ${firstCondition.operator} ${firstCondition.threshold}`

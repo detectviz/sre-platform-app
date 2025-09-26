@@ -204,9 +204,21 @@ const Step2 = ({ formData, setFormData }: { formData: Partial<SilenceRule>, setF
 };
 
 const Step3 = ({ formData, setFormData }: { formData: Partial<SilenceRule>, setFormData: Function }) => {
+    const [options, setOptions] = useState<{ keys: string[], values: Record<string, string[]> }>({ keys: [], values: {} });
+
+    useEffect(() => {
+        api.get<{ keys: string[], values: Record<string, string[]> }>('/silence-rules/options')
+           .then(res => setOptions(res.data))
+           .catch(err => console.error("Failed to fetch silence rule options", err));
+    }, []);
+
     const handleMatcherChange = (index: number, field: keyof SilenceMatcher, value: string) => {
         const newMatchers = JSON.parse(JSON.stringify(formData.matchers || []));
         newMatchers[index][field] = value;
+        // If the key is changed, reset the value to ensure it's valid for the new key.
+        if (field === 'key') {
+            newMatchers[index].value = '';
+        }
         setFormData({ ...formData, matchers: newMatchers });
     };
     
@@ -227,29 +239,19 @@ const Step3 = ({ formData, setFormData }: { formData: Partial<SilenceRule>, setF
             onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => handleMatcherChange(index, 'value', e.target.value),
             className: "flex-grow bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500",
         };
-
-        switch (matcher.key) {
-            case 'severity':
-                return (
-                    <select {...commonProps}>
-                        <option value="">選擇嚴重性...</option>
-                        <option value="critical">Critical</option>
-                        <option value="warning">Warning</option>
-                        <option value="info">Info</option>
-                    </select>
-                );
-            case 'env':
-                return (
-                    <select {...commonProps}>
-                        <option value="">選擇環境...</option>
-                        <option value="production">Production</option>
-                        <option value="staging">Staging</option>
-                        <option value="development">Development</option>
-                    </select>
-                );
-            default:
-                return <input type="text" {...commonProps} placeholder="標籤值 (e.g., api-service)" />;
+        
+        const allowedValues = options.values[matcher.key];
+        
+        if (allowedValues && allowedValues.length > 0) {
+            return (
+                 <select {...commonProps}>
+                    <option value="">選擇值...</option>
+                    {allowedValues.map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+            );
         }
+
+        return <input type="text" {...commonProps} placeholder="標籤值 (e.g., api-service)" />;
     };
 
 
@@ -260,7 +262,10 @@ const Step3 = ({ formData, setFormData }: { formData: Partial<SilenceRule>, setF
             <div className="p-4 border border-slate-700 rounded-lg space-y-3 bg-slate-800/20">
                 {formData.matchers?.map((matcher, index) => (
                     <div key={index} className="flex items-center space-x-2">
-                        <input type="text" value={matcher.key} onChange={e => handleMatcherChange(index, 'key', e.target.value)} className="w-1/3 bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" placeholder="標籤鍵 (e.g., env)" />
+                         <select value={matcher.key} onChange={e => handleMatcherChange(index, 'key', e.target.value)} className="w-1/3 bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
+                            <option value="">選擇標籤鍵...</option>
+                            {options.keys.map(k => <option key={k} value={k}>{k}</option>)}
+                        </select>
                         <select value={matcher.operator} onChange={e => handleMatcherChange(index, 'operator', e.target.value)} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
                             <option value="=">=</option>
                             <option value="!=">!=</option>

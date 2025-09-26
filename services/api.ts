@@ -219,6 +219,7 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
             
             case 'GET /silence-rules': {
                 if (id === 'templates') return DB.silenceRuleTemplates;
+                if (id === 'options') return DB.silenceRuleOptions;
                 let rules = getActive(DB.silenceRules);
                 if (params.keyword) rules = rules.filter((r: any) => r.name.toLowerCase().includes(params.keyword.toLowerCase()));
                 if (params.type) rules = rules.filter((r: any) => r.type === params.type);
@@ -485,7 +486,15 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
             }
             case 'PUT /settings': {
                 if (id === 'layouts') {
-                    DB.layouts = body;
+                    const newLayouts = body;
+                    Object.keys(newLayouts).forEach(key => {
+                        const existingLayout = DB.layouts[key as keyof typeof DB.layouts];
+                        if (existingLayout) {
+                            existingLayout.widgetIds = newLayouts[key].widgetIds;
+                            existingLayout.updatedAt = new Date().toISOString().replace('T', ' ').substring(0, 19);
+                            existingLayout.updatedBy = 'Admin User';
+                        }
+                    });
                     return DB.layouts;
                 }
                 if (id === 'column-config') {
@@ -514,6 +523,66 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 }
                 if (id === 'mail' && action === 'test') {
                     return { success: true, message: 'Test email sent successfully.' };
+                }
+                if (id === 'notification-strategies') {
+                    const newStrategy = { ...body, id: `strat-${uuidv4()}`, lastUpdated: new Date().toISOString(), creator: 'Admin User' };
+                    DB.notificationStrategies.unshift(newStrategy);
+                    return newStrategy;
+                }
+                if (id === 'notification-channels') {
+                    const newChannel = { ...body, id: `chan-${uuidv4()}`, lastTestResult: 'pending', lastTestedAt: new Date().toISOString() };
+                    DB.notificationChannels.unshift(newChannel);
+                    return newChannel;
+                }
+                if (id === 'tags') {
+                    const newTag = { ...body, id: `tag-${uuidv4()}`, allowedValues: [], usageCount: 0 };
+                    DB.tagDefinitions.unshift(newTag);
+                    return newTag;
+                }
+                break;
+            }
+            case 'PATCH /settings': {
+                const collectionId = urlParts[1];
+                const itemId = urlParts[2];
+
+                if (collectionId === 'notification-strategies') {
+                    const index = DB.notificationStrategies.findIndex((s: any) => s.id === itemId);
+                    if (index === -1) throw { status: 404 };
+                    DB.notificationStrategies[index] = { ...DB.notificationStrategies[index], ...body, lastUpdated: new Date().toISOString() };
+                    return DB.notificationStrategies[index];
+                }
+                if (collectionId === 'notification-channels') {
+                    const index = DB.notificationChannels.findIndex((c: any) => c.id === itemId);
+                    if (index === -1) throw { status: 404 };
+                    DB.notificationChannels[index] = { ...DB.notificationChannels[index], ...body };
+                    return DB.notificationChannels[index];
+                }
+                if (collectionId === 'tags') {
+                    const index = DB.tagDefinitions.findIndex((t: any) => t.id === itemId);
+                    if (index === -1) throw { status: 404 };
+                    DB.tagDefinitions[index] = { ...DB.tagDefinitions[index], ...body };
+                    return DB.tagDefinitions[index];
+                }
+                break;
+            }
+            case 'DELETE /settings': {
+                const collectionId = urlParts[1];
+                const itemId = urlParts[2];
+
+                if (collectionId === 'notification-strategies') {
+                    const index = DB.notificationStrategies.findIndex((s: any) => s.id === itemId);
+                    if (index > -1) (DB.notificationStrategies[index] as any).deleted_at = new Date().toISOString();
+                    return {};
+                }
+                if (collectionId === 'notification-channels') {
+                    const index = DB.notificationChannels.findIndex((c: any) => c.id === itemId);
+                    if (index > -1) (DB.notificationChannels[index] as any).deleted_at = new Date().toISOString();
+                    return {};
+                }
+                if (collectionId === 'tags') {
+                    const index = DB.tagDefinitions.findIndex((t: any) => t.id === itemId);
+                    if (index > -1) DB.tagDefinitions.splice(index, 1);
+                    return {};
                 }
                 break;
             }

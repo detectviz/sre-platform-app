@@ -32,5 +32,4 @@ export const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-// FIX: Export TAG_CATEGORIES to be used in TagManagementPage for filtering.
-export const TAG_CATEGORIES = ['Infrastructure', 'Application', 'Business', 'Security'];
+const TAG_CATEGORIES = ['Infrastructure', 'Application', 'Business', 'Security'];

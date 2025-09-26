@@ -19,6 +19,7 @@ const NotificationStrategyPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingStrategy, setDeletingStrategy] = useState<NotificationStrategy | null>(null);
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
     const fetchStrategies = useCallback(async () => {
         setIsLoading(true);
@@ -100,6 +101,36 @@ const NotificationStrategyPage: React.FC = () => {
             alert('Failed to toggle strategy status.');
         }
     };
+    
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSelectedIds(e.target.checked ? strategies.map(s => s.id) : []);
+    };
+    
+    const handleSelectOne = (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
+        setSelectedIds(prev => e.target.checked ? [...prev, id] : prev.filter(selectedId => selectedId !== id));
+    };
+
+    const isAllSelected = strategies.length > 0 && selectedIds.length === strategies.length;
+    const isIndeterminate = selectedIds.length > 0 && selectedIds.length < strategies.length;
+
+    const handleBatchAction = async (action: 'enable' | 'disable' | 'delete') => {
+        try {
+            await api.post('/settings/notification-strategies/batch-actions', { action, ids: selectedIds });
+            fetchStrategies();
+        } catch (err) {
+            alert(`Failed to ${action} selected strategies.`);
+        } finally {
+            setSelectedIds([]);
+        }
+    };
+    
+    const batchActions = (
+        <>
+            <ToolbarButton icon="toggle-right" text="啟用" onClick={() => handleBatchAction('enable')} />
+            <ToolbarButton icon="toggle-left" text="停用" onClick={() => handleBatchAction('disable')} />
+            <ToolbarButton icon="trash-2" text="刪除" danger onClick={() => handleBatchAction('delete')} />
+        </>
+    );
 
     const leftActions = (
          <div className="relative">
@@ -119,12 +150,19 @@ const NotificationStrategyPage: React.FC = () => {
             <Toolbar
                 leftActions={leftActions}
                 rightActions={<ToolbarButton icon="plus" text="新增策略" primary onClick={handleNewStrategy} />}
+                selectedCount={selectedIds.length}
+                onClearSelection={() => setSelectedIds([])}
+                batchActions={batchActions}
             />
             <TableContainer>
                 <div className="flex-1 overflow-y-auto">
                     <table className="w-full text-sm text-left text-slate-300">
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
+                                <th scope="col" className="p-4 w-12">
+                                    <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
+                                           checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
+                                </th>
                                 <th scope="col" className="px-6 py-3"></th>
                                 <th scope="col" className="px-6 py-3">策略名稱</th>
                                 <th scope="col" className="px-6 py-3">觸發條件</th>
@@ -137,11 +175,15 @@ const NotificationStrategyPage: React.FC = () => {
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <TableLoader colSpan={8} />
+                                <TableLoader colSpan={9} />
                             ) : error ? (
-                                <TableError colSpan={8} message={error} onRetry={fetchStrategies} />
+                                <TableError colSpan={9} message={error} onRetry={fetchStrategies} />
                             ) : strategies.map((strategy) => (
-                                <tr key={strategy.id} className="border-b border-slate-800 hover:bg-slate-800/40">
+                                <tr key={strategy.id} className={`border-b border-slate-800 ${selectedIds.includes(strategy.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
+                                    <td className="p-4 w-12">
+                                        <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
+                                               checked={selectedIds.includes(strategy.id)} onChange={(e) => handleSelectOne(e, strategy.id)} />
+                                    </td>
                                     <td className="px-6 py-4">
                                         <label className="relative inline-flex items-center cursor-pointer">
                                             <input type="checkbox" checked={strategy.enabled} className="sr-only peer" onChange={() => handleToggleEnable(strategy)} />

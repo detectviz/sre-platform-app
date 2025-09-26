@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import ContextualKPICard from './ContextualKPICard';
 import { LayoutWidget } from '../types';
@@ -16,8 +15,16 @@ interface KpiDataItem {
     iconBgColor: string;
 }
 
+interface LayoutsData {
+    [key: string]: {
+        widgetIds: string[];
+        updatedAt: string;
+        updatedBy: string;
+    }
+}
+
 const PageKPIs: React.FC<PageKPIsProps> = ({ pageName, widgetIds: explicitWidgetIds }) => {
-  const [layouts, setLayouts] = useState<Record<string, string[]>>({});
+  const [layouts, setLayouts] = useState<LayoutsData>({});
   const [kpiData, setKpiData] = useState<Record<string, KpiDataItem>>({});
   const [widgets, setWidgets] = useState<LayoutWidget[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,7 +36,7 @@ const PageKPIs: React.FC<PageKPIsProps> = ({ pageName, widgetIds: explicitWidget
             const [kpiRes, widgetsRes, layoutsRes] = await Promise.all([
                 api.get<Record<string, KpiDataItem>>('/kpi-data'),
                 api.get<LayoutWidget[]>('/settings/widgets'),
-                api.get<Record<string, string[]>>('/settings/layouts')
+                api.get<LayoutsData>('/settings/layouts')
             ]);
             setKpiData(kpiRes.data);
             setWidgets(widgetsRes.data);
@@ -60,7 +67,7 @@ const PageKPIs: React.FC<PageKPIsProps> = ({ pageName, widgetIds: explicitWidget
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  const widgetIds = explicitWidgetIds || layouts[pageName] || [];
+  const widgetIds = explicitWidgetIds || layouts[pageName]?.widgetIds || [];
 
   if (isLoading || widgetIds.length === 0) {
     return null; // Don't show anything if loading or no widgets configured

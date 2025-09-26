@@ -39,9 +39,7 @@ const MOCK_DASHBOARD_TEMPLATES: DashboardTemplate[] = [
     { id: 'tpl-002', name: 'Business KPI Overview', description: 'Track key business metrics like user sign-ups, revenue, and conversion rates.', icon: 'briefcase', category: 'Business' },
 ];
 const MOCK_INCIDENTS: Incident[] = [
-    // FIX: Add missing resourceId and ruleId properties to conform to the Incident type.
     { id: 'INC-001', summary: 'API 延遲超過閾值', resource: 'api-server-01', resourceId: 'res-001', serviceImpact: 'High', rule: 'API 延遲規則', ruleId: 'rule-002', status: 'new', severity: 'warning', priority: 'P1', assignee: '張三', triggeredAt: '2024-01-15 10:30:00', history: [ { timestamp: '2024-01-15 10:30:00', user: 'System', action: 'Incident created from rule "API 延遲規則".' } ] },
-    // FIX: Add missing resourceId and ruleId properties to conform to the Incident type.
     { id: 'INC-002', summary: '資料庫連接超時', resource: 'db-primary', resourceId: 'res-002', serviceImpact: 'High', rule: '資料庫連接規則', ruleId: 'rule-db-conn', status: 'acknowledged', severity: 'critical', priority: 'P0', assignee: '李四', triggeredAt: '2024-01-15 10:15:00', history: [ { timestamp: '2024-01-15 10:15:00', user: 'System', action: 'Incident created from rule "資料庫連接規則".' } ] },
 ];
 const MOCK_ALERT_RULES: AlertRule[] = [
@@ -50,13 +48,22 @@ const MOCK_ALERT_RULES: AlertRule[] = [
 ];
 const MOCK_ALERT_RULE_TEMPLATES: AlertRuleTemplate[] = [
     { id: 'art-001', name: 'High CPU Usage', emoji: '🔥', data: { description: 'Monitors CPU usage and alerts when it exceeds a threshold.', conditionGroups: [{ logic: 'OR', severity: 'warning', conditions: [{ metric: 'cpu_usage_percent', operator: '>', threshold: 80, durationMinutes: 5 }] }] } },
+    { id: 'art-002', name: 'Low Disk Space', emoji: '💾', data: { description: 'Alerts when disk space is critically low.', conditionGroups: [{ logic: 'OR', severity: 'critical', conditions: [{ metric: 'disk_free_percent', operator: '<', threshold: 10, durationMinutes: 15 }] }] } },
 ];
 const MOCK_SILENCE_RULES: SilenceRule[] = [
     { id: 'sil-001', name: '週末維護窗口', description: '週末例行維護期間静音所有 staging 環境的告警。', enabled: true, type: 'repeat', matchers: [{ key: 'env', operator: '=', value: 'staging' }], schedule: { type: 'recurring', cron: '0 22 * * 5', timezone: 'Asia/Taipei' }, creator: 'Admin User', createdAt: '2025-09-20 18:00:00' },
 ];
 const MOCK_SILENCE_RULE_TEMPLATES: SilenceRuleTemplate[] = [
     { id: 'srt-001', name: 'Staging Maintenance', emoji: '🚧', data: { description: 'Silence all alerts from the staging environment.', matchers: [{ key: 'env', operator: '=', value: 'staging' }] } },
+    { id: 'srt-002', name: 'Weekend Silence', emoji: '😴', data: { description: 'Silence non-critical alerts over the weekend.', matchers: [{ key: 'severity', operator: '!=', value: 'critical' }], schedule: { type: 'recurring', cron: '0 0 * * 6' } } },
 ];
+const MOCK_SILENCE_RULE_OPTIONS = {
+    keys: ['severity', 'env', 'service', 'resource_type'],
+    values: {
+        severity: ['critical', 'warning', 'info'],
+        env: ['production', 'staging', 'development'],
+    }
+};
 const MOCK_RESOURCES: Resource[] = [
     { id: 'res-001', name: 'api-gateway-prod-01', status: 'healthy', type: 'API Gateway', provider: 'AWS', region: 'us-east-1', owner: 'SRE Team', lastCheckIn: '30s ago' },
     { id: 'res-002', name: 'rds-prod-main', status: 'critical', type: 'RDS Database', provider: 'AWS', region: 'us-east-1', owner: 'DBA Team', lastCheckIn: '2m ago' },
@@ -198,18 +205,18 @@ const LAYOUT_WIDGETS: LayoutWidget[] = [
     { id: 'profile_last_password_change', name: '上次密碼變更', description: '您的密碼上次更新的時間。', supportedPages: ['個人設定'] },
     { id: 'profile_mfa_status', name: 'MFA 狀態', description: '多因素驗證 (MFA) 的啟用狀態。', supportedPages: ['個人設定'] },
 ];
-const DEFAULT_LAYOUTS: Record<string, string[]> = {
-    "SREWarRoom": ['sre_pending_incidents', 'sre_in_progress', 'sre_resolved_today', 'sre_automation_rate'],
-    "InfrastructureInsights": ['infra_total_resources', 'infra_running', 'infra_anomalies', 'infra_offline'],
-    "事件管理": ['incident_pending_count', 'incident_in_progress', 'incident_resolved_today'],
-    "資源管理": ['resource_total_count', 'resource_health_rate', 'resource_alerting'],
-    "儀表板管理": ['dashboard_total_count', 'dashboard_custom_count', 'dashboard_grafana_count'],
-    "分析中心": ['analysis_critical_anomalies', 'analysis_log_volume', 'analysis_trace_errors'],
-    "自動化中心": ['automation_runs_today', 'automation_success_rate', 'automation_suppressed_alerts'],
-    "身份與存取管理": ['iam_total_users', 'iam_active_users', 'iam_login_failures'],
-    "通知管理": ['notification_sent_today', 'notification_failure_rate', 'notification_channels'],
-    "平台設定": ['platform_tags_defined', 'platform_auth_provider', 'platform_mail_status'],
-    "個人設定": ['profile_login_count_7d', 'profile_last_password_change', 'profile_mfa_status'],
+const DEFAULT_LAYOUTS: Record<string, { widgetIds: string[]; updatedAt: string; updatedBy: string; }> = {
+    "SREWarRoom": { widgetIds: ['sre_pending_incidents', 'sre_in_progress', 'sre_resolved_today', 'sre_automation_rate'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
+    "InfrastructureInsights": { widgetIds: ['infra_total_resources', 'infra_running', 'infra_anomalies', 'infra_offline'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
+    "事件管理": { widgetIds: ['incident_pending_count', 'incident_in_progress', 'incident_resolved_today'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
+    "資源管理": { widgetIds: ['resource_total_count', 'resource_health_rate', 'resource_alerting'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
+    "儀表板管理": { widgetIds: ['dashboard_total_count', 'dashboard_custom_count', 'dashboard_grafana_count'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
+    "分析中心": { widgetIds: ['analysis_critical_anomalies', 'analysis_log_volume', 'analysis_trace_errors'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
+    "自動化中心": { widgetIds: ['automation_runs_today', 'automation_success_rate', 'automation_suppressed_alerts'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
+    "身份與存取管理": { widgetIds: ['iam_total_users', 'iam_active_users', 'iam_login_failures'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
+    "通知管理": { widgetIds: ['notification_sent_today', 'notification_failure_rate', 'notification_channels'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
+    "平台設定": { widgetIds: ['platform_tags_defined', 'platform_auth_provider', 'platform_mail_status'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
+    "個人設定": { widgetIds: ['profile_login_count_7d', 'profile_last_password_change', 'profile_mfa_status'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
 };
 const KPI_DATA: Record<string, any> = {
     'incident_pending_count': { value: '5', description: '2 嚴重', icon: 'shield-alert', iconBgColor: 'bg-red-500' },
@@ -421,6 +428,7 @@ function createInitialDB() {
         alertRuleTemplates: JSON.parse(JSON.stringify(MOCK_ALERT_RULE_TEMPLATES)),
         silenceRules: JSON.parse(JSON.stringify(MOCK_SILENCE_RULES)),
         silenceRuleTemplates: JSON.parse(JSON.stringify(MOCK_SILENCE_RULE_TEMPLATES)),
+        silenceRuleOptions: JSON.parse(JSON.stringify(MOCK_SILENCE_RULE_OPTIONS)),
         resources: JSON.parse(JSON.stringify(MOCK_RESOURCES)),
         resourceGroups: JSON.parse(JSON.stringify(MOCK_RESOURCE_GROUPS)),
         resourceLinks: JSON.parse(JSON.stringify(MOCK_LINKS)),
@@ -468,7 +476,6 @@ function createInitialDB() {
         eventCorrelationData: JSON.parse(JSON.stringify(MOCK_EVENT_CORRELATION_DATA)),
         capacitySuggestions: JSON.parse(JSON.stringify(MOCK_CAPACITY_SUGGESTIONS)),
         capacityResourceAnalysis: JSON.parse(JSON.stringify(MOCK_CAPACITY_RESOURCE_ANALYSIS)),
-        // FIX: Add missing data to the DB object to resolve API handler errors.
         serviceHealthData: JSON.parse(JSON.stringify(MOCK_SERVICE_HEALTH_DATA)),
         resourceGroupStatusData: JSON.parse(JSON.stringify(MOCK_RESOURCE_GROUP_STATUS_DATA)),
         analysisOverviewData: JSON.parse(JSON.stringify(MOCK_ANALYSIS_OVERVIEW_DATA)),

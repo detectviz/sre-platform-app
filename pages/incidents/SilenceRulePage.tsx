@@ -46,7 +46,7 @@ const SilenceRulePage: React.FC = () => {
         setError(null);
         try {
             const [rulesRes, columnsRes] = await Promise.all([
-                api.get<SilenceRule[]>('/silence-rules'),
+                api.get<SilenceRule[]>('/silence-rules', { params: filters }),
                 api.get<string[]>(`/settings/column-config/${PAGE_KEY}`)
             ]);
             setRules(rulesRes.data);
@@ -56,11 +56,15 @@ const SilenceRulePage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [filters]);
 
     useEffect(() => {
         fetchRules();
     }, [fetchRules]);
+    
+    useEffect(() => {
+        setSelectedIds([]);
+    }, [filters]);
 
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
         try {
@@ -127,25 +131,46 @@ const SilenceRulePage: React.FC = () => {
             alert('Failed to toggle rule status.');
         }
     };
+    
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSelectedIds(e.target.checked ? rules.map(r => r.id) : []);
+    };
+    
+    const handleSelectOne = (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
+        setSelectedIds(prev => e.target.checked ? [...prev, id] : prev.filter(selectedId => selectedId !== id));
+    };
 
-    const filteredRules = useMemo(() => {
-        return rules.filter(rule => {
-            if (filters.keyword && !rule.name.toLowerCase().includes(filters.keyword.toLowerCase())) return false;
-            if (filters.type && rule.type !== filters.type) return false;
-            if (filters.enabled !== undefined && rule.enabled !== filters.enabled) return false;
-            return true;
-        });
-    }, [rules, filters]);
+    const isAllSelected = rules.length > 0 && selectedIds.length === rules.length;
+    const isIndeterminate = selectedIds.length > 0 && selectedIds.length < rules.length;
+
+    const handleBatchAction = async (action: 'enable' | 'disable' | 'delete') => {
+        try {
+            await api.post('/silence-rules/batch-actions', { action, ids: selectedIds });
+            fetchRules();
+        } catch (err) {
+            alert(`Failed to ${action} selected rules.`);
+        } finally {
+            setSelectedIds([]);
+        }
+    };
+    
+    const batchActions = (
+        <>
+            <ToolbarButton icon="toggle-right" text="啟用" onClick={() => handleBatchAction('enable')} />
+            <ToolbarButton icon="toggle-left" text="停用" onClick={() => handleBatchAction('disable')} />
+            <ToolbarButton icon="trash-2" text="刪除" danger onClick={() => handleBatchAction('delete')} />
+        </>
+    );
 
     const handleExport = () => {
-        if (filteredRules.length === 0) {
+        if (rules.length === 0) {
             alert("沒有可匯出的資料。");
             return;
         }
         exportToCsv({
             filename: `silence-rules-${new Date().toISOString().split('T')[0]}.csv`,
             headers: ['id', 'name', 'enabled', 'type', 'creator', 'createdAt'],
-            data: filteredRules.map(r => ({ ...r, matchers: JSON.stringify(r.matchers), schedule: JSON.stringify(r.schedule) })),
+            data: rules.map(r => ({ ...r, matchers: JSON.stringify(r.matchers), schedule: JSON.stringify(r.schedule) })),
         });
     };
     
@@ -183,12 +208,19 @@ const SilenceRulePage: React.FC = () => {
                         <ToolbarButton icon="plus" text="新增規則" primary onClick={handleNewRule} />
                     </>
                 }
+                selectedCount={selectedIds.length}
+                onClearSelection={() => setSelectedIds([])}
+                batchActions={batchActions}
             />
             <TableContainer>
                 <div className="flex-1 overflow-y-auto">
                     <table className="w-full text-sm text-left text-slate-300">
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
+                                <th scope="col" className="p-4 w-12">
+                                    <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
+                                           checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
+                                </th>
                                 {visibleColumns.map(key => (
                                     <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
                                 ))}
@@ -197,11 +229,15 @@ const SilenceRulePage: React.FC = () => {
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <TableLoader colSpan={visibleColumns.length + 1} />
+                                <TableLoader colSpan={visibleColumns.length + 2} />
                             ) : error ? (
-                                <TableError colSpan={visibleColumns.length + 1} message={error} onRetry={fetchRules} />
-                            ) : filteredRules.map((rule) => (
-                                <tr key={rule.id} className="border-b border-slate-800 hover:bg-slate-800/40">
+                                <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchRules} />
+                            ) : rules.map((rule) => (
+                                <tr key={rule.id} className={`border-b border-slate-800 ${selectedIds.includes(rule.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
+                                    <td className="p-4 w-12">
+                                        <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
+                                               checked={selectedIds.includes(rule.id)} onChange={(e) => handleSelectOne(e, rule.id)} />
+                                    </td>
                                     {visibleColumns.map(key => (
                                         <td key={key} className="px-6 py-4">{renderCellContent(rule, key)}</td>
                                     ))}

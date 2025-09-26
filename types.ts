@@ -25,6 +25,7 @@ export interface Dashboard {
   grafana_dashboard_uid?: string;
   grafana_folder_uid?: string;
   layout?: string[];
+  deleted_at?: string;
 }
 
 export interface DashboardTemplate {
@@ -119,6 +120,7 @@ export interface ResourceGroup {
     warning: number;
     critical: number;
   };
+  deleted_at?: string;
 }
 
 export interface ParameterDefinition {
@@ -142,6 +144,7 @@ export interface AutomationPlaybook {
   lastRunStatus: 'success' | 'failed' | 'running';
   runCount: number;
   parameters?: ParameterDefinition[];
+  deleted_at?: string;
 }
 
 export interface AutomationExecution {
@@ -180,6 +183,7 @@ export interface AutomationTrigger {
   };
   lastTriggered: string;
   creator: string;
+  deleted_at?: string;
 }
 
 export interface MailSettings {
@@ -209,6 +213,7 @@ export interface Team {
   ownerId: string;
   memberIds: string[];
   createdAt: string;
+  deleted_at?: string;
 }
 
 export interface RolePermission {
@@ -224,6 +229,7 @@ export interface Role {
     status: 'active' | 'inactive';
     createdAt: string;
     permissions: RolePermission[];
+    deleted_at?: string;
 }
 
 export interface AuditLog {
@@ -272,6 +278,7 @@ export interface AlertRule {
   titleTemplate?: string;
   contentTemplate?: string;
   automation?: AutomationSetting;
+  deleted_at?: string;
 }
 
 export interface SilenceMatcher {
@@ -298,6 +305,7 @@ export interface SilenceRule {
   schedule: SilenceSchedule;
   creator: string;
   createdAt: string;
+  deleted_at?: string;
 }
 
 export interface AlertRuleTemplate {
@@ -334,6 +342,7 @@ export interface NotificationChannel {
   };
   lastTestResult: 'success' | 'failed' | 'pending';
   lastTestedAt: string;
+  deleted_at?: string;
 }
 
 export interface NotificationStrategy {
@@ -345,6 +354,7 @@ export interface NotificationStrategy {
   priority: 'High' | 'Medium' | 'Low';
   creator: string;
   lastUpdated: string;
+  deleted_at?: string;
 }
 
 export interface NotificationHistoryRecord {

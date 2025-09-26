@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { TAG_CATEGORIES } from '../../../constants';
 import { TagDefinition, TagValue } from '../../../types';
 import Icon from '../../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../../components/Toolbar';
@@ -15,6 +14,7 @@ const TagManagementPage: React.FC = () => {
     const [tags, setTags] = useState<TagDefinition[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [categories, setCategories] = useState<string[]>(['All']);
 
     const [isValuesModalOpen, setIsValuesModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -31,8 +31,12 @@ const TagManagementPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const { data } = await api.get<TagDefinition[]>('/settings/tags');
-            setTags(data);
+            const [tagsRes, categoriesRes] = await Promise.all([
+                api.get<TagDefinition[]>('/settings/tags'),
+                api.get<{ categories: string[] }>('/settings/tags/options')
+            ]);
+            setTags(tagsRes.data);
+            setCategories(['All', ...categoriesRes.data.categories]);
         } catch (err) {
             setError('無法獲取標籤定義。');
         } finally {
@@ -129,8 +133,7 @@ const TagManagementPage: React.FC = () => {
                 onChange={e => setFilterCategory(e.target.value)}
                 className="bg-slate-800/80 border border-slate-700 rounded-md px-3 py-1.5 text-sm"
             >
-                <option value="All">所有分類</option>
-                {TAG_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                {categories.map(cat => <option key={cat} value={cat}>{cat === 'All' ? '所有分類' : cat}</option>)}
             </select>
         </div>
     );

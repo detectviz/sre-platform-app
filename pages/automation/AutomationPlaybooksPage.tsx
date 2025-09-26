@@ -21,6 +21,7 @@ const AutomationPlaybooksPage: React.FC = () => {
     const [editingPlaybook, setEditingPlaybook] = useState<AutomationPlaybook | null>(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingPlaybook, setDeletingPlaybook] = useState<AutomationPlaybook | null>(null);
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
     const fetchPlaybooks = useCallback(async () => {
         setIsLoading(true);
@@ -86,6 +87,16 @@ const AutomationPlaybooksPage: React.FC = () => {
             }
         }
     };
+    
+    const handleBatchDelete = async () => {
+        try {
+            await api.post('/automation/scripts/batch-actions', { action: 'delete', ids: selectedIds });
+            setSelectedIds([]);
+            fetchPlaybooks();
+        } catch (err) {
+            alert('Failed to delete selected playbooks.');
+        }
+    };
 
     const handleConfirmRun = async (playbookId: string, params: Record<string, any>) => {
         try {
@@ -105,18 +116,40 @@ const AutomationPlaybooksPage: React.FC = () => {
         }
     };
 
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSelectedIds(e.target.checked ? playbooks.map(p => p.id) : []);
+    };
+    
+    const handleSelectOne = (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
+        setSelectedIds(prev => e.target.checked ? [...prev, id] : prev.filter(selectedId => selectedId !== id));
+    };
+
+    const isAllSelected = playbooks.length > 0 && selectedIds.length === playbooks.length;
+    const isIndeterminate = selectedIds.length > 0 && selectedIds.length < playbooks.length;
+
+    const batchActions = (
+        <ToolbarButton icon="trash-2" text="刪除" danger onClick={handleBatchDelete} />
+    );
+
     return (
         <div className="h-full flex flex-col">
             <Toolbar 
                 rightActions={
                     <ToolbarButton icon="plus" text="新增腳本" primary onClick={handleNewPlaybook} />
                 }
+                selectedCount={selectedIds.length}
+                onClearSelection={() => setSelectedIds([])}
+                batchActions={batchActions}
             />
             <TableContainer>
                 <div className="h-full overflow-y-auto">
                     <table className="w-full text-sm text-left text-slate-300">
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
+                                <th scope="col" className="p-4 w-12">
+                                    <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
+                                           checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
+                                </th>
                                 <th scope="col" className="px-6 py-3">腳本名稱</th>
                                 <th scope="col" className="px-6 py-3">觸發器</th>
                                 <th scope="col" className="px-6 py-3">上次運行狀態</th>
@@ -127,11 +160,15 @@ const AutomationPlaybooksPage: React.FC = () => {
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <TableLoader colSpan={6} />
+                                <TableLoader colSpan={7} />
                             ) : error ? (
-                                <TableError colSpan={6} message={error} onRetry={fetchPlaybooks} />
+                                <TableError colSpan={7} message={error} onRetry={fetchPlaybooks} />
                             ) : playbooks.map((pb) => (
-                                <tr key={pb.id} className="border-b border-slate-800 hover:bg-slate-800/40">
+                                <tr key={pb.id} className={`border-b border-slate-800 ${selectedIds.includes(pb.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
+                                     <td className="p-4 w-12">
+                                        <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
+                                               checked={selectedIds.includes(pb.id)} onChange={(e) => handleSelectOne(e, pb.id)} />
+                                    </td>
                                     <td className="px-6 py-4 font-medium text-white">
                                         {pb.name}
                                         <p className="text-xs text-slate-400 font-normal">{pb.description}</p>

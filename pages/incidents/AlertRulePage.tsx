@@ -50,7 +50,7 @@ const AlertRulePage: React.FC = () => {
         setError(null);
         try {
             const [rulesRes, columnsRes] = await Promise.all([
-                api.get<AlertRule[]>('/alert-rules'),
+                api.get<AlertRule[]>('/alert-rules', { params: filters }),
                 api.get<string[]>(`/settings/column-config/${PAGE_KEY}`)
             ]);
             setRules(rulesRes.data);
@@ -60,7 +60,7 @@ const AlertRulePage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [filters]);
 
     useEffect(() => {
         fetchRules();
@@ -139,25 +139,16 @@ const AlertRulePage: React.FC = () => {
         }
     };
 
-    const filteredRules = useMemo(() => {
-        return rules.filter(rule => {
-            if (filters.keyword && !rule.name.toLowerCase().includes(filters.keyword.toLowerCase())) return false;
-            if (filters.severity && rule.severity !== filters.severity) return false;
-            if (filters.enabled !== undefined && rule.enabled !== filters.enabled) return false;
-            return true;
-        });
-    }, [rules, filters]);
-
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setSelectedIds(e.target.checked ? filteredRules.map(r => r.id) : []);
+        setSelectedIds(e.target.checked ? rules.map(r => r.id) : []);
     };
     
     const handleSelectOne = (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
         setSelectedIds(prev => e.target.checked ? [...prev, id] : prev.filter(selectedId => selectedId !== id));
     };
     
-    const isAllSelected = filteredRules.length > 0 && selectedIds.length === filteredRules.length;
-    const isIndeterminate = selectedIds.length > 0 && selectedIds.length < filteredRules.length;
+    const isAllSelected = rules.length > 0 && selectedIds.length === rules.length;
+    const isIndeterminate = selectedIds.length > 0 && selectedIds.length < rules.length;
 
     const handleBatchAction = async (action: 'enable' | 'disable' | 'delete') => {
         try {
@@ -181,8 +172,8 @@ const AlertRulePage: React.FC = () => {
 
     const handleExport = () => {
         const dataToExport = selectedIds.length > 0
-            ? filteredRules.filter(r => selectedIds.includes(r.id))
-            : filteredRules;
+            ? rules.filter(r => selectedIds.includes(r.id))
+            : rules;
 
         if (dataToExport.length === 0) {
             alert("沒有可匯出的資料。");
@@ -282,7 +273,7 @@ const AlertRulePage: React.FC = () => {
                                 <TableLoader colSpan={visibleColumns.length + 2} />
                             ) : error ? (
                                 <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchRules} />
-                            ) : filteredRules.map((rule) => (
+                            ) : rules.map((rule) => (
                                 <tr key={rule.id} className={`border-b border-slate-800 ${selectedIds.includes(rule.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
                                     <td className="p-4 w-12">
                                         <input type="checkbox"

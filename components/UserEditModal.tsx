@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import FormRow from './FormRow';
-import { User, Team } from '../types';
+import { User, Team, Role } from '../types';
 import api from '../services/api';
 
 interface UserEditModalProps {
@@ -14,13 +14,21 @@ interface UserEditModalProps {
 const UserEditModal: React.FC<UserEditModalProps> = ({ isOpen, onClose, onSave, user }) => {
     const [formData, setFormData] = useState<Partial<User>>({});
     const [teams, setTeams] = useState<Team[]>([]);
+    const [roles, setRoles] = useState<Role[]>([]);
+    const [isLoadingOptions, setIsLoadingOptions] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
             if(user) setFormData(user);
-            api.get<Team[]>('/iam/teams')
-                .then(res => setTeams(res.data))
-                .catch(err => console.error("Failed to fetch teams", err));
+            setIsLoadingOptions(true);
+            Promise.all([
+                api.get<Team[]>('/iam/teams'),
+                api.get<Role[]>('/iam/roles')
+            ]).then(([teamsRes, rolesRes]) => {
+                setTeams(teamsRes.data);
+                setRoles(rolesRes.data);
+            }).catch(err => console.error("Failed to fetch teams or roles", err))
+            .finally(() => setIsLoadingOptions(false));
         }
     }, [isOpen, user]);
 
@@ -34,7 +42,6 @@ const UserEditModal: React.FC<UserEditModalProps> = ({ isOpen, onClose, onSave, 
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
-    const roles: User['role'][] = ['Admin', 'SRE', 'Developer', 'Viewer'];
     const statuses: User['status'][] = ['active', 'inactive', 'invited'];
 
     return (
@@ -61,14 +68,14 @@ const UserEditModal: React.FC<UserEditModalProps> = ({ isOpen, onClose, onSave, 
                 </FormRow>
                 <FormRow label="角色">
                     <select value={formData.role || ''} onChange={e => handleChange('role', e.target.value as User['role'])}
-                            className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
-                        {roles.map(r => <option key={r} value={r}>{r}</option>)}
+                            className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoadingOptions}>
+                        {isLoadingOptions ? <option>載入中...</option> : roles.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
                     </select>
                 </FormRow>
                 <FormRow label="團隊">
                     <select value={formData.team || ''} onChange={e => handleChange('team', e.target.value)}
-                            className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
-                        {teams.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+                            className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoadingOptions}>
+                         {isLoadingOptions ? <option>載入中...</option> : teams.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
                     </select>
                 </FormRow>
                 <FormRow label="狀態">

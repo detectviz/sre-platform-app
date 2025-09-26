@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { HashRouter, Routes, Route, useLocation, Navigate, Outlet } from 'react-router-dom';
 import AppLayout from './layouts/AppLayout';
@@ -199,14 +200,16 @@ const DashboardRedirector: React.FC = () => {
     useEffect(() => {
         const fetchDefaultDashboard = async () => {
             const defaultDashboardId = localStorage.getItem('default-dashboard') || 'sre-war-room';
+            
+            // FIX: Removed direct access to `DB` object, which is not available in the frontend context.
+            // The logic is simplified to always fetch dashboard details via the API, which correctly handles both built-in and user-created dashboards.
             try {
-                // Fetch all dashboards to find the correct path.
-                // This is acceptable for a mock API with few items.
-                const { data } = await api.get<{ items: Dashboard[], total: number }>('/dashboards', { params: { page: 1, page_size: 100 } });
-                const dashboard = data.items.find(d => d.id === defaultDashboardId);
+                // Fetch the specific dashboard by ID for better performance
+                const { data: dashboard } = await api.get<Dashboard>(`/dashboards/${defaultDashboardId}`);
                 setRedirectPath(dashboard?.path || '/sre-war-room');
             } catch {
-                // Fallback on API error
+                // Fallback on API error (e.g., dashboard was deleted)
+                localStorage.setItem('default-dashboard', 'sre-war-room');
                 setRedirectPath('/sre-war-room');
             }
         };

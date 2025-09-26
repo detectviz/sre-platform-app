@@ -20,6 +20,7 @@ const TeamManagementPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingTeam, setDeletingTeam] = useState<Team | null>(null);
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
     const fetchTeamsAndUsers = useCallback(async () => {
         setIsLoading(true);
@@ -96,6 +97,16 @@ const TeamManagementPage: React.FC = () => {
             }
         }
     };
+    
+    const handleBatchDelete = async () => {
+        try {
+            await api.post('/iam/teams/batch-actions', { action: 'delete', ids: selectedIds });
+            setSelectedIds([]);
+            fetchTeamsAndUsers();
+        } catch (err) {
+            alert('Failed to delete selected teams.');
+        }
+    };
 
     const leftActions = (
          <div className="relative">
@@ -109,12 +120,31 @@ const TeamManagementPage: React.FC = () => {
             />
         </div>
     );
+    
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSelectedIds(e.target.checked ? teams.map(t => t.id) : []);
+    };
+    
+    const handleSelectOne = (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
+        setSelectedIds(prev => e.target.checked ? [...prev, id] : prev.filter(selectedId => selectedId !== id));
+    };
+
+    const isAllSelected = teams.length > 0 && selectedIds.length === teams.length;
+    const isIndeterminate = selectedIds.length > 0 && selectedIds.length < teams.length;
+
+    const batchActions = (
+        <ToolbarButton icon="trash-2" text="刪除" danger onClick={handleBatchDelete} />
+    );
+
 
     return (
         <div className="h-full flex flex-col">
             <Toolbar 
                 leftActions={leftActions}
                 rightActions={<ToolbarButton icon="plus" text="新增團隊" primary onClick={handleNewTeam} />}
+                selectedCount={selectedIds.length}
+                onClearSelection={() => setSelectedIds([])}
+                batchActions={batchActions}
             />
 
             <TableContainer>
@@ -122,6 +152,10 @@ const TeamManagementPage: React.FC = () => {
                     <table className="w-full text-sm text-left text-slate-300">
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
+                                <th scope="col" className="p-4 w-12">
+                                    <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
+                                           checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
+                                </th>
                                 <th scope="col" className="px-6 py-3">團隊名稱</th>
                                 <th scope="col" className="px-6 py-3">擁有者</th>
                                 <th scope="col" className="px-6 py-3">成員數</th>
@@ -131,11 +165,15 @@ const TeamManagementPage: React.FC = () => {
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <TableLoader colSpan={5} />
+                                <TableLoader colSpan={6} />
                             ) : error ? (
-                                <TableError colSpan={5} message={error} onRetry={fetchTeamsAndUsers} />
+                                <TableError colSpan={6} message={error} onRetry={fetchTeamsAndUsers} />
                             ) : teams.map((team) => (
-                                <tr key={team.id} className="border-b border-slate-800 hover:bg-slate-800/40">
+                                <tr key={team.id} className={`border-b border-slate-800 ${selectedIds.includes(team.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
+                                    <td className="p-4 w-12">
+                                        <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
+                                               checked={selectedIds.includes(team.id)} onChange={(e) => handleSelectOne(e, team.id)} />
+                                    </td>
                                     <td className="px-6 py-4 font-medium text-white">
                                         {team.name}
                                         <p className="text-xs text-slate-400 font-normal">{team.description}</p>
