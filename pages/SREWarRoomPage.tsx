@@ -4,6 +4,7 @@ import EChartsReact from '../components/EChartsReact';
 import Icon from '../components/Icon';
 import api from '../services/api';
 import PageKPIs from '../components/PageKPIs';
+import { ServiceHealthData, ResourceGroupStatusData } from '../types';
 
 interface BriefingData {
     stability_summary: string;
@@ -23,6 +24,9 @@ interface BriefingData {
 const SREWarRoomPage: React.FC = () => {
     const [aiBriefing, setAiBriefing] = useState<BriefingData | null>(null);
     const [isBriefingLoading, setIsBriefingLoading] = useState(true);
+    const [serviceHealthData, setServiceHealthData] = useState<ServiceHealthData | null>(null);
+    const [resourceGroupData, setResourceGroupData] = useState<ResourceGroupStatusData | null>(null);
+    const [isChartLoading, setIsChartLoading] = useState(true);
 
     const fetchBriefing = useCallback(async () => {
         setIsBriefingLoading(true);
@@ -36,16 +40,32 @@ const SREWarRoomPage: React.FC = () => {
             setIsBriefingLoading(false);
         }
     }, []);
+    
+    const fetchChartData = useCallback(async () => {
+        setIsChartLoading(true);
+        try {
+            const [healthRes, groupRes] = await Promise.all([
+                api.get<ServiceHealthData>('/dashboards/sre-war-room/service-health'),
+                api.get<ResourceGroupStatusData>('/dashboards/sre-war-room/resource-group-status')
+            ]);
+            setServiceHealthData(healthRes.data);
+            setResourceGroupData(groupRes.data);
+        } catch (error) {
+             console.error("Fetch Chart Data Error:", error);
+        } finally {
+            setIsChartLoading(false);
+        }
+    }, []);
 
     useEffect(() => {
         fetchBriefing();
-    }, [fetchBriefing]);
+        fetchChartData();
+    }, [fetchBriefing, fetchChartData]);
 
 
     const handleRefreshBriefing = useCallback(async () => {
         setIsBriefingLoading(true);
         try {
-             // The backend now handles the AI generation logic.
             const { data } = await api.post<BriefingData>('/ai/briefing/generate');
             setAiBriefing(data);
         } catch (error) {
@@ -58,8 +78,8 @@ const SREWarRoomPage: React.FC = () => {
 
     const serviceHealthOption = {
         tooltip: { trigger: 'item' },
-        xAxis: { type: 'category', data: ['延遲', '流量', '錯誤', '飽和度'], axisLine: { lineStyle: { color: '#888' } } },
-        yAxis: { type: 'category', data: ['認證服務', '支付 API', '存儲', 'Web 前端', '數據管道', '快取'], axisLine: { lineStyle: { color: '#888' } } },
+        xAxis: { type: 'category', data: serviceHealthData?.x_axis_labels || [], axisLine: { lineStyle: { color: '#888' } } },
+        yAxis: { type: 'category', data: serviceHealthData?.y_axis_labels || [], axisLine: { lineStyle: { color: '#888' } } },
         visualMap: {
             min: 0, max: 100, calculable: true, orient: 'horizontal', left: 'center', bottom: '2%',
             inRange: { color: ['#dc2626', '#f97316', '#10b981'] },
@@ -68,14 +88,7 @@ const SREWarRoomPage: React.FC = () => {
         series: [{
             name: '服務健康度',
             type: 'heatmap',
-            data: [
-                [0, 0, 95], [1, 0, 100], [2, 0, 99], [3, 0, 92],
-                [0, 1, 98], [1, 1, 97], [2, 1, 5], [3, 1, 88],
-                [0, 2, 100], [1, 2, 99], [2, 2, 98], [3, 2, 75],
-                [0, 3, 92], [1, 3, 94], [2, 3, 99], [3, 3, 91],
-                [0, 4, 85], [1, 4, 91], [2, 4, 95], [3, 4, 60],
-                [0, 5, 99], [1, 5, 100], [2, 5, 99], [3, 5, 96],
-            ],
+            data: serviceHealthData?.heatmap_data || [],
             label: { show: true },
             emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0, 0, 0, 0.5)' } }
         }]
@@ -83,15 +96,18 @@ const SREWarRoomPage: React.FC = () => {
 
     const resourceGroupOption = {
         tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-        legend: { data: ['健康', '警告', '嚴重'], textStyle: { color: '#fff' } },
+        legend: { data: resourceGroupData?.series.map(s => s.name) || [], textStyle: { color: '#fff' } },
         grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
         xAxis: { type: 'value', axisLine: { lineStyle: { color: '#888' } } },
-        yAxis: { type: 'category', data: ['Web 集群', '資料庫集群', '開發環境', '災備系統'], axisLine: { lineStyle: { color: '#888' } } },
-        series: [
-            { name: '健康', type: 'bar', stack: 'total', label: { show: true }, emphasis: { focus: 'series' }, data: [12, 8, 15, 9], color: '#10b981' },
-            { name: '警告', type: 'bar', stack: 'total', label: { show: true }, emphasis: { focus: 'series' }, data: [3, 2, 1, 4], color: '#f97316' },
-            { name: '嚴重', type: 'bar', stack: 'total', label: { show: true }, emphasis: { focus: 'series' }, data: [1, 0, 2, 0], color: '#dc2626' }
-        ]
+        yAxis: { type: 'category', data: resourceGroupData?.group_names || [], axisLine: { lineStyle: { color: '#888' } } },
+        series: resourceGroupData?.series.map(s => ({
+            ...s,
+            type: 'bar',
+            stack: 'total',
+            label: { show: true },
+            emphasis: { focus: 'series' },
+            color: s.name === '健康' ? '#10b981' : s.name === '警告' ? '#f97316' : '#dc2626'
+        })) || []
     };
 
   return (
@@ -142,11 +158,19 @@ const SREWarRoomPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="glass-card rounded-xl p-6">
              <h2 className="text-xl font-bold mb-4">服務健康度總覽</h2>
-             <EChartsReact option={serviceHealthOption} style={{ height: '300px' }} />
+             {isChartLoading ? (
+                <div className="h-[300px] bg-slate-800/50 rounded-lg animate-pulse"></div>
+             ) : (
+                <EChartsReact option={serviceHealthOption} style={{ height: '300px' }} />
+             )}
           </div>
           <div className="glass-card rounded-xl p-6">
              <h2 className="text-xl font-bold mb-4">資源群組狀態</h2>
-             <EChartsReact option={resourceGroupOption} style={{ height: '300px' }} />
+             {isChartLoading ? (
+                <div className="h-[300px] bg-slate-800/50 rounded-lg animate-pulse"></div>
+             ) : (
+                <EChartsReact option={resourceGroupOption} style={{ height: '300px' }} />
+             )}
           </div>
       </div>
 

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { NotificationItem } from '../types';
 import Icon from './Icon';
 import api from '../services/api';
+import { showToast } from '../services/toast';
 
 const timeSince = (dateString: string) => {
     const date = new Date(dateString);
@@ -73,12 +74,31 @@ const NotificationCenter: React.FC = () => {
     }, []);
 
     const handleMarkAsRead = (id: string) => {
+        const originalNotifications = [...notifications];
+        // Optimistic update
         setNotifications(notifications.map(n => n.id === id ? { ...n, status: 'read' } : n));
-        // In a real app, you would also send a POST/PATCH request to the API to mark it as read.
+        
+        // API call
+        api.post(`/notifications/${id}/read`).catch(err => {
+            console.error("Failed to mark notification as read:", err);
+            showToast('無法將通知標為已讀。', 'error');
+            // Revert on error
+            setNotifications(originalNotifications);
+        });
     };
 
     const handleMarkAllAsRead = () => {
+        const originalNotifications = [...notifications];
+        // Optimistic update
         setNotifications(notifications.map(n => ({ ...n, status: 'read' })));
+
+        // API call
+        api.post('/notifications/read-all').catch(err => {
+            console.error("Failed to mark all as read:", err);
+            showToast('無法將所有通知標為已讀。', 'error');
+            // Revert on error
+            setNotifications(originalNotifications);
+        });
     };
 
     return (

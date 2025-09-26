@@ -98,6 +98,10 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
             
             // Dashboards
             case 'GET /dashboards': {
+                 if (id === 'sre-war-room') {
+                    if (action === 'service-health') return DB.serviceHealthData;
+                    if (action === 'resource-group-status') return DB.resourceGroupStatusData;
+                }
                 if (id === 'available-grafana') {
                     const linkedUids = getActive(DB.dashboards).filter((d: any) => d.type === 'grafana' && d.grafana_dashboard_uid).map((d: any) => d.grafana_dashboard_uid);
                     return DB.availableGrafanaDashboards.filter((d: any) => !linkedUids.includes(d.uid));
@@ -173,6 +177,24 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
             case 'POST /alert-rules':
                 if (id === 'import') {
                     return { message: '成功匯入 8 條告警規則。' };
+                }
+                if (action === 'test') {
+                    const ruleId = id;
+                    const { payload } = body;
+                    const rule = DB.alertRules.find((r: any) => r.id === ruleId);
+                    if (!rule) throw { status: 404, message: 'Rule not found' };
+                    const condition = rule.conditionGroups?.[0]?.conditions?.[0];
+                    if (condition && payload.metric === condition.metric && payload.value > condition.threshold) {
+                        return {
+                            matches: true,
+                            preview: `事件: ${rule.titleTemplate?.replace('{{resource.name}}', payload.resource).replace('{{severity}}', rule.severity)}`
+                        };
+                    } else {
+                         return {
+                            matches: false,
+                            preview: `條件不匹配: ${condition?.metric} (${payload.value}) 未超過 ${condition?.threshold}`
+                        };
+                    }
                 }
                 const newRule = { ...body, id: `rule-${uuidv4()}` };
                 DB.alertRules.unshift(newRule);
@@ -372,11 +394,7 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
             // Analysis
             case 'GET /analysis': {
                 if (id === 'overview') {
-                    return {
-                        health_score_data: Array.from({ length: 60 }, (_, i) => ({ name: new Date(Date.now() - (59 - i) * 60000).toString(), value: [new Date(Date.now() - (59 - i) * 60000), 95 + Math.random() * 5] })),
-                        event_correlation_data: DB.eventCorrelationData,
-                        recent_logs: DB.logs.slice(0, 5)
-                    };
+                    return DB.analysisOverviewData;
                 }
                 if (id === 'capacity-planning') {
                     const generateTrendData = (base: number, trend: number, variance: number) => {
@@ -463,6 +481,21 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
             }
              case 'GET /notifications': {
                 return DB.notifications;
+            }
+            case 'POST /notifications': {
+                if (id === 'read-all') {
+                    DB.notifications.forEach((n: any) => n.status = 'read');
+                    return { success: true };
+                }
+                if (id && action === 'read') {
+                    const index = DB.notifications.findIndex((n: any) => n.id === id);
+                    if (index > -1) {
+                        DB.notifications[index].status = 'read';
+                        return DB.notifications[index];
+                    }
+                    throw { status: 404 };
+                }
+                break;
             }
         }
     } catch (e: any) {

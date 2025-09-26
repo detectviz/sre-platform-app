@@ -1,35 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import EChartsReact from '../../components/EChartsReact';
 import Icon from '../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
-import PlaceholderModal from '../../components/PlaceholderModal';
 import { exportToCsv } from '../../services/export';
+import { AnalysisOverviewData, LogEntry } from '../../types';
+import api from '../../services/api';
 
 const AnalysisOverviewPage: React.FC = () => {
-    const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
-    const [modalFeatureName, setModalFeatureName] = useState('');
+    const [overviewData, setOverviewData] = useState<AnalysisOverviewData | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    const showPlaceholderModal = (featureName: string) => {
-        setModalFeatureName(featureName);
-        setIsPlaceholderModalOpen(true);
-    };
+    const [logQuery, setLogQuery] = useState('');
+    const navigate = useNavigate();
 
-    // Generate random data for the health score chart
-    const healthScoreData = () => {
-        let data = [];
-        let now = new Date();
-        for (let i = 60; i > 0; i--) {
-            let time = new Date(now.getTime() - i * 60000); // 60 minutes of data
-            data.push({
-                name: time.toString(),
-                value: [
-                    time,
-                    Math.round((95 + Math.random() * 5 - (i < 10 ? Math.random() * 3 : 0)) * 100) / 100
-                ]
-            });
+    const fetchOverviewData = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const { data } = await api.get<AnalysisOverviewData>('/analysis/overview');
+            setOverviewData(data);
+        } catch (err) {
+            setError('無法獲取分析總覽數據。');
+        } finally {
+            setIsLoading(false);
         }
-        return data;
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchOverviewData();
+    }, [fetchOverviewData]);
 
     const healthScoreOption = {
         tooltip: { trigger: 'axis', formatter: (params: any) => {
@@ -42,7 +43,7 @@ const AnalysisOverviewPage: React.FC = () => {
             name: 'Health Score',
             type: 'line',
             showSymbol: false,
-            data: healthScoreData(),
+            data: overviewData?.health_score_data || [],
             lineStyle: { color: '#38bdf8' },
             areaStyle: {
                 color: new window.echarts.graphic.LinearGradient(0, 0, 0, 1, [{
@@ -63,31 +64,16 @@ const AnalysisOverviewPage: React.FC = () => {
             formatter: '{a} <br/>{b}: {c}'
         },
         legend: {
-            data: ['DB Alerts', 'API Errors', 'Infra Changes'],
+            data: overviewData?.event_correlation_data.categories.map(c => c.name) || [],
             textStyle: { color: '#fff' }
         },
         series: [{
             name: 'Event Correlation',
             type: 'graph',
             layout: 'force',
-            data: [
-                { id: '0', name: 'High DB CPU', value: 10, symbolSize: 50, category: 0 },
-                { id: '1', name: 'API Latency Spike', value: 8, symbolSize: 40, category: 1 },
-                { id: '2', name: 'Deployment', value: 5, symbolSize: 30, category: 2 },
-                { id: '3', name: '5xx Errors', value: 9, symbolSize: 45, category: 1 },
-                { id: '4', name: 'Low Disk Space', value: 6, symbolSize: 35, category: 0 },
-            ],
-            links: [
-                { source: '0', target: '1' },
-                { source: '1', target: '3' },
-                { source: '2', target: '1' },
-                { source: '0', target: '4' },
-            ],
-            categories: [
-                { name: 'DB Alerts' },
-                { name: 'API Errors' },
-                { name: 'Infra Changes' },
-            ],
+            data: overviewData?.event_correlation_data.nodes || [],
+            links: overviewData?.event_correlation_data.links || [],
+            categories: overviewData?.event_correlation_data.categories || [],
             roam: true,
             label: { show: true },
             force: { repulsion: 200 }
@@ -96,17 +82,51 @@ const AnalysisOverviewPage: React.FC = () => {
     };
 
     const handleExport = () => {
+        if (!overviewData) return;
         const dataToExport = [
-            { metric: 'System Health Score', value: '98.5', details: 'System is currently healthy.' },
-            { metric: 'High DB CPU', value: '10 events', details: 'Correlated with API Latency Spike' },
-            { metric: 'API Latency Spike', value: '8 events', details: 'Correlated with High DB CPU, Deployment, 5xx Errors' },
+            ...overviewData.event_correlation_data.nodes.map(node => ({
+                type: 'Event',
+                name: node.name,
+                value: node.value,
+                category: overviewData.event_correlation_data.categories[node.category].name
+            })),
+             ...overviewData.recent_logs.map(log => ({
+                type: 'Log',
+                name: log.message,
+                value: log.service,
+                category: log.level
+            }))
         ];
         exportToCsv({
             filename: `analysis-overview-${new Date().toISOString().split('T')[0]}.csv`,
             data: dataToExport,
         });
     };
-    const handleLogSearch = () => showPlaceholderModal('日誌搜尋');
+
+    const handleLogSearch = () => {
+        if (logQuery.trim()) {
+            navigate(`/analyzing/logs?q=${encodeURIComponent(logQuery.trim())}`);
+        } else {
+            navigate('/analyzing/logs');
+        }
+    };
+
+    if (isLoading) {
+        return (
+             <div className="space-y-6">
+                <Toolbar rightActions={<ToolbarButton icon="download" text="匯出報表" onClick={() => {}} disabled />} />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="glass-card rounded-xl p-6 h-[348px] animate-pulse bg-slate-800/50"></div>
+                    <div className="glass-card rounded-xl p-6 h-[348px] animate-pulse bg-slate-800/50"></div>
+                </div>
+                 <div className="glass-card rounded-xl p-6 h-[344px] animate-pulse bg-slate-800/50"></div>
+            </div>
+        );
+    }
+
+     if (error) {
+        return <div className="text-center text-red-500">{error}</div>;
+    }
 
     return (
         <div className="space-y-6">
@@ -125,27 +145,18 @@ const AnalysisOverviewPage: React.FC = () => {
              <div className="glass-card rounded-xl p-6">
                 <h2 className="text-xl font-bold mb-4 flex items-center"><Icon name="search" className="w-5 h-5 mr-2 text-yellow-400" /> Log Explorer</h2>
                 <div className="flex space-x-2">
-                    <input type="text" placeholder="Search logs... (e.g., error status:500)" className="flex-grow bg-slate-800/80 border border-slate-700 rounded-md px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
-                    <button className="flex items-center text-sm text-white bg-slate-600 hover:bg-slate-700 px-4 py-2 rounded-md">
-                        Last 15 minutes <Icon name="chevron-down" className="w-4 h-4 ml-2"/>
-                    </button>
+                    <input type="text" value={logQuery} onChange={e => setLogQuery(e.target.value)} placeholder="Search logs... (e.g., error status:500)" className="flex-grow bg-slate-800/80 border border-slate-700 rounded-md px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
                     <button onClick={handleLogSearch} className="flex items-center text-sm text-white bg-sky-600 hover:bg-sky-700 px-4 py-2 rounded-md">
                         Search
                     </button>
                 </div>
                  <div className="mt-4 h-64 bg-slate-900/70 rounded-md p-4 font-mono text-xs text-slate-300 overflow-y-auto">
-                    <p><span className="text-cyan-400">[2025-09-19 10:31:05]</span> <span className="text-red-400">[ERROR]</span> 500 Internal Server Error on /api/payment</p>
-                    <p><span className="text-cyan-400">[2025-09-19 10:31:02]</span> <span className="text-yellow-400">[WARN]</span> DB connection pool nearing capacity</p>
-                    <p><span className="text-cyan-400">[2025-09-19 10:30:58]</span> <span className="text-green-400">[INFO]</span> User 'admin' logged in successfully</p>
-                     <p><span className="text-cyan-400">[2025-09-19 10:30:55]</span> <span className="text-red-400">[ERROR]</span> Failed to process message from queue: payment-queue</p>
-                     <p><span className="text-cyan-400">[2025-09-19 10:30:51]</span> <span className="text-green-400">[INFO]</span> New deployment 'v2.1.5' started for service 'api-service'</p>
+                    {overviewData?.recent_logs.map((log: LogEntry) => {
+                        const levelColor = log.level === 'error' ? 'text-red-400' : log.level === 'warning' ? 'text-yellow-400' : 'text-green-400';
+                        return <p key={log.id}><span className="text-cyan-400">[{log.timestamp}]</span> <span className={levelColor}>[{log.level.toUpperCase()}]</span> {log.message}</p>
+                    })}
                 </div>
             </div>
-            <PlaceholderModal
-                isOpen={isPlaceholderModalOpen}
-                onClose={() => setIsPlaceholderModalOpen(false)}
-                featureName={modalFeatureName}
-            />
         </div>
     );
 };

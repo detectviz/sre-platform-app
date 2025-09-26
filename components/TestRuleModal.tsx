@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import Modal from './Modal';
 import Icon from './Icon';
 import { AlertRule } from '../types';
+import api from '../services/api';
 
 interface TestRuleModalProps {
   isOpen: boolean;
@@ -13,25 +14,28 @@ interface TestRuleModalProps {
 const TestRuleModal: React.FC<TestRuleModalProps> = ({ isOpen, onClose, rule }) => {
     const [payload, setPayload] = useState('{\n  "metric": "cpu_usage_percent",\n  "value": 95,\n  "resource": "web-server-01"\n}');
     const [result, setResult] = useState<{ matches: boolean; preview: string } | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleTest = () => {
-        // This is a mock test. A real implementation would send this to the backend.
+    const handleTest = async () => {
+        if (!rule) return;
+        setIsLoading(true);
+        setResult(null);
         try {
             const parsedPayload = JSON.parse(payload);
-            const condition = rule?.conditionGroups?.[0]?.conditions?.[0];
-            if (condition && parsedPayload.metric === condition.metric && parsedPayload.value > condition.threshold) {
-                 setResult({
-                    matches: true,
-                    preview: `事件: ${rule?.titleTemplate?.replace('{{resource.name}}', parsedPayload.resource).replace('{{severity}}', rule.severity)}`
-                });
-            } else {
-                 setResult({
-                    matches: false,
-                    preview: `條件不匹配: ${condition?.metric} (${parsedPayload.value}) 未超過 ${condition?.threshold}`
-                });
-            }
+            const { data } = await api.post<{ matches: boolean; preview: string }>(
+                `/alert-rules/${rule.id}/test`, 
+                { payload: parsedPayload }
+            );
+            setResult(data);
         } catch (error) {
-            setResult({ matches: false, preview: `JSON 格式錯誤: ${error instanceof Error ? error.message : 'Unknown error'}` });
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            if (error instanceof SyntaxError) {
+                 setResult({ matches: false, preview: `JSON 格式錯誤: ${errorMessage}` });
+            } else {
+                 setResult({ matches: false, preview: `測試執行失敗: ${errorMessage}` });
+            }
+        } finally {
+            setIsLoading(false);
         }
     };
     
@@ -46,8 +50,9 @@ const TestRuleModal: React.FC<TestRuleModalProps> = ({ isOpen, onClose, rule }) 
       footer={
         <div className="flex justify-end space-x-2">
           <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">關閉</button>
-          <button onClick={handleTest} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md flex items-center">
-            <Icon name="play" className="w-4 h-4 mr-2" /> 執行測試
+          <button onClick={handleTest} disabled={isLoading} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md flex items-center disabled:bg-slate-600 disabled:cursor-not-allowed">
+            {isLoading ? <Icon name="loader-circle" className="w-4 h-4 mr-2 animate-spin" /> : <Icon name="play" className="w-4 h-4 mr-2" />}
+            {isLoading ? '測試中...' : '執行測試'}
           </button>
         </div>
       }

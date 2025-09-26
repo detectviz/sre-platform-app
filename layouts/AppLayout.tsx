@@ -117,6 +117,10 @@ const AppLayout: React.FC = () => {
       setIsProfileMenuOpen(false); 
       console.log('Logout action triggered.');
       showToast('您已成功登出。', 'success');
+      setTimeout(() => {
+        window.location.hash = '/';
+        window.location.reload();
+      }, 1000);
   };
   
   const handleHelp = (e: React.MouseEvent) => { 

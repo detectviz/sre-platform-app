@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import Icon from '../../components/Icon';
 import EChartsReact from '../../components/EChartsReact';
 import LogLevelPill from '../../components/LogLevelPill';
@@ -28,6 +29,16 @@ const LogExplorerPage: React.FC = () => {
     const [isLogAnalysisModalOpen, setIsLogAnalysisModalOpen] = useState(false);
     const [logAnalysisReport, setLogAnalysisReport] = useState<LogAnalysis | null>(null);
     const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
+
+    const location = useLocation();
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const queryFromUrl = params.get('q');
+        if (queryFromUrl) {
+            setQuery(queryFromUrl);
+        }
+    }, [location.search]);
 
     const showPlaceholderModal = (featureName: string) => {
         setModalFeatureName(featureName);

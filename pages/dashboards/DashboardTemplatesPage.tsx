@@ -17,9 +17,8 @@ const DashboardTemplatesPage: React.FC = () => {
             .finally(() => setIsLoading(false));
     }, []);
 
-    const handleUseTemplate = (templateId: string) => {
-        console.log(`Using template ${templateId}`);
-        navigate('/dashboards/new'); 
+    const handleUseTemplate = (template: DashboardTemplate) => {
+        navigate('/dashboards/new', { state: { template } }); 
     };
 
     if (isLoading) {
@@ -45,7 +44,7 @@ const DashboardTemplatesPage: React.FC = () => {
                         </div>
                         <div className="mt-6">
                             <button 
-                                onClick={() => handleUseTemplate(template.id)}
+                                onClick={() => handleUseTemplate(template)}
                                 className="w-full flex items-center justify-center text-sm font-semibold text-white bg-slate-700/70 hover:bg-sky-600 px-4 py-2 rounded-lg transition-colors duration-200 group-hover:bg-sky-600"
                             >
                                 <Icon name="plus-circle" className="w-4 h-4 mr-2" />

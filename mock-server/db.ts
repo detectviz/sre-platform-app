@@ -376,6 +376,36 @@ const MOCK_CAPACITY_RESOURCE_ANALYSIS = [
     { name: 'k8s-prod-cluster-node-1', current: '85%', predicted: '98%', recommended: '緊急擴展', cost: '+$200/月' },
     { name: 'elasticache-prod-03', current: '40%', predicted: '45%', recommended: '觀察', cost: '-' },
 ];
+// FIX: Add missing mock data definitions to resolve API handler errors.
+const MOCK_SERVICE_HEALTH_DATA = {
+    heatmap_data: [
+        [0,0,98],[0,1,100],[0,2,95],[0,3,99],
+        [1,0,100],[1,1,100],[1,2,92],[1,3,98],
+        [2,0,85],[2,1,90],[2,2,88],[2,3,91],
+        [3,0,99],[3,1,99],[3,2,97],[3,3,100],
+    ],
+    x_axis_labels: ['us-east-1', 'us-west-2', 'eu-central-1', 'ap-northeast-1'],
+    y_axis_labels: ['API Gateway', 'Database', 'Cache', 'Auth Service'],
+};
+
+const MOCK_RESOURCE_GROUP_STATUS_DATA = {
+    group_names: ['Production Web', 'Core Databases', 'Cache Cluster', 'Logging Stack', 'API Services'],
+    series: [
+        { name: '健康' as const, data: [12, 8, 5, 10, 22] },
+        { name: '警告' as const, data: [1, 0, 1, 2, 3] },
+        { name: '嚴重' as const, data: [0, 1, 0, 0, 1] },
+    ],
+};
+
+const now = Date.now();
+const MOCK_ANALYSIS_OVERVIEW_DATA = {
+    health_score_data: Array.from({ length: 60 }, (_, i) => ({
+        name: new Date(now - (59 - i) * 60000).toString(),
+        value: [new Date(now - (59 - i) * 60000), Math.floor(80 + Math.random() * 20 - i * 0.1)] as [Date, number],
+    })),
+    event_correlation_data: MOCK_EVENT_CORRELATION_DATA,
+    recent_logs: MOCK_LOGS.slice(0, 10),
+};
 
 
 function createInitialDB() {
@@ -436,6 +466,10 @@ function createInitialDB() {
         eventCorrelationData: JSON.parse(JSON.stringify(MOCK_EVENT_CORRELATION_DATA)),
         capacitySuggestions: JSON.parse(JSON.stringify(MOCK_CAPACITY_SUGGESTIONS)),
         capacityResourceAnalysis: JSON.parse(JSON.stringify(MOCK_CAPACITY_RESOURCE_ANALYSIS)),
+        // FIX: Add missing data to the DB object to resolve API handler errors.
+        serviceHealthData: JSON.parse(JSON.stringify(MOCK_SERVICE_HEALTH_DATA)),
+        resourceGroupStatusData: JSON.parse(JSON.stringify(MOCK_RESOURCE_GROUP_STATUS_DATA)),
+        analysisOverviewData: JSON.parse(JSON.stringify(MOCK_ANALYSIS_OVERVIEW_DATA)),
     };
 }
 

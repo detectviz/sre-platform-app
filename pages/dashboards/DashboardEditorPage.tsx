@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import Icon from '../../components/Icon';
 import api from '../../services/api';
-import { LayoutWidget, DashboardType, Dashboard } from '../../types';
+import { LayoutWidget, DashboardType, Dashboard, DashboardTemplate } from '../../types';
 import ContextualKPICard from '../../components/ContextualKPICard';
 import Modal from '../../components/Modal';
 import { showToast } from '../../services/toast';
@@ -11,6 +11,7 @@ import { showToast } from '../../services/toast';
 const DashboardEditorPage: React.FC = () => {
     const { dashboardId } = useParams<{ dashboardId: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
     const isEditMode = !!dashboardId;
 
     const [dashboardName, setDashboardName] = useState('');
@@ -41,7 +42,12 @@ const DashboardEditorPage: React.FC = () => {
                         .filter((w): w is LayoutWidget => !!w);
                     setWidgets(dashboardWidgets);
                 } else {
-                    setDashboardName('新的儀表板');
+                    const template = location.state?.template as DashboardTemplate | undefined;
+                    if (template) {
+                        setDashboardName(template.name);
+                    } else {
+                        setDashboardName('新的儀表板');
+                    }
                     setWidgets([]);
                 }
 
@@ -54,7 +60,7 @@ const DashboardEditorPage: React.FC = () => {
             }
         };
         fetchAllData();
-    }, [dashboardId, isEditMode, navigate]);
+    }, [dashboardId, isEditMode, navigate, location.state]);
 
     const availableWidgets = allWidgets.filter(
         w => !widgets.some(sw => sw.id === w.id)

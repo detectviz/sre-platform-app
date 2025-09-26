@@ -102,7 +102,6 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resourceId }) =
   const memoryOption = getMetricOption('Memory Usage', metrics?.memory, '#a78bfa');
   
   return (
-    // FIX: Complete the component by adding closing tags and the component body.
     <div className="flex flex-col h-full space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 glass-card rounded-xl p-4">
         <InfoItem label="狀態">
