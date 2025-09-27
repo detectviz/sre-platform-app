@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Dashboard, DashboardType } from '../../types';
+import { Dashboard } from '../../types';
 import Icon from '../../components/Icon';
 import TableContainer from '../../components/TableContainer';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
@@ -152,7 +152,8 @@ const DashboardListPage: React.FC = () => {
     };
 
     const handleEditClick = (dashboard: Dashboard) => {
-        if (dashboard.type === DashboardType.BuiltIn) {
+        // FIX: Changed enum comparison to string literal comparison.
+        if (dashboard.type === 'built-in') {
             navigate(`/dashboards/${dashboard.id}/edit`);
         } else {
             setEditingDashboard(dashboard);

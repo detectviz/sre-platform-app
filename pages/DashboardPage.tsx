@@ -1,25 +1,9 @@
 
 import React from 'react';
-import { Outlet } from 'react-router-dom';
-import PageKPIs from '../components/PageKPIs';
-import Tabs from '../components/Tabs';
 
-const DashboardPage: React.FC = () => {
-  const tabs = [
-    { label: 'Dashboard List', path: '/dashboards' },
-    { label: 'Templates', path: '/dashboards/templates' },
-  ];
-
-  return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Dashboard Management</h1>
-      <PageKPIs pageName="Dashboard Management" />
-      <Tabs tabs={tabs} />
-      <div className="mt-6">
-        <Outlet />
-      </div>
-    </div>
-  );
-};
+// This component is deprecated and no longer in use.
+// The routing in App.tsx now uses PageWithTabsLayout directly with dynamic tabs from UIConfigContext.
+// This file is kept to avoid breaking file system assumptions but its content is removed to prevent misuse.
+const DashboardPage: React.FC = () => null;
 
 export default DashboardPage;

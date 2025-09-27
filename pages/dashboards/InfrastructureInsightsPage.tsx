@@ -26,6 +26,7 @@ const InfrastructureInsightsPage: React.FC = () => {
     // State for AI-generated content
     const [riskPrediction, setRiskPrediction] = useState<RiskPrediction | null>(null);
     const [isRiskLoading, setIsRiskLoading] = useState(true);
+    const [riskError, setRiskError] = useState<string | null>(null);
     const [bookmarkedResources, setBookmarkedResources] = useState<Resource[]>([]);
     const [isBookmarkLoading, setIsBookmarkLoading] = useState(true);
     const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
@@ -38,16 +39,14 @@ const InfrastructureInsightsPage: React.FC = () => {
 
     const fetchRiskPrediction = useCallback(async () => {
         setIsRiskLoading(true);
+        setRiskError(null);
         try {
             const { data } = await api.get<RiskPrediction>('/ai/infra/risk-prediction');
             setRiskPrediction(data);
         } catch (error) {
             console.error("AI Risk Prediction Error:", error);
-            setRiskPrediction({
-                summary: "無法生成 AI 風險預測。API 連線可能發生問題。",
-                risk_breakdown: { low: 70, medium: 20, high: 10 },
-                top_risky_resources: [{ name: "N/A", risk: "無法分析" }]
-            });
+            setRiskPrediction(null);
+            setRiskError("無法生成 AI 風險預測。API 連線可能發生問題。");
         } finally {
             setIsRiskLoading(false);
         }
@@ -158,11 +157,8 @@ const InfrastructureInsightsPage: React.FC = () => {
                 <div className="lg:col-span-2 glass-card rounded-xl p-6">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-xl font-bold flex items-center"><Icon name="brain-circuit" className="w-6 h-6 mr-2 text-sky-400"/> AI 風險預測</h2>
-                        <button onClick={fetchRiskPrediction} disabled={isRiskLoading} className="p-2 rounded-full hover:bg-slate-700 disabled:opacity-50">
-                            <Icon name="refresh-cw" className={`w-4 h-4 ${isRiskLoading ? 'animate-spin' : ''}`} />
-                        </button>
                     </div>
-                    {isRiskLoading || !riskPrediction ? (
+                    {isRiskLoading ? (
                         <div className="animate-pulse space-y-4">
                             <div className="h-4 bg-slate-700 rounded w-full"></div>
                             <div className="h-4 bg-slate-700 rounded w-2/3"></div>
@@ -171,7 +167,15 @@ const InfrastructureInsightsPage: React.FC = () => {
                                 <div className="w-1/2 h-24 bg-slate-700 rounded-lg"></div>
                             </div>
                         </div>
-                    ) : (
+                    ) : riskError ? (
+                        <div className="flex flex-col items-center justify-center h-full text-red-400">
+                            <Icon name="alert-circle" className="w-10 h-10 mb-2" />
+                            <p className="font-semibold">{riskError}</p>
+                            <button onClick={fetchRiskPrediction} className="mt-4 px-3 py-1.5 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md">
+                                重試
+                            </button>
+                        </div>
+                    ) : riskPrediction && (
                         <div>
                             <p className="text-slate-300 mb-4">{riskPrediction.summary}</p>
                             <div className="flex flex-col md:flex-row gap-6">

@@ -9,9 +9,11 @@ import GlobalSearchModal from '../components/GlobalSearchModal';
 import { showToast } from '../services/toast';
 import api from '../services/api';
 import { useUIConfig } from '../contexts/UIConfigContext';
+import { useUser } from '../contexts/UserContext';
 
 const AppLayout: React.FC = () => {
   const { navItems, tabConfigs, isLoading: isNavLoading } = useUIConfig();
+  const { currentUser } = useUser();
   const [collapsed, setCollapsed] = useState(false);
   const [openKeys, setOpenKeys] = useState<string[]>([]);
   const location = useLocation();
@@ -20,24 +22,19 @@ const AppLayout: React.FC = () => {
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [platformSettings, setPlatformSettings] = useState<PlatformSettings | null>(null);
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchPlatformData = async () => {
         try {
-            const [userRes, settingsRes] = await Promise.all([
-                api.get<User>('/me'),
-                api.get<PlatformSettings>('/settings/platform'),
-            ]);
-            setCurrentUser(userRes.data);
-            setPlatformSettings(settingsRes.data);
+            const { data } = await api.get<PlatformSettings>('/settings/platform');
+            setPlatformSettings(data);
         } catch (error) {
-            console.error("Failed to fetch user and platform data", error);
-            showToast('無法載入使用者資料。', 'error');
+            console.error("Failed to fetch platform data", error);
+            showToast('無法載入平台設定。', 'error');
         }
     };
-    fetchUserData();
+    fetchPlatformData();
   }, []);
 
   useEffect(() => {
@@ -192,7 +189,7 @@ const AppLayout: React.FC = () => {
         }`}
         title={collapsed ? item.label : ''}
       >
-        <Icon name={item.icon} className={`${level > 0 ? 'h-4 w-4' : 'h-5 w-5'}`} />
+        <Icon name={`${level > 0 ? 'h-4 w-4' : 'h-5 w-5'}`} />
         {!collapsed && <span className="ml-3">{item.label}</span>}
       </Link>
     );

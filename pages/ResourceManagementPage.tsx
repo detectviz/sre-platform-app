@@ -1,30 +1,9 @@
 
 import React from 'react';
-import { Outlet } from 'react-router-dom';
-import PageKPIs from '../components/PageKPIs';
-import Tabs from '../components/Tabs';
 
-const ResourceManagementPage: React.FC = () => {
-    const tabs = [
-        { label: 'Resource List', path: '/resources' },
-        { label: 'Resource Groups', path: '/resources/groups' },
-        { label: 'Topology View', path: '/resources/topology' },
-    ];
-
-    return (
-        <div className="h-full flex flex-col">
-            <div className="mb-6">
-                 <h1 className="text-3xl font-bold">Resource Management</h1>
-            </div>
-            
-            <PageKPIs pageName="Resource Management" />
-            <Tabs tabs={tabs} />
-            
-            <div className="mt-6 flex-grow">
-                <Outlet />
-            </div>
-        </div>
-    );
-};
+// This component is deprecated and no longer in use.
+// The routing in App.tsx now uses PageWithTabsLayout directly with dynamic tabs from UIConfigContext.
+// This file is kept to avoid breaking file system assumptions but its content is removed to prevent misuse.
+const ResourceManagementPage: React.FC = () => null;
 
 export default ResourceManagementPage;

@@ -1,10 +1,12 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Modal from '../../components/Modal';
 import Icon from '../../components/Icon';
 import FormRow from '../../components/FormRow';
-import { Dashboard, DashboardType } from '../../types';
+// FIX: 'DashboardType' only refers to a type, but is being used as a value. Removed from import.
+import { Dashboard } from '../../types';
 import api from '../../services/api';
 
 interface AvailableGrafanaDashboard {
@@ -81,7 +83,8 @@ const AddDashboardModal: React.FC<AddDashboardModalProps> = ({ isOpen, onClose, 
 
         const newDashboard: Partial<Dashboard> = {
             name: grafanaData.name,
-            type: DashboardType.Grafana,
+            // FIX: 'DashboardType' only refers to a type, but is being used as a value here. Changed to use a string literal.
+            type: 'grafana',
             category: '團隊自訂',
             description: `Linked from Grafana: ${grafanaData.name}`,
             owner: 'Admin User',

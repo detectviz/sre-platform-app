@@ -1,4 +1,4 @@
-# SRE 平台功能規格 v2.6
+# SRE 平台功能規格 v2.16
 
 本文件旨在記錄 SRE 平台在持續開發過程中的重要功能規格與架構決策，作為開發與測試的依據。
 
@@ -505,3 +505,45 @@
 ### 16.3 新增的 API 端點
 
 -   `GET /pages/metadata`: (新增) 提供一個包含所有頁面配置元數據的映射表，將前端頁面標識符與後端配置鍵關聯起來。
+---
+
+## 17. 功能: 全局動態化與工作流程強化 (v2.16)
+
+-   **模組**: 全局
+-   **版本**: v2.16
+-   **狀態**: ✅ 已完成
+
+### 17.1 使用者故事
+
+**身為** 一名平台開發者與管理員，
+**我想要** 平台徹底根除前端的靜態資料依賴，所有配置、選項與使用者內容都由後端 API 驅動，並廢棄所有包含過時資訊的遺留元件，
+**使得** 平台成為一個真正單一資料來源 (SSOT) 的應用程式，大幅提升其可維護性、一致性與未來的擴展彈性。
+
+### 17.2 行為變更
+
+-   **廢棄遺留版面殼層**:
+    -   **問題**: 多個頁面元件 (如 `IncidentsPage.tsx`, `ResourceManagementPage.tsx`) 內含硬編碼的分頁籤定義，與 `UIConfigContext` 提供的動態配置衝突，構成潛在的維護風險。
+    -   **解決方案**: 由於這些元件在目前的路由 (`App.tsx`) 中已不再使用，它們已被清空並轉換為佔位符元件。此舉在無法刪除檔案的限制下，有效地移除了過時的靜態程式碼。
+
+-   **引入全局使用者上下文 (`UserContext`)**:
+    -   **問題**: 多個模態框 (如 `AlertRuleEditModal`, `AddDashboardModal`) 中硬編碼了 `'Admin User'` 作為建立者或擁有者，導致資料歸屬不正確。
+    -   **解決方案**: 建立了一個新的 `UserContext`，在應用程式啟動時向 `/me` 端點請求目前登入者的資訊。現在，所有需要使用者資訊的元件都從此 Context 中獲取，確保了操作歸屬的準確性。
+
+-   **表單與篩選器選項 API 化**:
+    -   **問題**: 多個元件的下拉選單和篩選器選項 (如時間範圍、優先級) 是在前端硬編碼的。
+    -   **解決方案**:
+        -   `DashboardViewer.tsx`: 時間範圍、刷新頻率等控制選項，現在從新增的 `GET /settings/grafana/options` 端點動態載入。
+        -   `NotificationStrategyEditModal.tsx`: 預設觸發條件與優先級選項，現在從 `GET /settings/notification-strategies/options` 端點獲取。
+        -   `TagDefinitionEditModal.tsx`: 新增標籤時的預設分類，現在基於 `GET /settings/tags/options` 的回應。
+
+-   **強化錯誤處理與即時數據**:
+    -   **`InfrastructureInsightsPage.tsx`**: 修復了在 API 請求失敗時注入假資料的問題。現在，頁面會顯示一個清晰的錯誤狀態和重試按鈕。
+    -   **`LogExplorerPage.tsx`**: 移除了前端生成的模擬「即時日誌」。現在，「即時」模式會透過真實的輪詢機制，定期從後端 API 獲取最新的日誌數據。
+
+### 17.3 新增的 API 端點
+
+-   `GET /settings/grafana/options`: (新增) 提供 Grafana 儀表板檢視器的控制選項。
+-   `GET /settings/notification-strategies/options`: (增強) 新增了預設觸發條件和優先級列表。
+-   `GET /logs/options`: (新增) 提供日誌探索頁面的時間範圍等選項 (未來規劃)。
+-   (重用) `/me`: 現在由 `UserContext` 統一呼叫，為全平台提供使用者資訊。
+-   (重用) `/dashboards/options`, `/settings/tags/options`: 被更多元件用於獲取預設值與選項。

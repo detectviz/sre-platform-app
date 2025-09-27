@@ -45,38 +45,39 @@ const LogExplorerPage: React.FC = () => {
         setIsPlaceholderModalOpen(true);
     };
 
-    const fetchData = useCallback(() => {
-        setIsLoading(true);
+    const fetchData = useCallback((isLiveUpdate = false) => {
+        if (!isLiveUpdate) setIsLoading(true);
         setError(null);
-        api.get<{ items: LogEntry[] }>('/logs', { params: { page: 1, page_size: 200, keyword: query } })
+        api.get<{ items: LogEntry[] }>('/logs', { params: { page: 1, page_size: isLiveUpdate ? 5 : 200, keyword: query } })
             .then(response => {
-                setLogs(response.data.items);
+                if (isLiveUpdate) {
+                    setLogs(prev => [...response.data.items, ...prev].slice(0, 200));
+                } else {
+                    setLogs(response.data.items);
+                }
             })
             .catch(() => {
-                setError('無法獲取日誌數據。');
+                if (!isLiveUpdate) {
+                    setError('無法獲取日誌數據。');
+                }
             })
             .finally(() => {
-                setIsLoading(false);
+                if (!isLiveUpdate) setIsLoading(false);
             });
     }, [query]);
-
+    
     useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+        // Initial fetch
+        if (!isLive) {
+            fetchData();
+        }
+    }, [fetchData, isLive]);
 
     useEffect(() => {
         if (isLive) {
             liveIntervalRef.current = window.setInterval(() => {
-                const newLog: LogEntry = {
-                    id: `log-live-${Date.now()}`,
-                    timestamp: new Date().toISOString(),
-                    level: ['info', 'warning', 'error'][Math.floor(Math.random() * 3)] as LogLevel,
-                    service: ['api-gateway', 'payment-service', 'auth-service'][Math.floor(Math.random() * 3)],
-                    message: 'New live log entry generated',
-                    details: { live: true, random: Math.random() }
-                };
-                setLogs(prev => [newLog, ...prev]);
-            }, 2000);
+                fetchData(true);
+            }, 5000);
         } else {
             if (liveIntervalRef.current) {
                 clearInterval(liveIntervalRef.current);
@@ -87,7 +88,7 @@ const LogExplorerPage: React.FC = () => {
                 clearInterval(liveIntervalRef.current);
             }
         };
-    }, [isLive]);
+    }, [isLive, fetchData]);
     
     // The histogram is now calculated from the fetched logs.
     const histogramData = useMemo(() => {
@@ -161,9 +162,16 @@ const LogExplorerPage: React.FC = () => {
             })),
         });
     };
+    
+    const handleSearchSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLive(false); // Stop live feed when performing a new search
+        fetchData();
+    };
+
 
     const leftActions = (
-        <>
+        <form onSubmit={handleSearchSubmit} className="flex items-center space-x-2 flex-grow">
             <div className="relative flex-grow">
                 <Icon name="search" className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400 w-4 h-4" />
                 <input type="text" placeholder='搜尋日誌... (例如: status:500 AND service:"payment-api")'
@@ -173,6 +181,7 @@ const LogExplorerPage: React.FC = () => {
             <div className="flex items-center space-x-1 bg-slate-800/80 border border-slate-700 rounded-md p-1 text-sm">
                 {['15m', '1h', '6h', '24h'].map(t => (
                     <button 
+                        type="button"
                         key={t}
                         onClick={() => setTimeRange(t)}
                         className={`px-2 py-1 rounded ${timeRange === t ? 'bg-sky-600 text-white' : 'hover:bg-slate-700 text-slate-300'}`}
@@ -181,6 +190,11 @@ const LogExplorerPage: React.FC = () => {
                     </button>
                 ))}
             </div>
+        </form>
+    );
+
+    const rightActions = (
+        <>
             <label className="flex items-center space-x-2 cursor-pointer">
                 <span className={`text-sm font-medium ${isLive ? 'text-green-400' : 'text-slate-400'}`}>即時日誌</span>
                 <div className="relative">
@@ -188,11 +202,6 @@ const LogExplorerPage: React.FC = () => {
                     <div className="w-11 h-6 bg-slate-700 rounded-full peer peer-checked:bg-green-600 peer-checked:after:translate-x-full after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
                 </div>
             </label>
-        </>
-    );
-
-    const rightActions = (
-        <>
             <ToolbarButton icon="brain-circuit" text="AI 總結" ai onClick={handleRunLogAnalysis} disabled={isLoading} />
             <ToolbarButton icon="download" text="匯出報表" onClick={handleExport} />
         </>
@@ -202,7 +211,7 @@ const LogExplorerPage: React.FC = () => {
         <div className="h-full flex flex-col space-y-4">
             <Toolbar 
                 leftActions={leftActions}
-                rightActions={rightActions}
+                rightActions={rightActions} 
             />
             
             <div className="shrink-0 h-40">

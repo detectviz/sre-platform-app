@@ -3,13 +3,21 @@ import Modal from './Modal';
 import Icon from './Icon';
 import Wizard from './Wizard';
 import FormRow from './FormRow';
-import { NotificationStrategy, Team, NotificationChannel, TagDefinition } from '../types';
+import { NotificationStrategy, Team, NotificationChannel } from '../types';
 import api from '../services/api';
 
 interface StrategyCondition {
   key: string;
   operator: '=' | '!=' | '~=';
   value: string;
+}
+
+interface NotificationStrategyOptions {
+    priorities: ('High' | 'Medium' | 'Low')[];
+    defaultCondition: string;
+    conditionKeys: Record<string, string[]>;
+    tagKeys: string[];
+    tagValues: Record<string, string[]>;
 }
 
 interface NotificationStrategyEditModalProps {
@@ -41,23 +49,27 @@ const serializeConditions = (conditions: StrategyCondition[]): string => {
 const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps> = ({ isOpen, onClose, onSave, strategy }) => {
     const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState<Partial<NotificationStrategy>>({});
+    const [options, setOptions] = useState<NotificationStrategyOptions | null>(null);
     
-    const getInitialFormData = (): Partial<NotificationStrategy> => ({
-        name: '',
-        enabled: true,
-        triggerCondition: 'severity = critical',
-        channelCount: 1,
-        priority: 'Medium',
-    });
-
     useEffect(() => {
         if (isOpen) {
-            const initialData = strategy || getInitialFormData();
-            if(strategy && !strategy.id) { // This is a duplicated strategy
-                initialData.name = `Copy of ${strategy.name}`;
-            }
-            setFormData(initialData);
-            setCurrentStep(1);
+            api.get<NotificationStrategyOptions>('/settings/notification-strategies/options')
+                .then(res => {
+                    setOptions(res.data);
+                    const initialData = strategy || {
+                        name: '',
+                        enabled: true,
+                        triggerCondition: res.data.defaultCondition,
+                        channelCount: 1,
+                        priority: res.data.priorities[1] || 'Medium',
+                    };
+                    if(strategy && !strategy.id) { // This is a duplicated strategy
+                        initialData.name = `Copy of ${strategy.name}`;
+                    }
+                    setFormData(initialData);
+                    setCurrentStep(1);
+                })
+                .catch(err => console.error("Failed to load strategy options", err));
         }
     }, [isOpen, strategy]);
 
@@ -70,9 +82,9 @@ const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps
     
     const renderStepContent = () => {
         switch (currentStep) {
-            case 1: return <Step1 formData={formData} setFormData={setFormData} />;
+            case 1: return <Step1 formData={formData} setFormData={setFormData} options={options} />;
             case 2: return <Step2 formData={formData} setFormData={setFormData} />;
-            case 3: return <Step3 formData={formData} setFormData={setFormData} />;
+            case 3: return <Step3 formData={formData} setFormData={setFormData} options={options} />;
             default: return null;
         }
     };
@@ -110,16 +122,14 @@ const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps
     );
 };
 
-const Step1: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Function }> = ({ formData, setFormData }) => (
+const Step1: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Function, options: NotificationStrategyOptions | null }> = ({ formData, setFormData, options }) => (
     <div className="space-y-4 px-4">
         <FormRow label="策略名稱 *">
             <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
         </FormRow>
         <FormRow label="優先級">
-            <select value={formData.priority} onChange={e => setFormData({ ...formData, priority: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
-                <option value="High">High</option>
-                <option value="Medium">Medium</option>
-                <option value="Low">Low</option>
+            <select value={formData.priority} onChange={e => setFormData({ ...formData, priority: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={!options}>
+                {options?.priorities.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
         </FormRow>
     </div>
@@ -155,20 +165,15 @@ const Step2: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Fu
     );
 };
 
-const Step3: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Function }> = ({ formData, setFormData }) => {
+const Step3: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Function, options: NotificationStrategyOptions | null }> = ({ formData, setFormData, options }) => {
     const [conditions, setConditions] = useState<StrategyCondition[]>([]);
-    const [options, setOptions] = useState<{
-        conditionKeys: Record<string, string[]>,
-        tagKeys: string[],
-        tagValues: Record<string, string[]>
-    }>({ conditionKeys: {}, tagKeys: [], tagValues: {} });
     
     useEffect(() => {
         setConditions(parseConditions(formData.triggerCondition));
-        api.get<any>('/settings/notification-strategies/options').then(res => setOptions(res.data));
     }, [formData.triggerCondition]);
 
     const allConditionKeys = useMemo(() => {
+        if (!options) return [];
         return [...Object.keys(options.conditionKeys), ...options.tagKeys];
     }, [options]);
 
@@ -200,6 +205,8 @@ const Step3: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Fu
             className: "flex-grow bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
         };
     
+        if (!options) return <input type="text" {...commonProps} placeholder="標籤值" />;
+
         const keyOptions = options.conditionKeys[condition.key] || options.tagValues[condition.key];
 
         if (keyOptions && Array.isArray(keyOptions) && keyOptions.length > 0) {
@@ -221,7 +228,7 @@ const Step3: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Fu
             <div className="p-4 border border-slate-700 rounded-lg space-y-3 bg-slate-800/20">
                 {conditions.map((cond, index) => (
                     <div key={index} className="flex items-center space-x-2">
-                        <select value={cond.key} onChange={e => handleConditionChange(index, 'key', e.target.value)} className="w-1/3 bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
+                        <select value={cond.key} onChange={e => handleConditionChange(index, 'key', e.target.value)} className="w-1/3 bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={!options}>
                             <option value="">選擇標籤鍵...</option>
                             {allConditionKeys.map(k => <option key={k} value={k}>{k}</option>)}
                         </select>

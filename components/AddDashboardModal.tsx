@@ -1,11 +1,13 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Modal from './Modal';
 import Icon from './Icon';
 import FormRow from './FormRow';
-import { Dashboard, DashboardType } from '../types';
+import { Dashboard } from '../types';
 import api from '../services/api';
+import { useUser } from '../contexts/UserContext';
 
 interface AvailableGrafanaDashboard {
   uid: string;
@@ -30,20 +32,26 @@ const AddDashboardModal: React.FC<AddDashboardModalProps> = ({ isOpen, onClose, 
         grafana_url: '',
     });
     const navigate = useNavigate();
+    const { currentUser } = useUser();
 
     const [availableDashboards, setAvailableDashboards] = useState<AvailableGrafanaDashboard[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [selectedDashboardUid, setSelectedDashboardUid] = useState('');
+    const [defaultCategory, setDefaultCategory] = useState('團隊自訂');
 
     useEffect(() => {
         if (isOpen && step === 2) {
             setIsLoading(true);
-            api.get<AvailableGrafanaDashboard[]>('/dashboards/available-grafana')
-                .then(res => {
-                    setAvailableDashboards(res.data);
-                })
-                .catch(err => console.error("Failed to fetch available Grafana dashboards", err))
-                .finally(() => setIsLoading(false));
+            Promise.all([
+                api.get<AvailableGrafanaDashboard[]>('/dashboards/available-grafana'),
+                api.get<{ categories: string[] }>('/dashboards/options')
+            ]).then(([dashboardsRes, optionsRes]) => {
+                setAvailableDashboards(dashboardsRes.data);
+                if (optionsRes.data.categories.length > 0) {
+                    setDefaultCategory(optionsRes.data.categories[0]);
+                }
+            }).catch(err => console.error("Failed to fetch data for modal", err))
+            .finally(() => setIsLoading(false));
         }
     }, [isOpen, step]);
 
@@ -81,10 +89,10 @@ const AddDashboardModal: React.FC<AddDashboardModalProps> = ({ isOpen, onClose, 
 
         const newDashboard: Partial<Dashboard> = {
             name: grafanaData.name,
-            type: DashboardType.Grafana,
-            category: '團隊自訂',
+            type: 'grafana',
+            category: defaultCategory,
             description: `Linked from Grafana: ${grafanaData.name}`,
-            owner: 'Admin User',
+            owner: currentUser?.name || 'System',
             updatedAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
             grafanaUrl: grafanaData.grafana_url,
             grafana_dashboard_uid: grafanaData.grafana_dashboard_uid,

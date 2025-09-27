@@ -1,8 +1,9 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import DashboardViewer from '../components/DashboardViewer';
-import { Dashboard, DashboardType } from '../types';
+import { Dashboard } from '../types';
 import api from '../services/api';
 import Icon from '../components/Icon';
 import GenericBuiltInDashboardPage from './dashboards/GenericBuiltInDashboardPage';
@@ -48,7 +49,8 @@ const DashboardViewPage: React.FC = () => {
     return <div className="text-center text-red-500">{error || 'Dashboard not found!'}</div>;
   }
   
-  if (dashboard.type === DashboardType.BuiltIn) {
+  // FIX: Changed enum comparison to string literal comparison.
+  if (dashboard.type === 'built-in') {
     // Handle special, hardcoded built-in dashboards that have their own page components
     if (dashboard.path === '/sre-war-room' || dashboard.path === '/dashboard/infrastructure-insights') {
       return <Navigate to={dashboard.path} replace />;

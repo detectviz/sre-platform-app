@@ -5,6 +5,7 @@ import Wizard from './Wizard';
 import FormRow from './FormRow';
 import { AlertRule, ConditionGroup, RuleCondition, AutomationSetting, ParameterDefinition, AutomationPlaybook, AlertRuleTemplate } from '../types';
 import api from '../services/api';
+import { useUser } from '../contexts/UserContext';
 
 interface AlertRuleEditModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ interface AlertRuleEditModalProps {
 const AlertRuleEditModal: React.FC<AlertRuleEditModalProps> = ({ isOpen, onClose, onSave, rule }) => {
     const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState<Partial<AlertRule>>({});
+    const { currentUser } = useUser();
     
     const getInitialFormData = (): Partial<AlertRule> => ({
         name: '',
@@ -60,7 +62,7 @@ const AlertRuleEditModal: React.FC<AlertRuleEditModalProps> = ({ isOpen, onClose
             conditionsSummary: conditionsSummary,
             severity: formData.severity || 'info',
             automationEnabled: !!formData.automation?.enabled,
-            creator: 'Admin User',
+            creator: rule?.creator || currentUser?.name || 'System',
             lastUpdated: new Date().toISOString(),
             ...formData,
         };
@@ -297,7 +299,7 @@ const Step4 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
     }, []);
 
     const handleAutomationChange = (field: keyof AutomationSetting, value: any) => {
-        const newAutomation = { ...(formData.automation || { enabled: false }), [field]: value };
+        const newAutomation = { ...(formData.automation || { enabled: false, parameters: {} }), [field]: value };
         if (field === 'scriptId') {
             newAutomation.parameters = {}; // Reset parameters when script changes
         }

@@ -1,17 +1,20 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import Icon from '../../components/Icon';
 import api from '../../services/api';
-import { LayoutWidget, DashboardType, Dashboard, DashboardTemplate } from '../../types';
+import { LayoutWidget, Dashboard, DashboardTemplate } from '../../types';
 import ContextualKPICard from '../../components/ContextualKPICard';
 import Modal from '../../components/Modal';
 import { showToast } from '../../services/toast';
+import { useUser } from '../../contexts/UserContext';
 
 const DashboardEditorPage: React.FC = () => {
     const { dashboardId } = useParams<{ dashboardId: string }>();
     const navigate = useNavigate();
     const location = useLocation();
+    const { currentUser } = useUser();
     const isEditMode = !!dashboardId;
 
     const [dashboardName, setDashboardName] = useState('');
@@ -21,18 +24,23 @@ const DashboardEditorPage: React.FC = () => {
     const [allWidgets, setAllWidgets] = useState<LayoutWidget[]>([]);
     const [kpiData, setKpiData] = useState<Record<string, any>>({});
     const [isLoading, setIsLoading] = useState(true);
+    const [defaultCategory, setDefaultCategory] = useState('團隊自訂');
 
     useEffect(() => {
         const fetchAllData = async () => {
             setIsLoading(true);
             try {
-                const [widgetsRes, kpiDataRes] = await Promise.all([
+                const [widgetsRes, kpiDataRes, optionsRes] = await Promise.all([
                     api.get<LayoutWidget[]>('/settings/widgets'),
                     api.get<Record<string, any>>('/kpi-data'),
+                    api.get<{ categories: string[] }>('/dashboards/options'),
                 ]);
                 const allFetchedWidgets = widgetsRes.data;
                 setAllWidgets(allFetchedWidgets);
                 setKpiData(kpiDataRes.data);
+                if (optionsRes.data.categories.length > 0) {
+                    setDefaultCategory(optionsRes.data.categories[0]);
+                }
 
                 if (isEditMode) {
                     const { data: dashboardData } = await api.get<Dashboard>(`/dashboards/${dashboardId}`);
@@ -83,7 +91,7 @@ const DashboardEditorPage: React.FC = () => {
 
         const dashboardPayload: Partial<Dashboard> = {
             name: dashboardName,
-            type: DashboardType.BuiltIn,
+            type: 'built-in',
             layout: widgets.map(w => w.id),
         };
 
@@ -92,9 +100,9 @@ const DashboardEditorPage: React.FC = () => {
                 const { data: updatedDashboard } = await api.patch<Dashboard>(`/dashboards/${dashboardId}`, dashboardPayload);
                 showToast(`儀表板 "${updatedDashboard.name}" 已成功更新。`, 'success');
             } else {
-                dashboardPayload.category = '團隊自訂';
+                dashboardPayload.category = defaultCategory;
                 dashboardPayload.description = '使用者建立的內建儀表板。';
-                dashboardPayload.owner = 'Admin User';
+                dashboardPayload.owner = currentUser?.name || 'System';
                 dashboardPayload.updatedAt = new Date().toISOString().slice(0, 16).replace('T', ' ');
                 const { data: createdDashboard } = await api.post<Dashboard>('/dashboards', dashboardPayload);
                 showToast(`儀表板 "${createdDashboard.name}" 已成功儲存。`, 'success');

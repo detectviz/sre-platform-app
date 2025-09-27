@@ -17,6 +17,7 @@ import ColumnSettingsModal, { TableColumn } from '../../components/ColumnSetting
 import { showToast } from '../../services/toast';
 import { exportToCsv } from '../../services/export';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
+import { useUser } from '../../contexts/UserContext';
 
 
 const ALL_COLUMNS: TableColumn[] = [
@@ -53,6 +54,7 @@ const IncidentListPage: React.FC = () => {
 
     const { incidentId } = useParams<{ incidentId: string }>();
     const navigate = useNavigate();
+    const { currentUser } = useUser();
 
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
@@ -153,7 +155,7 @@ const IncidentListPage: React.FC = () => {
             type: 'single',
             matchers: [{ key: 'resource', operator: '=', value: incidentToSilence.resource }, { key: 'rule', operator: '=', value: incidentToSilence.rule }],
             schedule: { type: 'single', startsAt: now.toISOString(), endsAt: endsAt.toISOString() },
-            creator: 'Admin User',
+            creator: currentUser?.name || 'System',
             createdAt: now.toISOString(),
         };
 

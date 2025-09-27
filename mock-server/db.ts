@@ -4,7 +4,6 @@ import {
     AuditLog, TagDefinition, NotificationItem, NotificationStrategy, NotificationChannel,
     NotificationHistoryRecord, LoginHistoryRecord, LogEntry, Trace, MailSettings, AuthSettings, LayoutWidget,
     UserPreferences,
-    DashboardType,
     IncidentAnalysis,
     MultiIncidentAnalysis,
     LogAnalysis,
@@ -77,10 +76,10 @@ const MOCK_NAV_ITEMS: NavItem[] = [
     },
 ];
 const MOCK_DASHBOARDS: Dashboard[] = [
-    { id: 'sre-war-room', name: 'SRE 戰情室', type: DashboardType.BuiltIn, category: '業務與 SLA', description: '跨團隊即時戰情看板，聚焦重大事件與 SLA 指標。', owner: '事件指揮中心', updatedAt: '2025/09/18 17:15', path: '/sre-war-room' },
-    { id: 'infrastructure-insights', name: '基礎設施洞察', type: DashboardType.BuiltIn, category: '基礎設施', description: '整合多雲與多中心資源健康狀態。', owner: 'SRE 平台團隊', updatedAt: '2025/09/18 16:30', path: '/dashboard/infrastructure-insights' },
-    { id: 'api-service-status', name: 'API 服務狀態', type: DashboardType.Grafana, category: '業務與 SLA', description: 'API 響應時間、錯誤率、吞吐量等服務指標。', owner: 'SRE 平台團隊', updatedAt: '2025/09/18 16:45', path: '/dashboard/api-service-status', grafanaUrl: 'http://localhost:3000/d/aead3d54-423b-4a91-b91c-dbdf40d7fff5', grafana_dashboard_uid: 'aead3d54-423b-4a91-b91c-dbdf40d7fff5', grafana_folder_uid: 'biz-folder' },
-    { id: 'user-experience-monitoring', name: '用戶體驗監控', type: DashboardType.Grafana, category: '營運與容量', description: '頁面載入時間、用戶行為分析、錯誤追蹤。', owner: '前端團隊', updatedAt: '2025/09/18 17:00', path: '/dashboard/user-experience-monitoring', grafanaUrl: 'http://localhost:3000/d/another-dashboard-id-for-ux', grafana_dashboard_uid: 'another-dashboard-id-for-ux', grafana_folder_uid: 'ux-folder' },
+    { id: 'sre-war-room', name: 'SRE 戰情室', type: 'built-in', category: '業務與 SLA', description: '跨團隊即時戰情看板，聚焦重大事件與 SLA 指標。', owner: '事件指揮中心', updatedAt: '2025/09/18 17:15', path: '/sre-war-room' },
+    { id: 'infrastructure-insights', name: '基礎設施洞察', type: 'built-in', category: '基礎設施', description: '整合多雲與多中心資源健康狀態。', owner: 'SRE 平台團隊', updatedAt: '2025/09/18 16:30', path: '/dashboard/infrastructure-insights' },
+    { id: 'api-service-status', name: 'API 服務狀態', type: 'grafana', category: '業務與 SLA', description: 'API 響應時間、錯誤率、吞吐量等服務指標。', owner: 'SRE 平台團隊', updatedAt: '2025/09/18 16:45', path: '/dashboard/api-service-status', grafanaUrl: 'http://localhost:3000/d/aead3d54-423b-4a91-b91c-dbdf40d7fff5', grafana_dashboard_uid: 'aead3d54-423b-4a91-b91c-dbdf40d7fff5', grafana_folder_uid: 'biz-folder' },
+    { id: 'user-experience-monitoring', name: '用戶體驗監控', type: 'grafana', category: '營運與容量', description: '頁面載入時間、用戶行為分析、錯誤追蹤。', owner: '前端團隊', updatedAt: '2025/09/18 17:00', path: '/dashboard/user-experience-monitoring', grafanaUrl: 'http://localhost:3000/d/another-dashboard-id-for-ux', grafana_dashboard_uid: 'another-dashboard-id-for-ux', grafana_folder_uid: 'ux-folder' },
 ];
 const MOCK_AVAILABLE_GRAFANA_DASHBOARDS = [
   { uid: 'grafana-uid-1', title: 'Service Health', url: 'http://localhost:3000/d/grafana-uid-1', folderTitle: 'Production', folderUid: 'prod-folder' },

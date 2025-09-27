@@ -5,6 +5,7 @@ import Wizard from './Wizard';
 import FormRow from './FormRow';
 import { SilenceRule, SilenceMatcher, SilenceSchedule, SilenceRuleTemplate } from '../types';
 import api from '../services/api';
+import { useUser } from '../contexts/UserContext';
 
 interface SilenceRuleEditModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ interface SilenceRuleEditModalProps {
 const SilenceRuleEditModal: React.FC<SilenceRuleEditModalProps> = ({ isOpen, onClose, onSave, rule }) => {
     const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState<Partial<SilenceRule>>({});
+    const { currentUser } = useUser();
     
     const getInitialFormData = (): Partial<SilenceRule> => ({
         name: '',
@@ -42,7 +44,7 @@ const SilenceRuleEditModal: React.FC<SilenceRuleEditModalProps> = ({ isOpen, onC
             type: formData.schedule?.type === 'single' ? 'single' : 'repeat',
             matchers: formData.matchers || [],
             schedule: formData.schedule || { type: 'single' },
-            creator: 'Admin User',
+            creator: rule?.creator || currentUser?.name || 'System',
             createdAt: rule?.createdAt || new Date().toISOString(),
         };
         onSave(finalRule);

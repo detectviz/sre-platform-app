@@ -18,12 +18,25 @@ const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen,
 
     useEffect(() => {
         if (isOpen) {
-            setFormData(tag || { key: '', category: 'Infrastructure', description: '', required: false });
-            
             setIsLoading(true);
             api.get<{ categories: string[] }>('/settings/tags/options')
-                .then(res => setCategories(res.data.categories))
-                .catch(err => console.error("Failed to load tag categories", err))
+                .then(res => {
+                    const fetchedCategories = res.data.categories;
+                    setCategories(fetchedCategories);
+                    // Set form data after categories are fetched
+                    setFormData(tag || { 
+                        key: '', 
+                        // FIX: Cast the category to the correct type to resolve the TypeScript error. The API returns a string[], but the type is a specific string literal union.
+                        category: (fetchedCategories[0] || 'Infrastructure') as TagDefinition['category'], 
+                        description: '', 
+                        required: false 
+                    });
+                })
+                .catch(err => {
+                    console.error("Failed to load tag categories", err);
+                    // Fallback in case of error
+                    setFormData(tag || { key: '', category: 'Infrastructure', description: '', required: false });
+                })
                 .finally(() => setIsLoading(false));
         }
     }, [isOpen, tag]);
@@ -62,7 +75,7 @@ const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen,
                 </FormRow>
                 <FormRow label="分類">
                     <select 
-                        value={formData.category || 'Infrastructure'} 
+                        value={formData.category || ''} 
                         onChange={e => handleChange('category', e.target.value)}
                         className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
                         disabled={isLoading}

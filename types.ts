@@ -7,10 +7,8 @@ export interface NavItem {
   children?: NavItem[];
 }
 
-export enum DashboardType {
-  BuiltIn = 'built-in',
-  Grafana = 'grafana',
-}
+// FIX: Changed from enum to string literal type to remove hardcoded enum dependency.
+export type DashboardType = 'built-in' | 'grafana';
 
 export interface Dashboard {
   id: string;
