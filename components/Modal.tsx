@@ -1,6 +1,8 @@
-
 import React, { useEffect } from 'react';
 import Icon from './Icon';
+import { PAGE_CONTENT } from '../constants/pages';
+
+const { MODAL: modalContent } = PAGE_CONTENT;
 
 interface ModalProps {
   title: string;
@@ -9,9 +11,10 @@ interface ModalProps {
   children: React.ReactNode;
   footer?: React.ReactNode;
   width?: string;
+  className?: string;
 }
 
-const Modal: React.FC<ModalProps> = ({ title, isOpen, onClose, children, footer, width = 'w-1/2' }) => {
+const Modal: React.FC<ModalProps> = ({ title, isOpen, onClose, children, footer, width = modalContent.DEFAULT_WIDTH, className }) => {
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -26,10 +29,12 @@ const Modal: React.FC<ModalProps> = ({ title, isOpen, onClose, children, footer,
 
   if (!isOpen) return null;
 
+  const finalClassName = className || `${modalContent.BASE_CLASSES} ${width}`;
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-start pt-20 transition-opacity duration-300" onClick={onClose}>
       <div
-        className={`glass-card rounded-xl border border-slate-700/50 shadow-2xl flex flex-col ${width} max-w-4xl max-h-[80vh] animate-fade-in-down`}
+        className={finalClassName}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center p-4 border-b border-slate-700/50">

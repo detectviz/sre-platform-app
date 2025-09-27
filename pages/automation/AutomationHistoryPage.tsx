@@ -1,7 +1,6 @@
 
-
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { AutomationExecution, AutomationPlaybook } from '../../types';
+import { AutomationExecution, AutomationPlaybook, AutomationExecutionOptions } from '../../types';
 import Icon from '../../components/Icon';
 import Toolbar from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
@@ -12,6 +11,31 @@ import api from '../../services/api';
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
 
+const SortableHeader: React.FC<{
+  label: string;
+  sortKey: string;
+  sortConfig: { key: string; direction: 'asc' | 'desc' } | null;
+  onSort: (key: string) => void;
+  className?: string;
+}> = ({ label, sortKey, sortConfig, onSort, className = '' }) => {
+  const isSorted = sortConfig?.key === sortKey;
+  const direction = isSorted ? sortConfig.direction : null;
+
+  return (
+    <th scope="col" className={`px-6 py-3 cursor-pointer select-none ${className}`} onClick={() => onSort(sortKey)}>
+      <div className="flex items-center">
+        {label}
+        {isSorted ? (
+          <Icon name={direction === 'asc' ? 'arrow-up' : 'arrow-down'} className="w-4 h-4 ml-1.5" />
+        ) : (
+          <Icon name="chevrons-up-down" className="w-4 h-4 ml-1.5 text-slate-600" />
+        )}
+      </div>
+    </th>
+  );
+};
+
+
 const AutomationHistoryPage: React.FC = () => {
     const [executions, setExecutions] = useState<AutomationExecution[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -21,14 +45,20 @@ const AutomationHistoryPage: React.FC = () => {
     const [pageSize, setPageSize] = useState(10);
     const [selectedExecution, setSelectedExecution] = useState<AutomationExecution | null>(null);
     const [playbooks, setPlaybooks] = useState<AutomationPlaybook[]>([]);
+    const [options, setOptions] = useState<AutomationExecutionOptions | null>(null);
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'startTime', direction: 'desc' });
     
     // Filters state
     const [filters, setFilters] = useState<{ playbookId: string; status: string; startDate: string; endDate: string }>({ playbookId: '', status: '', startDate: '', endDate: '' });
 
     useEffect(() => {
-        api.get<AutomationPlaybook[]>('/automation/scripts')
-            .then(res => setPlaybooks(res.data))
-            .catch(err => console.error("Failed to fetch playbooks for filter", err));
+        Promise.all([
+            api.get<AutomationPlaybook[]>('/automation/scripts'),
+            api.get<AutomationExecutionOptions>('/automation/executions/options')
+        ]).then(([playbooksRes, optionsRes]) => {
+            setPlaybooks(playbooksRes.data);
+            setOptions(optionsRes.data);
+        }).catch(err => console.error("Failed to fetch playbooks or options for filter", err));
     }, []);
 
     const fetchExecutions = useCallback(async () => {
@@ -38,11 +68,12 @@ const AutomationHistoryPage: React.FC = () => {
             const params: any = {
                 page: currentPage,
                 page_size: pageSize,
+                ...filters
             };
-            if (filters.playbookId) params.playbookId = filters.playbookId;
-            if (filters.status) params.status = filters.status;
-            if (filters.startDate) params.startDate = filters.startDate;
-            if (filters.endDate) params.endDate = filters.endDate;
+            if (sortConfig) {
+                params.sort_by = sortConfig.key;
+                params.sort_order = sortConfig.direction;
+            }
 
             const { data } = await api.get<{ items: AutomationExecution[], total: number }>('/automation/executions', { params });
             setExecutions(data.items);
@@ -52,11 +83,19 @@ const AutomationHistoryPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, filters]);
+    }, [currentPage, pageSize, filters, sortConfig]);
 
     useEffect(() => {
         fetchExecutions();
     }, [fetchExecutions]);
+
+    const handleSort = (key: string) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
 
     const getStatusPill = (status: AutomationExecution['status']) => {
         switch (status) {
@@ -84,10 +123,7 @@ const AutomationHistoryPage: React.FC = () => {
             </select>
             <select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm">
                 <option value="">所有狀態</option>
-                <option value="success">Success</option>
-                <option value="failed">Failed</option>
-                <option value="running">Running</option>
-                <option value="pending">Pending</option>
+                {options?.statuses.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
             <input type="datetime-local" value={filters.startDate} onChange={e => setFilters({ ...filters, startDate: e.target.value })} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm" />
             <span className="text-slate-400">to</span>
@@ -103,11 +139,11 @@ const AutomationHistoryPage: React.FC = () => {
                     <table className="w-full text-sm text-left text-slate-300">
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
-                                <th scope="col" className="px-6 py-3">腳本名稱</th>
-                                <th scope="col" className="px-6 py-3">狀態</th>
-                                <th scope="col" className="px-6 py-3">觸發來源</th>
-                                <th scope="col" className="px-6 py-3">開始時間</th>
-                                <th scope="col" className="px-6 py-3">耗時</th>
+                                <SortableHeader label="腳本名稱" sortKey="scriptName" sortConfig={sortConfig} onSort={handleSort} />
+                                <SortableHeader label="狀態" sortKey="status" sortConfig={sortConfig} onSort={handleSort} />
+                                <SortableHeader label="觸發來源" sortKey="triggeredBy" sortConfig={sortConfig} onSort={handleSort} />
+                                <SortableHeader label="開始時間" sortKey="startTime" sortConfig={sortConfig} onSort={handleSort} />
+                                <SortableHeader label="耗時" sortKey="durationMs" sortConfig={sortConfig} onSort={handleSort} />
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
                         </thead>

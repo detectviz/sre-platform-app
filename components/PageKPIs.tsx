@@ -96,7 +96,7 @@ const PageKPIs: React.FC<PageKPIsProps> = ({ pageName, widgetIds: explicitWidget
 
 
   return (
-    <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-6 mb-6">
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4 mb-6">
       {widgetIds.map(id => {
         const widget = getWidgetById(id);
         const data = kpiData[id];

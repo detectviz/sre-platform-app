@@ -56,26 +56,6 @@ npm run build
 npm run preview
 ```
 
-### GitHub Pages 部署
-
-專案已配置自動部署到 GitHub Pages：
-
-1. **設定 GitHub Pages**
-   - 前往專案的 GitHub Settings > Pages
-   - 將 Source 設定為 "GitHub Actions"
-
-2. **設定環境變數**
-   - 在 GitHub Repository Settings > Secrets and variables > Actions 中
-   - 新增 `GEMINI_API_KEY` 密鑰（如果需要 AI 功能）
-
-3. **自動部署**
-   - 推送程式碼到 `main` 分支時會自動觸發部署
-   - 部署完成後可透過 `https://[username].github.io/sre-platform-app/` 存取
-
-4. **手動部署**
-   - 前往 GitHub Actions 頁面
-   - 手動觸發 "Deploy to GitHub Pages" 工作流程
-
 ## 📁 專案結構
 
 ```

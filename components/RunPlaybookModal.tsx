@@ -1,30 +1,38 @@
-
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import FormRow from './FormRow';
+import Icon from './Icon';
 import { AutomationPlaybook, ParameterDefinition } from '../types';
+import api from '../services/api';
+import { showToast } from '../services/toast';
 
 interface RunPlaybookModalProps {
   isOpen: boolean;
   onClose: () => void;
   playbook: AutomationPlaybook | null;
-  onRun: (playbookId: string, params: Record<string, any>) => void;
+  onRunSuccess: () => void;
 }
 
-const RunPlaybookModal: React.FC<RunPlaybookModalProps> = ({ isOpen, onClose, playbook, onRun }) => {
+const RunPlaybookModal: React.FC<RunPlaybookModalProps> = ({ isOpen, onClose, playbook, onRunSuccess }) => {
     const [paramValues, setParamValues] = useState<Record<string, any>>({});
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (playbook?.parameters) {
-            const initialParams = playbook.parameters.reduce((acc, param) => {
-                acc[param.name] = param.defaultValue ?? (param.type === 'boolean' ? false : '');
-                return acc;
-            }, {} as Record<string, any>);
-            setParamValues(initialParams);
-        } else {
-            setParamValues({});
+        if (isOpen) {
+            setError(null);
+            setIsLoading(false);
+            if (playbook?.parameters) {
+                const initialParams = playbook.parameters.reduce((acc, param) => {
+                    acc[param.name] = param.defaultValue ?? (param.type === 'boolean' ? false : '');
+                    return acc;
+                }, {} as Record<string, any>);
+                setParamValues(initialParams);
+            } else {
+                setParamValues({});
+            }
         }
-    }, [playbook]);
+    }, [isOpen, playbook]);
 
     const handleParamChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
@@ -36,9 +44,21 @@ const RunPlaybookModal: React.FC<RunPlaybookModalProps> = ({ isOpen, onClose, pl
         }
     };
 
-    const handleRunClick = () => {
-        if (playbook) {
-            onRun(playbook.id, paramValues);
+    const handleRunClick = async () => {
+        if (!playbook) return;
+
+        setIsLoading(true);
+        setError(null);
+        try {
+            await api.post(`/automation/scripts/${playbook.id}/execute`, { parameters: paramValues });
+            showToast(`腳本 "${playbook.name}" 已成功開始執行。`, 'success');
+            onRunSuccess();
+            onClose();
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || err.message || '發生未知錯誤。';
+            setError(`執行失敗: ${errorMessage} 請檢查執行歷史以獲取詳細日誌。`);
+        } finally {
+            setIsLoading(false);
         }
     };
     
@@ -53,7 +73,17 @@ const RunPlaybookModal: React.FC<RunPlaybookModalProps> = ({ isOpen, onClose, pl
             footer={
                 <div className="flex justify-end space-x-2">
                     <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">取消</button>
-                    <button onClick={handleRunClick} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md">確認執行</button>
+                    <button 
+                        onClick={handleRunClick}
+                        disabled={isLoading}
+                        className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md flex items-center justify-center w-32 disabled:bg-slate-600 disabled:cursor-not-allowed"
+                    >
+                        {isLoading ? (
+                            <><Icon name="loader-circle" className="w-4 h-4 mr-2 animate-spin" /> 執行中...</>
+                        ) : (
+                            '確認執行'
+                        )}
+                    </button>
                 </div>
             }
         >
@@ -115,6 +145,12 @@ const RunPlaybookModal: React.FC<RunPlaybookModalProps> = ({ isOpen, onClose, pl
                 ) : (
                     <div className="p-4 mt-4 text-center bg-slate-800/50 rounded-md border border-slate-700/50">
                         <p className="text-slate-300">此腳本無需額外參數。您確定要立即執行嗎？</p>
+                    </div>
+                )}
+                 {error && (
+                    <div className="mt-4 p-3 bg-red-900/50 border border-red-700/80 text-red-300 rounded-md text-sm flex items-start">
+                        <Icon name="alert-circle" className="w-4 h-4 mr-2 shrink-0 mt-0.5" />
+                        <span>{error}</span>
                     </div>
                 )}
             </div>

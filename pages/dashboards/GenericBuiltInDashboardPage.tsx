@@ -1,14 +1,18 @@
 
+
 import React from 'react';
 import PageKPIs from '../../components/PageKPIs';
+import { DashboardLayoutItem } from '../../types';
 
 interface GenericBuiltInDashboardPageProps {
     name: string;
     description: string;
-    widgetIds: string[];
+    widgetIds: DashboardLayoutItem[];
 }
 
 const GenericBuiltInDashboardPage: React.FC<GenericBuiltInDashboardPageProps> = ({ name, description, widgetIds }) => {
+    const ids = widgetIds.map(item => item.i);
+    
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -18,7 +22,7 @@ const GenericBuiltInDashboardPage: React.FC<GenericBuiltInDashboardPageProps> = 
                 </div>
             </div>
             {/* Pass widgetIds directly to the enhanced PageKPIs component */}
-            <PageKPIs pageName={`dashboard-${name}`} widgetIds={widgetIds} />
+            <PageKPIs pageName={`dashboard-${name}`} widgetIds={ids} />
         </div>
     );
 };

@@ -1,14 +1,25 @@
 
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import Icon from '../../components/Icon';
 import api from '../../services/api';
-import { LayoutWidget, Dashboard, DashboardTemplate } from '../../types';
+import { LayoutWidget, Dashboard, DashboardTemplate, DashboardLayoutItem } from '../../types';
 import ContextualKPICard from '../../components/ContextualKPICard';
 import Modal from '../../components/Modal';
 import { showToast } from '../../services/toast';
 import { useUser } from '../../contexts/UserContext';
+import { PAGE_CONTENT } from '../../constants/pages';
+
+const COLS = 12;
+const ROW_HEIGHT = 80;
+const MARGIN: [number, number] = [10, 10];
+
+type InteractionState = {
+    type: 'drag' | 'resize';
+    item: DashboardLayoutItem;
+    initialMouse: { x: number; y: number };
+    initialLayout: DashboardLayoutItem;
+} | null;
 
 const DashboardEditorPage: React.FC = () => {
     const { dashboardId } = useParams<{ dashboardId: string }>();
@@ -16,10 +27,18 @@ const DashboardEditorPage: React.FC = () => {
     const location = useLocation();
     const { currentUser } = useUser();
     const isEditMode = !!dashboardId;
+    const { DASHBOARD_EDITOR: content } = PAGE_CONTENT;
+    const gridRef = useRef<HTMLDivElement>(null);
 
     const [dashboardName, setDashboardName] = useState('');
+    const [isNamePristine, setIsNamePristine] = useState(false);
+    
     const [widgets, setWidgets] = useState<LayoutWidget[]>([]);
+    const [layout, setLayout] = useState<DashboardLayoutItem[]>([]);
+    const [history, setHistory] = useState<DashboardLayoutItem[][]>([]);
+    
     const [isAddWidgetModalOpen, setIsAddWidgetModalOpen] = useState(false);
+    const [interactionState, setInteractionState] = useState<InteractionState>(null);
 
     const [allWidgets, setAllWidgets] = useState<LayoutWidget[]>([]);
     const [kpiData, setKpiData] = useState<Record<string, any>>({});
@@ -38,195 +57,273 @@ const DashboardEditorPage: React.FC = () => {
                 const allFetchedWidgets = widgetsRes.data;
                 setAllWidgets(allFetchedWidgets);
                 setKpiData(kpiDataRes.data);
-                if (optionsRes.data.categories.length > 0) {
-                    setDefaultCategory(optionsRes.data.categories[0]);
-                }
+                if (optionsRes.data.categories.length > 0) setDefaultCategory(optionsRes.data.categories[0]);
 
                 if (isEditMode) {
                     const { data: dashboardData } = await api.get<Dashboard>(`/dashboards/${dashboardId}`);
                     setDashboardName(dashboardData.name);
-                    const dashboardWidgets = (dashboardData.layout || [])
-                        .map(widgetId => allFetchedWidgets.find(w => w.id === widgetId))
-                        .filter((w): w is LayoutWidget => !!w);
-                    setWidgets(dashboardWidgets);
+                    setLayout(dashboardData.layout || []);
+                    const dashboardWidgetIds = (dashboardData.layout || []).map(item => item.i);
+                    setWidgets(allFetchedWidgets.filter(w => dashboardWidgetIds.includes(w.id)));
+                    setIsNamePristine(false);
                 } else {
                     const template = location.state?.template as DashboardTemplate | undefined;
                     if (template) {
                         setDashboardName(template.name);
+                        setIsNamePristine(false);
                     } else {
-                        setDashboardName('新的儀表板');
+                        setDashboardName(content.DEFAULT_NAME);
+                        setIsNamePristine(true);
                     }
                     setWidgets([]);
+                    setLayout([]);
                 }
-
+                setHistory([]);
             } catch (error) {
-                console.error("Failed to fetch dashboard editor data", error);
-                showToast(isEditMode ? '無法載入儀表板資料。' : '無法載入編輯器所需資料。', 'error');
+                showToast(isEditMode ? content.LOAD_ERROR : content.EDITOR_LOAD_ERROR, 'error');
                 navigate('/dashboards');
             } finally {
                 setIsLoading(false);
             }
         };
         fetchAllData();
-    }, [dashboardId, isEditMode, navigate, location.state]);
+    }, [dashboardId, isEditMode, navigate, location.state, content]);
+    
+    const availableWidgets = allWidgets.filter(w => !widgets.some(sw => sw.id === w.id));
 
-    const availableWidgets = allWidgets.filter(
-        w => !widgets.some(sw => sw.id === w.id)
-    );
-
+    const findEmptySpace = (w: number, h: number): { x: number, y: number } => {
+        let y = 0, x = 0;
+        while (true) {
+            for (x = 0; x <= COLS - w; x++) {
+                const item = { i: 'temp', x, y, w, h };
+                if (!checkCollision(item, layout)) {
+                    return { x, y };
+                }
+            }
+            y++;
+        }
+    };
+    
     const addWidget = (widget: LayoutWidget) => {
+        const newPos = findEmptySpace(4, 2);
+        const newLayoutItem: DashboardLayoutItem = { i: widget.id, ...newPos, w: 4, h: 2 };
+        
+        pushToHistory();
         setWidgets([...widgets, widget]);
+        setLayout([...layout, newLayoutItem]);
         setIsAddWidgetModalOpen(false);
     };
 
     const removeWidget = (widgetId: string) => {
+        pushToHistory();
         setWidgets(widgets.filter(w => w.id !== widgetId));
+        setLayout(layout.filter(item => item.i !== widgetId));
     };
 
     const handleSave = async () => {
         if (!dashboardName.trim()) {
-            showToast('儀表板名稱為必填。', 'error');
+            showToast(content.NAME_REQUIRED_ERROR, 'error');
             return;
         }
-
-        const dashboardPayload: Partial<Dashboard> = {
-            name: dashboardName,
-            type: 'built-in',
-            layout: widgets.map(w => w.id),
-        };
-
+        const dashboardPayload: Partial<Dashboard> = { name: dashboardName, type: 'built-in', layout };
         try {
             if (isEditMode) {
                 const { data: updatedDashboard } = await api.patch<Dashboard>(`/dashboards/${dashboardId}`, dashboardPayload);
-                showToast(`儀表板 "${updatedDashboard.name}" 已成功更新。`, 'success');
+                showToast(content.UPDATE_SUCCESS(updatedDashboard.name), 'success');
             } else {
                 dashboardPayload.category = defaultCategory;
-                dashboardPayload.description = '使用者建立的內建儀表板。';
+                dashboardPayload.description = content.DEFAULT_DESCRIPTION;
                 dashboardPayload.owner = currentUser?.name || 'System';
                 dashboardPayload.updatedAt = new Date().toISOString().slice(0, 16).replace('T', ' ');
                 const { data: createdDashboard } = await api.post<Dashboard>('/dashboards', dashboardPayload);
-                showToast(`儀表板 "${createdDashboard.name}" 已成功儲存。`, 'success');
+                showToast(content.SAVE_SUCCESS(createdDashboard.name), 'success');
             }
             navigate('/dashboards');
         } catch (error) {
-            console.error('Failed to save dashboard', error);
-            showToast(isEditMode ? '更新儀表板失敗。' : '儲存儀表板失敗。', 'error');
+            showToast(isEditMode ? content.UPDATE_ERROR : content.SAVE_ERROR, 'error');
         }
     };
 
-    const renderDescription = (descriptionText: string): React.ReactNode => {
-      if (!descriptionText) return null;
-      
-      const parts = descriptionText.split(/(↑\d+(\.\d+)?%|↓\d+(\.\d+)?%|\d+ 嚴重)/g);
-      
-      return parts.map((part, index) => {
-          if (part?.startsWith('↑')) {
-              return <span key={index} className="text-green-400">{part}</span>;
-          }
-          if (part?.startsWith('↓')) {
-              return <span key={index} className="text-red-400">{part}</span>;
-          }
-          if (part?.endsWith('嚴重')) {
-              return <span key={index} className="text-red-400 font-semibold">{part}</span>;
-          }
+    // --- Drag and Resize Logic ---
+
+    const pushToHistory = () => {
+        setHistory(prev => [...prev.slice(-9), layout]); // Keep last 10 states
+    };
+    
+    const handleUndo = () => {
+        if (history.length > 0) {
+            const lastState = history[history.length - 1];
+            setLayout(lastState);
+            setHistory(history.slice(0, -1));
+        }
+    };
+
+    const checkCollision = (item: DashboardLayoutItem, currentLayout: DashboardLayoutItem[]): boolean => {
+        return currentLayout.some(l => 
+            l.i !== item.i &&
+            item.x < l.x + l.w &&
+            item.x + item.w > l.x &&
+            item.y < l.y + l.h &&
+            item.y + item.h > l.y
+        );
+    };
+
+    const handleInteractionStart = (e: React.MouseEvent, type: 'drag' | 'resize', item: DashboardLayoutItem) => {
+        e.preventDefault();
+        e.stopPropagation();
+        pushToHistory();
+        setInteractionState({ type, item, initialMouse: { x: e.clientX, y: e.clientY }, initialLayout: item });
+    };
+
+    const handleInteractionMove = useCallback((e: MouseEvent) => {
+        if (!interactionState || !gridRef.current) return;
+
+        const { type, item, initialMouse, initialLayout } = interactionState;
+        const gridRect = gridRef.current.getBoundingClientRect();
+        const colWidth = (gridRect.width - (COLS + 1) * MARGIN[0]) / COLS;
+        const xDelta = e.clientX - initialMouse.x;
+        const yDelta = e.clientY - initialMouse.y;
+
+        let newLayoutItem = { ...item };
+
+        if (type === 'drag') {
+            const newX = initialLayout.x + Math.round(xDelta / (colWidth + MARGIN[0]));
+            const newY = initialLayout.y + Math.round(yDelta / (ROW_HEIGHT + MARGIN[1]));
+            newLayoutItem.x = Math.max(0, Math.min(newX, COLS - newLayoutItem.w));
+            newLayoutItem.y = Math.max(0, newY);
+        } else { // resize
+            const newW = initialLayout.w + Math.round(xDelta / (colWidth + MARGIN[0]));
+            const newH = initialLayout.h + Math.round(yDelta / (ROW_HEIGHT + MARGIN[1]));
+            newLayoutItem.w = Math.max(1, Math.min(newW, COLS - newLayoutItem.x));
+            newLayoutItem.h = Math.max(1, newH);
+        }
+        
+        setLayout(l => l.map(i => i.i === item.i ? newLayoutItem : i));
+    }, [interactionState]);
+    
+    const handleInteractionEnd = useCallback(() => {
+        if (!interactionState) return;
+        const { item: movedItem, initialLayout } = interactionState;
+        const currentItemState = layout.find(l => l.i === movedItem.i);
+
+        if (currentItemState && checkCollision(currentItemState, layout)) {
+            showToast("操作無效：小工具之間不能重疊。", "error");
+            setLayout(l => l.map(i => i.i === movedItem.i ? initialLayout : i));
+        }
+        setInteractionState(null);
+    }, [interactionState, layout]);
+
+    useEffect(() => {
+        if (interactionState) {
+            window.addEventListener('mousemove', handleInteractionMove);
+            window.addEventListener('mouseup', handleInteractionEnd);
+        }
+        return () => {
+            window.removeEventListener('mousemove', handleInteractionMove);
+            window.removeEventListener('mouseup', handleInteractionEnd);
+        };
+    }, [interactionState, handleInteractionMove, handleInteractionEnd]);
+    
+    const getPixelValues = (item: DashboardLayoutItem, gridWidth: number) => {
+        const colWidth = (gridWidth - (COLS + 1) * MARGIN[0]) / COLS;
+        return {
+            width: item.w * colWidth + (item.w - 1) * MARGIN[0],
+            height: item.h * ROW_HEIGHT + (item.h - 1) * MARGIN[1],
+            top: item.y * (ROW_HEIGHT + MARGIN[1]) + MARGIN[1],
+            left: item.x * (colWidth + MARGIN[0]) + MARGIN[0],
+        };
+    };
+
+    const handleNameFocus = () => {
+        if (isNamePristine) {
+            setDashboardName('');
+            setIsNamePristine(false);
+        }
+    };
+    
+    const renderDescription = (descriptionText: string) => {
+      return descriptionText.split(/(↑\d+(\.\d+)?%|↓\d+(\.\d+)?%|\d+ 嚴重)/g).map((part, index) => {
+          if (part?.startsWith('↑')) return <span key={index} className="text-green-400">{part}</span>;
+          if (part?.startsWith('↓')) return <span key={index} className="text-red-400">{part}</span>;
+          if (part?.endsWith('嚴重')) return <span key={index} className="text-red-400 font-semibold">{part}</span>;
           return part;
       });
     };
 
     return (
         <div className="h-full flex flex-col space-y-4">
-            {/* Header */}
             <div className="flex justify-between items-center shrink-0">
                 <div className="flex items-center space-x-4">
-                    <h1 className="text-3xl font-bold text-slate-400">{isEditMode ? '編輯儀表板:' : '建立儀表板:'}</h1>
-                    <input
-                        type="text"
-                        value={dashboardName}
-                        onChange={e => setDashboardName(e.target.value)}
-                        className="bg-transparent border-b-2 border-slate-700 focus:border-sky-500 text-3xl font-bold focus:outline-none transition-colors w-96"
-                    />
+                    <h1 className="text-3xl font-bold text-slate-400">{isEditMode ? content.EDIT_TITLE : content.CREATE_TITLE}</h1>
+                    <input type="text" value={dashboardName} onChange={e => setDashboardName(e.target.value)} onFocus={handleNameFocus} className="bg-transparent border-b-2 border-slate-700 focus:border-sky-500 text-3xl font-bold focus:outline-none transition-colors w-96" />
                 </div>
                 <div className="flex items-center space-x-2">
+                    <button onClick={handleUndo} disabled={history.length === 0} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700/50 hover:bg-slate-700 rounded-md flex items-center disabled:opacity-50 disabled:cursor-not-allowed">
+                        <Icon name="undo-2" className="w-4 h-4 mr-2" /> 撤銷
+                    </button>
                     <button onClick={() => navigate('/dashboards')} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700/50 hover:bg-slate-700 rounded-md">
-                        取消
+                        {content.CANCEL_BUTTON}
                     </button>
                     <button onClick={handleSave} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md flex items-center">
                         <Icon name="save" className="w-4 h-4 mr-2" />
-                        儲存儀表板
+                        {content.SAVE_DASHBOARD}
                     </button>
                 </div>
             </div>
 
-            {/* Toolbar */}
             <div className="shrink-0">
                 <button onClick={() => setIsAddWidgetModalOpen(true)} className="px-4 py-2 text-sm font-medium text-white bg-slate-700 hover:bg-slate-600 rounded-md flex items-center">
-                    <Icon name="plus" className="w-4 h-4 mr-2" />
-                    新增小工具
+                    <Icon name="plus" className="w-4 h-4 mr-2" /> {content.ADD_WIDGET}
                 </button>
             </div>
 
-            {/* Grid Area */}
-            <div className="flex-grow glass-card rounded-xl p-4 overflow-y-auto">
-                 {isLoading ? (
-                    <div className="h-full flex flex-col items-center justify-center text-slate-500">
-                        <Icon name="loader-circle" className="w-12 h-12 animate-spin" />
-                    </div>
-                ) : widgets.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {widgets.map(widget => {
-                            const data = kpiData[widget.id];
-                            if (!data) return null;
-                            return (
-                                <div key={widget.id} className="relative group">
-                                    <ContextualKPICard
-                                        title={widget.name}
-                                        value={data.value}
-                                        description={renderDescription(data.description)}
-                                        icon={data.icon}
-                                        iconBgColor={data.iconBgColor}
-                                    />
-                                    <button
-                                        onClick={() => removeWidget(widget.id)}
-                                        className="absolute top-2 right-2 p-1 bg-red-600/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="移除小工具"
-                                    >
-                                        <Icon name="x" className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            );
-                        })}
-                    </div>
-                ) : (
-                    <div className="h-full flex flex-col items-center justify-center text-slate-500">
-                        <Icon name="layout-dashboard" className="w-24 h-24 mb-4" />
-                        <h2 className="text-xl font-bold text-slate-300">空儀表板</h2>
-                        <p className="mt-2">點擊「新增小工具」開始建立您的儀表板。</p>
-                    </div>
-                )}
+            <div ref={gridRef} className="flex-grow glass-card rounded-xl p-4 overflow-auto relative">
+                 {isLoading && <div className="h-full flex flex-col items-center justify-center text-slate-500"><Icon name="loader-circle" className="w-12 h-12 animate-spin" /></div>}
+                 {!isLoading && widgets.length === 0 && <div className="h-full flex flex-col items-center justify-center text-slate-500"><Icon name="layout-dashboard" className="w-24 h-24 mb-4" /><h2 className="text-xl font-bold text-slate-300">{content.EMPTY_STATE_TITLE}</h2><p className="mt-2">{content.EMPTY_STATE_MESSAGE}</p></div>}
+                 
+                 {gridRef.current && layout.map(item => {
+                    const widget = widgets.find(w => w.id === item.i);
+                    const isInteracting = interactionState?.item.i === item.i;
+                    const { top, left, width, height } = getPixelValues(item, gridRef.current!.offsetWidth);
+
+                    if (!widget) return null;
+                    const data = kpiData[widget.id];
+                    if (!data) return null;
+                    
+                    return (
+                        <div key={item.i} 
+                            onMouseDown={(e) => handleInteractionStart(e, 'drag', item)}
+                            className={`absolute transition-all duration-200 ease-in-out group ${isInteracting ? 'z-20 shadow-2xl opacity-80' : 'z-10'}`}
+                            style={{ top, left, width, height }}>
+                            <ContextualKPICard title={widget.name} value={data.value} description={renderDescription(data.description)} icon={data.icon} iconBgColor={data.iconBgColor} />
+                            <button onClick={(e) => { e.stopPropagation(); removeWidget(widget.id); }} className="absolute top-2 right-2 p-1 bg-red-600/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity" title={content.REMOVE_WIDGET_TITLE}><Icon name="x" className="w-4 h-4" /></button>
+                            <div onMouseDown={(e) => handleInteractionStart(e, 'resize', item)} className="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Icon name="move-down-right" className="w-4 h-4 text-slate-400 absolute bottom-1 right-1" />
+                            </div>
+                        </div>
+                    );
+                 })}
+                 
+                 {/* Ghost element for drag/resize feedback */}
+                 {interactionState && gridRef.current && (() => {
+                     const ghostLayout = layout.find(l => l.i === interactionState.item.i);
+                     if (!ghostLayout) return null;
+                     const { top, left, width, height } = getPixelValues(ghostLayout, gridRef.current.offsetWidth);
+                     const isColliding = checkCollision(ghostLayout, layout);
+                     return <div className={`absolute z-10 rounded-xl transition-colors ${isColliding ? 'bg-red-500/30' : 'bg-sky-500/30'} border-2 border-dashed ${isColliding ? 'border-red-400' : 'border-sky-400'}`} style={{ top, left, width, height }} />;
+                 })()}
+
             </div>
             
-            {/* Add Widget Modal */}
-            <Modal
-                title="新增小工具至儀表板"
-                isOpen={isAddWidgetModalOpen}
-                onClose={() => setIsAddWidgetModalOpen(false)}
-                width="w-1/2 max-w-3xl"
-            >
-                <div className="max-h-[60vh] overflow-y-auto">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {availableWidgets.map(widget => (
-                            <div key={widget.id} className="p-4 border border-slate-700 rounded-lg flex justify-between items-center hover:bg-slate-800/50">
-                                <div>
-                                    <p className="font-semibold text-white">{widget.name}</p>
-                                    <p className="text-sm text-slate-400">{widget.description}</p>
-                                </div>
-                                <button onClick={() => addWidget(widget)} className="p-2 bg-sky-600 text-white rounded-full hover:bg-sky-500 shrink-0" title="新增">
-                                    <Icon name="plus" className="w-4 h-4" />
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+            <Modal title={content.ADD_WIDGET_MODAL_TITLE} isOpen={isAddWidgetModalOpen} onClose={() => setIsAddWidgetModalOpen(false)} width="w-1/2 max-w-3xl">
+                <div className="max-h-[60vh] overflow-y-auto"><div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {availableWidgets.map(widget => (
+                        <div key={widget.id} className="p-4 border border-slate-700 rounded-lg flex justify-between items-center hover:bg-slate-800/50">
+                            <div><p className="font-semibold text-white">{widget.name}</p><p className="text-sm text-slate-400">{widget.description}</p></div>
+                            <button onClick={() => addWidget(widget)} className="p-2 bg-sky-600 text-white rounded-full hover:bg-sky-500 shrink-0" title={content.ADD_WIDGET_TITLE}><Icon name="plus" className="w-4 h-4" /></button>
+                        </div>
+                    ))}
+                </div></div>
             </Modal>
         </div>
     );

@@ -32,6 +32,16 @@ const AnalysisOverviewPage: React.FC = () => {
         fetchOverviewData();
     }, [fetchOverviewData]);
 
+    const handleEventCorrelationClick = (params: any) => {
+        if (params.dataType !== 'node' || !params.data.id) return;
+        const { id } = params.data;
+        if (id.startsWith('INC-')) {
+            navigate(`/incidents/${id}`);
+        } else if (id.startsWith('res-')) {
+            navigate(`/resources/${id}`);
+        }
+    };
+
     const healthScoreOption = {
         tooltip: { trigger: 'axis', formatter: (params: any) => {
             if (!params || !params[0]) return '';
@@ -111,6 +121,8 @@ const AnalysisOverviewPage: React.FC = () => {
         }
     };
 
+    const eventCorrelationEvents = { 'click': handleEventCorrelationClick };
+
     if (isLoading) {
         return (
              <div className="space-y-6">
@@ -138,7 +150,7 @@ const AnalysisOverviewPage: React.FC = () => {
                 </div>
                 <div className="glass-card rounded-xl p-6">
                     <h2 className="text-xl font-bold mb-4 flex items-center"><Icon name="share-2" className="w-5 h-5 mr-2 text-green-400" /> Event Correlation Analysis</h2>
-                    <EChartsReact option={eventCorrelationOption} style={{ height: '300px' }} />
+                    <EChartsReact option={eventCorrelationOption} style={{ height: '300px' }} onEvents={eventCorrelationEvents} />
                 </div>
             </div>
 

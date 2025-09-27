@@ -10,11 +10,14 @@ import api from '../../../services/api';
 import TableLoader from '../../../components/TableLoader';
 import TableError from '../../../components/TableError';
 
+const ALL_CATEGORIES_VALUE = 'All';
+const ALL_CATEGORIES_LABEL = '所有分類';
+
 const TagManagementPage: React.FC = () => {
     const [tags, setTags] = useState<TagDefinition[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [categories, setCategories] = useState<string[]>(['All']);
+    const [categories, setCategories] = useState<string[]>([ALL_CATEGORIES_VALUE]);
 
     const [isValuesModalOpen, setIsValuesModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -25,7 +28,7 @@ const TagManagementPage: React.FC = () => {
     const [deletingTag, setDeletingTag] = useState<TagDefinition | null>(null);
 
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterCategory, setFilterCategory] = useState('All');
+    const [filterCategory, setFilterCategory] = useState(ALL_CATEGORIES_VALUE);
 
     const fetchTags = useCallback(async () => {
         setIsLoading(true);
@@ -36,7 +39,7 @@ const TagManagementPage: React.FC = () => {
                 api.get<{ categories: string[] }>('/settings/tags/options')
             ]);
             setTags(tagsRes.data);
-            setCategories(['All', ...categoriesRes.data.categories]);
+            setCategories([ALL_CATEGORIES_VALUE, ...categoriesRes.data.categories]);
         } catch (err) {
             setError('無法獲取標籤定義。');
         } finally {
@@ -111,7 +114,7 @@ const TagManagementPage: React.FC = () => {
     const filteredTags = useMemo(() => {
         return tags.filter(tag => {
             const matchesSearch = tag.key.toLowerCase().includes(searchTerm.toLowerCase()) || tag.description.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesCategory = filterCategory === 'All' || tag.category === filterCategory;
+            const matchesCategory = filterCategory === ALL_CATEGORIES_VALUE || tag.category === filterCategory;
             return matchesSearch && matchesCategory;
         });
     }, [tags, searchTerm, filterCategory]);
@@ -133,7 +136,7 @@ const TagManagementPage: React.FC = () => {
                 onChange={e => setFilterCategory(e.target.value)}
                 className="bg-slate-800/80 border border-slate-700 rounded-md px-3 py-1.5 text-sm"
             >
-                {categories.map(cat => <option key={cat} value={cat}>{cat === 'All' ? '所有分類' : cat}</option>)}
+                {categories.map(cat => <option key={cat} value={cat}>{cat === ALL_CATEGORIES_VALUE ? ALL_CATEGORIES_LABEL : cat}</option>)}
             </select>
         </div>
     );

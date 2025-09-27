@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ResourceGroup } from '../../types';
 import Icon from '../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
@@ -16,7 +17,16 @@ const ResourceGroupPage: React.FC = () => {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingGroup, setEditingGroup] = useState<ResourceGroup | null>(null);
-    const [searchTerm, setSearchTerm] = useState('');
+    const location = useLocation();
+    const navigate = useNavigate();
+    const [searchTerm, setSearchTerm] = useState(location.state?.initialSearchTerm || '');
+    
+    useEffect(() => {
+        if (location.state?.initialSearchTerm) {
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }, [location.state, navigate, location.pathname]);
+
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingGroup, setDeletingGroup] = useState<ResourceGroup | null>(null);
 

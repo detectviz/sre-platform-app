@@ -98,16 +98,6 @@ const AutomationPlaybooksPage: React.FC = () => {
         }
     };
 
-    const handleConfirmRun = async (playbookId: string, params: Record<string, any>) => {
-        try {
-            await api.post(`/automation/scripts/${playbookId}/execute`, { parameters: params });
-            setIsRunModalOpen(false);
-            fetchPlaybooks(); // Re-fetch to update run status, etc.
-        } catch(err) {
-            alert('Failed to run playbook.');
-        }
-    };
-
     const getStatusPill = (status: AutomationPlaybook['lastRunStatus']) => {
         switch (status) {
             case 'success': return 'bg-green-500/20 text-green-400';
@@ -202,7 +192,7 @@ const AutomationPlaybooksPage: React.FC = () => {
                 isOpen={isRunModalOpen} 
                 onClose={() => setIsRunModalOpen(false)}
                 playbook={runningPlaybook}
-                onRun={handleConfirmRun}
+                onRunSuccess={fetchPlaybooks}
             />
             {isEditModalOpen && (
                  <AutomationPlaybookEditModal

@@ -4,7 +4,7 @@ import Icon from '../../components/Icon';
 import Dropdown from '../../components/Dropdown';
 import PlaceholderModal from '../../components/PlaceholderModal';
 import api from '../../services/api';
-import { Resource } from '../../types';
+import { Resource, InfraInsightsOptions } from '../../types';
 import PageKPIs from '../../components/PageKPIs';
 import { exportToCsv } from '../../services/export';
 
@@ -23,7 +23,6 @@ interface RiskPrediction {
 }
 
 const InfrastructureInsightsPage: React.FC = () => {
-    // State for AI-generated content
     const [riskPrediction, setRiskPrediction] = useState<RiskPrediction | null>(null);
     const [isRiskLoading, setIsRiskLoading] = useState(true);
     const [riskError, setRiskError] = useState<string | null>(null);
@@ -31,6 +30,8 @@ const InfrastructureInsightsPage: React.FC = () => {
     const [isBookmarkLoading, setIsBookmarkLoading] = useState(true);
     const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
     const [modalFeatureName, setModalFeatureName] = useState('');
+    const [options, setOptions] = useState<InfraInsightsOptions | null>(null);
+    const [timeRange, setTimeRange] = useState('from=now-6h&to=now');
 
     const showPlaceholderModal = (featureName: string) => {
         setModalFeatureName(featureName);
@@ -65,10 +66,23 @@ const InfrastructureInsightsPage: React.FC = () => {
         }
     }, []);
 
+    const fetchOptions = useCallback(async () => {
+        try {
+            const { data } = await api.get<InfraInsightsOptions>('/dashboards/infrastructure-insights/options');
+            setOptions(data);
+            if (data.timeOptions.length > 0) {
+                setTimeRange(data.timeOptions[0].value);
+            }
+        } catch (error) {
+            console.error("Failed to fetch infrastructure insights options", error);
+        }
+    }, []);
+
     const fetchData = useCallback(() => {
         fetchRiskPrediction();
         fetchBookmarkedResources();
-    }, [fetchRiskPrediction, fetchBookmarkedResources]);
+        fetchOptions();
+    }, [fetchRiskPrediction, fetchBookmarkedResources, fetchOptions]);
 
     useEffect(() => {
         fetchData();
@@ -133,19 +147,12 @@ const InfrastructureInsightsPage: React.FC = () => {
         ]
     };
 
-    const timeOptions = [
-        { label: 'Last 6 hours', value: 'from=now-6h&to=now' },
-        { label: 'Last 12 hours', value: 'from=now-12h&to=now' },
-        { label: 'Last 24 hours', value: 'from=now-24h&to=now' },
-    ];
-    const [timeRange, setTimeRange] = useState('from=now-6h&to=now');
-
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold">基礎設施洞察</h1>
                 <div className="flex items-center space-x-2">
-                    <Dropdown label="時間範圍" options={timeOptions} value={timeRange} onChange={setTimeRange} />
+                    {options && <Dropdown label="時間範圍" options={options.timeOptions} value={timeRange} onChange={setTimeRange} />}
                     <button onClick={handleRefresh} className="p-2 rounded-lg hover:bg-slate-700/50 flex items-center text-sm px-3 bg-slate-800/60 border border-slate-700"><Icon name="refresh-cw" className="w-4 h-4 mr-2" />刷新</button>
                     <button onClick={handleExport} className="p-2 rounded-lg hover:bg-slate-700/50 flex items-center text-sm px-3 bg-slate-800/60 border border-slate-700"><Icon name="download" className="w-4 h-4 mr-2" />匯出</button>
                 </div>

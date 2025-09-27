@@ -2,6 +2,8 @@
 import React from 'react';
 import { AutomationExecution } from '../types';
 import Icon from './Icon';
+// This component has hardcoded strings.
+// "狀態", "腳本名稱", "觸發來源", "耗時", "執行參數", "Standard Output (stdout)", "Standard Error (stderr)".
 
 interface ExecutionLogDetailProps {
   execution: AutomationExecution;

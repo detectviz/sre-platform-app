@@ -1,8 +1,10 @@
 
+
 import React, { useMemo, useState, useEffect } from 'react';
 import EChartsReact from './EChartsReact';
 import { Span } from '../types';
 import api from '../services/api';
+import Icon from './Icon';
 
 interface TraceTimelineChartProps {
   spans: Span[];
@@ -10,25 +12,26 @@ interface TraceTimelineChartProps {
   onSpanSelect: (spanId: string) => void;
 }
 
-const FALLBACK_COLORS = ['#38bdf8', '#a78bfa', '#34d399', '#f87171', '#fbbf24', '#60a5fa'];
-
 const TraceTimelineChart: React.FC<TraceTimelineChartProps> = ({ spans, selectedSpanId, onSpanSelect }) => {
-    const [colors, setColors] = useState<string[]>([]);
-    const [isLoadingColors, setIsLoadingColors] = useState(true);
+    const [colors, setColors] = useState<string[] | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     
     useEffect(() => {
-        setIsLoadingColors(true);
+        setIsLoading(true);
+        setError(null);
         api.get<string[]>('/ui/themes/charts')
             .then(res => setColors(res.data))
             .catch(err => {
-                console.error("Failed to fetch chart colors, using fallback.", err);
-                setColors(FALLBACK_COLORS);
+                console.error("Failed to fetch chart colors.", err);
+                setError("無法載入圖表顏色配置。");
+                setColors(null);
             })
-            .finally(() => setIsLoadingColors(false));
+            .finally(() => setIsLoading(false));
     }, []);
 
     const { chartOption } = useMemo(() => {
-        if (!spans || spans.length === 0 || colors.length === 0) {
+        if (!spans || spans.length === 0 || !colors || colors.length === 0) {
             return { chartOption: {} };
         }
 
@@ -140,8 +143,17 @@ const TraceTimelineChart: React.FC<TraceTimelineChartProps> = ({ spans, selected
         }
     }), [onSpanSelect]);
     
-    if (isLoadingColors) {
+    if (isLoading) {
         return <div className="h-[400px] flex items-center justify-center text-slate-400">Loading Chart...</div>;
+    }
+
+    if (error) {
+        return (
+            <div className="h-[400px] flex flex-col items-center justify-center text-red-400">
+                <Icon name="alert-circle" className="w-8 h-8 mb-2" />
+                <p>{error}</p>
+            </div>
+        );
     }
 
     return <EChartsReact option={chartOption} style={{ height: '400px' }} onEvents={echartsEvents}/>;

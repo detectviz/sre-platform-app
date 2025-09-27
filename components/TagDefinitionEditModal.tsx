@@ -3,6 +3,7 @@ import Modal from './Modal';
 import FormRow from './FormRow';
 import { TagDefinition } from '../types';
 import api from '../services/api';
+import Icon from './Icon';
 
 interface TagDefinitionEditModalProps {
   isOpen: boolean;
@@ -15,27 +16,32 @@ const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen,
     const [formData, setFormData] = useState<Partial<TagDefinition>>({});
     const [categories, setCategories] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (isOpen) {
             setIsLoading(true);
+            setError(null);
             api.get<{ categories: string[] }>('/settings/tags/options')
                 .then(res => {
                     const fetchedCategories = res.data.categories;
+                    if (!fetchedCategories || fetchedCategories.length === 0) {
+                        setError('後端未提供任何可用的標籤分類。');
+                        setCategories([]);
+                        setFormData(tag || { key: '', category: '' as TagDefinition['category'], description: '', required: false });
+                        return;
+                    }
                     setCategories(fetchedCategories);
-                    // Set form data after categories are fetched
                     setFormData(tag || { 
                         key: '', 
-                        // FIX: Cast the category to the correct type to resolve the TypeScript error. The API returns a string[], but the type is a specific string literal union.
-                        category: (fetchedCategories[0] || 'Infrastructure') as TagDefinition['category'], 
+                        category: (fetchedCategories[0]) as TagDefinition['category'], 
                         description: '', 
                         required: false 
                     });
                 })
                 .catch(err => {
                     console.error("Failed to load tag categories", err);
-                    // Fallback in case of error
-                    setFormData(tag || { key: '', category: 'Infrastructure', description: '', required: false });
+                    setError('無法載入標籤分類選項。');
                 })
                 .finally(() => setIsLoading(false));
         }
@@ -58,17 +64,23 @@ const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen,
             footer={
                 <div className="flex justify-end space-x-2">
                     <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">取消</button>
-                    <button onClick={handleSave} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md">儲存</button>
+                    <button onClick={handleSave} disabled={isLoading || !!error} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md disabled:bg-slate-600 disabled:cursor-not-allowed">儲存</button>
                 </div>
             }
         >
             <div className="space-y-4">
+                 {error && (
+                    <div className="p-3 bg-red-900/50 border border-red-700 text-red-300 rounded-md text-sm flex items-center">
+                        <Icon name="alert-circle" className="w-4 h-4 mr-2" />
+                        {error}
+                    </div>
+                )}
                 <FormRow label="標籤鍵 *">
                     <input 
                         type="text" 
                         value={formData.key || ''} 
                         onChange={e => handleChange('key', e.target.value)} 
-                        disabled={!!tag}
+                        disabled={!!tag || isLoading || !!error}
                         className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm disabled:bg-slate-800/50 disabled:cursor-not-allowed"
                     />
                     {!!tag && <p className="text-xs text-slate-500 mt-1">標籤鍵在建立後無法修改。</p>}
@@ -77,8 +89,8 @@ const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen,
                     <select 
                         value={formData.category || ''} 
                         onChange={e => handleChange('category', e.target.value)}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
-                        disabled={isLoading}
+                        className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm disabled:bg-slate-800/50 disabled:cursor-not-allowed"
+                        disabled={isLoading || !!error}
                     >
                         {isLoading ? <option>載入中...</option> : categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                     </select>
@@ -88,15 +100,17 @@ const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen,
                         value={formData.description || ''} 
                         onChange={e => handleChange('description', e.target.value)} 
                         rows={3} 
-                        className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
+                        disabled={isLoading || !!error}
+                        className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm disabled:bg-slate-800/50 disabled:cursor-not-allowed"
                     ></textarea>
                 </FormRow>
                 <FormRow label="設定">
-                    <label className="flex items-center space-x-3 cursor-pointer p-3 bg-slate-800/30 rounded-lg hover:bg-slate-800/50">
+                    <label className={`flex items-center space-x-3 p-3 bg-slate-800/30 rounded-lg ${isLoading || !!error ? 'cursor-not-allowed opacity-50' : 'hover:bg-slate-800/50 cursor-pointer'}`}>
                         <input 
                             type="checkbox" 
                             checked={formData.required || false} 
                             onChange={e => handleChange('required', e.target.checked)} 
+                            disabled={isLoading || !!error}
                             className="form-checkbox h-5 w-5 rounded bg-slate-800 border-slate-600 text-sky-500 focus:ring-sky-500"
                         />
                         <span className="text-slate-300 font-semibold">此標籤為必填項目</span>

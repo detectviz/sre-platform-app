@@ -87,9 +87,9 @@ const MailSettingsPage: React.FC = () => {
                         <FormRow label="加密方式">
                             <select value={settings.encryption} onChange={e => handleChange('encryption', e.target.value)}
                                     className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
-                                <option value="none">無</option>
-                                <option value="tls">TLS</option>
-                                <option value="ssl">SSL</option>
+                                {settings.encryptionModes?.map(mode => (
+                                    <option key={mode} value={mode}>{mode.toUpperCase()}</option>
+                                )) || <option value="none">無</option>}
                             </select>
                         </FormRow>
                     </div>

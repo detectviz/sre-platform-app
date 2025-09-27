@@ -1,4 +1,4 @@
-# SRE 平台功能規格 v2.16
+# SRE 平台功能規格 v2.20
 
 本文件旨在記錄 SRE 平台在持續開發過程中的重要功能規格與架構決策，作為開發與測試的依據。
 
@@ -467,7 +467,6 @@
 -   **圖表顏色配置動態化 (`TraceTimelineChart.tsx`)**:
     -   「追蹤分析」頁面中的時間軸圖表，其渲染 Span 所用的顏色陣列不再是靜態的。現在，它會在元件載入時向 `GET /ui/themes/charts` API 請求顏色配置。
     -   增加了錯誤處理機制，若 API 請求失敗，會自動回退至一組預設的顏色，確保圖表的可用性。
-    -   此變更為未來實現全站主題切換（如深色/淺色模式下的不同圖表風格）奠定了基礎。
 
 ### 15.3 新增的 API 端點
 
@@ -547,3 +546,174 @@
 -   `GET /logs/options`: (新增) 提供日誌探索頁面的時間範圍等選項 (未來規劃)。
 -   (重用) `/me`: 現在由 `UserContext` 統一呼叫，為全平台提供使用者資訊。
 -   (重用) `/dashboards/options`, `/settings/tags/options`: 被更多元件用於獲取預設值與選項。
+---
+
+## 18. 功能: UI 字串中心化與國際化基礎 (v2.17)
+
+-   **模組**: 全局 (UI/UX)
+-   **版本**: v2.17
+-   **狀態**: ✅ 已完成
+
+### 18.1 使用者故事
+
+**身為** 一名平台開發者與維護者，
+**我想要** 將散落在所有前端元件中的硬編碼 UI 字串（如頁面標題、按鈕文字、標籤）集中到一個統一的檔案中進行管理，
+**使得** 修改文字內容時無需變更元件邏輯，確保了 UI 的一致性，並為未來的國際化 (i18n) 工作奠定了堅實的基礎，大幅提升了應用的可維護性。
+
+### 18.2 行為變更
+
+-   **建立唯一真實來源 (Single Source of Truth)**:
+    -   新增了 `constants/pages.ts` 檔案，其中定義了一個名為 `PAGE_CONTENT` 的大型常數物件。此物件現在是整個應用程式所有 UI 顯示文字的唯一來源。
+    -   該物件按頁面和功能模組進行了結構化組織（例如 `PAGE_CONTENT.SRE_WAR_ROOM`, `PAGE_CONTENT.GLOBAL`, `PAGE_CONTENT.ALERT_RULE_EDIT_MODAL`），確保了內容的易於查找與管理。
+
+-   **全面重構前端元件**:
+    -   所有先前包含硬編碼字串的 React 元件（`.tsx` 檔），包括頁面、佈局和共用元件，都已被重構。
+    -   現在，這些元件會從 `constants/pages.ts` 匯入 `PAGE_CONTENT` 物件，並使用解構賦值來獲取其所需的文字內容，徹底移除了元件內部的靜態字串。
+
+-   **動態字串處理**:
+    -   對於需要動態插入變數的字串（例如，確認刪除訊息中的項目名稱），在 `PAGE_CONTENT` 中定義為接收參數的函式，以保持邏輯與內容的分離。
+
+### 18.3 重構範例
+
+**修改前 (`SREWarRoomPage.tsx`)**:
+```tsx
+<h2 className="text-xl font-bold ...">AI 每日簡報</h2>
+// ...
+<h3 className="font-semibold ...">穩定性摘要</h3>
+```
+
+**修改後 (`SREWarRoomPage.tsx`)**:
+```tsx
+import { PAGE_CONTENT } from '../constants/pages';
+const { SRE_WAR_ROOM: content } = PAGE_CONTENT;
+
+// ...
+
+<h2 className="text-xl font-bold ...">{content.AI_BRIEFING_TITLE}</h2>
+// ...
+<h3 className="font-semibold ...">{content.STABILITY_SUMMARY}</h3>
+```
+
+### 18.4 影響範圍
+
+此次重構涵蓋了平台內所有使用者可見的介面，包括但不限於：
+- **主要頁面**: SRE 戰情室、儀表板管理、事件列表、資源管理、分析中心、自動化中心。
+- **所有設定頁面**: IAM、通知管理、平台設定、個人設定。
+- **核心共用元件**: 模態框 (`Modal`)、工具列 (`Toolbar`)、下拉選單 (`Dropdown`)、抽屜 (`Drawer`) 等。
+---
+
+## 19. 功能: 全局靜態資料 API 化 (v2.18)
+
+-   **模組**: 全局 (Core)
+-   **版本**: v2.18
+-   **狀態**: ✅ 已完成
+
+### 19.1 使用者故事
+
+**身為** 一名平台開發者與管理員，
+**我想要** 平台中所有 UI 選項（如下拉選單、篩選器、預設值）都從後端 API 獲取，而不是硬編碼在前端程式碼中，
+**使得** 平台 UI 與業務邏輯完全解耦，未來若需調整選項（例如，新增一個事件狀態、調整 Grafana 刷新頻率）時，只需修改後端配置即可，無需重新部署前端，從而大幅提升系統的可維護性、靈活性與一致性。
+
+### 19.2 行為變更
+
+-   **全面 API 化**: 根據 `Static Data Audit & Remediation Plan`，系統性地移除了前端所有硬編碼的靜態資料，並替換為對應的 API 請求。
+-   **受影響的元件**:
+    -   `DashboardViewer`: Grafana 時間範圍、刷新頻率等選項現在由 API 提供。
+    -   `InfrastructureInsightsPage`: 時間範圍選項 API 化。
+    -   `CapacityPlanningPage`: 時間範圍選項 API 化。
+    -   `UnifiedSearchModal`: 所有篩選器（事件狀態、資源類型等）的下拉選項現在動態載入。
+    -   `NotificationChannelEditModal`: 管道類型、HTTP 方法等選項 API 化。
+    -   `AlertRuleEditModal`: 嚴重性等級、預設條件等選項 API 化。
+    -   `SilenceRuleEditModal`: 靜音時長、條件鍵等選項 API 化。
+    -   `AutomationTriggerEditModal`: 觸發器類型、條件鍵等選項 API 化。
+    -   `AutomationPlaybookEditModal`: 腳本類型、參數類型等選項 API 化。
+    -   `AutomationHistoryPage`: 狀態篩選選項 API 化。
+    -   `NotificationHistoryPage`: 狀態和管道類型篩選選項 API 化。
+    -   `MailSettingsPage`: 加密模式選項 API 化。
+    -   `ResourceTopologyPage`: 拓撲圖佈局選項 API 化。
+-   **健壯性提升**: 所有進行 API 請求的元件都增加了載入中 (Loading) 和錯誤 (Error) 狀態處理，若 API 請求失敗，會顯示清晰的錯誤提示，而非靜默失敗或使用可能過時的硬編碼備援資料。
+
+### 19.3 新增的 API 端點
+
+-   `GET /settings/grafana/options`: 提供 Grafana 儀表板檢視器的控制選項。
+-   `GET /dashboards/infrastructure-insights/options`: 提供基礎設施洞察頁的選項。
+-   `GET /analysis/capacity-planning/options`: (端點擴充) `GET /analysis/capacity-planning` 現在包含選項資料。
+-   `GET /incidents/options`: 提供事件管理的篩選選項。
+-   `GET /alert-rules/options`: 提供告警規則的篩選與編輯選項。
+-   `GET /automation/executions/options`: 提供自動化歷史的篩選選項。
+-   `GET /settings/notification-history/options`: 提供通知歷史的篩選選項。
+-   `GET /settings/mail`: (端點擴充) `GET /settings/mail` 現在包含加密模式選項。
+-   `GET /resources/topology/options`: 提供拓撲圖的佈局選項。
+-   `GET /automation/scripts/options`: 提供自動化腳本的類型選項。
+-   `GET /settings/notification-channels/options`: 提供通知管道的類型選項。
+-   `GET /automation/triggers/options`: 提供自動化觸發器的類型和條件選項。
+---
+
+## 20. 功能: 錯誤處理與程式碼一致性強化 (v2.19)
+
+-   **模組**: 全局 (Core)
+-   **版本**: v2.19
+-   **狀態**: ✅ 已完成
+
+### 20.1 使用者故事
+
+**身為** 一名平台開發者與維護者，
+**我想要** 平台在 API 請求失敗時能夠提供清晰的錯誤回饋並阻止不一致的資料提交，同時在處理特殊篩選條件（如「全部」）時採用一致且可維護的程式碼模式，
+**使得** 平台的健壯性與程式碼品質得到提升，減少因硬編碼後備資料或魔法字串 (magic strings) 導致的潛在錯誤。
+
+### 20.2 行為變更
+
+-   **強化 API 錯誤處理 (`TagDefinitionEditModal.tsx`)**:
+    -   **移除硬編碼後備資料**: 徹底移除了在獲取標籤分類失敗時，將分類硬編碼回退至 `'Infrastructure'` 的邏輯。
+    -   **明確的錯誤狀態**: 現在，若 `GET /settings/tags/options` API 請求失敗，模態框會顯示一則清晰的錯誤訊息，並**禁用**「分類」下拉選單和「儲存」按鈕。此舉確保了 API 是唯一的資料真實來源，並防止使用者提交不完整或不正確的資料。
+
+-   **提升程式碼一致性 (`TagManagementPage.tsx`)**:
+    -   **消除魔法字串**: 移除了在分類篩選器中直接硬編碼 `'All'` 的做法。
+    -   **常數化管理**: 改為在元件內部使用常數 (`ALL_CATEGORIES_VALUE`, `ALL_CATEGORIES_LABEL`) 來統一定義「所有分類」篩選器的值與顯示標籤。這提高了程式碼的可讀性與可維護性，並確保了篩選邏輯與顯示內容的一致性。
+
+### 20.3 使用的 API 端點
+
+-   (重用) `GET /settings/tags/options`: `TagDefinitionEditModal` 和 `TagManagementPage` 對此端點的依賴性被強化，移除了前端的後備邏輯。
+---
+
+## 21. 架構決策: 前端合理依賴定義 (v2.20)
+
+-   **模組**: 全局 (架構)
+-   **版本**: v2.20
+-   **狀態**: ✅ 已確立
+
+### 21.1 背景
+
+在平台全面 API 化的過程中，為確保開發效率與系統健壯性，需明確定義哪些資料應保留在前端，而非所有靜態資料都需透過 API 獲取。本次決策旨在確立「合理前端依賴」的原則，作為未來開發的指導方針。
+
+### 21.2 合理依賴的分類與原則
+
+經過審計，以下三種類型的資料被定義為合理的前端依賴，應保留在前端程式碼中：
+
+#### 1. UI 文字與流程控制常數
+
+-   **範例**: 精靈步驟標題 (`stepTitles = ["基本資訊", "通知管道"]`)、靜態標籤。
+-   **性質**: 這類文字與特定 UI 元件的內部狀態和流程緊密耦合。
+-   **原則**:
+    -   **中心化管理**: 所有 UI 字串應統一存放於 `constants/pages.ts` 中，以確保一致性並為未來的國際化 (i18n) 工作奠定基礎。
+    -   **不 API 化**: 將其 API 化會帶來不必要的複雜性，且與元件邏輯解耦的價值不大，除非 UI 流程本身是由後端動態決定的。
+
+#### 2. 技術性枚舉與模板變數
+
+-   **範例**: 嚴重性等級 (`severityLevels: ('info' | 'warning' | 'critical')[]`)、事件內容模板變數 (`variables = ['{{severity}}', '{{resource.name}}']`)。
+-   **性質**: 這類常數是前端的「技術契約」或與 TypeScript 型別系統直接綁定。
+-   **原則**:
+    -   **型別安全優先**: 與 `TypeScript` 型別直接對應的枚舉應保留在前端，以利用編譯時的靜態檢查，防止執行時錯誤。
+    -   **前端邏輯內聚**: 模板變數定義了前端渲染邏輯的一部分，應視為前端的內部實現細節，除非後端需要動態增減可用變數，否則不應 API 化。
+
+#### 3. 容錯回退機制 (Graceful Degradation Fallbacks)
+
+-   **範例**: 圖表備用顏色 (`FALLBACK_COLORS = ['#38bdf8', ...]`)。
+-   **性質**: 用於在非核心 API (如主題、遠程配置) 請求失敗時，確保 UI 依然能夠正常渲染並保持可用性。
+-   **原則**:
+    -   **提升健壯性**: 這是優秀的防禦性程式設計實踐。對於非關鍵性但影響視覺體驗的數據，提供一組合理的預設值作為後備，可以防止在網路不穩定時 UI 崩潰。
+    -   **明確區分**: 必須明確區分「核心業務數據」與「輔助性配置數據」。核心業務數據**絕不**應該有前端後備，必須依賴 API 作為唯一真實來源；而輔助性配置數據則適合使用此模式。
+
+### 21.3 結論
+
+確立以上原則有助於避免過度工程化，在確保平台數據由後端驅動的核心目標下，保留了前端開發的靈活性與健壯性。

@@ -5,6 +5,7 @@ import FormRow from '../../components/FormRow';
 import Icon from '../../components/Icon';
 import api from '../../services/api';
 import { User, AuthSettings } from '../../types';
+import UserAvatar from '../../components/UserAvatar';
 
 const PersonalInfoPage: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -45,9 +46,7 @@ const PersonalInfoPage: React.FC = () => {
     <div className="max-w-2xl">
       <div className="glass-card rounded-xl p-6">
         <div className="flex items-center mb-6">
-          <div className="w-20 h-20 rounded-full bg-slate-700 flex items-center justify-center mr-6 shrink-0">
-            <Icon name="user" className="w-10 h-10 text-slate-300" />
-          </div>
+          <UserAvatar user={currentUser} className="w-20 h-20 mr-6" iconClassName="w-10 h-10" />
           <div>
             <h3 className="text-2xl font-bold text-white">{currentUser.name}</h3>
             <p className="text-slate-400">{currentUser.email}</p>

@@ -1,5 +1,6 @@
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { NotificationHistoryRecord, NotificationChannelType } from '../../../types';
+import { NotificationHistoryRecord, NotificationChannelType, NotificationHistoryOptions } from '../../../types';
 import Icon from '../../../components/Icon';
 import TableContainer from '../../../components/TableContainer';
 import Drawer from '../../../components/Drawer';
@@ -18,6 +19,7 @@ const NotificationHistoryPage: React.FC = () => {
     const [totalHistory, setTotalHistory] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
+    const [options, setOptions] = useState<NotificationHistoryOptions | null>(null);
 
     const [selectedRecord, setSelectedRecord] = useState<NotificationHistoryRecord | null>(null);
     const [resendingId, setResendingId] = useState<string | null>(null);
@@ -36,6 +38,12 @@ const NotificationHistoryPage: React.FC = () => {
         setIsPlaceholderModalOpen(true);
     };
     
+    useEffect(() => {
+        api.get<NotificationHistoryOptions>('/settings/notification-history/options')
+            .then(res => setOptions(res.data))
+            .catch(err => console.error("Failed to fetch notification history options", err));
+    }, []);
+
     const fetchHistory = useCallback(async () => {
         setIsLoading(true);
         setError(null);
@@ -110,14 +118,11 @@ const NotificationHistoryPage: React.FC = () => {
                         </div>
                         <select value={filters.status} onChange={e => setFilters({...filters, status: e.target.value})} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm">
                             <option value="">所有狀態</option>
-                            <option value="success">Success</option>
-                            <option value="failed">Failed</option>
+                            {options?.statuses.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                         </select>
                         <select value={filters.channelType} onChange={e => setFilters({...filters, channelType: e.target.value})} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm">
                             <option value="">所有管道</option>
-                            <option value="Email">Email</option>
-                            <option value="Slack">Slack</option>
-                            <option value="Webhook">Webhook</option>
+                            {options?.channelTypes.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                         </select>
                         <input type="datetime-local" value={filters.startDate} onChange={e => setFilters({...filters, startDate: e.target.value})} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm" />
                         <span className="text-slate-400">to</span>

@@ -1,6 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import Icon from './Icon';
+import { PAGE_CONTENT } from '../constants/pages';
+
+const { GLOBAL: globalContent, LAYOUT_SETTINGS: layoutContent } = PAGE_CONTENT;
+
 
 export interface TableColumn {
   key: string;
@@ -79,20 +84,20 @@ const ColumnSettingsModal: React.FC<ColumnSettingsModalProps> = ({ isOpen, onClo
 
     return (
         <Modal
-            title="欄位設定"
+            title={globalContent.COLUMN_SETTINGS}
             isOpen={isOpen}
             onClose={onClose}
             width="w-2/3 max-w-4xl"
             footer={
                 <div className="flex justify-end space-x-2">
-                    <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">取消</button>
-                    <button onClick={handleConfirmSave} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md">儲存</button>
+                    <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">{globalContent.CANCEL}</button>
+                    <button onClick={handleConfirmSave} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md">{globalContent.SAVE}</button>
                 </div>
             }
         >
             <div className="grid grid-cols-2 gap-4 h-[60vh]">
                 <div className="border border-slate-700 rounded-lg p-3 flex flex-col">
-                    <h3 className="font-semibold mb-2 text-white">可用的欄位</h3>
+                    <h3 className="font-semibold mb-2 text-white">{layoutContent.AVAILABLE_WIDGETS}</h3>
                     <div className="space-y-2 flex-grow overflow-y-auto">
                         {availableColumns.map(col => (
                            <ListItem key={col.key} label={col.label} onAction={() => handleAdd(col)} actionIcon="chevron-right" />
@@ -100,7 +105,7 @@ const ColumnSettingsModal: React.FC<ColumnSettingsModalProps> = ({ isOpen, onClo
                     </div>
                 </div>
                 <div className="border border-slate-700 rounded-lg p-3 flex flex-col">
-                    <h3 className="font-semibold mb-2 text-white">顯示的欄位</h3>
+                    <h3 className="font-semibold mb-2 text-white">{layoutContent.DISPLAYED_WIDGETS}</h3>
                      <div className="space-y-2 flex-grow overflow-y-auto">
                         {displayedColumns.map((col, index) => (
                            <ListItem 

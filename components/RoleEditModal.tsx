@@ -1,9 +1,13 @@
+
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import FormRow from './FormRow';
 import Icon from './Icon';
 import { Role, RolePermission } from '../types';
 import api from '../services/api';
+import { PAGE_CONTENT } from '../constants/pages';
+
+const { GLOBAL: globalContent, ROLE_EDIT_MODAL: content } = PAGE_CONTENT;
 
 interface AvailablePermission {
     module: string;
@@ -82,27 +86,27 @@ const RoleEditModal: React.FC<RoleEditModalProps> = ({ isOpen, onClose, onSave, 
 
     return (
         <Modal
-            title={role ? '編輯角色' : '新增角色'}
+            title={role ? content.EDIT_TITLE : content.ADD_TITLE}
             isOpen={isOpen}
             onClose={onClose}
             width="w-1/2 max-w-3xl"
             footer={
                 <div className="flex justify-end space-x-2">
-                    <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">取消</button>
-                    <button onClick={handleSave} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md">儲存</button>
+                    <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">{globalContent.CANCEL}</button>
+                    <button onClick={handleSave} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md">{globalContent.SAVE}</button>
                 </div>
             }
         >
             <div className="space-y-4 max-h-[60vh] flex flex-col">
-                <FormRow label="角色名稱 *">
+                <FormRow label={`${content.ROLE_NAME} *`}>
                     <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
                 </FormRow>
-                <FormRow label="描述">
+                <FormRow label={globalContent.DESCRIPTION}>
                     <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"></textarea>
                 </FormRow>
                 
                 <div className="flex-grow overflow-y-auto pr-2 -mr-4">
-                    <h3 className="text-lg font-semibold text-white mb-2">權限設定</h3>
+                    <h3 className="text-lg font-semibold text-white mb-2">{content.PERMISSION_SETTINGS}</h3>
                     <div className="space-y-2">
                         {availablePermissions.map(permModule => {
                             const rolePerm = permissions.find(p => p.module === permModule.module);
@@ -124,7 +128,7 @@ const RoleEditModal: React.FC<RoleEditModalProps> = ({ isOpen, onClose, onSave, 
                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                                 <label className="flex items-center space-x-2 p-2 rounded-md bg-slate-700/50 font-semibold">
                                                     <input type="checkbox" checked={isAllSelected} onChange={e => handleSelectAll(permModule.module, allActions, e.target.checked)} className="form-checkbox h-4 w-4 rounded bg-slate-800 border-slate-600 text-sky-500" />
-                                                    <span>全選</span>
+                                                    <span>{content.SELECT_ALL}</span>
                                                 </label>
                                                 {permModule.actions.map(action => (
                                                      <label key={action.key} className="flex items-center space-x-2 p-2 rounded-md hover:bg-slate-700/50">

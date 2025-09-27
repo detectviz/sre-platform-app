@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { NotificationChannel, NotificationChannelType } from '../../../types';
 import Icon from '../../../components/Icon';
@@ -108,6 +109,7 @@ const NotificationChannelPage: React.FC = () => {
             case 'Email': return { icon: 'mail', color: 'text-red-400' };
             case 'Slack': return { icon: 'slack', color: 'text-purple-400' };
             case 'Webhook': return { icon: 'globe', color: 'text-sky-400' };
+            default: return { icon: 'bell', color: 'text-slate-400' };
         }
     };
 

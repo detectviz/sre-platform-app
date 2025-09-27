@@ -7,8 +7,15 @@ export interface NavItem {
   children?: NavItem[];
 }
 
-// FIX: Changed from enum to string literal type to remove hardcoded enum dependency.
 export type DashboardType = 'built-in' | 'grafana';
+
+export interface DashboardLayoutItem {
+  i: string; // widget id
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
 
 export interface Dashboard {
   id: string;
@@ -22,7 +29,7 @@ export interface Dashboard {
   grafanaUrl?: string;
   grafana_dashboard_uid?: string;
   grafana_folder_uid?: string;
-  layout?: string[];
+  layout?: DashboardLayoutItem[];
   deleted_at?: string;
 }
 
@@ -191,6 +198,7 @@ export interface MailSettings {
     senderName: string;
     senderEmail: string;
     encryption: 'none' | 'tls' | 'ssl';
+    encryptionModes?: string[];
 }
 
 export interface GrafanaSettings {
@@ -540,6 +548,9 @@ export interface CapacityPlanningData {
         recommended: string;
         cost: string;
     }[];
+    options: {
+      timeRangeOptions: { label: string; value: string }[];
+    };
 }
 
 export interface PageMetadata {
@@ -563,4 +574,55 @@ export interface PreferenceOptions {
   timezones: string[];
   languages: { value: string; label: string }[];
   themes: { value: string; label: string }[];
+}
+
+// --- API Option Types ---
+
+export interface GrafanaOptions {
+    timeOptions: { label: string, value: string }[];
+    refreshOptions: { label: string, value: string }[];
+    tvModeOptions: { label: string, value: string }[];
+}
+
+export interface InfraInsightsOptions {
+    timeOptions: { label: string, value: string }[];
+}
+
+export interface IncidentOptions {
+    statuses: { value: Incident['status'], label: string }[];
+    severities: { value: Incident['severity'], label: string }[];
+}
+
+export interface AlertRuleOptions {
+    severities: { value: AlertRule['severity'], label: string }[];
+    statuses: { value: boolean, label: string }[];
+}
+
+export interface AutomationExecutionOptions {
+    statuses: { value: AutomationExecution['status'], label: string }[];
+}
+
+export interface NotificationHistoryOptions {
+    statuses: { value: NotificationHistoryRecord['status'], label: string }[];
+    channelTypes: { value: NotificationChannelType, label: string }[];
+}
+
+export interface AutomationScriptOptions {
+    playbookTypes: { value: AutomationPlaybook['type'], label: string }[];
+    parameterTypes: { value: ParameterDefinition['type'], label: string }[];
+}
+
+export interface NotificationChannelOptions {
+    channelTypes: { value: NotificationChannelType, label: string }[];
+    httpMethods: ('POST' | 'PUT' | 'GET')[];
+}
+
+export interface AutomationTriggerOptions {
+    triggerTypes: { value: TriggerType, label: string }[];
+    conditionKeys: string[];
+    defaultConfigs: Record<TriggerType, Partial<AutomationTrigger['config']>>;
+}
+
+export interface TopologyOptions {
+    layouts: { value: string, label: string }[];
 }

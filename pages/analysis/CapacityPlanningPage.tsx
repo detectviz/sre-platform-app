@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import EChartsReact from '../../components/EChartsReact';
 import Icon from '../../components/Icon';
@@ -21,6 +22,10 @@ const CapacityPlanningPage: React.FC = () => {
         try {
             const response = await api.get<CapacityPlanningData>('/analysis/capacity-planning');
             setData(response.data);
+            if (response.data.options?.timeRangeOptions?.length) {
+                 const defaultOption = response.data.options.timeRangeOptions.find(o => o.value === '60_30') || response.data.options.timeRangeOptions[0];
+                 setTimeRange(defaultOption.value);
+            }
         } catch (err) {
             setError('無法獲取容量規劃資料。');
         } finally {
@@ -32,12 +37,6 @@ const CapacityPlanningPage: React.FC = () => {
     useEffect(() => {
         fetchData();
     }, [fetchData]);
-
-    const timeRangeOptions = [
-        { label: '最近 30 天 + 預測 15 天', value: '30_15' },
-        { label: '最近 60 天 + 預測 30 天', value: '60_30' },
-        { label: '最近 90 天 + 預測 45 天', value: '90_45' },
-    ];
 
     const trendOption = {
         tooltip: { trigger: 'axis' },
@@ -105,7 +104,7 @@ const CapacityPlanningPage: React.FC = () => {
                 leftActions={
                     <Dropdown
                         label="時間範圍"
-                        options={timeRangeOptions}
+                        options={data?.options?.timeRangeOptions || []}
                         value={timeRange}
                         onChange={setTimeRange}
                         minWidth="w-64"

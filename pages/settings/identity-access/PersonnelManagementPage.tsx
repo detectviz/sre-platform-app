@@ -15,6 +15,7 @@ import ImportFromCsvModal from '../../../components/ImportFromCsvModal';
 import { showToast } from '../../../services/toast';
 import ColumnSettingsModal, { TableColumn } from '../../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../../contexts/PageMetadataContext';
+import UserAvatar from '../../../components/UserAvatar';
 
 const ALL_COLUMNS: TableColumn[] = [
     { key: 'name', label: '名稱' },
@@ -217,9 +218,7 @@ const PersonnelManagementPage: React.FC = () => {
             case 'name':
                 return (
                     <div className="flex items-center">
-                        <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mr-3 shrink-0">
-                            <Icon name="user" className="w-5 h-5 text-slate-300" />
-                        </div>
+                        <UserAvatar user={user} className="w-8 h-8 mr-3" iconClassName="w-5 h-5" />
                         <div>
                             <div className="font-medium text-white">{user.name}</div>
                             <div className="text-xs text-slate-400 font-normal">{user.email}</div>

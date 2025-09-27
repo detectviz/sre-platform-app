@@ -80,6 +80,22 @@ const MOCK_DASHBOARDS: Dashboard[] = [
     { id: 'infrastructure-insights', name: '基礎設施洞察', type: 'built-in', category: '基礎設施', description: '整合多雲與多中心資源健康狀態。', owner: 'SRE 平台團隊', updatedAt: '2025/09/18 16:30', path: '/dashboard/infrastructure-insights' },
     { id: 'api-service-status', name: 'API 服務狀態', type: 'grafana', category: '業務與 SLA', description: 'API 響應時間、錯誤率、吞吐量等服務指標。', owner: 'SRE 平台團隊', updatedAt: '2025/09/18 16:45', path: '/dashboard/api-service-status', grafanaUrl: 'http://localhost:3000/d/aead3d54-423b-4a91-b91c-dbdf40d7fff5', grafana_dashboard_uid: 'aead3d54-423b-4a91-b91c-dbdf40d7fff5', grafana_folder_uid: 'biz-folder' },
     { id: 'user-experience-monitoring', name: '用戶體驗監控', type: 'grafana', category: '營運與容量', description: '頁面載入時間、用戶行為分析、錯誤追蹤。', owner: '前端團隊', updatedAt: '2025/09/18 17:00', path: '/dashboard/user-experience-monitoring', grafanaUrl: 'http://localhost:3000/d/another-dashboard-id-for-ux', grafana_dashboard_uid: 'another-dashboard-id-for-ux', grafana_folder_uid: 'ux-folder' },
+    {
+        id: 'custom-built-in-1',
+        name: 'My Custom Dashboard',
+        type: 'built-in',
+        category: '團隊自訂',
+        description: 'A custom dashboard created by a user.',
+        owner: 'Admin User',
+        updatedAt: '2025/09/20 11:00',
+        path: '/dashboard/custom-built-in-1',
+        layout: [
+            { i: 'sre_pending_incidents', x: 0, y: 0, w: 4, h: 2 },
+            { i: 'sre_in_progress', x: 4, y: 0, w: 4, h: 2 },
+            { i: 'sre_resolved_today', x: 8, y: 0, w: 4, h: 2 },
+            { i: 'sre_automation_rate', x: 0, y: 2, w: 12, h: 2 },
+        ],
+    },
 ];
 const MOCK_AVAILABLE_GRAFANA_DASHBOARDS = [
   { uid: 'grafana-uid-1', title: 'Service Health', url: 'http://localhost:3000/d/grafana-uid-1', folderTitle: 'Production', folderUid: 'prod-folder' },
@@ -92,6 +108,25 @@ const MOCK_DASHBOARD_TEMPLATES: DashboardTemplate[] = [
 const MOCK_INCIDENTS: Incident[] = [
     { id: 'INC-001', summary: 'API 延遲超過閾值', resource: 'api-server-01', resourceId: 'res-001', serviceImpact: 'High', rule: 'API 延遲規則', ruleId: 'rule-002', status: 'new', severity: 'warning', priority: 'P1', assignee: '張三', triggeredAt: '2024-01-15 10:30:00', history: [ { timestamp: '2024-01-15 10:30:00', user: 'System', action: 'Incident created from rule "API 延遲規則".' } ] },
     { id: 'INC-002', summary: '資料庫連接超時', resource: 'db-primary', resourceId: 'res-002', serviceImpact: 'High', rule: '資料庫連接規則', ruleId: 'rule-db-conn', status: 'acknowledged', severity: 'critical', priority: 'P0', assignee: '李四', triggeredAt: '2024-01-15 10:15:00', history: [ { timestamp: '2024-01-15 10:15:00', user: 'System', action: 'Incident created from rule "資料庫連接規則".' } ] },
+    {
+        id: 'INC-003',
+        summary: '5xx Errors on web-prod-12',
+        resource: 'web-prod-12',
+        resourceId: 'res-004',
+        serviceImpact: 'Medium',
+        rule: '5xx Error Rate',
+        ruleId: 'rule-5xx',
+        status: 'resolved',
+        severity: 'warning',
+        priority: 'P2',
+        assignee: '王五',
+        triggeredAt: '2024-01-15 09:45:00',
+        history: [{
+            timestamp: '2024-01-15 09:45:00',
+            user: 'System',
+            action: 'Incident created from rule "5xx Error Rate".'
+        }]
+    },
 ];
 const MOCK_QUICK_SILENCE_DURATIONS = [1, 2, 4, 8, 12, 24]; // hours
 const MOCK_ALERT_RULES: AlertRule[] = [
@@ -119,6 +154,9 @@ const MOCK_SILENCE_RULE_OPTIONS = {
 const MOCK_RESOURCES: Resource[] = [
     { id: 'res-001', name: 'api-gateway-prod-01', status: 'healthy', type: 'API Gateway', provider: 'AWS', region: 'us-east-1', owner: 'SRE Team', lastCheckIn: '30s ago' },
     { id: 'res-002', name: 'rds-prod-main', status: 'critical', type: 'RDS Database', provider: 'AWS', region: 'us-east-1', owner: 'DBA Team', lastCheckIn: '2m ago' },
+    { id: 'res-003', name: 'k8s-prod-cluster', status: 'healthy', type: 'EKS Cluster', provider: 'AWS', region: 'us-west-2', owner: 'SRE Team', lastCheckIn: '1m ago' },
+    { id: 'res-004', name: 'web-prod-12', status: 'healthy', type: 'EC2 Instance', provider: 'AWS', region: 'us-west-2', owner: 'Web Team', lastCheckIn: '45s ago' },
+    { id: 'res-007', name: 'api-service', status: 'warning', type: 'Kubernetes Service', provider: 'AWS', region: 'us-east-1', owner: 'API Services', lastCheckIn: '1m ago' },
 ];
 const MOCK_RESOURCE_GROUPS: ResourceGroup[] = [
     { id: 'rg-001', name: 'Production Web Servers', description: 'All production-facing web servers', ownerTeam: 'Web Team', memberIds: ['res-004'], statusSummary: { healthy: 12, warning: 1, critical: 0 } },
@@ -133,15 +171,21 @@ const MOCK_AUTOMATION_TRIGGERS: AutomationTrigger[] = [
     { id: 'trig-001', name: '每日日誌歸檔', description: '在每天凌晨 3 點運行「歸檔舊日誌」腳本。', type: 'Schedule', enabled: true, targetPlaybookId: 'play-005', config: { cron: '0 3 * * *' }, lastTriggered: '18 小時前', creator: 'Admin User' },
 ];
 const MOCK_USERS: User[] = [
-    { id: 'usr-001', name: 'Admin User', email: 'admin@sre.platform', role: 'Admin', team: 'SRE Platform', status: 'active', lastLogin: '2分鐘前' },
-    { id: 'usr-002', name: 'Emily White', email: 'emily.w@example.com', role: 'SRE', team: 'Core Infrastructure', status: 'active', lastLogin: '1小時前' },
+    { id: 'usr-001', name: 'Admin User', email: 'admin@sre.platform', role: 'Admin', team: 'SRE Platform', status: 'active', lastLogin: '2分鐘前', avatar: 'https://i.pravatar.cc/150?u=usr-001' },
+    { id: 'usr-002', name: 'Emily White', email: 'emily.w@example.com', role: 'SRE', team: 'Core Infrastructure', status: 'active', lastLogin: '1小時前', avatar: 'https://i.pravatar.cc/150?u=usr-002' },
+    { id: 'usr-003', name: 'John Doe', email: 'john.d@example.com', role: 'Developer', team: 'API Services', status: 'active', lastLogin: '5小時前', avatar: 'https://i.pravatar.cc/150?u=usr-003' },
+    { id: 'usr-004', name: 'Sarah Connor', email: 'sarah.c@example.com', role: 'Viewer', team: 'Marketing', status: 'inactive', lastLogin: '3天前' },
+    { id: 'usr-005', name: 'pending.invite@example.com', email: 'pending.invite@example.com', role: 'Developer', team: 'API Services', status: 'invited', lastLogin: 'N/A' },
 ];
 const MOCK_USER_STATUSES: User['status'][] = ['active', 'invited', 'inactive'];
 const MOCK_TEAMS: Team[] = [
     { id: 'team-001', name: 'SRE Platform', description: 'Manages the SRE platform itself.', ownerId: 'usr-001', memberIds: ['usr-001'], createdAt: '2024-01-01 10:00:00' },
+    { id: 'team-002', name: 'Core Infrastructure', description: 'Maintains core infrastructure services.', ownerId: 'usr-002', memberIds: ['usr-002'], createdAt: '2024-01-02 11:00:00' },
+    { id: 'team-003', name: 'API Services', description: 'Develops and maintains all public APIs.', ownerId: 'usr-003', memberIds: ['usr-003', 'usr-005'], createdAt: '2024-01-03 12:00:00' },
 ];
 const MOCK_ROLES: Role[] = [
     { id: 'role-001', name: 'Administrator', description: '擁有所有權限', userCount: 1, status: 'active', createdAt: '2024-01-01 09:00:00', permissions: [] },
+    { id: 'role-002', name: 'SRE Engineer', description: '擁有事件、資源、自動化管理權限', userCount: 1, status: 'active', createdAt: '2024-01-01 09:00:00', permissions: [] },
 ];
 const AVAILABLE_PERMISSIONS = [
     { module: 'Incidents', description: 'Manage incidents and alerts', actions: [{key: 'read', label: 'Read'}, {key: 'update', label: 'Update'}] },
@@ -151,6 +195,7 @@ const MOCK_AUDIT_LOGS: AuditLog[] = [
 ];
 const MOCK_TAG_DEFINITIONS: TagDefinition[] = [
     { id: 'tag-001', key: 'env', category: 'Infrastructure', description: 'Deployment environment', allowedValues: [{ id: 'val-001', value: 'production', usageCount: 150 }], required: true, usageCount: 350 },
+    { id: 'tag-002', key: 'service', category: 'Application', description: 'Name of the microservice', allowedValues: [{ id: 'val-004', value: 'api-gateway', usageCount: 1 }], required: true, usageCount: 9 },
 ];
 const MOCK_TAG_CATEGORIES = ['Infrastructure', 'Application', 'Business', 'Security'];
 const MOCK_NOTIFICATIONS: NotificationItem[] = [
@@ -417,21 +462,22 @@ const MOCK_TRACE_ANALYSIS: TraceAnalysis = {
 
 const MOCK_EVENT_CORRELATION_DATA = {
     nodes: [
-        { id: '0', name: 'High DB CPU', value: 10, symbolSize: 50, category: 0 },
-        { id: '1', name: 'API Latency Spike', value: 8, symbolSize: 40, category: 1 },
-        { id: '2', name: 'Deployment', value: 5, symbolSize: 30, category: 2 },
-        { id: '3', name: '5xx Errors', value: 9, symbolSize: 45, category: 1 },
-        { id: '4', name: 'Low Disk Space', value: 6, symbolSize: 35, category: 0 },
+        { id: 'INC-002', name: 'DB Connection Timeout', value: 10, symbolSize: 50, category: 0 },
+        { id: 'INC-001', name: 'API Latency Spike', value: 8, symbolSize: 40, category: 1 },
+        { id: 'Deployment-XYZ', name: 'Deployment', value: 5, symbolSize: 30, category: 2 },
+        { id: 'INC-003', name: '5xx Errors', value: 9, symbolSize: 45, category: 1 },
+        { id: 'res-002', name: 'rds-prod-main', value: 6, symbolSize: 35, category: 0 },
+        { id: 'res-001', name: 'api-gateway-prod-01', value: 6, symbolSize: 35, category: 1 },
     ],
     links: [
-        { source: '0', target: '1' },
-        { source: '1', target: '3' },
-        { source: '2', target: '1' },
-        { source: '0', target: '4' },
+        { source: 'res-002', target: 'INC-002' },
+        { source: 'Deployment-XYZ', target: 'INC-001' },
+        { source: 'res-001', target: 'INC-001' },
+        { source: 'INC-001', target: 'INC-003' },
     ],
     categories: [
-        { name: 'DB Alerts' },
-        { name: 'API Errors' },
+        { name: 'DB Events' },
+        { name: 'API Events' },
         { name: 'Infra Changes' },
     ],
 };
@@ -446,6 +492,11 @@ const MOCK_CAPACITY_RESOURCE_ANALYSIS = [
     { name: 'k8s-prod-cluster-node-1', current: '85%', predicted: '98%', recommended: '緊急擴展', cost: '+$200/月' },
     { name: 'elasticache-prod-03', current: '40%', predicted: '45%', recommended: '觀察', cost: '-' },
 ];
+const MOCK_CAPACITY_TIME_OPTIONS = [
+    { label: '最近 30 天 + 預測 15 天', value: '30_15' },
+    { label: '最近 60 天 + 預測 30 天', value: '60_30' },
+    { label: '最近 90 天 + 預測 45 天', value: '90_45' },
+];
 const MOCK_SERVICE_HEALTH_DATA = {
     heatmap_data: [
         [0,0,98],[0,1,100],[0,2,95],[0,3,99],
@@ -454,11 +505,11 @@ const MOCK_SERVICE_HEALTH_DATA = {
         [3,0,99],[3,1,99],[3,2,97],[3,3,100],
     ],
     x_axis_labels: ['us-east-1', 'us-west-2', 'eu-central-1', 'ap-northeast-1'],
-    y_axis_labels: ['API Gateway', 'Database', 'Cache', 'Auth Service'],
+    y_axis_labels: ['API Gateway', 'RDS Database', 'EKS Cluster', 'Kubernetes Service'],
 };
 
 const MOCK_RESOURCE_GROUP_STATUS_DATA = {
-    group_names: ['Production Web', 'Core Databases', 'Cache Cluster', 'Logging Stack', 'API Services'],
+    group_names: ['Production Web Servers', 'Core Databases', 'Cache Cluster', 'Logging Stack', 'API Services'],
     series: [
         { name: '健康' as const, data: [12, 8, 5, 10, 22] },
         { name: '警告' as const, data: [1, 0, 1, 2, 3] },
@@ -615,6 +666,7 @@ function createInitialDB() {
         eventCorrelationData: JSON.parse(JSON.stringify(MOCK_EVENT_CORRELATION_DATA)),
         capacitySuggestions: JSON.parse(JSON.stringify(MOCK_CAPACITY_SUGGESTIONS)),
         capacityResourceAnalysis: JSON.parse(JSON.stringify(MOCK_CAPACITY_RESOURCE_ANALYSIS)),
+        capacityTimeOptions: JSON.parse(JSON.stringify(MOCK_CAPACITY_TIME_OPTIONS)),
         serviceHealthData: JSON.parse(JSON.stringify(MOCK_SERVICE_HEALTH_DATA)),
         resourceGroupStatusData: JSON.parse(JSON.stringify(MOCK_RESOURCE_GROUP_STATUS_DATA)),
         analysisOverviewData: JSON.parse(JSON.stringify(MOCK_ANALYSIS_OVERVIEW_DATA)),

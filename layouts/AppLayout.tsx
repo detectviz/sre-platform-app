@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
 import { NavItem, User, PlatformSettings } from '../types';
@@ -10,6 +9,10 @@ import { showToast } from '../services/toast';
 import api from '../services/api';
 import { useUIConfig } from '../contexts/UIConfigContext';
 import { useUser } from '../contexts/UserContext';
+import { PAGE_CONTENT } from '../constants/pages';
+import UserAvatar from '../components/UserAvatar';
+
+const { APP_LAYOUT: content } = PAGE_CONTENT;
 
 const AppLayout: React.FC = () => {
   const { navItems, tabConfigs, isLoading: isNavLoading } = useUIConfig();
@@ -189,7 +192,7 @@ const AppLayout: React.FC = () => {
         }`}
         title={collapsed ? item.label : ''}
       >
-        <Icon name={`${level > 0 ? 'h-4 w-4' : 'h-5 w-5'}`} />
+        <Icon name={`${item.icon}`} className={`${level > 0 ? 'h-4 w-4' : 'h-5 w-5'}`} />
         {!collapsed && <span className="ml-3">{item.label}</span>}
       </Link>
     );
@@ -199,7 +202,7 @@ const AppLayout: React.FC = () => {
     const { pathname } = useLocation();
 
     const crumbs = useMemo(() => {
-        const result: { label: string; path: string }[] = [{ label: 'Home', path: '/home' }];
+        const result: { label: string; path: string }[] = [{ label: content.HOME_BREADCRUMB, path: '/home' }];
         if (pathname === '/home' || pathname === '/') return result;
         
         const tempCrumbs: { label: string; path: string }[] = [];
@@ -269,7 +272,7 @@ const AppLayout: React.FC = () => {
       <aside className={`flex flex-col bg-slate-900 transition-all duration-300 flex-shrink-0 ${collapsed ? 'w-20' : 'w-64'}`}>
         <div className="flex items-center h-12 px-4 border-b border-slate-800 shrink-0">
           <Icon name="deployment-unit" className="h-8 w-8 text-sky-400" />
-          {!collapsed && <span className="ml-3 text-xl font-bold">SRE Platform</span>}
+          {!collapsed && <span className="ml-3 text-xl font-bold">{content.SIDEBAR_TITLE}</span>}
         </div>
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {isNavLoading ? (
@@ -294,7 +297,7 @@ const AppLayout: React.FC = () => {
                 <Icon name="search" className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400 w-4 h-4" />
                 <input 
                     type="text" 
-                    placeholder="Search... (Ctrl+K)" 
+                    placeholder={content.SEARCH_PLACEHOLDER} 
                     className="w-64 bg-slate-800/80 border border-slate-700 rounded-md pl-9 pr-4 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" 
                     readOnly 
                     onClick={() => setIsSearchModalOpen(true)}
@@ -303,9 +306,7 @@ const AppLayout: React.FC = () => {
              <NotificationCenter />
             <div className="relative" ref={profileMenuRef}>
                 <button onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)} className="flex items-center space-x-2 p-1 rounded-lg hover:bg-slate-700/50">
-                    <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center">
-                        <Icon name="user" className="w-5 h-5 text-slate-300" />
-                    </div>
+                    <UserAvatar user={currentUser} className="w-8 h-8" iconClassName="w-5 h-5" />
                     <div className="text-sm text-left hidden md:block">
                         <div className="font-semibold">{currentUser?.name || 'Loading...'}</div>
                         <div className="text-xs text-slate-400">{currentUser?.email || '...'}</div>
@@ -321,15 +322,15 @@ const AppLayout: React.FC = () => {
                         <div className="p-2">
                             <Link to="/profile" onClick={() => setIsProfileMenuOpen(false)} className="flex items-center w-full px-3 py-2 text-sm rounded-md text-slate-300 hover:bg-slate-700 hover:text-white">
                                 <Icon name="user-cog" className="w-4 h-4 mr-3" />
-                                個人設定
+                                {content.PROFILE_MENU.SETTINGS}
                             </Link>
                              <a href="#" onClick={handleHelp} className="flex items-center w-full px-3 py-2 text-sm rounded-md text-slate-300 hover:bg-slate-700 hover:text-white">
                                 <Icon name="help-circle" className="w-4 h-4 mr-3" />
-                                幫助中心
+                                {content.PROFILE_MENU.HELP_CENTER}
                             </a>
                             <button onClick={handleLogout} className="flex items-center w-full px-3 py-2 text-sm rounded-md text-slate-300 hover:bg-slate-700 hover:text-white">
                                 <Icon name="log-out" className="w-4 h-4 mr-3" />
-                                登出
+                                {content.PROFILE_MENU.LOGOUT}
                             </button>
                         </div>
                     </div>

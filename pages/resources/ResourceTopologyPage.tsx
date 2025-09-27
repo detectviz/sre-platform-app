@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import EChartsReact from '../../components/EChartsReact';
-import { Resource } from '../../types';
+import { Resource, TopologyOptions } from '../../types';
 import Icon from '../../components/Icon';
 import api from '../../services/api';
 
@@ -19,6 +19,7 @@ interface TopologyData {
 
 const ResourceTopologyPage: React.FC = () => {
     const [topologyData, setTopologyData] = useState<TopologyData>({ nodes: [], links: [] });
+    const [options, setOptions] = useState<TopologyOptions | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     
@@ -39,14 +40,21 @@ const ResourceTopologyPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const { data } = await api.get<TopologyData>('/resources/topology');
-            setTopologyData(data);
+            const [topologyRes, optionsRes] = await Promise.all([
+                api.get<TopologyData>('/resources/topology'),
+                api.get<TopologyOptions>('/resources/topology/options')
+            ]);
+            setTopologyData(topologyRes.data);
+            setOptions(optionsRes.data);
+            if (optionsRes.data.layouts.length > 0 && !layout) {
+                setLayout(optionsRes.data.layouts[0].value);
+            }
         } catch (err) {
             setError('無法獲取拓撲資料。');
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [layout]);
 
     useEffect(() => {
         fetchTopology();
@@ -188,8 +196,7 @@ const ResourceTopologyPage: React.FC = () => {
                 <div className="flex items-center space-x-2 p-2 glass-card rounded-lg">
                     <label className="text-sm font-medium">Layout:</label>
                     <select value={layout} onChange={e => setLayout(e.target.value)} className="bg-slate-800 border-slate-700 rounded-md px-2 py-1 text-sm">
-                        <option value="force">Force</option>
-                        <option value="circular">Circular</option>
+                        {options?.layouts.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                     </select>
                     <label className="text-sm font-medium ml-4">Type:</label>
                     <select value={filterType} onChange={e => setFilterType(e.target.value)} className="bg-slate-800 border-slate-700 rounded-md px-2 py-1 text-sm">

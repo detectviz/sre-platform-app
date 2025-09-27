@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Resource, ResourceFilters } from '../../types';
 import Icon from '../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
@@ -37,7 +37,17 @@ const ResourceListPage: React.FC = () => {
     const [totalResources, setTotalResources] = useState(0);
 
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
-    const [filters, setFilters] = useState<ResourceFilters>({});
+    const location = useLocation();
+    const navigate = useNavigate();
+    const [filters, setFilters] = useState<ResourceFilters>(location.state?.initialFilters || {});
+
+    useEffect(() => {
+        if (location.state?.initialFilters) {
+            // Clear the state from location history to prevent it being sticky
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }, [location.state, navigate, location.pathname]);
+
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -50,7 +60,6 @@ const ResourceListPage: React.FC = () => {
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
     
     const { resourceId } = useParams<{ resourceId: string }>();
-    const navigate = useNavigate();
 
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
