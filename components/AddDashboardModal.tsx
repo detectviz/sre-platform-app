@@ -37,7 +37,7 @@ const AddDashboardModal: React.FC<AddDashboardModalProps> = ({ isOpen, onClose, 
     const [availableDashboards, setAvailableDashboards] = useState<AvailableGrafanaDashboard[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [selectedDashboardUid, setSelectedDashboardUid] = useState('');
-    const [defaultCategory, setDefaultCategory] = useState('團隊自訂');
+    const [defaultCategory, setDefaultCategory] = useState<string | null>(null);
 
     useEffect(() => {
         if (isOpen && step === 2) {
@@ -47,9 +47,7 @@ const AddDashboardModal: React.FC<AddDashboardModalProps> = ({ isOpen, onClose, 
                 api.get<{ categories: string[] }>('/dashboards/options')
             ]).then(([dashboardsRes, optionsRes]) => {
                 setAvailableDashboards(dashboardsRes.data);
-                if (optionsRes.data.categories.length > 0) {
-                    setDefaultCategory(optionsRes.data.categories[0]);
-                }
+                setDefaultCategory(optionsRes.data.categories[0] || null);
             }).catch(err => console.error("Failed to fetch data for modal", err))
             .finally(() => setIsLoading(false));
         }
@@ -85,7 +83,7 @@ const AddDashboardModal: React.FC<AddDashboardModalProps> = ({ isOpen, onClose, 
     };
 
     const handleSaveGrafana = () => {
-        if (!selectedDashboardUid) return;
+        if (!selectedDashboardUid || !defaultCategory) return;
 
         const newDashboard: Partial<Dashboard> = {
             name: grafanaData.name,
@@ -114,6 +112,7 @@ const AddDashboardModal: React.FC<AddDashboardModalProps> = ({ isOpen, onClose, 
             });
             setSelectedDashboardUid('');
             setAvailableDashboards([]);
+            setDefaultCategory(null);
         }
     }, [isOpen]);
 
@@ -170,7 +169,7 @@ const AddDashboardModal: React.FC<AddDashboardModalProps> = ({ isOpen, onClose, 
                     <button onClick={() => setStep(1)} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md transition-colors">
                         返回
                     </button>
-                    <button onClick={handleSaveGrafana} disabled={!selectedDashboardUid} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md transition-colors disabled:bg-slate-600 disabled:cursor-not-allowed">
+                    <button onClick={handleSaveGrafana} disabled={!selectedDashboardUid || !defaultCategory} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md transition-colors disabled:bg-slate-600 disabled:cursor-not-allowed">
                         儲存
                     </button>
                 </div>

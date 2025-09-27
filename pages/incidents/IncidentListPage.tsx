@@ -167,6 +167,7 @@ const IncidentListPage: React.FC = () => {
 
         try {
             await api.post('/silence-rules', newSilenceRule);
+            await api.post(`/incidents/${id}/actions`, { action: 'silence', durationHours });
             setIsQuickSilenceModalOpen(false);
             fetchIncidents();
         } catch (err) {

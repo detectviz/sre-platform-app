@@ -6,6 +6,7 @@ import FormRow from './FormRow';
 import { AlertRule, ConditionGroup, RuleCondition, AutomationSetting, ParameterDefinition, AutomationPlaybook, AlertRuleTemplate } from '../types';
 import api from '../services/api';
 import { useUser } from '../contexts/UserContext';
+import { useOptions } from '../contexts/OptionsContext';
 
 interface AlertRuleEditModalProps {
   isOpen: boolean;
@@ -151,6 +152,9 @@ const Step1 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
 };
 
 const Step2 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFormData: Function }) => {
+    const { options: uiOptions, isLoading: isLoadingOptions } = useOptions();
+    const severities = uiOptions?.alertRules?.severities || [];
+
     const handleGroupChange = (groupIndex: number, field: keyof ConditionGroup, value: any) => {
         const newGroups = [...(formData.conditionGroups || [])];
         // @ts-ignore
@@ -185,22 +189,6 @@ const Step2 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
         });
         setFormData({ ...formData, conditionGroups: newGroups });
     };
-
-    const severityLevels: ('info' | 'warning' | 'critical')[] = ['info', 'warning', 'critical'];
-    const severityStyles = {
-        info: {
-            base: 'bg-slate-800 border-slate-700 text-slate-400 hover:border-sky-500 hover:text-white',
-            active: 'bg-sky-900/50 border-sky-500 text-sky-300'
-        },
-        warning: {
-            base: 'bg-slate-800 border-slate-700 text-slate-400 hover:border-orange-500 hover:text-white',
-            active: 'bg-orange-900/50 border-orange-500 text-orange-300'
-        },
-        critical: {
-            base: 'bg-slate-800 border-slate-700 text-slate-400 hover:border-red-500 hover:text-white',
-            active: 'bg-red-900/50 border-red-500 text-red-300'
-        }
-    };
     
     return (
         <div className="space-y-4 px-4">
@@ -210,17 +198,16 @@ const Step2 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
                          <h4 className="font-semibold text-white">條件群組 #{groupIndex + 1} (OR)</h4>
                          <div className="flex items-center space-x-2">
                             <span className="text-sm text-slate-400">事件等級:</span>
-                            {severityLevels.map(level => {
-                                const styles = severityStyles[level];
-                                const isActive = group.severity === level;
+                            {isLoadingOptions ? <div className="animate-pulse h-8 w-48 bg-slate-700 rounded-md"></div> : severities.map(level => {
+                                const isActive = group.severity === level.value;
                                 return (
                                     <button
-                                        key={level}
+                                        key={level.value}
                                         type="button"
-                                        onClick={() => handleGroupChange(groupIndex, 'severity', level)}
-                                        className={`px-4 py-1.5 text-sm font-semibold rounded-md border transition-colors uppercase ${isActive ? styles.active : styles.base}`}
+                                        onClick={() => handleGroupChange(groupIndex, 'severity', level.value)}
+                                        className={`px-4 py-1.5 text-sm font-semibold rounded-md border transition-colors uppercase ${isActive ? level.className : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-white'}`}
                                     >
-                                        {level}
+                                        {level.label}
                                     </button>
                                 );
                             })}

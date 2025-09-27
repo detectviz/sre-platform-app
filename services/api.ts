@@ -39,6 +39,10 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
             case 'GET /navigation': {
                 return DB.navItems;
             }
+            // Commands
+            case 'GET /commands': {
+                return DB.commands;
+            }
             // Page Metadata
             case 'GET /pages': {
                 if (id === 'metadata') {
@@ -200,26 +204,33 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                     return { message: '成功匯入 12 筆事件。' };
                 }
                 if (action === 'actions') {
-                    const { action: incidentAction, assigneeName } = body;
+                    const { action: incidentAction, assigneeName, durationHours } = body;
                     const index = DB.incidents.findIndex((i: any) => i.id === id);
                     if (index === -1) throw { status: 404 };
 
-                    const currentUser = 'Admin User';
+                    const currentUser = DB.users[0];
                     const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
                     if (incidentAction === 'acknowledge') {
+                        const oldStatus = DB.incidents[index].status;
                         DB.incidents[index].status = 'acknowledged';
-                        DB.incidents[index].assignee = currentUser;
-                        DB.incidents[index].history.push({ timestamp, user: currentUser, action: 'Incident acknowledged.' });
+                        DB.incidents[index].assignee = currentUser.name;
+                        DB.incidents[index].history.push({ timestamp, user: currentUser.name, action: 'Acknowledged', details: `Status changed from '${oldStatus}' to 'acknowledged'.` });
                     }
                     if (incidentAction === 'resolve') {
+                        const oldStatus = DB.incidents[index].status;
                         DB.incidents[index].status = 'resolved';
-                        DB.incidents[index].history.push({ timestamp, user: currentUser, action: 'Incident resolved.' });
+                        DB.incidents[index].history.push({ timestamp, user: currentUser.name, action: 'Resolved', details: `Status changed from '${oldStatus}' to 'resolved'.` });
                     }
                     if (incidentAction === 'assign') {
                         const oldAssignee = DB.incidents[index].assignee || 'Unassigned';
                         DB.incidents[index].assignee = assigneeName;
-                        DB.incidents[index].history.push({ timestamp, user: currentUser, action: `Incident re-assigned from ${oldAssignee} to ${assigneeName}.` });
+                        DB.incidents[index].history.push({ timestamp, user: currentUser.name, action: 'Re-assigned', details: `Assignee changed from ${oldAssignee} to ${assigneeName}.` });
+                    }
+                    if (incidentAction === 'silence') {
+                        const oldStatus = DB.incidents[index].status;
+                        DB.incidents[index].status = 'silenced';
+                        DB.incidents[index].history.push({ timestamp, user: currentUser.name, action: 'Silenced', details: `Incident silenced for ${durationHours} hour(s). Status changed from '${oldStatus}' to 'silenced'.` });
                     }
                     return DB.incidents[index];
                 }

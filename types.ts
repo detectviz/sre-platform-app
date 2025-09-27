@@ -606,6 +606,7 @@ export interface SilenceRuleOptions {
     weekdays: { value: number, label: string }[];
     types: { value: SilenceRule['type'], label: string }[];
     statuses: { value: boolean, label: string }[];
+    recurrenceTypes: { value: 'daily' | 'weekly' | 'monthly' | 'custom', label: string }[];
 }
 
 export interface InfraInsightsOptions {
@@ -622,7 +623,7 @@ export interface IncidentOptions {
 }
 
 export interface AlertRuleOptions {
-    severities: { value: AlertRule['severity'], label: string }[];
+    severities: { value: AlertRule['severity'], label: string, className: string }[];
     statuses: { value: boolean, label: string }[];
 }
 
@@ -706,4 +707,7 @@ export interface AllOptions {
     alertRules: AlertRuleOptions;
     silenceRules: SilenceRuleOptions;
     resources: ResourceOptions;
+    automationScripts: AutomationScriptOptions;
+    notificationChannels: NotificationChannelOptions;
+    automationTriggers: AutomationTriggerOptions;
 }

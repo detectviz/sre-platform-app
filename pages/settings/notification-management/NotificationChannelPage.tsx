@@ -10,10 +10,13 @@ import api from '../../../services/api';
 import TableLoader from '../../../components/TableLoader';
 import TableError from '../../../components/TableError';
 
+type IconConfig = Record<NotificationChannelType | 'Default', { icon: string; color: string; }>;
+
 const NotificationChannelPage: React.FC = () => {
     const [channels, setChannels] = useState<NotificationChannel[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [iconConfig, setIconConfig] = useState<IconConfig | null>(null);
     
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingChannel, setEditingChannel] = useState<NotificationChannel | null>(null);
@@ -26,8 +29,12 @@ const NotificationChannelPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const { data } = await api.get<NotificationChannel[]>('/settings/notification-channels', { params: { keyword: searchTerm } });
-            setChannels(data);
+            const [channelsRes, iconsRes] = await Promise.all([
+                api.get<NotificationChannel[]>('/settings/notification-channels', { params: { keyword: searchTerm } }),
+                api.get<IconConfig>('/ui/icons-config')
+            ]);
+            setChannels(channelsRes.data);
+            setIconConfig(iconsRes.data);
         } catch(err) {
             setError('無法獲取通知管道。');
         } finally {
@@ -105,12 +112,9 @@ const NotificationChannelPage: React.FC = () => {
     };
 
     const getChannelTypeIcon = (type: NotificationChannelType) => {
-        switch (type) {
-            case 'Email': return { icon: 'mail', color: 'text-red-400' };
-            case 'Slack': return { icon: 'slack', color: 'text-purple-400' };
-            case 'Webhook': return { icon: 'globe', color: 'text-sky-400' };
-            default: return { icon: 'bell', color: 'text-slate-400' };
-        }
+        const fallback = { icon: 'bell', color: 'text-slate-400' };
+        if (!iconConfig) return fallback;
+        return iconConfig[type] || iconConfig.Default || fallback;
     };
 
     const getTestResultPill = (status: NotificationChannel['lastTestResult']) => {

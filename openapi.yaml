@@ -540,7 +540,13 @@ paths:
               properties:
                 action:
                   type: string
-                  enum: [acknowledge, resolve]
+                  enum: [acknowledge, resolve, assign, silence]
+                assigneeName:
+                  type: string
+                  description: "Used for 'assign' action."
+                durationHours:
+                  type: number
+                  description: "Used for 'silence' action."
       responses:
         "200":
           description: 事故狀態已更新。

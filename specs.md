@@ -226,7 +226,7 @@
 ### 8.1 使用者故事
 
 **身為** 一名平台使用者，
-**我想要** 在所有列表頁面（如告警規則、靜音規則）上進行搜尋和篩選時，操作能直接由後端處理，並希望平台能補全如「規則測試」、「範本套用」、「執行重試」等核心操作，
+**我想要** 在所有列表頁面（如告警規則、静音規則）上進行搜尋和篩選時，操作能直接由後端處理，並希望平台能補全如「規則測試」、「範本套用」、「執行重試」等核心操作，
 **使得** 我能高效地處理大規模數據，並享受到一個功能完整、流程順暢的維運體驗。
 
 ### 8.2 行為變更
@@ -326,7 +326,7 @@
 -   `DELETE /*/{id}`: (增強) 所有刪除端點現在統一執行軟刪除操作。
 ---
 
-## 11. 功能: 數據源統一與核心邏輯優化 (Data Source Unification & Core Logic Optimization)
+## 11. 功能: 數據源統一與核心邏輯優化 (v2.10)
 
 -   **模組**: 全局
 -   **版本**: v2.10
@@ -371,11 +371,11 @@
 
 ### 12.2 行為變更
 
--   **靜音規則編輯模態框 (`SilenceRuleEditModal`)**:
+-   **靜音規則編輯模態框 (`SilenceRuleEditModal.tsx`)**:
     -   **動態匹配條件**: 「靜音條件」步驟中的「標籤鍵」欄位，已從一個自由輸入的文字框升級為一個下拉選單。該選單的選項（如 `severity`, `env`, `service`）現在從新增的 `GET /silence-rules/options` API 端點動態獲取。
     -   **智慧型值輸入**: 當使用者選擇一個有預定義值的標籤鍵時（例如 `severity`），對應的「值」欄位會自動轉換為一個包含所有允許值（如 `critical`, `warning`, `info`）的下拉選單，極大地減少了手動輸入錯誤。
 
--   **版面管理頁面 (`LayoutSettingsPage`)**:
+-   **版面管理頁面 (`LayoutSettingsPage.tsx`)**:
     -   **元數據增強**: 頁面中的每一個可折疊的佈局項目，現在都會顯示「最後更新時間」和「修改者」的資訊。
     -   **API 結構更新**: `GET /settings/layouts` API 的回應結構已從 `Record<string, string[]>` 升級為 `Record<string, { widgetIds: string[]; updatedAt: string; updatedBy: string; }>`，以承載新增的元數據。
     -   **關聯元件更新**: `PageKPIs.tsx` 元件也已同步更新，以兼容新的 `layouts` 資料結構，確保全平台的 KPI 顯示不受影響。
@@ -398,7 +398,7 @@
 **我想要** 在介面的各個角落都能獲得即時、有用的操作回饋，例如複製 Webhook URL 時有成功提示，點擊尚未實作的功能時也能收到明確的通知，
 **使得** 我能更順暢地完成我的工作流程，並清楚了解目前平台的功能邊界，提升整體使用體驗。
 
-### 13.2 行為變更
+### 12.2 行為變更
 
 -   **自動化觸發器編輯模態框 (`AutomationTriggerEditModal`)**:
     -   **一鍵複製 Webhook URL**: 在 Webhook 類型的觸發器設定中，新增了「複製」按鈕的實際功能。使用者點擊後，會將生成的 Webhook URL 複製到剪貼簿，並顯示一個成功的 Toast 通知，簡化了與外部系統（如 CI/CD 工具）的整合流程。
@@ -628,3 +628,117 @@
     -   `assign`: 後端會將事件的 `assignee` 更新為請求中指定的 `assigneeName`。
     -   兩種操作都會在事件的 `history` 中新增一筆對應的紀錄，以供審計追蹤。
 -   `GET /iam/users`: (重用) 被 `AssignIncidentModal` 用於獲取可供指派的團隊成員列表。
+
+---
+
+## 20. 功能: 全局表單選項 API 化與體驗優化 (v2.20)
+
+-   **模組**: 告警管理 (Alerting)
+-   **版本**: v2.20
+-   **狀態**: ✅ 已完成
+
+### 20.1 使用者故事
+
+**身為** 一名 SRE 工程師，
+**我想要** 在設定告警與靜音規則時，所有的可選項目（如事件等級、重複頻率）都從後端 API 動態載入，
+**使得** 平台的配置選項能夠被統一管理，確保了不同模組間選項的一致性，並提升了規則設定的準確性與效率。
+
+### 20.2 行為變更
+
+-   **告警規則編輯模態框 (`AlertRuleEditModal.tsx`)**:
+    -   **動態事件等級**: 「觸發條件」步驟中用於設定事件等級的按鈕（嚴重、警告、資訊），不再是前端硬編碼。現在，這些選項及其對應的樣式，都會從 `GET /ui/options` (具體為 `alertRules.severities` 屬性) 動態獲取並渲染，確保了與平台其他區域事件等級樣式的一致性。
+
+-   **靜音規則編輯模態框 (`SilenceRuleEditModal.tsx`)**:
+    -   **動態重複頻率**: 「設定排程」步驟中用於選擇週期性靜音重複頻率的下拉選單（每日、每週等），其選項已從前端靜態定義遷移至由 `GET /silence-rules/options` API 提供。此變更允許後端統一管理所有可用的排程類型。
+
+### 20.3 使用的 API 端點
+
+-   `GET /ui/options`: (增強) `alertRules.severities` 屬性中新增了 `className` 欄位，以統一驅動 UI 樣式。
+-   `GET /silence-rules/options`: (增強) API 回應中新增了 `recurrenceTypes` 陣列，提供可用的重複頻率選項。
+---
+
+## 21. 功能: 核心元件動態化與 UI 配置 API 化 (v2.21)
+
+-   **模組**: 全局 (UI/UX)
+-   **版本**: v2.21
+-   **狀態**: ✅ 已完成
+
+### 21.1 使用者故事
+
+**身為** 一名平台開發者與管理員，
+**我想要** 平台中核心的互動元件，如全域搜尋、邀請使用者、新增儀表板等，其內部選項與命令都能從後端 API 動態載入，
+**使得** 平台的前端徹底擺脫硬編碼的靜態資料，確保了 UI 選項與後端業務邏輯的完全同步，並允許在不重新部署前端的情況下，輕鬆更新操作命令與配置選項，大幅提升了系統的靈活性與可維護性。
+
+### 21.2 行為變更
+
+-   **全域搜尋命令面板 (`GlobalSearchModal`)**:
+    -   **動態命令載入**: 搜尋框中的命令功能（以 `>` 觸發）不再依賴前端硬編碼的命令列表。現在，模態框會向新增的 `GET /commands` API 端點發起請求，動態獲取所有可用的快速操作。
+    -   **前後端解耦**: API 回傳的每個命令都包含一個 `actionKey`，前端利用此鍵來映射到具體的執行函式，實現了命令定義與執行邏輯的解耦。
+
+-   **邀請使用者模態框 (`InviteUserModal`)**:
+    -   **動態預設角色與團隊**: 該模態框不再使用硬編碼的 `'Developer'` 作為預設角色。現在，它會在開啟時分別向 `GET /iam/roles` 和 `GET /iam/teams` 請求最新的角色與團隊列表，並自動選取 API 回傳的第一個選項作為預設值，確保了與後端配置的動態一致性。
+
+-   **儀表板新增/編輯流程 (`AddDashboardModal`, `DashboardEditorPage`)**:
+    -   **動態預設分類**: 在建立新的「內建儀表板」時，預設的分類（原為硬編碼的「團隊自訂」）現在從 `GET /dashboards/options` API 動態獲取。系統會自動使用 API 回傳的第一個有效分類作為預設值，避免了前端與後端分類定義不同步的問題。
+
+-   **通知管道頁面 (`NotificationChannelPage`)**:
+    -   **API 驅動的圖示**: 頁面中用於表示不同管道類型（Email, Slack, Webhook）的圖示及其顏色，不再由前端的 `switch` 判斷邏輯硬編碼。現在，頁面會在載入時向新增的 `GET /ui/icons-config` 端點請求配置，實現了 UI 視覺呈現的完全後端驅動。
+
+### 21.3 使用的 API 端點
+
+-   `GET /commands`: (新增) 提供全域搜尋命令面板所需的命令列表，包含 `name`, `description`, `icon`, 和 `actionKey`。
+-   `GET /ui/icons-config`: (新增) 提供通知管道類型到其對應圖示 (`icon`) 和顏色 (`color`) 的映射關係。
+-   (重用) `GET /iam/roles`, `GET /iam/teams`: 被 `InviteUserModal` 用於動態填充角色和團隊的下拉選單。
+-   (重用) `GET /dashboards/options`: 被 `AddDashboardModal` 和 `DashboardEditorPage` 用於動態獲取儀表板的可用分類。
+---
+
+## 22. 功能: 自動化觸發器選項動態化 (v2.22)
+
+-   **模組**: 自動化中心 (Automation Center)
+-   **版本**: v2.22
+-   **狀態**: ✅ 已完成
+
+### 22.1 使用者故事
+
+**身為** 一名 SRE 工程師，
+**我想要** 在設定自動化觸發器時，所有可用的觸發器類型（如排程、Webhook）與其預設配置都能從後端 API 動態載入，
+**使得** 觸發器的選項能與平台核心能力保持同步，並確保所有編輯模態框都採用一致的、由 API 驅動的資料載入模式，提升系統的可維護性。
+
+### 22.2 行為變更
+
+-   **資料模型擴展 (`types.ts`)**:
+    -   `AllOptions` 介面中新增了 `automationTriggers` 屬性，將 `AutomationTriggerOptions` 納入全局的 `OptionsContext` 管理範圍。
+
+-   **元件重構 (`AutomationTriggerEditModal.tsx`)**:
+    -   移除了元件內部原有的本地 API 請求 (`/automation/triggers/options`)。
+    -   元件現在透過 `useOptions` 鉤子從全局上下文中獲取所有配置，包括觸發器類型、條件鍵和每種類型的預設配置。
+    -   更新了 `useEffect` 邏輯，以確保在從 Context 獲取到選項資料後，才進行表單的初始化，避免了競爭條件。
+
+-   **API 端點整合**:
+    -   **廢棄**: 本地化的 `GET /automation/triggers/options` 端點已被廢棄。
+    -   **增強**: 全局的 `GET /ui/options` 端點現在的回應中包含了 `automationTriggers` 屬性，統一提供所有 UI 選項。
+
+### 22.3 API 端點變更
+
+-   `GET /ui/options`: (增強) 此端點現在回傳一個 `automationTriggers` 物件，其結構如下：
+    ```json
+    {
+      "automationTriggers": {
+        "triggerTypes": [
+          { "value": "Schedule", "label": "排程" },
+          { "value": "Webhook", "label": "Webhook" },
+          { "value": "Event", "label": "事件" }
+        ],
+        "conditionKeys": ["severity", "resource.type", "tag.env"],
+        "defaultConfigs": {
+          "Schedule": { "cron": "0 * * * *" },
+          "Webhook": { "webhookUrl": "..." },
+          "Event": { "eventConditions": "severity = critical" }
+        }
+      }
+    }
+    ```
+
+### 22.4 帶來的效益
+
+此變更完成了將所有核心編輯模態框的 UI 選項遷移至由單一 API 端點 (`/ui/options`) 驅動的目標。這不僅統一了前端的資料獲取模式，也強化了「單一資料來源」的架構原則，使得未來新增或修改觸發器類型時，僅需更新後端配置，無需任何前端程式碼變更。

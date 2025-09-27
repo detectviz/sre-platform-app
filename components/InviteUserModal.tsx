@@ -20,7 +20,7 @@ interface InviteUserModalProps {
 const InviteUserModal: React.FC<InviteUserModalProps> = ({ isOpen, onClose, onInvite }) => {
     const [email, setEmail] = useState('');
     const [name, setName] = useState('');
-    const [role, setRole] = useState<User['role']>('Developer');
+    const [role, setRole] = useState<User['role'] | ''>('');
     const [team, setTeam] = useState('');
     
     const [roles, setRoles] = useState<Role[]>([]);
@@ -36,6 +36,9 @@ const InviteUserModal: React.FC<InviteUserModalProps> = ({ isOpen, onClose, onIn
             ]).then(([rolesRes, teamsRes]) => {
                 setRoles(rolesRes.data);
                 setTeams(teamsRes.data);
+                if (rolesRes.data.length > 0) {
+                    setRole(rolesRes.data[0].name as User['role']);
+                }
                 if (teamsRes.data.length > 0) {
                     setTeam(teamsRes.data[0].name);
                 }
@@ -46,12 +49,12 @@ const InviteUserModal: React.FC<InviteUserModalProps> = ({ isOpen, onClose, onIn
 
 
     const handleSubmit = () => {
-        if (email) { // Basic validation
-            onInvite({ email, name, role, team });
+        if (email && role) { // Basic validation
+            onInvite({ email, name, role: role as User['role'], team });
             // Reset form for next time
             setEmail('');
             setName('');
-            setRole('Developer');
+            setRole(roles[0]?.name as User['role'] || '');
             setTeam(teams[0]?.name || '');
         }
     };

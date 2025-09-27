@@ -1,7 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import FormRow from './FormRow';
 import { NotificationChannel, NotificationChannelType } from '../types';
+import { useOptions } from '../contexts/OptionsContext';
 
 interface NotificationChannelEditModalProps {
   isOpen: boolean;
@@ -16,12 +18,17 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
         enabled: true,
         config: {},
     });
+    const { options, isLoading: isLoadingOptions } = useOptions();
+    const channelOptions = options?.notificationChannels;
 
     useEffect(() => {
         if (isOpen) {
-            setFormData(channel || { type: 'Email', enabled: true, config: {} });
+            if (!channelOptions) return; // Wait for options to load
+            
+            const defaultType = channelOptions.channelTypes[0]?.value || 'Email';
+            setFormData(channel || { type: defaultType, enabled: true, config: {} });
         }
-    }, [isOpen, channel]);
+    }, [isOpen, channel, channelOptions]);
 
     const handleSave = () => {
         onSave(formData as NotificationChannel);
@@ -49,10 +56,15 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
                     <input type="text" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
                 </FormRow>
                 <FormRow label="管道類型">
-                    <select value={formData.type || 'Email'} onChange={e => setFormData({...formData, type: e.target.value as NotificationChannelType, config: {}})} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
-                        <option value="Email">Email</option>
-                        <option value="Slack">Slack</option>
-                        <option value="Webhook">Webhook</option>
+                    <select 
+                        value={formData.type || ''} 
+                        onChange={e => setFormData({...formData, type: e.target.value as NotificationChannelType, config: {}})} 
+                        className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
+                        disabled={isLoadingOptions}
+                    >
+                        {isLoadingOptions ? <option>載入中...</option> : channelOptions?.channelTypes.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
                     </select>
                 </FormRow>
 
@@ -83,10 +95,15 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
                                 <input type="text" value={formData.config?.webhookUrl || ''} onChange={e => handleConfigChange('webhookUrl', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
                             </FormRow>
                             <FormRow label="HTTP Method">
-                                <select value={formData.config?.httpMethod || 'POST'} onChange={e => handleConfigChange('httpMethod', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
-                                    <option value="POST">POST</option>
-                                    <option value="PUT">PUT</option>
-                                    <option value="GET">GET</option>
+                                <select 
+                                    value={formData.config?.httpMethod || ''} 
+                                    onChange={e => handleConfigChange('httpMethod', e.target.value)} 
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
+                                    disabled={isLoadingOptions}
+                                >
+                                    {isLoadingOptions ? <option>載入中...</option> : channelOptions?.httpMethods.map(method => (
+                                        <option key={method} value={method}>{method}</option>
+                                    ))}
                                 </select>
                             </FormRow>
                             <FormRow label="Custom Headers (JSON format)">

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Modal from './Modal';
 import FormRow from './FormRow';
-import { AutomationTrigger, TriggerType, AutomationPlaybook, TagDefinition, AutomationTriggerOptions } from '../types';
+import { AutomationTrigger, TriggerType, AutomationPlaybook, TagDefinition } from '../types';
 import api from '../services/api';
 import Icon from './Icon';
 import { showToast } from '../services/toast';
+import { useOptions } from '../contexts/OptionsContext';
 
 interface AutomationTriggerEditModalProps {
   isOpen: boolean;
@@ -41,36 +42,37 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
     const [formData, setFormData] = useState<Partial<AutomationTrigger>>({});
     const [playbooks, setPlaybooks] = useState<AutomationPlaybook[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [options, setOptions] = useState<AutomationTriggerOptions | null>(null);
+    const { options, isLoading: isLoadingOptions } = useOptions();
+    const triggerOptions = options?.automationTriggers;
     const [tagDefs, setTagDefs] = useState<TagDefinition[]>([]);
     const [conditions, setConditions] = useState<{ key: string; operator: string; value: string }[]>([]);
 
     useEffect(() => {
         if (isOpen) {
+            if (isLoadingOptions || !triggerOptions) return;
+
             setIsLoading(true);
             Promise.all([
                 api.get<AutomationPlaybook[]>('/automation/scripts'),
                 api.get<TagDefinition[]>('/settings/tags'),
-                api.get<AutomationTriggerOptions>('/automation/triggers/options'),
-            ]).then(([playbooksRes, tagsRes, optionsRes]) => {
+            ]).then(([playbooksRes, tagsRes]) => {
                 setPlaybooks(playbooksRes.data);
                 setTagDefs(tagsRes.data);
-                setOptions(optionsRes.data);
                 
                 const initialFormData = trigger || {
                     name: '',
                     description: '',
-                    type: optionsRes.data.triggerTypes[0]?.value || 'Schedule',
+                    type: triggerOptions.triggerTypes[0]?.value || 'Schedule',
                     enabled: true,
                     targetPlaybookId: playbooksRes.data[0]?.id || '',
-                    config: optionsRes.data.defaultConfigs?.Schedule || { cron: '0 * * * *' },
+                    config: triggerOptions.defaultConfigs?.Schedule || { cron: '0 * * * *' },
                 };
                 setFormData(initialFormData);
 
             }).catch(err => console.error("Failed to fetch data for modal", err))
             .finally(() => setIsLoading(false));
         }
-    }, [isOpen, trigger]);
+    }, [isOpen, trigger, isLoadingOptions, triggerOptions]);
 
     const handleSave = () => {
         onSave(formData);
@@ -100,7 +102,7 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
     };
     
     const handleTypeChange = (newType: TriggerType) => {
-        const newConfig = options?.defaultConfigs[newType] || {};
+        const newConfig = triggerOptions?.defaultConfigs[newType] || {};
         setFormData(prev => ({
             ...prev,
             type: newType,
@@ -196,7 +198,7 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
 
                 <FormRow label="觸發器類型">
                      <div className="flex space-x-2 rounded-lg bg-slate-800 p-1">
-                        {options?.triggerTypes.map(type => (
+                        {isLoadingOptions ? <div className="h-9 w-full bg-slate-700 animate-pulse rounded-md"></div> : triggerOptions?.triggerTypes.map(type => (
                             <button 
                                 key={type.value}
                                 onClick={() => handleTypeChange(type.value)} 
@@ -232,7 +234,7 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
                                     <div key={index} className="flex items-center space-x-2">
                                         <select value={cond.key} onChange={e => handleConditionChange(index, 'key', e.target.value)} className="w-1/3 bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
                                             <option value="">選擇鍵...</option>
-                                            {options?.conditionKeys.map(k => <option key={k} value={k}>{k}</option>)}
+                                            {triggerOptions?.conditionKeys.map(k => <option key={k} value={k}>{k}</option>)}
                                         </select>
                                         <select value={cond.operator} onChange={e => handleConditionChange(index, 'operator', e.target.value)} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
                                             <option value="=">=</option>

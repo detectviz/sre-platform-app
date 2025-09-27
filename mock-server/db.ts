@@ -21,7 +21,14 @@ import {
     IncidentOptions,
     AlertRuleOptions,
     SilenceRuleOptions,
-    ResourceOptions
+    ResourceOptions,
+    AutomationScriptOptions,
+    NotificationChannelOptions,
+    AutomationPlaybookOptions,
+    ParameterDefinition,
+    NotificationChannelType,
+    AutomationTriggerOptions,
+    TriggerType
 } from '../types';
 
 // Helper to generate UUIDs
@@ -34,6 +41,13 @@ export function uuidv4() {
 }
 
 // --- ALL MOCK DATA DEFINITIONS ---
+
+const MOCK_COMMANDS = [
+  { id: 'cmd_new_incident', name: '> New Incident', description: 'Create a new incident report', icon: 'plus-circle', actionKey: 'new_incident' },
+  { id: 'cmd_silence_resource', name: '> Silence Resource', description: 'Temporarily silence alerts for a specific resource', icon: 'bell-off', actionKey: 'silence_resource' },
+  { id: 'cmd_run_playbook', name: '> Run Playbook', description: 'Execute an automation playbook', icon: 'play-circle', actionKey: 'run_playbook' },
+  { id: 'cmd_change_theme', name: '> Change Theme', description: 'Switch between light and dark mode', icon: 'sun-moon', actionKey: 'change_theme' },
+];
 
 const MOCK_COMMAND_PALETTE_CONTENT = {
     TITLE: 'Command Palette',
@@ -157,27 +171,9 @@ const MOCK_DASHBOARD_TEMPLATES: DashboardTemplate[] = [
     { id: 'tpl-002', name: 'Business KPI Overview', description: 'Track key business metrics like user sign-ups, revenue, and conversion rates.', icon: 'briefcase', category: 'Business' },
 ];
 const MOCK_INCIDENTS: Incident[] = [
-    { id: 'INC-001', summary: 'API 延遲超過閾值', resource: 'api-server-01', resourceId: 'res-001', serviceImpact: 'High', rule: 'API 延遲規則', ruleId: 'rule-002', status: 'new', severity: 'warning', priority: 'P1', triggeredAt: '2024-01-15 10:30:00', history: [ { timestamp: '2024-01-15 10:30:00', user: 'System', action: 'Incident created from rule "API 延遲規則".' } ] },
-    { id: 'INC-002', summary: '資料庫連接超時', resource: 'db-primary', resourceId: 'res-002', serviceImpact: 'High', rule: '資料庫連接規則', ruleId: 'rule-db-conn', status: 'acknowledged', severity: 'critical', priority: 'P0', assignee: '李四', triggeredAt: '2024-01-15 10:15:00', history: [ { timestamp: '2024-01-15 10:15:00', user: 'System', action: 'Incident created from rule "資料庫連接規則".' } ] },
-    {
-        id: 'INC-003',
-        summary: '5xx Errors on web-prod-12',
-        resource: 'web-prod-12',
-        resourceId: 'res-004',
-        serviceImpact: 'Medium',
-        rule: '5xx Error Rate',
-        ruleId: 'rule-5xx',
-        status: 'resolved',
-        severity: 'warning',
-        priority: 'P2',
-        assignee: '王五',
-        triggeredAt: '2024-01-15 09:45:00',
-        history: [{
-            timestamp: '2024-01-15 09:45:00',
-            user: 'System',
-            action: 'Incident created from rule "5xx Error Rate".'
-        }]
-    },
+    { id: 'INC-001', summary: 'API 延遲超過閾值', resource: 'api-server-01', resourceId: 'res-001', serviceImpact: 'High', rule: 'API 延遲規則', ruleId: 'rule-002', status: 'new', severity: 'warning', priority: 'P1', assignee: '張三', triggeredAt: '2024-01-15 10:30:00', history: [ { timestamp: '2024-01-15 10:30:00', user: 'System', action: 'Created', details: 'Incident created from rule "API 延遲規則".' } ] },
+    { id: 'INC-002', summary: '資料庫連接超時', resource: 'db-primary', resourceId: 'res-002', serviceImpact: 'High', rule: '資料庫連接規則', ruleId: 'rule-db-conn', status: 'acknowledged', severity: 'critical', priority: 'P0', assignee: '李四', triggeredAt: '2024-01-15 10:15:00', history: [ { timestamp: '2024-01-15 10:15:00', user: 'System', action: 'Created', details: 'Incident created from rule "資料庫連接規則".' } ] },
+    { id: 'INC-003', summary: 'CPU 使用率異常', resource: 'web-prod-12', resourceId: 'res-004', serviceImpact: 'Medium', rule: 'CPU 使用率規則', ruleId: 'rule-cpu', status: 'resolved', severity: 'warning', priority: 'P2', assignee: '王五', triggeredAt: '2024-01-15 09:45:00', history: [ { timestamp: '2024-01-15 09:45:00', user: 'System', action: 'Created', details: 'Incident created from rule "CPU 使用率規則".' } ] },
 ];
 const MOCK_QUICK_SILENCE_DURATIONS = [1, 2, 4, 8, 12, 24]; // hours
 const MOCK_ALERT_RULES: AlertRule[] = [
@@ -217,6 +213,12 @@ const MOCK_SILENCE_RULE_OPTIONS: SilenceRuleOptions = {
         { value: true, label: 'Enabled' },
         { value: false, label: 'Disabled' }
     ],
+    recurrenceTypes: [
+        { value: 'daily', label: '每日' },
+        { value: 'weekly', label: '每週' },
+        { value: 'monthly', label: '每月' },
+        { value: 'custom', label: '自訂 Cron' }
+    ],
 };
 const MOCK_RESOURCES: Resource[] = [
     { id: 'res-001', name: 'api-gateway-prod-01', status: 'healthy', type: 'API Gateway', provider: 'AWS', region: 'us-east-1', owner: 'SRE Team', lastCheckIn: '30s ago' },
@@ -253,6 +255,7 @@ const MOCK_TEAMS: Team[] = [
 const MOCK_ROLES: Role[] = [
     { id: 'role-001', name: 'Administrator', description: '擁有所有權限', userCount: 1, status: 'active', createdAt: '2024-01-01 09:00:00', permissions: [] },
     { id: 'role-002', name: 'SRE Engineer', description: '擁有事件、資源、自動化管理權限', userCount: 1, status: 'active', createdAt: '2024-01-01 09:00:00', permissions: [] },
+    { id: 'role-003', name: 'Developer', description: '擁有應用程式開發相關權限', userCount: 2, status: 'active', createdAt: '2024-01-01 09:00:00', permissions: [] },
 ];
 const AVAILABLE_PERMISSIONS = [
     { module: 'Incidents', description: 'Manage incidents and alerts', actions: [{key: 'read', label: 'Read'}, {key: 'update', label: 'Update'}] },
@@ -682,28 +685,27 @@ const MOCK_TAB_CONFIGS: TabConfigMap = {
     ]
 };
 
-// FIX: Explicitly typed the mock object with `IncidentOptions` to ensure its properties conform to the interface, resolving type inference errors.
 const MOCK_INCIDENT_OPTIONS: IncidentOptions = {
     statuses: [
-        { value: 'new', label: 'New', className: 'bg-orange-500/20 text-orange-400' },
-        { value: 'acknowledged', label: 'Acknowledged', className: 'bg-sky-500/20 text-sky-400' },
-        { value: 'resolved', label: 'Resolved', className: 'bg-green-500/20 text-green-400' },
-        { value: 'silenced', label: 'Silenced', className: 'bg-slate-500/20 text-slate-400' },
+        { value: 'new', label: 'New', className: 'bg-amber-700 text-white' },
+        { value: 'acknowledged', label: 'Acknowledged', className: 'bg-sky-600 text-white' },
+        { value: 'resolved', label: 'Resolved', className: 'bg-emerald-600 text-white' },
+        { value: 'silenced', label: 'Silenced', className: 'bg-slate-600 text-slate-200' },
     ],
     severities: [
-        { value: 'critical', label: 'Critical', className: 'border-red-500 text-red-400' },
-        { value: 'warning', label: 'Warning', className: 'border-orange-500 text-orange-400' },
+        { value: 'critical', label: 'Critical', className: 'border-red-600 text-red-400' },
+        { value: 'warning', label: 'Warning', className: 'border-amber-500 text-amber-400' },
         { value: 'info', label: 'Info', className: 'border-sky-500 text-sky-400' },
     ],
     priorities: [
         { value: 'P0', label: 'P0', className: 'bg-red-700 text-white' },
-        { value: 'P1', label: 'P1', className: 'bg-red-500 text-white' },
-        { value: 'P2', label: 'P2', className: 'bg-orange-500 text-white' },
+        { value: 'P1', label: 'P1', className: 'bg-red-600 text-white' },
+        { value: 'P2', label: 'P2', className: 'bg-amber-500 text-white' },
         { value: 'P3', label: 'P3', className: 'bg-yellow-500 text-black' },
     ],
     serviceImpacts: [
-        { value: 'High', label: 'High', className: 'border-red-500 text-red-400' },
-        { value: 'Medium', label: 'Medium', className: 'border-orange-500 text-orange-400' },
+        { value: 'High', label: 'High', className: 'border-red-600 text-red-400' },
+        { value: 'Medium', label: 'Medium', className: 'border-amber-500 text-amber-400' },
         { value: 'Low', label: 'Low', className: 'border-yellow-500 text-yellow-400' },
     ],
     quickSilenceDurations: [
@@ -716,9 +718,9 @@ const MOCK_INCIDENT_OPTIONS: IncidentOptions = {
 // FIX: Explicitly typed the mock object with `AlertRuleOptions` to ensure its properties conform to the interface, resolving type inference errors.
 const MOCK_ALERT_RULE_OPTIONS: AlertRuleOptions = {
     severities: [
-        { value: 'critical', label: 'Critical' },
-        { value: 'warning', label: 'Warning' },
-        { value: 'info', label: 'Info' },
+        { value: 'critical', label: 'Critical', className: 'bg-red-900/50 border-red-500 text-red-300' },
+        { value: 'warning', label: 'Warning', className: 'bg-orange-900/50 border-orange-500 text-orange-300' },
+        { value: 'info', label: 'Info', className: 'bg-sky-900/50 border-sky-500 text-sky-300' },
     ],
     statuses: [
         { value: true, label: 'Enabled' },
@@ -745,17 +747,59 @@ const MOCK_RESOURCE_OPTIONS: ResourceOptions = {
     regions: ['us-east-1', 'us-west-2', 'eu-central-1', 'ap-northeast-1'],
 };
 
+const MOCK_AUTOMATION_SCRIPT_OPTIONS: AutomationScriptOptions = {
+    playbookTypes: [
+        { value: 'shell', label: 'Shell' },
+        { value: 'python', label: 'Python' },
+        { value: 'ansible', label: 'Ansible' },
+        { value: 'terraform', label: 'Terraform' }
+    ],
+    parameterTypes: [
+        { value: 'string', label: 'String' },
+        { value: 'number', label: 'Number' },
+        { value: 'enum', label: 'Enum' },
+        { value: 'boolean', label: 'Boolean' }
+    ]
+};
+
+const MOCK_NOTIFICATION_CHANNEL_OPTIONS: NotificationChannelOptions = {
+    channelTypes: [
+        { value: 'Email', label: 'Email' },
+        { value: 'Slack', label: 'Slack' },
+        { value: 'Webhook', label: 'Webhook' }
+    ],
+    httpMethods: ['POST', 'PUT', 'GET']
+};
+
+const MOCK_AUTOMATION_TRIGGER_OPTIONS: AutomationTriggerOptions = {
+    triggerTypes: [
+        { value: 'Schedule', label: '排程' },
+        { value: 'Webhook', label: 'Webhook' },
+        { value: 'Event', label: '事件' }
+    ],
+    conditionKeys: ['severity', 'resource.type', 'tag.env'],
+    defaultConfigs: {
+        'Schedule': { cron: '0 * * * *' },
+        'Webhook': { webhookUrl: 'https://sre.platform/api/v1/webhooks/hook-generated-id' },
+        'Event': { eventConditions: 'severity = critical' }
+    }
+};
+
 const MOCK_ALL_OPTIONS: AllOptions = {
     incidents: MOCK_INCIDENT_OPTIONS,
     alertRules: MOCK_ALERT_RULE_OPTIONS,
     silenceRules: MOCK_SILENCE_RULE_OPTIONS,
-    resources: MOCK_RESOURCE_OPTIONS
+    resources: MOCK_RESOURCE_OPTIONS,
+    automationScripts: MOCK_AUTOMATION_SCRIPT_OPTIONS,
+    notificationChannels: MOCK_NOTIFICATION_CHANNEL_OPTIONS,
+    automationTriggers: MOCK_AUTOMATION_TRIGGER_OPTIONS,
 };
 
 
 function createInitialDB() {
     // Deep clone to make it mutable
     return {
+        commands: JSON.parse(JSON.stringify(MOCK_COMMANDS)),
         pageMetadata: JSON.parse(JSON.stringify(MOCK_PAGE_METADATA)),
         iconMap: JSON.parse(JSON.stringify(MOCK_ICON_MAP)),
         chartColors: JSON.parse(JSON.stringify(MOCK_CHART_COLORS)),

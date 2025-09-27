@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import Icon from '../../components/Icon';
@@ -43,7 +44,8 @@ const DashboardEditorPage: React.FC = () => {
     const [allWidgets, setAllWidgets] = useState<LayoutWidget[]>([]);
     const [kpiData, setKpiData] = useState<Record<string, any>>({});
     const [isLoading, setIsLoading] = useState(true);
-    const [defaultCategory, setDefaultCategory] = useState('團隊自訂');
+    const [isSaving, setIsSaving] = useState(false);
+    const [defaultCategory, setDefaultCategory] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchAllData = async () => {
@@ -57,7 +59,7 @@ const DashboardEditorPage: React.FC = () => {
                 const allFetchedWidgets = widgetsRes.data;
                 setAllWidgets(allFetchedWidgets);
                 setKpiData(kpiDataRes.data);
-                if (optionsRes.data.categories.length > 0) setDefaultCategory(optionsRes.data.categories[0]);
+                setDefaultCategory(optionsRes.data.categories[0] || null);
 
                 if (isEditMode) {
                     const { data: dashboardData } = await api.get<Dashboard>(`/dashboards/${dashboardId}`);
@@ -125,13 +127,19 @@ const DashboardEditorPage: React.FC = () => {
             showToast(content.NAME_REQUIRED_ERROR, 'error');
             return;
         }
+        if (!isEditMode && !defaultCategory) {
+            showToast('儀表板類別尚未載入，無法儲存。', 'error');
+            return;
+        }
+
+        setIsSaving(true);
         const dashboardPayload: Partial<Dashboard> = { name: dashboardName, type: 'built-in', layout };
         try {
             if (isEditMode) {
                 const { data: updatedDashboard } = await api.patch<Dashboard>(`/dashboards/${dashboardId}`, dashboardPayload);
                 showToast(content.UPDATE_SUCCESS(updatedDashboard.name), 'success');
             } else {
-                dashboardPayload.category = defaultCategory;
+                dashboardPayload.category = defaultCategory as string;
                 dashboardPayload.description = content.DEFAULT_DESCRIPTION;
                 dashboardPayload.owner = currentUser?.name || 'System';
                 dashboardPayload.updatedAt = new Date().toISOString().slice(0, 16).replace('T', ' ');
@@ -141,6 +149,8 @@ const DashboardEditorPage: React.FC = () => {
             navigate('/dashboards');
         } catch (error) {
             showToast(isEditMode ? content.UPDATE_ERROR : content.SAVE_ERROR, 'error');
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -264,9 +274,9 @@ const DashboardEditorPage: React.FC = () => {
                     <button onClick={() => navigate('/dashboards')} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700/50 hover:bg-slate-700 rounded-md">
                         {content.CANCEL_BUTTON}
                     </button>
-                    <button onClick={handleSave} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md flex items-center">
-                        <Icon name="save" className="w-4 h-4 mr-2" />
-                        {content.SAVE_DASHBOARD}
+                    <button onClick={handleSave} disabled={isSaving} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md flex items-center disabled:opacity-50 disabled:cursor-not-allowed">
+                        {isSaving ? <Icon name="loader-circle" className="w-4 h-4 mr-2 animate-spin" /> : <Icon name="save" className="w-4 h-4 mr-2" />}
+                        {isSaving ? '儲存中...' : content.SAVE_DASHBOARD}
                     </button>
                 </div>
             </div>

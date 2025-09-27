@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import Icon from './Icon';
 import FormRow from './FormRow';
 import { AutomationPlaybook, ParameterDefinition } from '../types';
 import GeneratePlaybookWithAIModal from './GeneratePlaybookWithAIModal';
+import { useOptions } from '../contexts/OptionsContext';
 
 interface AutomationPlaybookEditModalProps {
   isOpen: boolean;
@@ -15,20 +17,24 @@ interface AutomationPlaybookEditModalProps {
 const AutomationPlaybookEditModal: React.FC<AutomationPlaybookEditModalProps> = ({ isOpen, onClose, onSave, playbook }) => {
     const [formData, setFormData] = useState<Partial<AutomationPlaybook>>({});
     const [isAIOpen, setIsAIOpen] = useState(false);
-
-    const getInitialFormData = (): Partial<AutomationPlaybook> => ({
-        name: '',
-        description: '',
-        type: 'shell',
-        content: '',
-        parameters: [],
-    });
+    const { options, isLoading: isLoadingOptions } = useOptions();
+    const scriptOptions = options?.automationScripts;
 
     useEffect(() => {
         if (isOpen) {
+            if (!scriptOptions) return;
+
+            const getInitialFormData = (): Partial<AutomationPlaybook> => ({
+                name: '',
+                description: '',
+                type: scriptOptions.playbookTypes[0]?.value || 'shell',
+                content: '',
+                parameters: [],
+            });
+
             setFormData(playbook || getInitialFormData());
         }
-    }, [isOpen, playbook]);
+    }, [isOpen, playbook, scriptOptions]);
 
     const handleSave = () => {
         onSave(formData);
@@ -133,11 +139,10 @@ const AutomationPlaybookEditModal: React.FC<AutomationPlaybookEditModalProps> = 
                             <input type="text" value={formData.name || ''} onChange={e => handleChange('name', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
                         </FormRow>
                         <FormRow label="類型">
-                            <select value={formData.type || 'shell'} onChange={e => handleChange('type', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
-                                <option value="shell">Shell</option>
-                                <option value="python">Python</option>
-                                <option value="ansible">Ansible</option>
-                                <option value="terraform">Terraform</option>
+                            <select value={formData.type || ''} onChange={e => handleChange('type', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoadingOptions}>
+                                {isLoadingOptions ? <option>載入中...</option> : scriptOptions?.playbookTypes.map(opt => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                ))}
                             </select>
                         </FormRow>
                     </div>
@@ -168,8 +173,10 @@ const AutomationPlaybookEditModal: React.FC<AutomationPlaybookEditModalProps> = 
                                             <div className="col-span-3"><input type="text" placeholder="Name (e.g., pod_name)" value={param.name} onChange={e => handleParamChange(index, 'name', e.target.value)} className="w-full bg-slate-700 rounded px-2 py-1.5 text-sm" /></div>
                                             <div className="col-span-3"><input type="text" placeholder="Label (e.g., Pod Name)" value={param.label} onChange={e => handleParamChange(index, 'label', e.target.value)} className="w-full bg-slate-700 rounded px-2 py-1.5 text-sm" /></div>
                                             <div className="col-span-3">
-                                                <select value={param.type} onChange={e => handleParamChange(index, 'type', e.target.value)} className="w-full bg-slate-700 rounded px-2 py-1.5 text-sm">
-                                                    <option value="string">String</option> <option value="number">Number</option> <option value="enum">Enum</option> <option value="boolean">Boolean</option>
+                                                <select value={param.type} onChange={e => handleParamChange(index, 'type', e.target.value)} className="w-full bg-slate-700 rounded px-2 py-1.5 text-sm" disabled={isLoadingOptions}>
+                                                    {isLoadingOptions ? <option>載入中...</option> : scriptOptions?.parameterTypes.map(opt => (
+                                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                    ))}
                                                 </select>
                                             </div>
                                             <div className="col-span-2 flex items-center space-x-2 text-sm">

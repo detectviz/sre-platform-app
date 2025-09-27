@@ -179,11 +179,10 @@ const Step2 = ({ formData, setFormData, options }: { formData: Partial<SilenceRu
                 <div className="p-4 border border-slate-700 rounded-lg space-y-4 bg-slate-800/20">
                     <div className="grid grid-cols-2 gap-4">
                          <FormRow label="重複頻率">
-                             <select value={recurrenceType} onChange={e => setRecurrenceType(e.target.value as any)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
-                                <option value="daily">每日</option>
-                                <option value="weekly">每週</option>
-                                <option value="monthly">每月</option>
-                                <option value="custom">自訂 Cron</option>
+                             <select value={recurrenceType} onChange={e => setRecurrenceType(e.target.value as any)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={!options}>
+                                {options?.recurrenceTypes.map(opt => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                )) || <option>載入中...</option>}
                             </select>
                          </FormRow>
                          <FormRow label="執行時間">

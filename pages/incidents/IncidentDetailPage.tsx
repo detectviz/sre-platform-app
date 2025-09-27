@@ -92,6 +92,8 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onU
     if (lowerAction.includes('created')) return { icon: 'plus-circle', color: 'bg-sky-500 ring-sky-500/30' };
     if (lowerAction.includes('acknowledged')) return { icon: 'user-check', color: 'bg-green-500 ring-green-500/30' };
     if (lowerAction.includes('resolved')) return { icon: 'check-circle', color: 'bg-green-500 ring-green-500/30' };
+    if (lowerAction.includes('re-assigned')) return { icon: 'repeat', color: 'bg-blue-500 ring-blue-500/30' };
+    if (lowerAction.includes('silenced')) return { icon: 'bell-off', color: 'bg-slate-600 ring-slate-700/50' };
     if (lowerAction.includes('notification')) return { icon: 'bell', color: 'bg-yellow-500 ring-yellow-500/30' };
     if (lowerAction.includes('note')) return { icon: 'message-square', color: 'bg-slate-600 ring-slate-700/50' };
     if (lowerAction.includes('executed')) return { icon: 'bot', color: 'bg-purple-500 ring-purple-500/30' };

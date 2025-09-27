@@ -12,7 +12,7 @@ interface Command {
     name: string;
     description: string;
     icon: string;
-    action: (payload?: any) => void;
+    actionKey: string;
 }
 
 interface SearchResult {
@@ -37,21 +37,24 @@ const GlobalSearchModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
     const inputRef = useRef<HTMLInputElement>(null);
     const navigate = useNavigate();
     const [content, setContent] = useState<any>(null);
+    const [commands, setCommands] = useState<Command[]>([]);
 
     // Fetch content
     useEffect(() => {
         if (isOpen) {
             api.get('/ui/content/command-palette').then(res => setContent(res.data));
+            api.get<Command[]>('/commands').then(res => setCommands(res.data));
         }
     }, [isOpen]);
 
-    // Commands definition
-    const commands: Command[] = useMemo(() => [
-        { id: 'cmd_new_incident', name: '> New Incident', description: 'Create a new incident report', icon: 'plus-circle', action: () => { showToast('This would open a new incident form.', 'success'); onClose(); } },
-        { id: 'cmd_silence_resource', name: '> Silence Resource', description: 'Temporarily silence alerts for a specific resource', icon: 'bell-off', action: () => setStep('silence_resource_search') },
-        { id: 'cmd_run_playbook', name: '> Run Playbook', description: 'Execute an automation playbook', icon: 'play-circle', action: () => setStep('run_playbook_search') },
-        { id: 'cmd_change_theme', name: '> Change Theme', description: 'Switch between light and dark mode', icon: 'sun-moon', action: () => { showToast('This would toggle the theme.', 'success'); onClose(); } },
-    ], [onClose]);
+    // Action mapping
+    const commandActions: Record<string, (payload?: any) => void> = useMemo(() => ({
+        'new_incident': () => { showToast('This would open a new incident form.', 'success'); onClose(); },
+        'silence_resource': () => setStep('silence_resource_search'),
+        'run_playbook': () => setStep('run_playbook_search'),
+        'change_theme': () => { showToast('This would toggle the theme.', 'success'); onClose(); },
+    }), [onClose]);
+
 
     // Reset state on open/close
     useEffect(() => {
@@ -136,7 +139,7 @@ const GlobalSearchModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                     setIsLoading(false);
                     const commandQuery = query.substring(1).toLowerCase();
                     const filteredCommands = commands.filter(c => c.name.toLowerCase().includes(commandQuery) || c.description.toLowerCase().includes(commandQuery));
-                    setResults(filteredCommands.map(c => ({ id: c.id, name: c.name, description: c.description, path: '#', type: 'Command', item: c, action: c.action })));
+                    setResults(filteredCommands.map(c => ({ id: c.id, name: c.name, description: c.description, path: '#', type: 'Command', item: c, action: commandActions[c.actionKey] })));
                 } else if (query.length > 1) {
                     setIsLoading(true);
                     debounce = setTimeout(() => performSearch(query), 300);
@@ -165,7 +168,7 @@ const GlobalSearchModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
         }
         
         return () => clearTimeout(debounce);
-    }, [query, step, commands, performSearch, searchForResource, searchForPlaybook]);
+    }, [query, step, commands, commandActions, performSearch, searchForResource, searchForPlaybook]);
 
     // Keyboard navigation
     useEffect(() => {
