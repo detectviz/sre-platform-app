@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Dashboard } from '../../types';
+import { Dashboard, GrafanaOptions } from '../../types';
 import Dropdown from '../../components/Dropdown';
 import Icon from '../../components/Icon';
 import PlaceholderModal from '../../components/PlaceholderModal';
@@ -7,12 +7,6 @@ import api from '../../services/api';
 
 interface DashboardViewerProps {
   dashboard: Dashboard;
-}
-
-interface GrafanaOptions {
-    timeOptions: { label: string, value: string }[];
-    refreshOptions: { label: string, value: string }[];
-    tvModeOptions: { label: string, value: string }[];
 }
 
 const DashboardViewer: React.FC<DashboardViewerProps> = ({ dashboard }) => {
@@ -32,10 +26,16 @@ const DashboardViewer: React.FC<DashboardViewerProps> = ({ dashboard }) => {
         api.get<GrafanaOptions>('/settings/grafana/options')
             .then(res => {
                 setOptions(res.data);
-                // Set initial values from fetched options if available
-                if (res.data.refreshOptions.length > 0) setRefresh(res.data.refreshOptions[0].value);
+                if (res.data.refreshOptions.length > 0) {
+                    const defaultRefresh = res.data.refreshOptions.find(opt => opt.value === '1m');
+                    setRefresh(defaultRefresh ? defaultRefresh.value : res.data.refreshOptions[0].value);
+                }
                 const defaultTime = res.data.timeOptions.find(opt => opt.value.includes('6h'));
-                if (defaultTime) setTimeRange(defaultTime.value);
+                if (defaultTime) {
+                    setTimeRange(defaultTime.value);
+                } else if (res.data.timeOptions.length > 0) {
+                    setTimeRange(res.data.timeOptions[0].value);
+                }
             })
             .catch(err => console.error("Failed to fetch Grafana options", err))
             .finally(() => setIsLoading(false));
@@ -71,7 +71,6 @@ const DashboardViewer: React.FC<DashboardViewerProps> = ({ dashboard }) => {
         timeParams.forEach((value, key) => params.set(key, value));
         
         url.search = params.toString();
-        // Ensure we are using the full dashboard view, not a single panel
         url.pathname = url.pathname.replace('/d-solo/', '/d/');
 
         return url.toString();
@@ -85,12 +84,12 @@ const DashboardViewer: React.FC<DashboardViewerProps> = ({ dashboard }) => {
                 ) : options && (
                     <>
                         <div className="flex items-center space-x-4">
-                            <Dropdown label="主題" options={[{label: '深色', value: 'dark'}, {label: '淺色', value: 'light'}]} value={theme} onChange={setTheme} minWidth="w-24" />
-                            <Dropdown label="TV 模式" options={options.tvModeOptions} value={tvMode} onChange={setTvMode} minWidth="w-24" />
-                            <Dropdown label="刷新" options={options.refreshOptions} value={refresh} onChange={setRefresh} minWidth="w-24" />
+                            <Dropdown label="主題" options={options.themeOptions || []} value={theme} onChange={setTheme} minWidth="w-24" />
+                            <Dropdown label="TV 模式" options={options.tvModeOptions || []} value={tvMode} onChange={setTvMode} minWidth="w-24" />
+                            <Dropdown label="刷新" options={options.refreshOptions || []} value={refresh} onChange={setRefresh} minWidth="w-24" />
                         </div>
                         <div className="flex items-center space-x-4">
-                            <Dropdown label="時間" options={options.timeOptions} value={timeRange} onChange={setTimeRange} minWidth="w-40" />
+                            <Dropdown label="時間" options={options.timeOptions || []} value={timeRange} onChange={setTimeRange} minWidth="w-40" />
                             <div className="flex items-center space-x-1">
                                 <button onClick={() => showPlaceholderModal('Zoom In')} className="p-2 rounded-md hover:bg-slate-700/50"><Icon name="zoom-in" className="w-5 h-5" /></button>
                                 <button onClick={() => showPlaceholderModal('Share Dashboard')} className="p-2 rounded-md hover:bg-slate-700/50"><Icon name="share-2" className="w-5 h-5" /></button>

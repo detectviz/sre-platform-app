@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Incident, IncidentAnalysis, MultiIncidentAnalysis } from '../../types';
+import { Incident, IncidentAnalysis, MultiIncidentAnalysis, IncidentOptions, StyleDescriptor } from '../../types';
 import Icon from '../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
@@ -51,6 +51,7 @@ const IncidentListPage: React.FC = () => {
     const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+    const [options, setOptions] = useState<IncidentOptions | null>(null);
 
     const { incidentId } = useParams<{ incidentId: string }>();
     const navigate = useNavigate();
@@ -69,14 +70,16 @@ const IncidentListPage: React.FC = () => {
                 page_size: pageSize,
                 ...filters,
             };
-            const [incidentsRes, columnsRes] = await Promise.all([
+            const [incidentsRes, columnsRes, optionsRes] = await Promise.all([
                 api.get<{ items: Incident[], total: number }>('/incidents', { params }),
-                api.get<string[]>(`/settings/column-config/${pageKey}`)
+                api.get<string[]>(`/settings/column-config/${pageKey}`),
+                api.get<IncidentOptions>('/incidents/options')
             ]);
             
             setIncidents(incidentsRes.data.items);
             setTotalIncidents(incidentsRes.data.total);
             setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
+            setOptions(optionsRes.data);
         } catch (err) {
             setError('無法獲取事故列表。');
         } finally {
@@ -194,31 +197,9 @@ const IncidentListPage: React.FC = () => {
     const isAllSelected = incidents.length > 0 && selectedIds.length === incidents.length;
     const isIndeterminate = selectedIds.length > 0 && selectedIds.length < incidents.length;
     
-    const getStatusPill = (status: Incident['status']) => {
-        switch (status) {
-            case 'new': return 'bg-orange-500/20 text-orange-400';
-            case 'acknowledged': return 'bg-sky-500/20 text-sky-400';
-            case 'resolved': return 'bg-green-500/20 text-green-400';
-            case 'silenced': return 'bg-slate-500/20 text-slate-400';
-        }
-    };
-    
-    const getSeverityPill = (severity: Incident['severity']) => {
-        switch (severity) {
-            case 'critical': return 'border-red-500 text-red-500';
-            case 'warning': return 'border-orange-500 text-orange-500';
-            case 'info': return 'border-sky-500 text-sky-500';
-        }
-    };
-
-    const getPriorityPill = (priority?: Incident['priority']) => {
-        if (!priority) return 'border-slate-500 text-slate-500';
-        switch (priority) {
-            case 'P0': return 'bg-purple-500/20 border border-purple-400 text-purple-300';
-            case 'P1': return 'bg-red-500/20 border border-red-400 text-red-300';
-            case 'P2': return 'bg-orange-500/20 border border-orange-400 text-orange-300';
-            case 'P3': return 'bg-yellow-500/20 border border-yellow-400 text-yellow-300';
-        }
+    const getStyle = (descriptors: StyleDescriptor[] | undefined, value: string | undefined): string => {
+        if (!descriptors || !value) return 'bg-slate-500/20 text-slate-400';
+        return descriptors.find(d => d.value === value)?.className || 'bg-slate-500/20 text-slate-400';
     };
 
     const renderCellContent = (inc: Incident, columnKey: string) => {
@@ -226,13 +207,13 @@ const IncidentListPage: React.FC = () => {
             case 'summary':
                 return <span className="font-medium text-white">{inc.summary}</span>;
             case 'status':
-                return <span className={`px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusPill(inc.status)}`}>{inc.status}</span>;
+                return <span className={`px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStyle(options?.statuses, inc.status)}`}>{inc.status}</span>;
             case 'severity':
-                return <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getSeverityPill(inc.severity)}`}>{inc.severity}</span>;
+                return <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(options?.severities, inc.severity)}`}>{inc.severity}</span>;
             case 'priority':
-                return <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getPriorityPill(inc.priority)}`}>{inc.priority || 'N/A'}</span>;
+                return <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStyle(options?.priorities, inc.priority)}`}>{inc.priority || 'N/A'}</span>;
             case 'serviceImpact':
-                return inc.serviceImpact;
+                return <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(options?.serviceImpacts, inc.serviceImpact)}`}>{inc.serviceImpact}</span>;
             case 'resource':
                 return inc.resource;
             case 'assignee':

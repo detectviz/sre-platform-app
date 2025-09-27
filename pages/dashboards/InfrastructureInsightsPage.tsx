@@ -152,7 +152,7 @@ const InfrastructureInsightsPage: React.FC = () => {
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold">基礎設施洞察</h1>
                 <div className="flex items-center space-x-2">
-                    {options && <Dropdown label="時間範圍" options={options.timeOptions} value={timeRange} onChange={setTimeRange} />}
+                    {options && <Dropdown label="時間範圍" options={options.timeOptions || []} value={timeRange} onChange={setTimeRange} />}
                     <button onClick={handleRefresh} className="p-2 rounded-lg hover:bg-slate-700/50 flex items-center text-sm px-3 bg-slate-800/60 border border-slate-700"><Icon name="refresh-cw" className="w-4 h-4 mr-2" />刷新</button>
                     <button onClick={handleExport} className="p-2 rounded-lg hover:bg-slate-700/50 flex items-center text-sm px-3 bg-slate-800/60 border border-slate-700"><Icon name="download" className="w-4 h-4 mr-2" />匯出</button>
                 </div>

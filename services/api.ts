@@ -1,6 +1,5 @@
-
 import { DB, uuidv4 } from '../mock-server/db';
-import { AutomationExecution, Dashboard } from '../types';
+import { AutomationExecution, Dashboard, GrafanaOptions } from '../types';
 import { showToast } from './toast';
 
 const getActive = (collection: any[] | undefined) => {
@@ -52,6 +51,7 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 if (id === 'icons') return DB.iconMap;
                 if (id === 'themes' && action === 'charts') return DB.chartColors;
                 if (id === 'tabs') return DB.tabConfigs;
+                if (id === 'icons-config') return DB.notificationChannelIcons;
                 break;
             }
             // Me / Profile
@@ -120,6 +120,9 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                  if (id === 'sre-war-room') {
                     if (action === 'service-health') return DB.serviceHealthData;
                     if (action === 'resource-group-status') return DB.resourceGroupStatusData;
+                }
+                if (id === 'infrastructure-insights' && action === 'options') {
+                    return { timeOptions: DB.grafanaOptions.timeOptions };
                 }
                 if (id === 'available-grafana') {
                     const linkedUids = getActive(DB.dashboards).filter((d: any) => d.type === 'grafana' && d.grafana_dashboard_uid).map((d: any) => d.grafana_dashboard_uid);
@@ -297,7 +300,12 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 if (params?.bookmarked) resources = resources.slice(0, 4);
                 return paginate(resources, params?.page, params?.page_size);
             }
-            case 'POST /resources':
+            case 'POST /resources': {
+                if (id && action === 'silence') {
+                    const resourceToSilence = DB.resources.find((r: any) => r.id === id);
+                    if (!resourceToSilence) throw { status: 404 };
+                    return { message: `Resource ${resourceToSilence.name} silenced successfully for ${body.duration}.` };
+                }
                 if (id === 'batch-actions') {
                      const { action: batchAction, ids } = body;
                     if (batchAction === 'delete') DB.resources.forEach((r: any) => { if (ids.includes(r.id)) r.deleted_at = new Date().toISOString(); });
@@ -310,6 +318,7 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                      DB.resources.unshift(newResource);
                      return newResource;
                 }
+            }
             case 'PATCH /resources':
                 const resIndex = DB.resources.findIndex((r: any) => r.id === id);
                 if (resIndex === -1) throw { status: 404 };
@@ -522,7 +531,12 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 }
                 break;
             }
-            case 'GET /logs': return paginate(DB.logs, params?.page, params?.page_size);
+            case 'GET /logs': {
+                if (id === 'options') {
+                    return { timeRangeOptions: DB.logTimeOptions };
+                }
+                return paginate(DB.logs, params?.page, params?.page_size);
+            }
             case 'GET /traces': return DB.traces;
 
             // Settings
@@ -578,11 +592,7 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 if (id === 'preferences' && action === 'options') return DB.preferenceOptions;
                 if (id === 'grafana') {
                     if (action === 'options') {
-                        return {
-                            timeOptions: [{label: 'Last 6 hours', value: 'from=now-6h&to=now'}, {label: 'Last 24 hours', value: 'from=now-24h&to=now'}],
-                            refreshOptions: [{label: '1m', value: '1m'}, {label: '5m', value: '5m'}],
-                            tvModeOptions: [{label: 'Off', value: 'off'}, {label: 'On', value: 'on'}],
-                        }
+                        return DB.grafanaOptions as GrafanaOptions;
                     }
                     return DB.grafanaSettings;
                 }

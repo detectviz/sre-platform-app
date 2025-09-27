@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { NotificationHistoryRecord, NotificationChannelType, NotificationHistoryOptions } from '../../../types';
 import Icon from '../../../components/Icon';
@@ -12,6 +11,8 @@ import TableLoader from '../../../components/TableLoader';
 import TableError from '../../../components/TableError';
 import { exportToCsv } from '../../../services/export';
 
+type IconConfig = Record<NotificationChannelType | 'Default', { icon: string; color: string; }>;
+
 const NotificationHistoryPage: React.FC = () => {
     const [history, setHistory] = useState<NotificationHistoryRecord[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -20,6 +21,7 @@ const NotificationHistoryPage: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [options, setOptions] = useState<NotificationHistoryOptions | null>(null);
+    const [iconConfig, setIconConfig] = useState<IconConfig | null>(null);
 
     const [selectedRecord, setSelectedRecord] = useState<NotificationHistoryRecord | null>(null);
     const [resendingId, setResendingId] = useState<string | null>(null);
@@ -39,9 +41,13 @@ const NotificationHistoryPage: React.FC = () => {
     };
     
     useEffect(() => {
-        api.get<NotificationHistoryOptions>('/settings/notification-history/options')
-            .then(res => setOptions(res.data))
-            .catch(err => console.error("Failed to fetch notification history options", err));
+        Promise.all([
+            api.get<NotificationHistoryOptions>('/settings/notification-history/options'),
+            api.get<IconConfig>('/ui/icons-config')
+        ]).then(([optionsRes, iconsRes]) => {
+            setOptions(optionsRes.data);
+            setIconConfig(iconsRes.data);
+        }).catch(err => console.error("Failed to fetch notification history options or icon config", err));
     }, []);
 
     const fetchHistory = useCallback(async () => {
@@ -81,12 +87,9 @@ const NotificationHistoryPage: React.FC = () => {
     };
     
     const getChannelTypeIcon = (type: NotificationChannelType) => {
-        switch (type) {
-            case 'Email': return { icon: 'mail', color: 'text-red-400' };
-            case 'Slack': return { icon: 'slack', color: 'text-purple-400' };
-            case 'Webhook': return { icon: 'globe', color: 'text-sky-400' };
-            default: return { icon: 'bell', color: 'text-slate-400' };
-        }
+        const fallback = { icon: 'bell', color: 'text-slate-400' };
+        if (!iconConfig) return fallback;
+        return iconConfig[type] || iconConfig.Default || fallback;
     };
 
     const handleExport = () => {
@@ -118,11 +121,11 @@ const NotificationHistoryPage: React.FC = () => {
                         </div>
                         <select value={filters.status} onChange={e => setFilters({...filters, status: e.target.value})} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm">
                             <option value="">所有狀態</option>
-                            {options?.statuses.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                            {options?.statuses?.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                         </select>
                         <select value={filters.channelType} onChange={e => setFilters({...filters, channelType: e.target.value})} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm">
                             <option value="">所有管道</option>
-                            {options?.channelTypes.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                            {options?.channelTypes?.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                         </select>
                         <input type="datetime-local" value={filters.startDate} onChange={e => setFilters({...filters, startDate: e.target.value})} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm" />
                         <span className="text-slate-400">to</span>

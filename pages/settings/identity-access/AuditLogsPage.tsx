@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { AuditLog, User } from '../../../types';
+import { AuditLog, User, AuditLogOptions } from '../../../types';
 import Icon from '../../../components/Icon';
 import TableContainer from '../../../components/TableContainer';
 import Drawer from '../../../components/Drawer';
@@ -22,6 +22,7 @@ const AuditLogsPage: React.FC = () => {
     const [filters, setFilters] = useState<{ user: string; action: string; startDate: string; endDate: string }>({ user: '', action: '', startDate: '', endDate: '' });
     const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
     const [users, setUsers] = useState<User[]>([]);
+    const [options, setOptions] = useState<AuditLogOptions | null>(null);
     const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
     const [modalFeatureName, setModalFeatureName] = useState('');
 
@@ -31,9 +32,13 @@ const AuditLogsPage: React.FC = () => {
     };
 
     useEffect(() => {
-        api.get<{ items: User[] }>('/iam/users', { params: { page: 1, page_size: 1000 } })
-            .then(res => setUsers(res.data.items))
-            .catch(err => console.error("Failed to fetch users", err));
+        Promise.all([
+            api.get<{ items: User[] }>('/iam/users', { params: { page: 1, page_size: 1000 } }),
+            api.get<AuditLogOptions>('/iam/audit-logs/options')
+        ]).then(([usersRes, optionsRes]) => {
+            setUsers(usersRes.data.items);
+            setOptions(optionsRes.data);
+        }).catch(err => console.error("Failed to fetch users or audit log options", err));
     }, []);
     
     const fetchAuditLogs = useCallback(async () => {
@@ -85,11 +90,6 @@ const AuditLogsPage: React.FC = () => {
         });
     };
 
-    const uniqueActions = useMemo(() => {
-        // In a real app, this might come from an API or be pre-defined
-        return ['LOGIN_SUCCESS', 'UPDATE_EVENT_RULE', 'EXECUTE_PLAYBOOK', 'DELETE_USER'];
-    }, []);
-
     return (
         <div className="h-full flex flex-col">
             <Toolbar
@@ -101,7 +101,7 @@ const AuditLogsPage: React.FC = () => {
                         </select>
                         <select value={filters.action} onChange={e => setFilters({...filters, action: e.target.value})} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm">
                             <option value="">所有操作</option>
-                            {uniqueActions.map(a => <option key={a} value={a}>{a}</option>)}
+                            {options?.actionTypes?.map(a => <option key={a} value={a}>{a}</option>)}
                         </select>
                         <input type="datetime-local" value={filters.startDate} onChange={e => setFilters({...filters, startDate: e.target.value})} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm" />
                         <span className="text-slate-400">to</span>

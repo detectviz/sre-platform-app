@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Incident } from '../../types';
+import { Incident, IncidentOptions, StyleDescriptor } from '../../types';
 import Icon from '../../components/Icon';
 import AIAnalysisDisplay from '../../components/AIAnalysisDisplay';
 import api from '../../services/api';
@@ -9,8 +9,16 @@ interface IncidentDetailPageProps {
   incidentId: string;
 }
 
+const InfoItem = ({ label, children }: { label: string; children?: React.ReactNode }) => (
+    <div>
+        <dt className="text-sm text-slate-400">{label}</dt>
+        <dd className="mt-1 text-base text-white">{children}</dd>
+    </div>
+);
+
 const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId }) => {
   const [incident, setIncident] = useState<Incident | null>(null);
+  const [options, setOptions] = useState<IncidentOptions | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,8 +28,12 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId }) =
       setIsLoading(true);
       setError(null);
       try {
-        const { data } = await api.get<Incident>(`/incidents/${incidentId}`);
-        setIncident(data);
+        const [incidentRes, optionsRes] = await Promise.all([
+          api.get<Incident>(`/incidents/${incidentId}`),
+          api.get<IncidentOptions>('/incidents/options')
+        ]);
+        setIncident(incidentRes.data);
+        setOptions(optionsRes.data);
       } catch (err) {
         setError(`Failed to fetch incident ${incidentId}.`);
       } finally {
@@ -30,6 +42,11 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId }) =
     };
     fetchIncident();
   }, [incidentId]);
+
+  const getStyle = (descriptors: StyleDescriptor[] | undefined, value: string | undefined): string => {
+    if (!descriptors || !value) return 'bg-slate-500/20 text-slate-400';
+    return descriptors.find(d => d.value === value)?.className || 'bg-slate-500/20 text-slate-400';
+  };
 
   if (isLoading) {
     return (
@@ -49,41 +66,6 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId }) =
     );
   }
 
-  const getStatusPill = (status: Incident['status']) => {
-      switch (status) {
-          case 'new': return 'bg-orange-500/20 text-orange-400';
-          case 'acknowledged': return 'bg-sky-500/20 text-sky-400';
-          case 'resolved': return 'bg-green-500/20 text-green-400';
-          case 'silenced': return 'bg-slate-500/20 text-slate-400';
-      }
-  };
-  
-  const getSeverityPill = (severity: Incident['severity']) => {
-      switch (severity) {
-          case 'critical': return 'border-red-500 text-red-500';
-          case 'warning': return 'border-orange-500 text-orange-500';
-          case 'info': return 'border-sky-500 text-sky-500';
-      }
-  };
-
-  const getServiceImpactPill = (serviceImpact: Incident['serviceImpact']) => {
-    switch (serviceImpact) {
-        case 'High': return 'border-red-500 text-red-500';
-        case 'Medium': return 'border-orange-500 text-orange-500';
-        case 'Low': return 'border-sky-500 text-sky-500';
-    }
-  };
-
-  const getPriorityPill = (priority?: Incident['priority']) => {
-    if (!priority) return 'border-slate-500 text-slate-500';
-    switch (priority) {
-        case 'P0': return 'bg-purple-500/20 border border-purple-400 text-purple-300';
-        case 'P1': return 'bg-red-500/20 border border-red-400 text-red-300';
-        case 'P2': return 'bg-orange-500/20 border border-orange-400 text-orange-300';
-        case 'P3': return 'bg-yellow-500/20 border border-yellow-400 text-yellow-300';
-    }
-  };
-
   const getTimelineIconAndColor = (action: string) => {
     const lowerAction = action.toLowerCase();
     if (lowerAction.includes('created')) return { icon: 'plus-circle', color: 'bg-sky-500 ring-sky-500/30' };
@@ -95,13 +77,6 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId }) =
     if (lowerAction.includes('analysis')) return { icon: 'brain-circuit', color: 'bg-purple-500 ring-purple-500/30' };
     return { icon: 'info', color: 'bg-slate-700 ring-slate-800' };
   }
-  
-  const InfoItem = ({ label, children }: { label: string; children?: React.ReactNode }) => (
-    <div>
-        <dt className="text-sm text-slate-400">{label}</dt>
-        <dd className="mt-1 text-base text-white">{children}</dd>
-    </div>
-  );
 
   return (
     <div className="flex flex-col h-full">
@@ -109,17 +84,17 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId }) =
       <div className="pb-4 mb-4 border-b border-slate-700/50 shrink-0">
         <dl className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-6">
             <InfoItem label="狀態">
-                 <span className={`px-3 py-1 text-sm font-semibold rounded-full capitalize ${getStatusPill(incident.status)}`}>
+                 <span className={`px-3 py-1 text-sm font-semibold rounded-full capitalize ${getStyle(options?.statuses, incident.status)}`}>
                     {incident.status}
                 </span>
             </InfoItem>
             <InfoItem label="嚴重性">
-                <span className={`px-3 py-1 text-sm font-semibold rounded-full border ${getSeverityPill(incident.severity)}`}>
+                <span className={`px-3 py-1 text-sm font-semibold rounded-full border ${getStyle(options?.severities, incident.severity)}`}>
                     {incident.severity}
                 </span>
             </InfoItem>
              <InfoItem label="優先級">
-                 <span className={`px-3 py-1 text-sm font-semibold rounded-full ${getPriorityPill(incident.priority)}`}>
+                 <span className={`px-3 py-1 text-sm font-semibold rounded-full ${getStyle(options?.priorities, incident.priority)}`}>
                     {incident.priority || 'N/A'}
                 </span>
             </InfoItem>
@@ -142,7 +117,7 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId }) =
                         </Link>
                     </InfoItem>
                     <InfoItem label="服務影響">
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getServiceImpactPill(incident.serviceImpact)}`}>
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(options?.serviceImpacts, incident.serviceImpact)}`}>
                             {incident.serviceImpact}
                         </span>
                     </InfoItem>

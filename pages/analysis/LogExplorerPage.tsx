@@ -6,7 +6,7 @@ import LogLevelPill from '../../components/LogLevelPill';
 import JsonViewer from '../../components/JsonViewer';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import PlaceholderModal from '../../components/PlaceholderModal';
-import { LogEntry, LogLevel, LogAnalysis } from '../../types';
+import { LogEntry, LogLevel, LogAnalysis, LogOptions } from '../../types';
 import api from '../../services/api';
 import { exportToCsv } from '../../services/export';
 import LogAnalysisModal from '../../components/LogAnalysisModal';
@@ -24,6 +24,7 @@ const LogExplorerPage: React.FC = () => {
     const logContainerRef = useRef<HTMLDivElement>(null);
     const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
     const [modalFeatureName, setModalFeatureName] = useState('');
+    const [options, setOptions] = useState<LogOptions | null>(null);
     
     // New state for AI Log Analysis
     const [isLogAnalysisModalOpen, setIsLogAnalysisModalOpen] = useState(false);
@@ -39,6 +40,12 @@ const LogExplorerPage: React.FC = () => {
             setQuery(queryFromUrl);
         }
     }, [location.search]);
+
+    useEffect(() => {
+        api.get<LogOptions>('/logs/options')
+            .then(res => setOptions(res.data))
+            .catch(err => console.error("Failed to fetch log options", err));
+    }, []);
 
     const showPlaceholderModal = (featureName: string) => {
         setModalFeatureName(featureName);
@@ -179,16 +186,20 @@ const LogExplorerPage: React.FC = () => {
                        className="w-full bg-slate-800/80 border border-slate-700 rounded-md pl-9 pr-4 py-1.5 text-sm" />
             </div>
             <div className="flex items-center space-x-1 bg-slate-800/80 border border-slate-700 rounded-md p-1 text-sm">
-                {['15m', '1h', '6h', '24h'].map(t => (
-                    <button 
-                        type="button"
-                        key={t}
-                        onClick={() => setTimeRange(t)}
-                        className={`px-2 py-1 rounded ${timeRange === t ? 'bg-sky-600 text-white' : 'hover:bg-slate-700 text-slate-300'}`}
-                    >
-                        {t}
-                    </button>
-                ))}
+                {!options ? (
+                     <div className="animate-pulse h-8 w-64 bg-slate-700 rounded-md"></div>
+                ) : (
+                    options?.timeRangeOptions?.map(opt => (
+                        <button 
+                            type="button"
+                            key={opt.value}
+                            onClick={() => setTimeRange(opt.value)}
+                            className={`px-2 py-1 rounded ${timeRange === opt.value ? 'bg-sky-600 text-white' : 'hover:bg-slate-700 text-slate-300'}`}
+                        >
+                            {opt.label}
+                        </button>
+                    ))
+                )}
             </div>
         </form>
     );

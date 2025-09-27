@@ -506,22 +506,66 @@
 -   `GET /pages/metadata`: (新增) 提供一個包含所有頁面配置元數據的映射表，將前端頁面標識符與後端配置鍵關聯起來。
 ---
 
-## 17. 功能: 全局動態化與工作流程強化 (v2.16)
+## 17. 功能: 前端靜態資料依賴審核與 API 化 (v2.17)
 
 -   **模組**: 全局
--   **版本**: v2.16
+-   **版本**: v2.17
 -   **狀態**: ✅ 已完成
 
 ### 17.1 使用者故事
 
 **身為** 一名平台開發者與管理員，
-**我想要** 平台徹底根除前端的靜態資料依賴，所有配置、選項與使用者內容都由後端 API 驅動，並廢棄所有包含過時資訊的遺留元件，
-**使得** 平台成為一個真正單一資料來源 (SSOT) 的應用程式，大幅提升其可維護性、一致性與未來的擴展彈性。
+**我想要** 平台徹底根除所有前端的靜態資料依賴，所有用於 UI 呈現的配置、選項與樣式對應，都由後端 API 統一驅動，
+**使得** 平台成為一個真正單一資料來源 (SSOT) 的應用程式，未來若需調整業務邏輯 (如新增狀態) 或視覺主題時，僅需修改後端配置即可，無需重新部署前端，大幅提升其可維護性、一致性與未來的擴展彈性。
 
 ### 17.2 行為變更
 
+-   **全面引入 UI 元數據 API**:
+    -   為平台中幾乎所有核心模組建立了對應的 `GET /.../options` API 端點。這些端點現在負責提供所有先前硬編碼在前端的 UI 相關資料。
+    -   **受影響的資料類型**:
+        -   **篩選器選項**: 如日誌時間範圍、審計日誌的操作類型等。
+        -   **狀態與樣式**: 如事件狀態、資源健康度、腳本執行結果等對應的顏色、標籤與 CSS class。
+        -   **表單選項**: 如自動化觸發器類型、靜音規則的星期選項等。
+
+-   **前端元件重構**:
+    -   **受影響的元件**: 根據「前端靜態資料依賴審視報告」中的列表，重構了超過 15 個核心元件與頁面。
+    -   **變更內容**: 所有元件現在都會在載入時向其對應的 `/.../options` 端點發起請求，並根據回傳的資料動態渲染 UI。
+    -   **移除硬編碼邏輯**: 徹底移除了所有用於判斷狀態並返回對應 CSS class 的 `switch` 語句和硬編碼的物件。
+    -   **健壯性提升**: 所有依賴這些動態選項的元件都增加了載入中 (Loading) 和錯誤 (Error) 狀態的處理，取代了原先在 API 失敗時回退到靜態資料的邏輯，確保了 UI 顯示與後端資料源的嚴格一致。
+
+### 17.3 新增的 API 端點
+
+-   `GET /logs/options`: 提供日誌探索頁面的時間範圍選項。
+-   `GET /incidents/options`: (增強) 提供事件狀態、嚴重性等樣式描述符。
+-   `GET /automation/triggers/options`: 提供觸發器類型、條件鍵等選項。
+-   `GET /silence-rules/options`: (增強) 提供本地化的星期選項。
+-   `GET /iam/audit-logs/options`: 提供審計日誌的操作類型選項。
+-   `GET /notifications/options`: 提供通知嚴重性對應的樣式描述符。
+-   `GET /resources/options`: 提供資源狀態的樣式描述符與拓撲圖顏色。
+-   `GET /automation/executions/options`: 提供執行狀態的樣式描述符。
+-   `GET /automation/scripts/options`: 提供腳本運行狀態的樣式描述符。
+-   `GET /ai/insights/options`: 提供 AI 洞察嚴重性與影響等級的樣式。
+-   `GET /dashboards/infrastructure-insights/options`: 提供風險等級的顏色配置。
+-   `GET /iam/users/options`: (增強) 提供人員狀態的樣式描述符。
+
+---
+
+## 18. 功能: 全局動態化與工作流程強化 (v2.16)
+
+-   **模組**: 全局
+-   **版本**: v2.16
+-   **狀態**: ✅ 已完成
+
+### 18.1 使用者故事
+
+**身為** 一名平台開發者與管理員，
+**我想要** 平台徹底根除前端的靜態資料依賴，所有配置、選項與使用者內容都由後端 API 驅動，並廢棄所有包含過時資訊的遺留元件，
+**使得** 平台成為一個真正單一資料來源 (SSOT) 的應用程式，大幅提升其可維護性、一致性與未來的擴展彈性。
+
+### 18.2 行為變更
+
 -   **廢棄遺留版面殼層**:
-    -   **問題**: 多個頁面元件 (如 `IncidentsPage.tsx`, `ResourceManagementPage.tsx`) 內含硬編碼的分頁籤定義，與 `UIConfigContext` 提供的動態配置衝突，構成潛在的維護風險。
+    -   **問題**: 多個頁面元件 (如 `IncidentsPage.tsx`, `ResourceManagementPage.tsx`) 内含硬編碼的分頁籤定義，與 `UIConfigContext` 提供的動態配置衝突，構成潛在的維護風險。
     -   **解決方案**: 由於這些元件在目前的路由 (`App.tsx`) 中已不再使用，它們已被清空並轉換為佔位符元件。此舉在無法刪除檔案的限制下，有效地移除了過時的靜態程式碼。
 
 -   **引入全局使用者上下文 (`UserContext`)**:
@@ -539,181 +583,667 @@
     -   **`InfrastructureInsightsPage.tsx`**: 修復了在 API 請求失敗時注入假資料的問題。現在，頁面會顯示一個清晰的錯誤狀態和重試按鈕。
     -   **`LogExplorerPage.tsx`**: 移除了前端生成的模擬「即時日誌」。現在，「即時」模式會透過真實的輪詢機制，定期從後端 API 獲取最新的日誌數據。
 
-### 17.3 新增的 API 端點
+### 18.3 新增的 API 端點
 
 -   `GET /settings/grafana/options`: (新增) 提供 Grafana 儀表板檢視器的控制選項。
 -   `GET /settings/notification-strategies/options`: (增強) 新增了預設觸發條件和優先級列表。
 -   `GET /logs/options`: (新增) 提供日誌探索頁面的時間範圍等選項 (未來規劃)。
 -   (重用) `/me`: 現在由 `UserContext` 統一呼叫，為全平台提供使用者資訊。
--   (重用) `/dashboards/options`, `/settings/tags/options`: 被更多元件用於獲取預設值與選項。
----
+-   (重用) `/dashboards/options`, `/settings/tags/options`: 被更多元件用於獲--- START OF FILE architecture.md ---
 
-## 18. 功能: UI 字串中心化與國際化基礎 (v2.17)
+# SRE 平台系統架構設計書
 
--   **模組**: 全局 (UI/UX)
--   **版本**: v2.17
--   **狀態**: ✅ 已完成
+## 📋 文檔概覽
 
-### 18.1 使用者故事
+**文檔版本**: 1.0
+**更新日期**: 2025-09-25
 
-**身為** 一名平台開發者與維護者，
-**我想要** 將散落在所有前端元件中的硬編碼 UI 字串（如頁面標題、按鈕文字、標籤）集中到一個統一的檔案中進行管理，
-**使得** 修改文字內容時無需變更元件邏輯，確保了 UI 的一致性，並為未來的國際化 (i18n) 工作奠定了堅實的基礎，大幅提升了應用的可維護性。
+## 📋 核心契約文件參考 (SSOT)
+本架構設計基於以下唯一真實來源：
+- **[openapi.yaml](openapi.yaml)** - API 規格契約
+- **[db_schema.sql](db_schema.sql)** - 數據庫架構契約
+- **[specs.md](specs.md)** - 功能規格和 UI 原型分析
 
-### 18.2 行為變更
+## 🎯 系統概覽與核心架構哲學
 
--   **建立唯一真實來源 (Single Source of Truth)**:
-    -   新增了 `constants/pages.ts` 檔案，其中定義了一個名為 `PAGE_CONTENT` 的大型常數物件。此物件現在是整個應用程式所有 UI 顯示文字的唯一來源。
-    -   該物件按頁面和功能模組進行了結構化組織（例如 `PAGE_CONTENT.SRE_WAR_ROOM`, `PAGE_CONTENT.GLOBAL`, `PAGE_CONTENT.ALERT_RULE_EDIT_MODAL`），確保了內容的易於查找與管理。
+SRE 平台是一個現代化的企業級維運平台，採用前後端分離架構，專為 SRE 團隊設計。平台作為「統一管理平面」(Unified Management Plane)，整合多個開源工具，實現從被動故障響應到主動系統管理的轉型。
 
--   **全面重構前端元件**:
-    -   所有先前包含硬編碼字串的 React 元件（`.tsx` 檔），包括頁面、佈局和共用元件，都已被重構。
-    -   現在，這些元件會從 `constants/pages.ts` 匯入 `PAGE_CONTENT` 物件，並使用解構賦值來獲取其所需的文字內容，徹底移除了元件內部的靜態字串。
+### 統一管理層 + 開源執行引擎架構
+- **平台定位**：作為「統一管理平面」(Unified Management Plane)
+- **整合方式**：通過API調用Grafana Alerting和Grafana OnCall
+- **核心價值**：提供最佳人員體驗，而非重建底層引擎
 
--   **動態字串處理**:
-    -   對於需要動態插入變數的字串（例如，確認刪除訊息中的項目名稱），在 `PAGE_CONTENT` 中定義為接收參數的函式，以保持邏輯與內容的分離。
+### 核心設計理念
 
-### 18.3 重構範例
+```mermaid
+graph LR
+    A[被動響應] -->|轉型| B[主動管理]
 
-**修改前 (`SREWarRoomPage.tsx`)**:
-```tsx
-<h2 className="text-xl font-bold ...">AI 每日簡報</h2>
-// ...
-<h3 className="font-semibold ...">穩定性摘要</h3>
+    subgraph "傳統模式"
+        A1[人工監控] --> A2[告警響應] --> A3[手動診斷] --> A4[人工修復]
+    end
+
+    subgraph "智能模式"
+        B1[智能監控] --> B2[預測分析] --> B3[自動診斷] --> B4[智能修復]
+    end
 ```
 
-**修改後 (`SREWarRoomPage.tsx`)**:
-```tsx
-import { PAGE_CONTENT } from '../constants/pages';
-const { SRE_WAR_ROOM: content } = PAGE_CONTENT;
+### 智慧告警處理中樞
+- **Webhook作為AI整合點**：Grafana 統一發送告警到平台，不直接通知用戶
+- **平台作為智能處理中樞**：所有告警先經過平台 AI 分析再智能分發
+- **AI Agent四大核心角色**：
+  1. 智慧關聯與根因分析
+  2. 動態產生處理預案
+  3. 自動化修復
+  4. 告警風暴總結
 
-// ...
+### 關鍵技術決策
 
-<h2 className="text-xl font-bold ...">{content.AI_BRIEFING_TITLE}</h2>
-// ...
-<h3 className="font-semibold ...">{content.STABILITY_SUMMARY}</h3>
+1. **統一管理層策略**: 告警管理委託給 Grafana，人員**認證**狀態管理委託給 Keycloak，平台僅保留**業務**活動狀態。
+2. **混合架構模式**: Go 後端處理高併發業務邏輯，React 前端提供現代化用戶體驗
+3. **雲原生設計**: 完全容器化，支持 Kubernetes 部署
+4. **可觀測性優先**: 內建分散式追蹤、指標收集、結構化日誌
+
+## 📊 資訊架構原則
+
+### 操作視圖 vs 管理配置雙軌制
+| 分類 | 職責 | 使用頻率 | 範例功能 |
+|------|------|----------|----------|
+| **操作視圖** | 日常監控巡檢 | 高頻使用 | 儀表板、資源、事件 |
+| **管理配置** | 平台設定調整 | 低頻使用 | 管理選單各項功能 |
+
+## 🔧 核心設計邏輯
+
+### 權責分離原則體系
+1. **權限群組**：專注RBAC權限管理
+2. **通知團隊**：專注通知設定與聯絡點
+3. **資源群組**：擁有唯一負責團隊，確保責任歸屬
+
+### 引導式配置策略
+- 從範圍開始 → 系統自動建議 → 提供透明反饋 → 保留手動覆寫
+- 降低人員操作門檿，提升配置準確性
+
+## 🔐 身份認證整合
+
+### Keycloak整合方案核心
+- **委託專業IAM**：將帳號狀態管理交給Keycloak
+- **平台專注點**：內部角色與權限映射
+- **簡化管理頁面**：專注於權限群組分配
+
+## ⚡ 自動化引擎設計
+
+### 四大觸發機制
+1. **事件驅動**：自動化修復 (設定於告警規則)
+2. **排程觸發**：例行任務 (排程管理頁面)
+3. **手動觸發**：日常操作 (腳本庫執行按鈕)
+4. **Webhook觸發**：系統整合 (腳本詳情頁)
+
+> 💡 **設計依據**: 參考 [Google SRE Book](google-sre-book/Chapter-07-The-Evolution-of-Automation-at-Google.md) 的自動化觸發機制設計理念
+
+## 📈 監控策略體系
+
+### DataOps實踐框架三支柱
+1. **數據來源與資產目錄**：建立數據資產註冊表
+2. **數據可觀測性**：監控數據管道健康狀態
+3. **數據血緣分析**：追溯AI決策完整鏈路
+
+### 飽和度監控指標體系
+- **CPU**：平均負載 vs 核心數比率
+- **記憶體**：交換空間使用情況
+- **磁碟I/O**：等待時間佔比
+- **網路**：頻寬使用率與封包丟失
+- **應用層**：資源池使用率(連線池、線程池)
+
+## 🏗️ 整體架構
+
+### 系統分層架構
+
+```mermaid
+graph TB
+    subgraph "🌐 用戶層"
+        User([👨‍💻 SRE 工程師])
+        Admin([👩‍💼 系統管理員])
+        API_User([🔧 API 調用方])
+    end
+
+    subgraph "🎯 展示層 (Presentation Layer)"
+        Frontend[🖥️ React Web UI<br/>TypeScript + Ant Design]
+        Mobile[📱 響應式適配<br/>PWA 支持]
+    end
+
+    subgraph "🔌 API 網關層 (API Gateway)"
+        Gateway[🚪 API Gateway<br/>路由、限流、認證]
+        Auth[🔐 認證授權<br/>Keycloak OIDC]
+        RateLimit[⚡ 限流控制<br/>Redis 分散式限流]
+    end
+
+    subgraph "🎮 業務服務層 (Business Service)"
+        IncidentAPI[📊 事故管理 API]
+        ResourceAPI[🏗️ 資源管理 API]
+        NotifyAPI[📢 通知管理 API]
+        AnalyzeAPI[🧠 智能分析 API]
+        AutoAPI[🤖 自動化執行 API]
+    end
+
+    subgraph "📊 數據服務層 (Data Service)"
+        Database[(🐘 PostgreSQL<br/>業務數據存儲)]
+        TimeSeries[(📈 VictoriaMetrics<br/>時序數據存儲)]
+        Cache[(⚡ Redis Cluster<br/>快取 + 會話)]
+        Search[(🔍 Elasticsearch<br/>日誌搜索引擎)]
+    end
+
+    subgraph "🔍 監控觀測層 (Observability)"
+        Prometheus[📊 Prometheus<br/>指標收集]
+        Grafana[📈 Grafana<br/>可視化平台]
+        Loki[📝 Grafana Loki<br/>日誌聚合]
+        Tracing[🔗 Jaeger<br/>分散式追蹤]
+    end
+
+    subgraph "🏗️ 基礎設施層 (Infrastructure)"
+        K8s[☸️ Kubernetes<br/>容器編排]
+        Storage[💾 持久化存儲<br/>CSI 存儲類]
+        Network[🌐 網路層<br/>Ingress + Service Mesh]
+        Security[🔒 安全層<br/>RBAC + Network Policy]
+    end
+
+    %% 用戶交互
+    User --> Frontend
+    Admin --> Frontend
+    API_User --> Gateway
+
+    %% 前端到 API
+    Frontend --> Gateway
+    Mobile --> Gateway
+
+    %% API 網關路由
+    Gateway --> Auth
+    Gateway --> IncidentAPI
+    Gateway --> ResourceAPI
+    Gateway --> NotifyAPI
+    Gateway --> AnalyzeAPI
+    Gateway --> AutoAPI
+
+    %% 服務到數據層
+    IncidentAPI --> Database
+    IncidentAPI --> TimeSeries
+    ResourceAPI --> Database
+    ResourceAPI --> Cache
+    NotifyAPI --> Database
+    NotifyAPI --> Cache
+    AnalyzeAPI --> Search
+    AutoAPI --> Database
+
+    %% 監控和追蹤
+    IncidentAPI --> Tracing
+    ResourceAPI --> Tracing
+    NotifyAPI --> Tracing
+
+    Prometheus --> TimeSeries
+    Grafana --> TimeSeries
+    Loki --> Search
 ```
 
-### 18.4 影響範圍
+### 核心組件說明
 
-此次重構涵蓋了平台內所有使用者可見的介面，包括但不限於：
-- **主要頁面**: SRE 戰情室、儀表板管理、事件列表、資源管理、分析中心、自動化中心。
-- **所有設定頁面**: IAM、通知管理、平台設定、個人設定。
-- **核心共用元件**: 模態框 (`Modal`)、工具列 (`Toolbar`)、下拉選單 (`Dropdown`)、抽屜 (`Drawer`) 等。
+#### 🎯 前端平台 (React + TypeScript)
+- **技術棧**: React 18 + TypeScript 5 + Ant Design 5 + Vite
+- **主要職責**:
+  - 統一的管理界面和用戶體驗
+  - 資源生命週期可視化管理
+  - 任務編排和調度界面
+  - 實時監控數據展示
+  - 響應式設計支持多設備
+
+#### 🔧 後端服務 (Go)
+- **技術棧**: Go 1.21+ + Gin + GORM + Redis + PostgreSQL
+- **主要職責**:
+  - RESTful API 服務提供
+  - 複雜業務邏輯處理
+  - 數據持久化管理
+  - 外部系統集成
+  - AI Agent 驅動的智能分析
+  - 自動化工作流執行
+
+## ⭐ 平台核心功能架構
+
+平台確立了以下三大核心附加價值功能，這些功能超越了原生 Grafana 的能力：
+
+### 🔄 週期性靜音規則 (Recurring Silence Rules)
+**問題解決**: Grafana 只支援一次性靜音，無法滿足例行維護需求。
+
+**平台解決方案**:
+- **自訂排程器服務**: 基於 CRON 表達式的週期性靜音規則
+- **智慧型代理**: 動態呼叫 Grafana API 建立/刪除標準靜音
+- **視覺化管理**: 提供比原生 Grafana 更友善的管理介面
+
+```mermaid
+graph LR
+    A[週期性靜音規則] --> B[排程器服務]
+    B --> C[CRON 排程檢查]
+    C --> D[Grafana API 調用]
+    D --> E[建立一次性靜音]
+    E --> F[時間到期自動刪除]
+```
+
+### 🏷️ 標籤治理 (Tag Governance)
+**問題解決**: 缺乏統一的元數據標準，導致標籤混亂。
+
+**平台解決方案**:
+- **標籤綱要管理**: 定義標籤鍵、允許值、驗證規則
+- **合規性檢查**: 自動檢測不符合規範的資源標籤
+- **智慧輸入**: 提供預設值下拉選單，防止標籤錯誤
+
+```mermaid
+graph TB
+    A[標籤治理中心] --> B[標籤鍵定義]
+    A --> C[允許值管理]
+    A --> D[驗證規則]
+    B --> E[智慧輸入提示]
+    C --> E
+    D --> F[合規性檢查]
+    F --> G[違規報告]
+```
+
+### 📨 智能告警處理與通知歷史追蹤 (Intelligent Alert Processing & Notification History)
+**問題解決**: Grafana 通知是無狀態的，且缺乏 AI 分析能力。
+
+**平台解決方案**:
+- **統一 Webhook 入口**: 平台作為 Grafana 告警的唯一接收點
+- **AI 智能分析**: 對每個告警進行根因分析和關聯分析
+- **智能通知分發**: 根據分析結果和業務策略智能決定通知方式
+- **持久化記錄**: 儲存告警處理的完整生命週期
+- **可審計性**: 提供完整的告警處理歷史和狀態追蹤
+
+```mermaid
+sequenceDiagram
+    participant G as Grafana
+    participant P as 平台 Webhook
+    participant AI as AI Agent
+    participant Q as 訊息佇列
+    participant N as 通知處理器
+    participant E as 外部服務 (Slack)
+    participant DB as 歷史資料庫
+
+    G->>P: 1. 統一發送告警 Webhook
+    P->>DB: 2. 記錄原始告警
+    P->>AI: 3. AI 分析處理
+    AI->>P: 4. 返回分析結果
+    P->>Q: 5. 推送智能處理後的訊息
+    Q->>N: 6. 消費訊息
+    N->>E: 7. 根據策略發送通知
+    E->>N: 8. 回應狀態
+    N->>DB: 9. 更新最終狀態
+
+    Note over G,P: Grafana 不直接通知，統一通過平台
+    Note over P,AI: 平台作為智能告警處理中樞
+```
+
+## 📐 詳細架構設計
+
+### 1. API 設計架構
+
+#### RESTful API 設計原則
+```yaml
+# 基於 OpenAPI 3.1.0 規範
+基礎路徑: /api/v1
+認證方式: Bearer Token (OIDC)
+內容類型: application/json
+響應格式: 統一的 ResponseWrapper<T>
+
+# 核心 API 模組
+/auth/*          # 認證授權
+/incidents/*     # 事故管理
+/resources/*     # 資源管理
+/notifications/* # 通知管理
+/analytics/*     # 分析報告
+/automation/*    # 自動化執行
+```
+
+#### API 安全設計
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant Keycloak
+    participant Service
+
+    Client->>Gateway: 1. API Request + Token
+    Gateway->>Keycloak: 2. Token Validation
+    Keycloak-->>Gateway: 3. Token Valid + Claims
+    Gateway->>Service: 4. Authorized Request
+    Service-->>Gateway: 5. Business Response
+    Gateway-->>Client: 6. Final Response
+```
+
+### 2. 數據架構設計
+
+#### 數據存儲策略
+```mermaid
+graph LR
+    subgraph "業務數據"
+        PG[(PostgreSQL<br/>ACID 事務)]
+        PG --> Users[用戶信息]
+        PG --> Incidents[事故數據]
+        PG --> Resources[資源清單]
+        PG --> Configs[配置信息]
+    end
+
+    subgraph "時序數據"
+        VM[(VictoriaMetrics<br/>高性能時序)]
+        VM --> Metrics[系統指標]
+        VM --> Alerts[告警歷史]
+        VM --> Performance[性能數據]
+    end
+
+    subgraph "快取數據"
+        Redis[(Redis Cluster<br/>內存快取)]
+        Redis --> Sessions[用戶會話]
+        Redis --> Cache[API 快取]
+        Redis --> Queue[消息隊列]
+    end
+
+    subgraph "搜索數據"
+        ES[(Elasticsearch<br/>全文搜索)]
+        ES --> Logs[應用日誌]
+        ES --> Audit[審計日誌]
+        ES --> Search[搜索索引]
+    end
+```
+
+#### 數據模型設計要點
+1. **用戶系統**: 委託 Keycloak 管理，本地僅存儲業務關聯數據
+2. **事故模型**: 支持層級關聯、狀態流轉、AI 分析結果存儲
+3. **資源模型**: 多維度標籤、動態屬性、批量操作支持
+4. **通知模型**: 多渠道、模板化、條件觸發機制
+
+## 🛠️ 技術實作細節
+
+### 監控採集策略矩陣
+| 資源類型 | 可安裝Agent | 推薦方案 | 理由 |
+|----------|-------------|----------|------|
+| Linux/Windows伺服器 | ✅ 是 | node_exporter | 黃金標準，指標最全面 |
+| 網路設備 | ❌ 否 | snmp_exporter | 業界標準，專為網路設備設計 |
+| 應用程式 | ✅ 是 | 專屬Exporter | 獲取應用內部性能指標 |
+| 自訂應用 | ✅ 是 | Prometheus Client Library | 從源頭暴露指標 |
+
+### 資源分類管理體系
+| 資源類型 | 標籤 | 說明 |
+|----------|------|------|
+| Host | 基礎設施資源 | 物理/虛擬主機 |
+| Service | 應用服務資源 | 微服務單元 |
+| Database | 資料庫資源 | 託管資料庫實例 |
+| Container | 容器資源 | Kubernetes容器實例 |
+| Cloud Resource | 雲端資源 | AWS/GCP雲服務 |
+
+## 🧰 技術棧
+
+根據藍圖設計文件，SRE平台涉及以下技術棧：
+
+### 前端技術
+- **React 18**：用於構建互動原型
+- **TypeScript**：提供類型安全
+- **Ant Design 5**：UI組件庫
+- **ECharts 5**：數據可視化工具
+
+### 前端觀測性
+- **Sentry**：前端錯誤追蹤和性能監控
+- **OpenTelemetry JavaScript**：前端人員行為追蹤
+- **Web Vitals**：核心 Web 性能指標監控
+- **Real User Monitoring (RUM)**：真實人員監控
+
+### 後端與監控技術
+- **Go 1.21+**：高性能後端語言
+- **Gin**：HTTP Web 框架
+- **GORM**：ORM 數據庫操作
+- **Zap**：高性能結構化日誌記錄
+- **OpenTelemetry**：分散式追蹤、指標和日誌收集
+- **Grafana Alloy**：統一觀測性數據收集器
+- **Grafana Alerting**：告警規則與路由引擎
+- **VictoriaMetrics**：時序數據庫存儲
+- **Prometheus node_exporter**：系統指標收集
+- **snmp_exporter**：網路設備指標收集
+- **Grafana OpenAPI SDK**：已有社群產生的 OpenAPI Go client：`github.com/grafana/grafana-openapi-client-go`，由 Swagger/OpenAPI 規範自動生成，支援全 API 覆蓋。
+- **Keycloak OpenAPI**：
+https://www.keycloak.org/docs-api/latest/rest-api/openapi.yaml
+- **Grafana OpenAPI**：
+https://github.com/grafana/grafana/blob/main/public/api-merged.json
+
+
+### 觀測性架構 (Observability)
+- **OpenTelemetry 統一匯出**：Logs/Traces/Metrics 三合一觀測性數據
+- **Grafana Alloy 作為收集器**：統一接收和轉發觀測性數據
+- **多目標匯出**：支援本地 Grafana 或 Grafana Cloud
+- **結構化日誌**：使用 Zap (後端) 提供高性能結構化日誌記錄
+- **分散式追蹤**：端到端請求追蹤和性能監控
+- **業務指標**：自定義業務指標收集和分析
+- **前端監控**：Sentry + Web Vitals + RUM 真實人員監控
+- **性能測試**：K6 負載測試和性能監控
+
+### 數據流架構
+```
+前端 (React) → OpenTelemetry JS → Grafana Alloy → Grafana/Loki
+    ↓
+後端 (Go) → OpenTelemetry Go → Grafana Alloy → VictoriaMetrics
+    ↓
+測試 (K6) → 性能指標 → Grafana Alloy → Grafana Dashboards
+```
+
+### 身份認證
+- **Keycloak**：專業IAM系統，處理人員身份與權限
+
+## ⚖️ 重要技術決策
+
+### 1. 架構決策：統一管理層 + 開源執行引擎
+**決策內容**：
+- 平台作為「統一管理層」，專注於人員體驗
+- 底層依賴Grafana等開源工具作為「執行引擎」
+- 通過API調用整合Grafana功能
+
+** rationale**：
+- 避免重複造輪子
+- 利用成熟開源工具的能力
+- 專注於提供增值的人員體驗
+
+### 2. 數據收集策略決策
+**決策內容**：
+- 優先使用`node_exporter`進行深度監控（侵入式）
+- 無法安裝agent時使用`snmp_exporter`（非侵入式）
+
+** rationale**：
+- `node_exporter`提供更豐富的系統指標
+- `snmp_exporter`適用於網路設備等無法安裝agent的場景
+- 平衡監控深度與部署複雜度
+
+### 3. 身份認證決策
+**決策內容**：
+- 整合Keycloak進行身份認證
+- 平台不再自行管理帳號狀態
+
+** rationale**：
+- 專業事項委託專業系統處理
+- 簡化平台複雜度
+- 提高安全性
+
+### 4. AI整合決策
+**決策內容**：
+- 所有告警先經平台Webhook服務再分發
+- AI Agent在Webhook服務中進行分析處理
+
+** rationale**：
+- 實現AI分析的統一入口
+- 提供上下文豐富的分析能力
+- 支持自動化修復等功能
+
+### 5. 功能分階段實施決策
+**決策內容**：
+- Phase 1：聚焦監控與洞察核心功能
+- Phase 2：實現響應與協作整合功能
+
+** rationale**：
+- 確保核心監控能力穩定
+- 降低外部系統依賴風險
+- 通過人員反饋優化後續功能
+
+### 6. 資源分類決策
+**決策內容**：
+- 將資源分為多個類型：Host、Service、Database、Container、Cloud Resource
+- 在資源列表中明確標示資源類型
+
+** rationale**：
+- 統一管理不同層次的資源
+- 提供清晰的資源視圖
+- 支持針對性的監控策略
+
+### 7. 飽和度監控決策
+**決策內容**：
+- 監控資源飽和度而非僅使用率
+- 針對不同資源類型定義專門的飽和度指標
+
+** rationale**：
+- 更準確反映系統壓力狀況
+- 提供預警性監控能力
+- 支持更精細的容量規劃
+
+### 8. **告警執行委託給 Grafana，處理交由平台智能中樞**
+**決策內容**：
+- Grafana 負責告警規則評估和觸發，平台負責智能處理和分發
+- 平台提供友善的規則配置界面，同步到 Grafana 執行
+- Grafana 統一發送 Webhook 到平台，不直接通知用戶
+- 平台作為智能告警處理中樞，提供 AI 分析和複雜通知策略
+
+** rationale**：
+- 專注於人員體驗而非重複造輪子
+- 利用 Grafana 成熟的告警執行引擎
+- 通過統一 Webhook 實現 AI 智能分析
+- 提供比原生 Grafana 更強大的處理能力
+
+### 9. **內部人員狀態管理 (Internal User Status)**
+**決策內容**：
+- 在 `users` 表中保留一個 `is_active` 欄位
+- 此欄位用於控制平台內部的業務邏輯，如任務指派、通知等
+
+** rationale**：
+- 避免因 SSO 系統中的人員狀態變更，導致平台內部數據關聯中斷
+- 提供平台管理員一個獨立的人員啟用/停用控制開關
+- 實現平台內部業務邏輯與外部認證系統的解耦
+
+### 10. **軟刪除策略 (Soft Delete Strategy)**
+**決策內容**：
+- 核心資源表（如 `users`, `teams`, `resources`）採用軟刪除機制
+- 透過 `deleted_at` 時間戳欄位來標記刪除狀態
+
+** rationale**：
+- **數據完整性**: 確保與已刪除資源相關的歷史記錄（如審計日誌、事件記錄）不會因級聯刪除而丟失，這對於一個需要嚴格審計的 SRE 平台至關重要。
+- **可恢復性**: 提供一個快速恢復被誤刪除數據的機制，增加系統的容錯能力。
+- **歷史追溯**: 即使資源被刪除，其歷史操作和關聯依然可以被追溯，滿足合規性與故障分析的需求。
+
+### 11. **數據庫架構一致性原則 (Database Architecture Consistency)**
+**決策內容**：
+- 數據庫表設計必須嚴格符合「統一管理層」架構理念
+- 禁止創建與外部系統功能重複的表格
+- 所有新增表格必須支持平台核心增值功能
+
+** rationale**：
+- **避免功能重複**: 防止與 Grafana、Keycloak 等外部系統產生功能衝突
+- **維護一致性**: 確保數據架構與系統架構決策保持同步
+- **降低複雜度**: 減少不必要的數據同步和維護負擔
+
+### 12. **數據模型設計規範 (Data Model Design Standards)**
+**決策內容**：
+- 所有表格必須包含完整的約束檢查（CHECK constraints）
+- 時序數據表必須有合理的索引策略
+- 大數據量表必須考慮分區策略
+
+** rationale**：
+- **數據品質**: 通過約束確保數據一致性和完整性
+- **查詢性能**: 通過合理索引提升查詢效率
+- **擴展性**: 通過分區策略支持大規模數據存儲
+
+**設計模板**：
+```sql
+-- 標準表格設計模板
+CREATE TABLE example_table (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(128) NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'active',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ, -- 軟刪除支持
+    CONSTRAINT chk_example_status CHECK (status IN ('active','inactive'))
+);
+
+-- 必要索引
+CREATE INDEX idx_example_status ON example_table (status);
+CREATE INDEX idx_example_created_at ON example_table (created_at DESC);
+```
+
 ---
 
-## 19. 功能: 全局靜態資料 API 化 (v2.18)
+### 13. **審計日誌保留策略 (Audit Log Retention)**
+**決策內容**：
+- 透過資料庫函式 `cleanup_old_audit_logs(retention_interval INTERVAL)` 週期性清理超過保留期間的審計資料，預設保留兩年。
 
--   **模組**: 全局 (Core)
--   **版本**: v2.18
--   **狀態**: ✅ 已完成
+** rationale**：
+- **合規與成本平衡**：確保審計資料滿足稽核需求的同時控制儲存成本，避免日誌無限制成長。
+- **自動化治理**：搭配排程服務即可週期觸發清理函式，減少人工維運成本。
+- **彈性保留**：函式保留參數化的保留期間，未來可依合規需求調整。
 
-### 19.1 使用者故事
+## 📊 數據架構邊界說明 (Data Model Boundary Overview)
 
-**身為** 一名平台開發者與管理員，
-**我想要** 平台中所有 UI 選項（如下拉選單、篩選器、預設值）都從後端 API 獲取，而不是硬編碼在前端程式碼中，
-**使得** 平台 UI 與業務邏輯完全解耦，未來若需調整選項（例如，新增一個事件狀態、調整 Grafana 刷新頻率）時，只需修改後端配置即可，無需重新部署前端，從而大幅提升系統的可維護性、靈活性與一致性。
+### 事件與告警分工 (Event Processing vs Alerting)
+- **Grafana 告警規則**：負責告警條件評估、觸發判斷與基礎通知派送。
+- **SRE 平台事件**：聚焦於 AI 根因分析、跨事件關聯、值班處理追蹤與歷史報表。
+- **資料模型落實**：`incidents` 表新增 `source` 枚舉欄位與註解，強調僅承載增值處理，所有告警規則仍交由 Grafana 管理。
+- **快取支援**：新增 `alert_rule_snapshots` 表記錄 Grafana 規則快取與同步狀態，提供精靈編輯時的離線回填資料，同時維持 Grafana 作為唯一真實來源。
 
-### 19.2 行為變更
+### 通知策略範圍 (Notification Strategy Scope)
+- **Grafana 通知**：專注於告警觸發後的標準聯絡點與 On-Call 流程。
+- **平台通知策略**：透過 `notification_strategies` 與 `notification_channels` 管理複雜業務規則、跨系統事件與多渠道路由。
+- **整體體驗**：統一管理層負責彙整狀態、追蹤歷史與提供精細化的接收條件，補足 Grafana 在商業流程上的不足。
 
--   **全面 API 化**: 根據 `Static Data Audit & Remediation Plan`，系統性地移除了前端所有硬編碼的靜態資料，並替換為對應的 API 請求。
--   **受影響的元件**:
-    -   `DashboardViewer`: Grafana 時間範圍、刷新頻率等選項現在由 API 提供。
-    -   `InfrastructureInsightsPage`: 時間範圍選項 API 化。
-    -   `CapacityPlanningPage`: 時間範圍選項 API 化。
-    -   `UnifiedSearchModal`: 所有篩選器（事件狀態、資源類型等）的下拉選項現在動態載入。
-    -   `NotificationChannelEditModal`: 管道類型、HTTP 方法等選項 API 化。
-    -   `AlertRuleEditModal`: 嚴重性等級、預設條件等選項 API 化。
-    -   `SilenceRuleEditModal`: 靜音時長、條件鍵等選項 API 化。
-    -   `AutomationTriggerEditModal`: 觸發器類型、條件鍵等選項 API 化。
-    -   `AutomationPlaybookEditModal`: 腳本類型、參數類型等選項 API 化。
-    -   `AutomationHistoryPage`: 狀態篩選選項 API 化。
-    -   `NotificationHistoryPage`: 狀態和管道類型篩選選項 API 化。
-    -   `MailSettingsPage`: 加密模式選項 API 化。
-    -   `ResourceTopologyPage`: 拓撲圖佈局選項 API 化。
--   **健壯性提升**: 所有進行 API 請求的元件都增加了載入中 (Loading) 和錯誤 (Error) 狀態處理，若 API 請求失敗，會顯示清晰的錯誤提示，而非靜默失敗或使用可能過時的硬編碼備援資料。
+## 📋 架構總結
 
-### 19.3 新增的 API 端點
+SRE 平台的核心價值，在於提供了一個**統一、易用的管理介面 (Unified Management Plane)**，將 Grafana Alerting、Grafana OnCall 這些強大但可能分散的工具整合在一起。
 
--   `GET /settings/grafana/options`: 提供 Grafana 儀表板檢視器的控制選項。
--   `GET /dashboards/infrastructure-insights/options`: 提供基礎設施洞察頁的選項。
--   `GET /analysis/capacity-planning/options`: (端點擴充) `GET /analysis/capacity-planning` 現在包含選項資料。
--   `GET /incidents/options`: 提供事件管理的篩選選項。
--   `GET /alert-rules/options`: 提供告警規則的篩選與編輯選項。
--   `GET /automation/executions/options`: 提供自動化歷史的篩選選項。
--   `GET /settings/notification-history/options`: 提供通知歷史的篩選選項。
--   `GET /settings/mail`: (端點擴充) `GET /settings/mail` 現在包含加密模式選項。
--   `GET /resources/topology/options`: 提供拓撲圖的佈局選項。
--   `GET /automation/scripts/options`: 提供自動化腳本的類型選項。
--   `GET /settings/notification-channels/options`: 提供通知管道的類型選項。
--   `GET /automation/triggers/options`: 提供自動化觸發器的類型和條件選項。
----
+專注於打造最好的上層體驗，而不是重建底層已經非常成熟的引擎。
 
-## 20. 功能: 錯誤處理與程式碼一致性強化 (v2.19)
+**最終的架構如下：**
 
--   **模組**: 全局 (Core)
--   **版本**: v2.19
--   **狀態**: ✅ 已完成
+### 🎯 核心架構組件
 
-### 20.1 使用者故事
+1. **SRE 平台 (UI + Backend)**：作為**「統一管理層」**
+   - 提供統一的用戶界面和業務邏輯
+   - 實現三大核心增值功能
+   - 管理平台特有的數據和流程
 
-**身為** 一名平台開發者與維護者，
-**我想要** 平台在 API 請求失敗時能夠提供清晰的錯誤回饋並阻止不一致的資料提交，同時在處理特殊篩選條件（如「全部」）時採用一致且可維護的程式碼模式，
-**使得** 平台的健壯性與程式碼品質得到提升，減少因硬編碼後備資料或魔法字串 (magic strings) 導致的潛在錯誤。
+2. **外部系統整合**：通過 API 調用管理外部資源
+   - **Grafana**: 告警規則、通知策略、儀表板渲染
+   - **Keycloak**: 用戶認證、會話管理、身份提供商整合
+   - 其他監控工具: Prometheus、VictoriaMetrics 等
 
-### 20.2 行為變更
+3. **明確的系統邊界**：避免功能重複和架構衝突
 
--   **強化 API 錯誤處理 (`TagDefinitionEditModal.tsx`)**:
-    -   **移除硬編碼後備資料**: 徹底移除了在獲取標籤分類失敗時，將分類硬編碼回退至 `'Infrastructure'` 的邏輯。
-    -   **明確的錯誤狀態**: 現在，若 `GET /settings/tags/options` API 請求失敗，模態框會顯示一則清晰的錯誤訊息，並**禁用**「分類」下拉選單和「儲存」按鈕。此舉確保了 API 是唯一的資料真實來源，並防止使用者提交不完整或不正確的資料。
+### ⚖️ 系統邊界原則總結
 
--   **提升程式碼一致性 (`TagManagementPage.tsx`)**:
-    -   **消除魔法字串**: 移除了在分類篩選器中直接硬編碼 `'All'` 的做法。
-    -   **常數化管理**: 改為在元件內部使用常數 (`ALL_CATEGORIES_VALUE`, `ALL_CATEGORIES_LABEL`) 來統一定義「所有分類」篩選器的值與顯示標籤。這提高了程式碼的可讀性與可維護性，並確保了篩選邏輯與顯示內容的一致性。
+#### Grafana 邊界 🚨
+```
+平台職責: 週期性靜音、通知歷史、告警關聯分析、自動化響應
+Grafana 職責: 告警規則引擎、告警評估、通知路由、儀表板渲染
+```
 
-### 20.3 使用的 API 端點
+#### Keycloak 邊界 🔐
+```
+平台職責: 用戶偏好、團隊管理、業務權限、平台通知
+Keycloak 職責: 用戶認證、密碼管理、SSO整合、身份協議
+```
 
--   (重用) `GET /settings/tags/options`: `TagDefinitionEditModal` 和 `TagManagementPage` 對此端點的依賴性被強化，移除了前端的後備邏輯。
----
+### 🎖️ 架構優勢
 
-## 21. 架構決策: 前端合理依賴定義 (v2.20)
+這個架構設計實現了：
+- **避免重複造輪子**: 專注於平台增值功能
+- **清晰的職責分離**: 每個系統負責自己的專業領域
+- **統一的管理體驗**: 用戶通過單一界面管理所有資源
+- **高度可擴展性**: 通過 API 整合更多外部系統
+- **架構一致性**: 數據庫設計與系統架構決策保持同步
 
--   **模組**: 全局 (架構)
--   **版本**: v2.20
--   **狀態**: ✅ 已確立
-
-### 21.1 背景
-
-在平台全面 API 化的過程中，為確保開發效率與系統健壯性，需明確定義哪些資料應保留在前端，而非所有靜態資料都需透過 API 獲取。本次決策旨在確立「合理前端依賴」的原則，作為未來開發的指導方針。
-
-### 21.2 合理依賴的分類與原則
-
-經過審計，以下三種類型的資料被定義為合理的前端依賴，應保留在前端程式碼中：
-
-#### 1. UI 文字與流程控制常數
-
--   **範例**: 精靈步驟標題 (`stepTitles = ["基本資訊", "通知管道"]`)、靜態標籤。
--   **性質**: 這類文字與特定 UI 元件的內部狀態和流程緊密耦合。
--   **原則**:
-    -   **中心化管理**: 所有 UI 字串應統一存放於 `constants/pages.ts` 中，以確保一致性並為未來的國際化 (i18n) 工作奠定基礎。
-    -   **不 API 化**: 將其 API 化會帶來不必要的複雜性，且與元件邏輯解耦的價值不大，除非 UI 流程本身是由後端動態決定的。
-
-#### 2. 技術性枚舉與模板變數
-
--   **範例**: 嚴重性等級 (`severityLevels: ('info' | 'warning' | 'critical')[]`)、事件內容模板變數 (`variables = ['{{severity}}', '{{resource.name}}']`)。
--   **性質**: 這類常數是前端的「技術契約」或與 TypeScript 型別系統直接綁定。
--   **原則**:
-    -   **型別安全優先**: 與 `TypeScript` 型別直接對應的枚舉應保留在前端，以利用編譯時的靜態檢查，防止執行時錯誤。
-    -   **前端邏輯內聚**: 模板變數定義了前端渲染邏輯的一部分，應視為前端的內部實現細節，除非後端需要動態增減可用變數，否則不應 API 化。
-
-#### 3. 容錯回退機制 (Graceful Degradation Fallbacks)
-
--   **範例**: 圖表備用顏色 (`FALLBACK_COLORS = ['#38bdf8', ...]`)。
--   **性質**: 用於在非核心 API (如主題、遠程配置) 請求失敗時，確保 UI 依然能夠正常渲染並保持可用性。
--   **原則**:
-    -   **提升健壯性**: 這是優秀的防禦性程式設計實踐。對於非關鍵性但影響視覺體驗的數據，提供一組合理的預設值作為後備，可以防止在網路不穩定時 UI 崩潰。
-    -   **明確區分**: 必須明確區分「核心業務數據」與「輔助性配置數據」。核心業務數據**絕不**應該有前端後備，必須依賴 API 作為唯一真實來源；而輔助性配置數據則適合使用此模式。
-
-### 21.3 結論
-
-確立以上原則有助於避免過度工程化，在確保平台數據由後端驅動的核心目標下，保留了前端開發的靈活性與健壯性。
+**最終效果**: 在享受 Grafana、Keycloak 強大能力的同時，提供給使用者一個完全客製化、無縫整合的平台體驗，並通過三大增值功能提供超越原生工具的價值。

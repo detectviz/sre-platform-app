@@ -1,4 +1,3 @@
-
 import { AutomationExecution } from "../types";
 
 export const PAGE_CONTENT = {
@@ -47,6 +46,18 @@ export const PAGE_CONTENT = {
     YES: '是',
     NO: '否',
     NA: 'N/A',
+  },
+
+  COMMAND_PALETTE: {
+    TITLE: 'Command Palette',
+    SEARCH_PLACEHOLDER: 'Search...',
+    PLACEHOLDER_ROOT: 'Search or type `>` for commands...',
+    PLACEHOLDER_SILENCE_SEARCH: 'Search for a resource to silence...',
+    PLACEHOLDER_SILENCE_DURATION: 'Enter duration (e.g., 30m, 2h, 1d)...',
+    PLACEHOLDER_RUN_PLAYBOOK: 'Search for a playbook to run...',
+    SILENCE_PREFIX: (name?: string) => `Silence ${name || ''}`,
+    RUN_PLAYBOOK_PREFIX: 'Run Playbook',
+    NO_RESULTS: 'No results found.',
   },
 
   MODAL: {
@@ -197,11 +208,6 @@ export const PAGE_CONTENT = {
     },
     IMPACT: '影響',
     EFFORT: '投入',
-    TIME_OPTIONS: [
-        { label: '最近 30 天 + 預測 15 天', value: '30_15' },
-        { label: '最近 60 天 + 預測 30 天', value: '60_30' },
-        { label: '最近 90 天 + 預測 45 天', value: '90_45' },
-    ],
     FETCH_ERROR: '無法獲取容量規劃資料。',
   },
   DASHBOARD_LIST: {

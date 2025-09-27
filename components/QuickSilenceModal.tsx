@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import Icon from './Icon';
-import { Incident } from '../types';
+import { Incident, IncidentOptions } from '../types';
 import api from '../services/api';
 
 interface QuickSilenceModalProps {
@@ -13,23 +13,31 @@ interface QuickSilenceModalProps {
 
 const QuickSilenceModal: React.FC<QuickSilenceModalProps> = ({ isOpen, onClose, onSave, incident }) => {
   const [duration, setDuration] = useState(1);
-  const [durations, setDurations] = useState<number[]>([]);
+  const [options, setOptions] = useState<IncidentOptions | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       setIsLoading(true);
-      api.get<{ quickSilenceDurations: number[] }>('/incidents/options')
+      setError(null);
+      api.get<IncidentOptions>('/incidents/options')
         .then(res => {
-          const fetchedDurations = res.data.quickSilenceDurations;
-          setDurations(fetchedDurations);
-          if (!fetchedDurations.includes(duration)) {
-            setDuration(fetchedDurations[0] || 1);
+          const fetchedOptions = res.data;
+          setOptions(fetchedOptions);
+          if (fetchedOptions.quickSilenceDurations?.length) {
+            // Check if current duration is valid, otherwise set to first available
+            const currentIsValid = fetchedOptions.quickSilenceDurations.some(d => d.value === duration);
+            if (!currentIsValid) {
+              setDuration(fetchedOptions.quickSilenceDurations[0].value);
+            }
+          } else {
+             setError("No silence durations available from server.");
           }
         })
         .catch(err => {
-          console.error("Failed to fetch silence durations, using fallback.", err);
-          setDurations([1, 2, 4, 8, 12, 24]); // Fallback to static values on error
+          console.error("Failed to fetch silence durations.", err);
+          setError("Failed to load duration options.");
         })
         .finally(() => setIsLoading(false));
     }
@@ -55,7 +63,7 @@ const QuickSilenceModal: React.FC<QuickSilenceModalProps> = ({ isOpen, onClose, 
       footer={
         <div className="flex justify-end space-x-2">
           <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md transition-colors">取消</button>
-          <button onClick={handleSave} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md transition-colors">建立靜音</button>
+          <button onClick={handleSave} disabled={isLoading || !!error} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">建立靜音</button>
         </div>
       }
     >
@@ -74,15 +82,17 @@ const QuickSilenceModal: React.FC<QuickSilenceModalProps> = ({ isOpen, onClose, 
                 <div className="animate-pulse grid grid-cols-3 gap-2">
                     {[...Array(6)].map((_, i) => <div key={i} className="h-10 bg-slate-700 rounded-md"></div>)}
                 </div>
+            ) : error ? (
+                <div className="p-3 text-center text-red-400 bg-red-900/30 rounded-md">{error}</div>
             ) : (
                 <div className="grid grid-cols-3 gap-2">
-                    {durations.map(d => (
+                    {options?.quickSilenceDurations.map(d => (
                         <button 
-                            key={d} 
-                            onClick={() => setDuration(d)}
-                            className={`px-3 py-2 text-sm rounded-md transition-colors ${duration === d ? 'bg-sky-600 text-white font-semibold' : 'bg-slate-700/50 hover:bg-slate-700'}`}
+                            key={d.value} 
+                            onClick={() => setDuration(d.value)}
+                            className={`px-3 py-2 text-sm rounded-md transition-colors ${duration === d.value ? 'bg-sky-600 text-white font-semibold' : 'bg-slate-700/50 hover:bg-slate-700'}`}
                         >
-                            {d} 小時
+                            {d.label}
                         </button>
                     ))}
                 </div>

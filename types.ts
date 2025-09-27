@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 export interface NavItem {
@@ -538,7 +539,6 @@ export interface CapacityPlanningData {
     suggestions: {
         title: string;
         impact: '高' | '中' | '低';
-        effort: '高' | '中' | '低';
         details: string;
     }[];
     resource_analysis: {
@@ -576,21 +576,48 @@ export interface PreferenceOptions {
   themes: { value: string; label: string }[];
 }
 
-// --- API Option Types ---
+// --- API Option Types (v2.17 Refactor) ---
+
+export interface StyleDescriptor<T extends string = string> {
+    value: T;
+    label: string;
+    className: string;
+}
+export interface ColorDescriptor<T extends string = string> {
+    value: T;
+    label: string;
+    color: string;
+}
 
 export interface GrafanaOptions {
     timeOptions: { label: string, value: string }[];
     refreshOptions: { label: string, value: string }[];
     tvModeOptions: { label: string, value: string }[];
+    themeOptions: { label: string, value: string }[];
+}
+
+export interface LogOptions {
+    timeRangeOptions: { label: string, value: string }[];
+}
+
+export interface SilenceRuleOptions {
+    keys: string[];
+    values: Record<string, string[]>;
+    defaultMatcher: SilenceMatcher;
+    weekdays: { value: number, label: string }[];
 }
 
 export interface InfraInsightsOptions {
     timeOptions: { label: string, value: string }[];
+    riskLevels: ColorDescriptor[];
 }
 
 export interface IncidentOptions {
-    statuses: { value: Incident['status'], label: string }[];
-    severities: { value: Incident['severity'], label: string }[];
+    statuses: StyleDescriptor<Incident['status']>[];
+    severities: StyleDescriptor<Incident['severity']>[];
+    priorities: StyleDescriptor<Incident['priority']>[];
+    serviceImpacts: StyleDescriptor<Incident['serviceImpact']>[];
+    quickSilenceDurations: { label: string, value: number }[];
 }
 
 export interface AlertRuleOptions {
@@ -599,12 +626,55 @@ export interface AlertRuleOptions {
 }
 
 export interface AutomationExecutionOptions {
-    statuses: { value: AutomationExecution['status'], label: string }[];
+    statuses: StyleDescriptor<AutomationExecution['status']>[];
+}
+
+export interface AutomationPlaybookOptions {
+    statuses: StyleDescriptor<AutomationPlaybook['lastRunStatus']>[];
 }
 
 export interface NotificationHistoryOptions {
     statuses: { value: NotificationHistoryRecord['status'], label: string }[];
     channelTypes: { value: NotificationChannelType, label: string }[];
+}
+
+export interface NotificationOptions {
+    severities: StyleDescriptor<NotificationItem['severity']>[];
+}
+
+export interface ResourceOptions {
+    statuses: StyleDescriptor<Resource['status']>[];
+    statusColors: ColorDescriptor<Resource['status']>[];
+}
+
+// FIX: Define Anomaly and Suggestion types used in AIInsightsOptions.
+export interface Anomaly {
+  severity: 'critical' | 'warning' | 'info';
+  description: string;
+  timestamp: string;
+}
+
+export interface Suggestion {
+  title: string;
+  impact: '高' | '中' | '低';
+  effort: '高' | '中' | '低';
+  details: string;
+  action_button_text?: string;
+  action_link?: string;
+}
+
+export interface AIInsightsOptions {
+    severities: StyleDescriptor<Anomaly['severity']>[];
+    impacts: StyleDescriptor<Suggestion['impact']>[];
+    efforts: StyleDescriptor<Suggestion['effort']>[];
+}
+
+export interface PersonnelOptions {
+    statuses: StyleDescriptor<User['status']>[];
+}
+
+export interface AuditLogOptions {
+    actionTypes: string[];
 }
 
 export interface AutomationScriptOptions {

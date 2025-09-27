@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Modal from './Modal';
 import FormRow from './FormRow';
-import { AutomationTrigger, TriggerType, AutomationPlaybook, TagDefinition } from '../types';
+import { AutomationTrigger, TriggerType, AutomationPlaybook, TagDefinition, AutomationTriggerOptions } from '../types';
 import api from '../services/api';
 import Icon from './Icon';
 import { showToast } from '../services/toast';
@@ -41,33 +41,32 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
     const [formData, setFormData] = useState<Partial<AutomationTrigger>>({});
     const [playbooks, setPlaybooks] = useState<AutomationPlaybook[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [options, setOptions] = useState<AutomationTriggerOptions | null>(null);
     const [tagDefs, setTagDefs] = useState<TagDefinition[]>([]);
     const [conditions, setConditions] = useState<{ key: string; operator: string; value: string }[]>([]);
 
-    const getInitialFormData = (): Partial<AutomationTrigger> => ({
-        name: '',
-        description: '',
-        type: 'Schedule',
-        enabled: true,
-        targetPlaybookId: '',
-        config: {
-            cron: '0 * * * *',
-        },
-    });
-
     useEffect(() => {
         if (isOpen) {
-            setFormData(trigger || getInitialFormData());
             setIsLoading(true);
             Promise.all([
                 api.get<AutomationPlaybook[]>('/automation/scripts'),
-                api.get<TagDefinition[]>('/settings/tags')
-            ]).then(([playbooksRes, tagsRes]) => {
+                api.get<TagDefinition[]>('/settings/tags'),
+                api.get<AutomationTriggerOptions>('/automation/triggers/options'),
+            ]).then(([playbooksRes, tagsRes, optionsRes]) => {
                 setPlaybooks(playbooksRes.data);
                 setTagDefs(tagsRes.data);
-                if (!trigger && playbooksRes.data.length > 0) {
-                    setFormData(prev => ({...prev, targetPlaybookId: playbooksRes.data[0].id}));
-                }
+                setOptions(optionsRes.data);
+                
+                const initialFormData = trigger || {
+                    name: '',
+                    description: '',
+                    type: optionsRes.data.triggerTypes[0]?.value || 'Schedule',
+                    enabled: true,
+                    targetPlaybookId: playbooksRes.data[0]?.id || '',
+                    config: optionsRes.data.defaultConfigs?.Schedule || { cron: '0 * * * *' },
+                };
+                setFormData(initialFormData);
+
             }).catch(err => console.error("Failed to fetch data for modal", err))
             .finally(() => setIsLoading(false));
         }
@@ -101,10 +100,7 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
     };
     
     const handleTypeChange = (newType: TriggerType) => {
-        const newConfig: Partial<AutomationTrigger['config']> = {};
-        if (newType === 'Schedule') newConfig.cron = '0 * * * *';
-        if (newType === 'Webhook') newConfig.webhookUrl = '';
-        if (newType === 'Event') newConfig.eventConditions = 'severity = critical';
+        const newConfig = options?.defaultConfigs[newType] || {};
         setFormData(prev => ({
             ...prev,
             type: newType,
@@ -130,11 +126,7 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
     const removeCondition = (index: number) => {
         updateConditionsInForm(conditions.filter((_, i) => i !== index));
     };
-
-    const conditionKeys = useMemo(() => {
-        return ['severity', 'resource_type', ...tagDefs.map(t => t.key)];
-    }, [tagDefs]);
-
+    
     const renderValueInput = (condition: { key: string; value: string }, index: number) => {
         const commonProps = {
             value: condition.value,
@@ -204,13 +196,13 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
 
                 <FormRow label="觸發器類型">
                      <div className="flex space-x-2 rounded-lg bg-slate-800 p-1">
-                        {(['Schedule', 'Webhook', 'Event'] as TriggerType[]).map(type => (
+                        {options?.triggerTypes.map(type => (
                             <button 
-                                key={type}
-                                onClick={() => handleTypeChange(type)} 
-                                className={`w-full px-3 py-1.5 text-sm font-medium rounded-md ${formData.type === type ? 'bg-sky-600 text-white' : 'text-slate-300 hover:bg-slate-700'}`}
+                                key={type.value}
+                                onClick={() => handleTypeChange(type.value)} 
+                                className={`w-full px-3 py-1.5 text-sm font-medium rounded-md ${formData.type === type.value ? 'bg-sky-600 text-white' : 'text-slate-300 hover:bg-slate-700'}`}
                             >
-                                {type}
+                                {type.label}
                             </button>
                         ))}
                     </div>
@@ -240,7 +232,7 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
                                     <div key={index} className="flex items-center space-x-2">
                                         <select value={cond.key} onChange={e => handleConditionChange(index, 'key', e.target.value)} className="w-1/3 bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
                                             <option value="">選擇鍵...</option>
-                                            {conditionKeys.map(k => <option key={k} value={k}>{k}</option>)}
+                                            {options?.conditionKeys.map(k => <option key={k} value={k}>{k}</option>)}
                                         </select>
                                         <select value={cond.operator} onChange={e => handleConditionChange(index, 'operator', e.target.value)} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
                                             <option value="=">=</option>

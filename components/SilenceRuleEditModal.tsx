@@ -3,7 +3,7 @@ import Modal from './Modal';
 import Icon from './Icon';
 import Wizard from './Wizard';
 import FormRow from './FormRow';
-import { SilenceRule, SilenceMatcher, SilenceSchedule, SilenceRuleTemplate } from '../types';
+import { SilenceRule, SilenceMatcher, SilenceSchedule, SilenceRuleTemplate, SilenceRuleOptions } from '../types';
 import api from '../services/api';
 import { useUser } from '../contexts/UserContext';
 
@@ -18,19 +18,24 @@ const SilenceRuleEditModal: React.FC<SilenceRuleEditModalProps> = ({ isOpen, onC
     const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState<Partial<SilenceRule>>({});
     const { currentUser } = useUser();
+    const [options, setOptions] = useState<SilenceRuleOptions | null>(null);
     
-    const getInitialFormData = (): Partial<SilenceRule> => ({
-        name: '',
-        description: '',
-        enabled: true,
-        type: 'single',
-        matchers: [{ key: 'env', operator: '=', value: 'staging' }],
-        schedule: { type: 'single', startsAt: new Date().toISOString().slice(0, 16), endsAt: new Date(Date.now() + 3600 * 1000).toISOString().slice(0, 16) }
-    });
-
     useEffect(() => {
         if (isOpen) {
-            setFormData(rule || getInitialFormData());
+            api.get<SilenceRuleOptions>('/silence-rules/options')
+               .then(res => {
+                    setOptions(res.data);
+                    const initialData = rule || {
+                        name: '',
+                        description: '',
+                        enabled: true,
+                        type: 'single',
+                        matchers: [res.data.defaultMatcher],
+                        schedule: { type: 'single', startsAt: new Date().toISOString().slice(0, 16), endsAt: new Date(Date.now() + 3600 * 1000).toISOString().slice(0, 16) }
+                    };
+                    setFormData(initialData);
+               })
+               .catch(err => console.error("Failed to fetch silence rule options", err));
             setCurrentStep(1);
         }
     }, [isOpen, rule]);
@@ -56,8 +61,8 @@ const SilenceRuleEditModal: React.FC<SilenceRuleEditModalProps> = ({ isOpen, onC
     const renderStepContent = () => {
         switch (currentStep) {
             case 1: return <Step1 formData={formData} setFormData={setFormData} />;
-            case 2: return <Step2 formData={formData} setFormData={setFormData} />;
-            case 3: return <Step3 formData={formData} setFormData={setFormData} />;
+            case 2: return <Step2 formData={formData} setFormData={setFormData} options={options} />;
+            case 3: return <Step3 formData={formData} setFormData={setFormData} options={options} />;
             default: return null;
         }
     };
@@ -129,7 +134,7 @@ const Step1 = ({ formData, setFormData }: { formData: Partial<SilenceRule>, setF
     );
 };
 
-const Step2 = ({ formData, setFormData }: { formData: Partial<SilenceRule>, setFormData: Function }) => {
+const Step2 = ({ formData, setFormData, options }: { formData: Partial<SilenceRule>, setFormData: Function, options: SilenceRuleOptions | null }) => {
     const [recurrenceType, setRecurrenceType] = useState<'daily' | 'weekly' | 'monthly' | 'custom'>('custom');
     const [weeklyDays, setWeeklyDays] = useState<number[]>([]);
     const [time, setTime] = useState('02:00');
@@ -188,9 +193,9 @@ const Step2 = ({ formData, setFormData }: { formData: Partial<SilenceRule>, setF
                     {recurrenceType === 'weekly' && (
                          <FormRow label="選擇星期">
                             <div className="flex space-x-2">
-                                {['日', '一', '二', '三', '四', '五', '六'].map((day, i) => (
-                                    <button key={i} className={`w-10 h-10 rounded-full flex items-center justify-center ${weeklyDays.includes(i) ? 'bg-sky-500' : 'bg-slate-700'}`}
-                                     onClick={() => setWeeklyDays(days => days.includes(i) ? days.filter(d => d !== i) : [...days, i])}>{day}</button>
+                                {options?.weekdays.map(day => (
+                                    <button key={day.value} className={`w-10 h-10 rounded-full flex items-center justify-center ${weeklyDays.includes(day.value) ? 'bg-sky-500' : 'bg-slate-700'}`}
+                                     onClick={() => setWeeklyDays(days => days.includes(day.value) ? days.filter(d => d !== day.value) : [...days, day.value])}>{day.label}</button>
                                 ))}
                             </div>
                          </FormRow>
@@ -205,14 +210,7 @@ const Step2 = ({ formData, setFormData }: { formData: Partial<SilenceRule>, setF
     );
 };
 
-const Step3 = ({ formData, setFormData }: { formData: Partial<SilenceRule>, setFormData: Function }) => {
-    const [options, setOptions] = useState<{ keys: string[], values: Record<string, string[]> }>({ keys: [], values: {} });
-
-    useEffect(() => {
-        api.get<{ keys: string[], values: Record<string, string[]> }>('/silence-rules/options')
-           .then(res => setOptions(res.data))
-           .catch(err => console.error("Failed to fetch silence rule options", err));
-    }, []);
+const Step3 = ({ formData, setFormData, options }: { formData: Partial<SilenceRule>, setFormData: Function, options: SilenceRuleOptions | null }) => {
 
     const handleMatcherChange = (index: number, field: keyof SilenceMatcher, value: string) => {
         const newMatchers = JSON.parse(JSON.stringify(formData.matchers || []));
@@ -242,7 +240,7 @@ const Step3 = ({ formData, setFormData }: { formData: Partial<SilenceRule>, setF
             className: "flex-grow bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500",
         };
         
-        const allowedValues = options.values[matcher.key];
+        const allowedValues = options?.values[matcher.key];
         
         if (allowedValues && allowedValues.length > 0) {
             return (
@@ -266,7 +264,7 @@ const Step3 = ({ formData, setFormData }: { formData: Partial<SilenceRule>, setF
                     <div key={index} className="flex items-center space-x-2">
                          <select value={matcher.key} onChange={e => handleMatcherChange(index, 'key', e.target.value)} className="w-1/3 bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
                             <option value="">選擇標籤鍵...</option>
-                            {options.keys.map(k => <option key={k} value={k}>{k}</option>)}
+                            {options?.keys.map(k => <option key={k} value={k}>{k}</option>)}
                         </select>
                         <select value={matcher.operator} onChange={e => handleMatcherChange(index, 'operator', e.target.value)} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
                             <option value="=">=</option>

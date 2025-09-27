@@ -18,6 +18,7 @@ interface NotificationStrategyOptions {
     conditionKeys: Record<string, string[]>;
     tagKeys: string[];
     tagValues: Record<string, string[]>;
+    stepTitles: string[];
 }
 
 interface NotificationStrategyEditModalProps {
@@ -50,12 +51,16 @@ const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps
     const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState<Partial<NotificationStrategy>>({});
     const [options, setOptions] = useState<NotificationStrategyOptions | null>(null);
+    const [stepTitles, setStepTitles] = useState(["基本資訊", "通知管道", "匹配條件"]);
     
     useEffect(() => {
         if (isOpen) {
             api.get<NotificationStrategyOptions>('/settings/notification-strategies/options')
                 .then(res => {
                     setOptions(res.data);
+                    if (res.data.stepTitles) {
+                        setStepTitles(res.data.stepTitles);
+                    }
                     const initialData = strategy || {
                         name: '',
                         enabled: true,
@@ -89,8 +94,6 @@ const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps
         }
     };
     
-    const stepTitles = ["基本資訊", "通知管道", "匹配條件"];
-
     return (
         <Modal
             title={strategy && strategy.id ? '編輯通知策略' : '新增通知策略'}

@@ -15,6 +15,7 @@ import {
     PlatformSettings,
     PreferenceOptions,
     GrafanaSettings,
+    GrafanaOptions,
 } from '../types';
 
 // Helper to generate UUIDs
@@ -149,7 +150,9 @@ const MOCK_SILENCE_RULE_OPTIONS = {
     values: {
         severity: ['critical', 'warning', 'info'],
         env: ['production', 'staging', 'development'],
-    }
+    },
+    defaultMatcher: { key: 'env', operator: '=' as const, value: 'staging' },
+    weekdays: ['日', '一', '二', '三', '四', '五', '六']
 };
 const MOCK_RESOURCES: Resource[] = [
     { id: 'res-001', name: 'api-gateway-prod-01', status: 'healthy', type: 'API Gateway', provider: 'AWS', region: 'us-east-1', owner: 'SRE Team', lastCheckIn: '30s ago' },
@@ -209,11 +212,19 @@ const MOCK_NOTIFICATION_STRATEGY_OPTIONS = {
     conditionKeys: {
         severity: ['critical', 'warning', 'info'],
         resource_type: ['API Gateway', 'RDS Database', 'EKS Cluster'],
-    }
+    },
+    stepTitles: ["基本資訊", "通知管道", "匹配條件"],
+    defaultCondition: 'severity = critical',
 };
 const MOCK_NOTIFICATION_CHANNELS: NotificationChannel[] = [
     { id: 'chan-1', name: 'SRE On-call Email', type: 'Email', enabled: true, config: { smtpServer: 'smtp.example.com' }, lastTestResult: 'success', lastTestedAt: '2025-09-22 11:00:00' },
 ];
+const MOCK_NOTIFICATION_CHANNEL_ICONS = {
+    'Email': { icon: 'mail', color: 'text-red-400' },
+    'Slack': { icon: 'slack', color: 'text-purple-400' },
+    'Webhook': { icon: 'globe', color: 'text-sky-400' },
+    'Default': { icon: 'bell', color: 'text-slate-400' }
+};
 const MOCK_NOTIFICATION_HISTORY: NotificationHistoryRecord[] = [
     { id: 'nh-1', timestamp: '2025-09-23 14:05:10', strategy: 'Critical Database Alerts', channel: 'SRE On-call Email', channelType: 'Email', recipient: 'sre-team@example.com', status: 'success', content: 'DB CPU > 95%' },
 ];
@@ -222,6 +233,12 @@ const MOCK_LOGIN_HISTORY: LoginHistoryRecord[] = [
 ];
 const MOCK_LOGS: LogEntry[] = [
     { id: 'log-1', timestamp: new Date().toISOString(), level: 'error', service: 'payment-service', message: 'Failed to process payment', details: { transactionId: 'txn-123' } },
+];
+const MOCK_LOG_TIME_OPTIONS: { label: string, value: string }[] = [
+    { label: '最近 15 分鐘', value: '15m' },
+    { label: '最近 1 小時', value: '1h' },
+    { label: '最近 4 小時', value: '4h' },
+    { label: '最近 1 天', value: '1d' },
 ];
 const trace1StartTime = Date.now() - 100000;
 const MOCK_TRACES: Trace[] = [
@@ -253,6 +270,12 @@ const MOCK_TRACES: Trace[] = [
 ];
 const MOCK_MAIL_SETTINGS: MailSettings = { smtpServer: 'smtp.example.com', port: 587, username: 'noreply@sre.platform', senderName: 'SRE Platform', senderEmail: 'noreply@sre.platform', encryption: 'tls' };
 const MOCK_GRAFANA_SETTINGS: GrafanaSettings = { enabled: true, url: 'http://localhost:3000', apiKey: 'glsa_xxxxxxxxxxxxxxxxxxxxxxxx', orgId: 1 };
+const MOCK_GRAFANA_OPTIONS: GrafanaOptions = {
+    timeOptions: [{label: 'Last 6 hours', value: 'from=now-6h&to=now'}, {label: 'Last 24 hours', value: 'from=now-24h&to=now'}],
+    refreshOptions: [{label: '1m', value: '1m'}, {label: '5m', value: '5m'}],
+    tvModeOptions: [{label: 'Off', value: 'off'}, {label: 'On', value: 'on'}],
+    themeOptions: [{label: '深色', value: 'dark'}, {label: '淺色', value: 'light'}]
+};
 const MOCK_AUTH_SETTINGS: AuthSettings = { provider: 'Keycloak', enabled: true, clientId: 'sre-platform-client', clientSecret: '...', realm: 'sre', authUrl: '...', tokenUrl: '...', userInfoUrl: '...', idpAdminUrl: 'http://localhost:8080/admin/master/console/' };
 const LAYOUT_WIDGETS: LayoutWidget[] = [
     // Incident Management
@@ -630,12 +653,15 @@ function createInitialDB() {
         notificationStrategies: JSON.parse(JSON.stringify(MOCK_NOTIFICATION_STRATEGIES)),
         notificationStrategyOptions: JSON.parse(JSON.stringify(MOCK_NOTIFICATION_STRATEGY_OPTIONS)),
         notificationChannels: JSON.parse(JSON.stringify(MOCK_NOTIFICATION_CHANNELS)),
+        notificationChannelIcons: JSON.parse(JSON.stringify(MOCK_NOTIFICATION_CHANNEL_ICONS)),
         notificationHistory: JSON.parse(JSON.stringify(MOCK_NOTIFICATION_HISTORY)),
         loginHistory: JSON.parse(JSON.stringify(MOCK_LOGIN_HISTORY)),
         logs: JSON.parse(JSON.stringify(MOCK_LOGS)),
+        logTimeOptions: JSON.parse(JSON.stringify(MOCK_LOG_TIME_OPTIONS)),
         traces: JSON.parse(JSON.stringify(MOCK_TRACES)),
         mailSettings: JSON.parse(JSON.stringify(MOCK_MAIL_SETTINGS)),
         grafanaSettings: JSON.parse(JSON.stringify(MOCK_GRAFANA_SETTINGS)),
+        grafanaOptions: JSON.parse(JSON.stringify(MOCK_GRAFANA_OPTIONS)),
         authSettings: JSON.parse(JSON.stringify(MOCK_AUTH_SETTINGS)),
         userPreferences: JSON.parse(JSON.stringify(MOCK_USER_PREFERENCES)),
         layouts: JSON.parse(JSON.stringify(DEFAULT_LAYOUTS)),

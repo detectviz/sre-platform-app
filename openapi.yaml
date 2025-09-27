@@ -1,8 +1,11 @@
 openapi: 3.1.0
 info:
   title: SRE 平台 API 契約
-  version: 2.7.0
+  version: 2.17.0
   description: |
+    # 版本 2.17.0
+    - **重大重構**: 為平台所有主要模組新增了 `/.../options` API 端點，將所有 UI 相關的硬編碼資料 (如篩選條件、狀態顏色、標籤等) 全部遷移至由 API 動態提供。此舉實現了前端 UI 與業務邏輯的完全解耦，大幅提升了系統的可維護性與擴展性。
+
     # 版本 2.7.0
     - **新增**: 建立了 GitHub Actions 工作流程，用於在每次推送到 `main` 分支時自動將專案部署到 GitHub Pages，實現 CI/CD。
 
@@ -229,6 +232,19 @@ paths:
               schema:
                 $ref: '#/components/schemas/GeneratedPlaybook'
 
+  /ai/insights/options:
+    get:
+      tags: [AI Copilot]
+      summary: 取得 AI 洞察頁面的 UI 選項
+      operationId: getAIInsightsOptions
+      responses:
+        "200":
+          description: 回傳 AI 洞察頁面的 UI 選項
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIInsightsOptions"
+
   # ===========================================================================
   # NOTIFICATIONS (GLOBAL)
   # ===========================================================================
@@ -246,6 +262,19 @@ paths:
                 type: array
                 items:
                   $ref: "./types.ts#/components/schemas/NotificationItem"
+
+  /notifications/options:
+    get:
+      tags: [通知管理]
+      summary: 取得通知中心 UI 選項
+      operationId: getNotificationOptions
+      responses:
+        "200":
+          description: 回傳通知中心 UI 選項
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationOptions"
 
   /notifications/{id}/read:
     post:
@@ -348,6 +377,19 @@ paths:
                   owners:
                     type: array
                     items: { type: string }
+  
+  /dashboards/infrastructure-insights/options:
+    get:
+      tags: [儀表板]
+      summary: 取得基礎設施洞察頁面 UI 選項
+      operationId: getInfraInsightsOptions
+      responses:
+        "200":
+          description: 回傳基礎設施洞察頁面 UI 選項
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InfraInsightsOptions"
 
   /dashboards/{dashboard_id}:
     parameters:
@@ -426,6 +468,19 @@ paths:
                         items:
                           $ref: "#/components/schemas/Incident"
   
+  /incidents/options:
+    get:
+      tags: [事故管理 (Incidents)]
+      summary: 取得事故管理 UI 選項
+      operationId: getIncidentOptions
+      responses:
+        "200":
+          description: 回傳事故管理 UI 選項
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IncidentOptions"
+
   /incidents/{incident_id}:
     get:
       tags: [事故管理 (Incidents)]
@@ -672,6 +727,19 @@ paths:
       responses:
         "201": { $ref: "#/components/responses/SilenceRuleDetail" }
 
+  /silence-rules/options:
+    get:
+      tags: [靜音規則]
+      summary: 取得靜音規則 UI 選項
+      operationId: getSilenceRuleOptions
+      responses:
+        "200":
+          description: 回傳靜音規則 UI 選項
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SilenceRuleOptions"
+
   /silence-rules/templates:
     get:
       tags: [靜音規則]
@@ -828,20 +896,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  types:
-                    type: array
-                    items: { type: string }
-                  providers:
-                    type: array
-                    items: { type: string }
-                  regions:
-                    type: array
-                    items: { type: string }
-                  owners:
-                    type: array
-                    items: { type: string }
+                $ref: '#/components/schemas/ResourceOptions'
 
   /resources/{resource_id}:
     parameters:
@@ -1054,6 +1109,18 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AutomationPlaybook" }
+  /automation/scripts/options:
+    get:
+      tags: [自動化]
+      summary: 取得自動化腳本 UI 選項
+      operationId: getAutomationScriptOptions
+      responses:
+        "200":
+          description: 回傳自動化腳本 UI 選項
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AutomationPlaybookOptions"
 
   /automation/scripts/{script_id}:
     parameters:
@@ -1149,6 +1216,19 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/AutomationTrigger" }
 
+  /automation/triggers/options:
+    get:
+      tags: [自動化]
+      summary: 取得自動化觸發器 UI 選項
+      operationId: getAutomationTriggerOptions
+      responses:
+        "200":
+          description: 回傳自動化觸發器 UI 選項
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AutomationTriggerOptions"
+
   /automation/triggers/{trigger_id}:
     parameters:
       - name: trigger_id
@@ -1220,6 +1300,19 @@ paths:
                         type: array
                         items:
                           $ref: "#/components/schemas/AutomationExecution"
+  
+  /automation/executions/options:
+    get:
+      tags: [自動化]
+      summary: 取得自動化執行歷史 UI 選項
+      operationId: getAutomationExecutionOptions
+      responses:
+        "200":
+          description: 回傳自動化執行歷史 UI 選項
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AutomationExecutionOptions"
 
   /automation/executions/{execution_id}/retry:
     post:
@@ -1288,6 +1381,19 @@ paths:
                         type: array
                         items:
                           $ref: "#/components/schemas/LogEntry"
+  /logs/options:
+    get:
+      tags: [分析中心]
+      summary: 取得日誌探索 UI 選項
+      operationId: getLogOptions
+      responses:
+        "200":
+          description: 回傳日誌探索 UI 選項
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogOptions"
+
   /traces:
     get:
       tags: [分析中心]
@@ -1366,6 +1472,19 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/User" }
   
+  /iam/users/options:
+    get:
+      tags: [身份與存取 (IAM)]
+      summary: 取得人員管理 UI 選項
+      operationId: getPersonnelOptions
+      responses:
+        "200":
+          description: 回傳人員管理 UI 選項
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PersonnelOptions"
+
   /iam/users/import:
     post:
       tags: [身份與存取 (IAM)]
@@ -1611,6 +1730,19 @@ paths:
                         items:
                           $ref: "#/components/schemas/AuditLog"
 
+  /iam/audit-logs/options:
+    get:
+      tags: [身份與存取 (IAM)]
+      summary: 取得審計日誌 UI 選項
+      operationId: getAuditLogOptions
+      responses:
+        "200":
+          description: 回傳審計日誌 UI 選項
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditLogOptions"
+
   # ===========================================================================
   # NOTIFICATIONS & SETTINGS
   # ===========================================================================
@@ -1787,6 +1919,19 @@ paths:
                         type: array
                         items:
                           $ref: "#/components/schemas/NotificationHistoryRecord"
+  
+  /settings/notification-history/options:
+    get:
+      tags: [通知管理]
+      summary: 取得通知歷史 UI 選項
+      operationId: getNotificationHistoryOptions
+      responses:
+        "200":
+          description: 回傳通知歷史 UI 選項
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationHistoryOptions"
   
   /settings/notification-history/{id}/resend:
     post:
@@ -2114,6 +2259,34 @@ components:
       $ref: "./types.ts#/components/schemas/LogAnalysis"
     CapacityPlanningData:
       $ref: "./types.ts#/components/schemas/CapacityPlanningData"
+    StyleDescriptor:
+      $ref: "./types.ts#/components/schemas/StyleDescriptor"
+    ColorDescriptor:
+      $ref: "./types.ts#/components/schemas/ColorDescriptor"
+    LogOptions:
+      $ref: "./types.ts#/components/schemas/LogOptions"
+    SilenceRuleOptions:
+      $ref: "./types.ts#/components/schemas/SilenceRuleOptions"
+    InfraInsightsOptions:
+      $ref: "./types.ts#/components/schemas/InfraInsightsOptions"
+    IncidentOptions:
+      $ref: "./types.ts#/components/schemas/IncidentOptions"
+    AutomationExecutionOptions:
+      $ref: "./types.ts#/components/schemas/AutomationExecutionOptions"
+    AutomationPlaybookOptions:
+      $ref: "./types.ts#/components/schemas/AutomationPlaybookOptions"
+    NotificationOptions:
+      $ref: "./types.ts#/components/schemas/NotificationOptions"
+    ResourceOptions:
+      $ref: "./types.ts#/components/schemas/ResourceOptions"
+    AIInsightsOptions:
+      $ref: "./types.ts#/components/schemas/AIInsightsOptions"
+    PersonnelOptions:
+      $ref: "./types.ts#/components/schemas/PersonnelOptions"
+    AuditLogOptions:
+      $ref: "./types.ts#/components/schemas/AuditLogOptions"
+    AutomationTriggerOptions:
+      $ref: "./types.ts#/components/schemas/AutomationTriggerOptions"
       
     # Mock-only schemas
     AnalysisOverviewData:
