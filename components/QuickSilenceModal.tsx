@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import Icon from './Icon';
-import { Incident, IncidentOptions } from '../types';
-import api from '../services/api';
+import { Incident } from '../types';
+import { useOptions } from '../contexts/OptionsContext';
 
 interface QuickSilenceModalProps {
   isOpen: boolean;
@@ -13,35 +13,15 @@ interface QuickSilenceModalProps {
 
 const QuickSilenceModal: React.FC<QuickSilenceModalProps> = ({ isOpen, onClose, onSave, incident }) => {
   const [duration, setDuration] = useState(1);
-  const [options, setOptions] = useState<IncidentOptions | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { options, isLoading, error } = useOptions();
+  const incidentOptions = options?.incidents;
 
   useEffect(() => {
-    if (isOpen) {
-      setIsLoading(true);
-      setError(null);
-      api.get<IncidentOptions>('/incidents/options')
-        .then(res => {
-          const fetchedOptions = res.data;
-          setOptions(fetchedOptions);
-          if (fetchedOptions.quickSilenceDurations?.length) {
-            // Check if current duration is valid, otherwise set to first available
-            const currentIsValid = fetchedOptions.quickSilenceDurations.some(d => d.value === duration);
-            if (!currentIsValid) {
-              setDuration(fetchedOptions.quickSilenceDurations[0].value);
-            }
-          } else {
-             setError("No silence durations available from server.");
-          }
-        })
-        .catch(err => {
-          console.error("Failed to fetch silence durations.", err);
-          setError("Failed to load duration options.");
-        })
-        .finally(() => setIsLoading(false));
+    if (isOpen && incidentOptions?.quickSilenceDurations?.length) {
+      // Set initial duration to the first available option
+      setDuration(incidentOptions.quickSilenceDurations[0].value);
     }
-  }, [isOpen]);
+  }, [isOpen, incidentOptions]);
 
   if (!incident) return null;
 
@@ -86,7 +66,7 @@ const QuickSilenceModal: React.FC<QuickSilenceModalProps> = ({ isOpen, onClose, 
                 <div className="p-3 text-center text-red-400 bg-red-900/30 rounded-md">{error}</div>
             ) : (
                 <div className="grid grid-cols-3 gap-2">
-                    {options?.quickSilenceDurations.map(d => (
+                    {incidentOptions?.quickSilenceDurations.map(d => (
                         <button 
                             key={d.value} 
                             onClick={() => setDuration(d.value)}

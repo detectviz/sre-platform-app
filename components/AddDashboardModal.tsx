@@ -8,6 +8,7 @@ import FormRow from './FormRow';
 import { Dashboard } from '../types';
 import api from '../services/api';
 import { useUser } from '../contexts/UserContext';
+import { useOptions } from '../contexts/OptionsContext';
 
 interface AvailableGrafanaDashboard {
   uid: string;
@@ -33,6 +34,8 @@ const AddDashboardModal: React.FC<AddDashboardModalProps> = ({ isOpen, onClose, 
     });
     const navigate = useNavigate();
     const { currentUser } = useUser();
+    const { options, isLoading: isLoadingOptions } = useOptions();
+    const dashboardOptions = options?.dashboards;
 
     const [availableDashboards, setAvailableDashboards] = useState<AvailableGrafanaDashboard[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -42,16 +45,21 @@ const AddDashboardModal: React.FC<AddDashboardModalProps> = ({ isOpen, onClose, 
     useEffect(() => {
         if (isOpen && step === 2) {
             setIsLoading(true);
-            Promise.all([
-                api.get<AvailableGrafanaDashboard[]>('/dashboards/available-grafana'),
-                api.get<{ categories: string[] }>('/dashboards/options')
-            ]).then(([dashboardsRes, optionsRes]) => {
-                setAvailableDashboards(dashboardsRes.data);
-                setDefaultCategory(optionsRes.data.categories[0] || null);
-            }).catch(err => console.error("Failed to fetch data for modal", err))
-            .finally(() => setIsLoading(false));
+            api.get<AvailableGrafanaDashboard[]>('/dashboards/available-grafana')
+                .then(res => {
+                    setAvailableDashboards(res.data);
+                }).catch(err => console.error("Failed to fetch available dashboards", err))
+                .finally(() => setIsLoading(false));
         }
     }, [isOpen, step]);
+
+    useEffect(() => {
+        if (dashboardOptions?.categories && dashboardOptions.categories.length > 0) {
+            setDefaultCategory(dashboardOptions.categories[0]);
+        } else {
+            setDefaultCategory(null);
+        }
+    }, [dashboardOptions]);
 
 
     const handleSelectType = (type: 'built-in' | 'grafana') => {
@@ -169,7 +177,7 @@ const AddDashboardModal: React.FC<AddDashboardModalProps> = ({ isOpen, onClose, 
                     <button onClick={() => setStep(1)} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md transition-colors">
                         返回
                     </button>
-                    <button onClick={handleSaveGrafana} disabled={!selectedDashboardUid || !defaultCategory} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md transition-colors disabled:bg-slate-600 disabled:cursor-not-allowed">
+                    <button onClick={handleSaveGrafana} disabled={!selectedDashboardUid || isLoadingOptions || !defaultCategory} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md transition-colors disabled:bg-slate-600 disabled:cursor-not-allowed">
                         儲存
                     </button>
                 </div>

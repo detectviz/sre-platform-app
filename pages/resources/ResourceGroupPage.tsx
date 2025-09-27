@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ResourceGroup } from '../../types';
+import { ResourceGroup, ResourceGroupFilters } from '../../types';
 import Icon from '../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
@@ -9,6 +9,18 @@ import Modal from '../../components/Modal';
 import api from '../../services/api';
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
+import UnifiedSearchModal from '../../components/UnifiedSearchModal';
+import ColumnSettingsModal, { TableColumn } from '../../components/ColumnSettingsModal';
+import { usePageMetadata } from '../../contexts/PageMetadataContext';
+import { showToast } from '../../services/toast';
+
+const ALL_COLUMNS: TableColumn[] = [
+    { key: 'name', label: '群組名稱' },
+    { key: 'ownerTeam', label: '擁有團隊' },
+    { key: 'memberIds', label: '成員數量' },
+    { key: 'statusSummary', label: '狀態' },
+];
+const PAGE_IDENTIFIER = 'resource_groups';
 
 const ResourceGroupPage: React.FC = () => {
     const [groups, setGroups] = useState<ResourceGroup[]>([]);
@@ -19,7 +31,8 @@ const ResourceGroupPage: React.FC = () => {
     const [editingGroup, setEditingGroup] = useState<ResourceGroup | null>(null);
     const location = useLocation();
     const navigate = useNavigate();
-    const [searchTerm, setSearchTerm] = useState(location.state?.initialSearchTerm || '');
+    
+    const [filters, setFilters] = useState<ResourceGroupFilters>({ keyword: location.state?.initialSearchTerm || '' });
     
     useEffect(() => {
         if (location.state?.initialSearchTerm) {
@@ -29,23 +42,53 @@ const ResourceGroupPage: React.FC = () => {
 
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingGroup, setDeletingGroup] = useState<ResourceGroup | null>(null);
+    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+    const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
+    const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+
+    const { metadata: pageMetadata } = usePageMetadata();
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
+
 
     const fetchGroups = useCallback(async () => {
+        if (!pageKey) return;
         setIsLoading(true);
         setError(null);
         try {
-            const { data } = await api.get<ResourceGroup[]>('/resource-groups', { params: { keyword: searchTerm } });
-            setGroups(data);
+            const [groupsRes, columnsRes] = await Promise.all([
+                 api.get<ResourceGroup[]>('/resource-groups', { params: filters }),
+                 api.get<string[]>(`/settings/column-config/${pageKey}`)
+            ]);
+            setGroups(groupsRes.data);
+            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
         } catch (err) {
             setError('無法獲取資源群組。');
         } finally {
             setIsLoading(false);
         }
-    }, [searchTerm]);
+    }, [filters, pageKey]);
 
     useEffect(() => {
-        fetchGroups();
-    }, [fetchGroups]);
+        if (pageKey) {
+            fetchGroups();
+        }
+    }, [fetchGroups, pageKey]);
+
+    const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
+        if (!pageKey) {
+            showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
+            return;
+        }
+        try {
+            await api.put(`/settings/column-config/${pageKey}`, newColumnKeys);
+            setVisibleColumns(newColumnKeys);
+            showToast('欄位設定已儲存。', 'success');
+        } catch (err) {
+            showToast('無法儲存欄位設定。', 'error');
+        } finally {
+            setIsColumnSettingsModalOpen(false);
+        }
+    };
 
     const handleNewGroup = () => {
         setEditingGroup(null);
@@ -95,24 +138,48 @@ const ResourceGroupPage: React.FC = () => {
         }
     };
     
+    const renderCellContent = (group: ResourceGroup, columnKey: string) => {
+        switch (columnKey) {
+            case 'name':
+                return (
+                    <>
+                        <div className="font-medium text-white">{group.name}</div>
+                        <p className="text-xs text-slate-400 font-normal">{group.description}</p>
+                    </>
+                );
+            case 'ownerTeam':
+                return group.ownerTeam;
+            case 'memberIds':
+                return group.memberIds.length;
+            case 'statusSummary':
+                return (
+                    <div className="flex items-center space-x-2">
+                        <span className="flex items-center text-xs text-green-400"><span className="w-2 h-2 mr-1.5 rounded-full bg-green-400"></span>{group.statusSummary.healthy}</span>
+                        <span className="flex items-center text-xs text-yellow-400"><span className="w-2 h-2 mr-1.5 rounded-full bg-yellow-400"></span>{group.statusSummary.warning}</span>
+                        <span className="flex items-center text-xs text-red-400"><span className="w-2 h-2 mr-1.5 rounded-full bg-red-400"></span>{group.statusSummary.critical}</span>
+                    </div>
+                );
+            default:
+                return null;
+        }
+    };
+
     const leftActions = (
-        <div className="relative">
-           <Icon name="search" className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400 w-4 h-4" />
-           <input 
-               type="text" 
-               placeholder="搜尋群組..."
-               value={searchTerm}
-               onChange={e => setSearchTerm(e.target.value)}
-               className="w-64 bg-slate-800/80 border border-slate-700 rounded-md pl-9 pr-4 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-           />
-       </div>
+        <ToolbarButton icon="search" text="搜尋和篩選" onClick={() => setIsSearchModalOpen(true)} />
+    );
+
+    const rightActions = (
+        <>
+            <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => setIsColumnSettingsModalOpen(true)} />
+            <ToolbarButton icon="plus" text="新增群組" primary onClick={handleNewGroup} />
+        </>
     );
 
     return (
         <div className="h-full flex flex-col">
             <Toolbar 
                 leftActions={leftActions}
-                rightActions={<ToolbarButton icon="plus" text="新增群組" primary onClick={handleNewGroup} />}
+                rightActions={rightActions}
             />
             
             <TableContainer>
@@ -120,33 +187,22 @@ const ResourceGroupPage: React.FC = () => {
                     <table className="w-full text-sm text-left text-slate-300">
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
-                                <th scope="col" className="px-6 py-3">群組名稱</th>
-                                <th scope="col" className="px-6 py-3">擁有團隊</th>
-                                <th scope="col" className="px-6 py-3">成員數量</th>
-                                <th scope="col" className="px-6 py-3">狀態</th>
+                                {visibleColumns.map(key => (
+                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                ))}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
                         </thead>
                         <tbody>
                              {isLoading ? (
-                                <TableLoader colSpan={5} />
+                                <TableLoader colSpan={visibleColumns.length + 1} />
                             ) : error ? (
-                                <TableError colSpan={5} message={error} onRetry={fetchGroups} />
+                                <TableError colSpan={visibleColumns.length + 1} message={error} onRetry={fetchGroups} />
                             ) : groups.map((group) => (
                                 <tr key={group.id} className="border-b border-slate-800 hover:bg-slate-800/40">
-                                    <td className="px-6 py-4 font-medium text-white">
-                                        {group.name}
-                                        <p className="text-xs text-slate-400 font-normal">{group.description}</p>
-                                    </td>
-                                    <td className="px-6 py-4">{group.ownerTeam}</td>
-                                    <td className="px-6 py-4">{group.memberIds.length}</td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center space-x-2">
-                                            <span className="flex items-center text-xs text-green-400"><span className="w-2 h-2 mr-1.5 rounded-full bg-green-400"></span>{group.statusSummary.healthy}</span>
-                                            <span className="flex items-center text-xs text-yellow-400"><span className="w-2 h-2 mr-1.5 rounded-full bg-yellow-400"></span>{group.statusSummary.warning}</span>
-                                            <span className="flex items-center text-xs text-red-400"><span className="w-2 h-2 mr-1.5 rounded-full bg-red-400"></span>{group.statusSummary.critical}</span>
-                                        </div>
-                                    </td>
+                                    {visibleColumns.map(key => (
+                                        <td key={key} className="px-6 py-4">{renderCellContent(group, key)}</td>
+                                    ))}
                                     <td className="px-6 py-4 text-center">
                                         <button onClick={() => handleEditGroup(group)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯">
                                             <Icon name="edit-3" className="w-4 h-4" />
@@ -185,6 +241,23 @@ const ResourceGroupPage: React.FC = () => {
                 <p>您確定要刪除資源群組 <strong className="text-amber-400">{deletingGroup?.name}</strong> 嗎？</p>
                 <p className="mt-2 text-slate-400">此操作無法復原。</p>
             </Modal>
+             <UnifiedSearchModal
+                page="resource-groups"
+                isOpen={isSearchModalOpen}
+                onClose={() => setIsSearchModalOpen(false)}
+                onSearch={(newFilters) => {
+                    setFilters(newFilters as ResourceGroupFilters);
+                    setIsSearchModalOpen(false);
+                }}
+                initialFilters={filters}
+            />
+            <ColumnSettingsModal
+                isOpen={isColumnSettingsModalOpen}
+                onClose={() => setIsColumnSettingsModalOpen(false)}
+                onSave={handleSaveColumnConfig}
+                allColumns={ALL_COLUMNS}
+                visibleColumnKeys={visibleColumns}
+            />
         </div>
     );
 };

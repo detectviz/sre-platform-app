@@ -4,6 +4,7 @@ import EChartsReact from '../../components/EChartsReact';
 import { Resource, TopologyOptions } from '../../types';
 import Icon from '../../components/Icon';
 import api from '../../services/api';
+import { useOptions } from '../../contexts/OptionsContext';
 
 const statusColors: { [key in Resource['status']]: string } = {
     healthy: '#10b981', // green-500
@@ -19,7 +20,9 @@ interface TopologyData {
 
 const ResourceTopologyPage: React.FC = () => {
     const [topologyData, setTopologyData] = useState<TopologyData>({ nodes: [], links: [] });
-    const [options, setOptions] = useState<TopologyOptions | null>(null);
+    const { options, isLoading: isLoadingOptions } = useOptions();
+    const topologyOptions = options?.topology;
+
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     
@@ -40,25 +43,25 @@ const ResourceTopologyPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const [topologyRes, optionsRes] = await Promise.all([
-                api.get<TopologyData>('/resources/topology'),
-                api.get<TopologyOptions>('/resources/topology/options')
-            ]);
-            setTopologyData(topologyRes.data);
-            setOptions(optionsRes.data);
-            if (optionsRes.data.layouts.length > 0 && !layout) {
-                setLayout(optionsRes.data.layouts[0].value);
-            }
+            const { data } = await api.get<TopologyData>('/resources/topology');
+            setTopologyData(data);
         } catch (err) {
             setError('無法獲取拓撲資料。');
         } finally {
             setIsLoading(false);
         }
-    }, [layout]);
+    }, []);
 
     useEffect(() => {
         fetchTopology();
     }, [fetchTopology]);
+
+    useEffect(() => {
+        if (topologyOptions?.layouts.length && !layout) {
+            setLayout(topologyOptions.layouts[0].value);
+        }
+    }, [topologyOptions, layout]);
+
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -196,7 +199,7 @@ const ResourceTopologyPage: React.FC = () => {
                 <div className="flex items-center space-x-2 p-2 glass-card rounded-lg">
                     <label className="text-sm font-medium">Layout:</label>
                     <select value={layout} onChange={e => setLayout(e.target.value)} className="bg-slate-800 border-slate-700 rounded-md px-2 py-1 text-sm">
-                        {options?.layouts.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                        {topologyOptions?.layouts.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                     </select>
                     <label className="text-sm font-medium ml-4">Type:</label>
                     <select value={filterType} onChange={e => setFilterType(e.target.value)} className="bg-slate-800 border-slate-700 rounded-md px-2 py-1 text-sm">
@@ -205,7 +208,7 @@ const ResourceTopologyPage: React.FC = () => {
                 </div>
             </div>
             <div className="flex-grow glass-card rounded-xl relative">
-                {isLoading ? (
+                {isLoading || isLoadingOptions ? (
                     <div className="flex items-center justify-center h-full text-slate-400">
                         <Icon name="loader-circle" className="w-8 h-8 animate-spin mr-2" /> 載入拓撲資料中...
                     </div>

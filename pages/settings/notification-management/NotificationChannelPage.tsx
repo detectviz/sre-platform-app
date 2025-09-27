@@ -1,6 +1,5 @@
-
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { NotificationChannel, NotificationChannelType } from '../../../types';
+import { NotificationChannel, NotificationChannelType, NotificationChannelFilters } from '../../../types';
 import Icon from '../../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../../components/Toolbar';
 import TableContainer from '../../../components/TableContainer';
@@ -9,8 +8,22 @@ import Modal from '../../../components/Modal';
 import api from '../../../services/api';
 import TableLoader from '../../../components/TableLoader';
 import TableError from '../../../components/TableError';
+import UnifiedSearchModal from '../../../components/UnifiedSearchModal';
+import ColumnSettingsModal, { TableColumn } from '../../../components/ColumnSettingsModal';
+import { usePageMetadata } from '../../../contexts/PageMetadataContext';
+import { showToast } from '../../../services/toast';
 
 type IconConfig = Record<NotificationChannelType | 'Default', { icon: string; color: string; }>;
+
+const ALL_COLUMNS: TableColumn[] = [
+    { key: 'enabled', label: '' },
+    { key: 'name', label: '管道名稱' },
+    { key: 'type', label: '類型' },
+    { key: 'lastTestResult', label: '上次測試結果' },
+    { key: 'lastTestedAt', label: '上次測試時間' },
+];
+const PAGE_IDENTIFIER = 'notification_channels';
+
 
 const NotificationChannelPage: React.FC = () => {
     const [channels, setChannels] = useState<NotificationChannel[]>([]);
@@ -20,31 +33,58 @@ const NotificationChannelPage: React.FC = () => {
     
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingChannel, setEditingChannel] = useState<NotificationChannel | null>(null);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [filters, setFilters] = useState<NotificationChannelFilters>({});
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingChannel, setDeletingChannel] = useState<NotificationChannel | null>(null);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+    const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
+    const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+
+    const { metadata: pageMetadata } = usePageMetadata();
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
 
     const fetchChannels = useCallback(async () => {
+        if (!pageKey) return;
         setIsLoading(true);
         setError(null);
         try {
-            const [channelsRes, iconsRes] = await Promise.all([
-                api.get<NotificationChannel[]>('/settings/notification-channels', { params: { keyword: searchTerm } }),
-                api.get<IconConfig>('/ui/icons-config')
+            const [channelsRes, iconsRes, columnsRes] = await Promise.all([
+                api.get<NotificationChannel[]>('/settings/notification-channels', { params: filters }),
+                api.get<IconConfig>('/ui/icons-config'),
+                api.get<string[]>(`/settings/column-config/${pageKey}`)
             ]);
             setChannels(channelsRes.data);
             setIconConfig(iconsRes.data);
+            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
         } catch(err) {
             setError('無法獲取通知管道。');
         } finally {
             setIsLoading(false);
         }
-    }, [searchTerm]);
+    }, [filters, pageKey]);
 
     useEffect(() => {
-        fetchChannels();
-    }, [fetchChannels]);
+        if (pageKey) {
+            fetchChannels();
+        }
+    }, [fetchChannels, pageKey]);
+    
+    const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
+        if (!pageKey) {
+            showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
+            return;
+        }
+        try {
+            await api.put(`/settings/column-config/${pageKey}`, newColumnKeys);
+            setVisibleColumns(newColumnKeys);
+            showToast('欄位設定已儲存。', 'success');
+        } catch (err) {
+            showToast('無法儲存欄位設定。', 'error');
+        } finally {
+            setIsColumnSettingsModalOpen(false);
+        }
+    };
 
     const handleNewChannel = () => {
         setEditingChannel(null);
@@ -156,23 +196,48 @@ const NotificationChannelPage: React.FC = () => {
     );
 
     const leftActions = (
-         <div className="relative">
-            <Icon name="search" className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400 w-4 h-4" />
-            <input 
-                type="text" 
-                placeholder="搜尋管道..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="w-64 bg-slate-800/80 border border-slate-700 rounded-md pl-9 pr-4 py-1.5 text-sm"
-            />
-        </div>
+        <ToolbarButton icon="search" text="搜尋和篩選" onClick={() => setIsSearchModalOpen(true)} />
     );
+
+    const renderCellContent = (channel: NotificationChannel, columnKey: string) => {
+        const { icon, color } = getChannelTypeIcon(channel.type);
+        switch (columnKey) {
+            case 'enabled':
+                return (
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked={channel.enabled} className="sr-only peer" onChange={() => handleToggleEnable(channel)} />
+                        <div className="w-11 h-6 bg-slate-700 rounded-full peer peer-checked:bg-sky-600 peer-checked:after:translate-x-full after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                    </label>
+                );
+            case 'name': return <span className="font-medium text-white">{channel.name}</span>;
+            case 'type':
+                return (
+                    <span className={`flex items-center font-semibold ${color}`}>
+                        <Icon name={icon} className="w-4 h-4 mr-2" />
+                        {channel.type}
+                    </span>
+                );
+            case 'lastTestResult':
+                return (
+                    <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full capitalize ${getTestResultPill(channel.lastTestResult)}`}>
+                        {channel.lastTestResult}
+                    </span>
+                );
+            case 'lastTestedAt': return channel.lastTestedAt;
+            default: return null;
+        }
+    };
 
     return (
         <div className="h-full flex flex-col">
             <Toolbar
                 leftActions={leftActions}
-                rightActions={<ToolbarButton icon="plus" text="新增管道" primary onClick={handleNewChannel} />}
+                rightActions={
+                    <>
+                        <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => setIsColumnSettingsModalOpen(true)} />
+                        <ToolbarButton icon="plus" text="新增管道" primary onClick={handleNewChannel} />
+                    </>
+                }
                 selectedCount={selectedIds.length}
                 onClearSelection={() => setSelectedIds([])}
                 batchActions={batchActions}
@@ -186,54 +251,33 @@ const NotificationChannelPage: React.FC = () => {
                                     <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
                                            checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
-                                <th scope="col" className="px-6 py-3"></th>
-                                <th scope="col" className="px-6 py-3">管道名稱</th>
-                                <th scope="col" className="px-6 py-3">類型</th>
-                                <th scope="col" className="px-6 py-3">上次測試結果</th>
-                                <th scope="col" className="px-6 py-3">上次測試時間</th>
+                                {visibleColumns.map(key => (
+                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                ))}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <TableLoader colSpan={7} />
+                                <TableLoader colSpan={visibleColumns.length + 2} />
                             ) : error ? (
-                                <TableError colSpan={7} message={error} onRetry={fetchChannels} />
-                            ) : channels.map((channel) => {
-                                const { icon, color } = getChannelTypeIcon(channel.type);
-                                return (
-                                    <tr key={channel.id} className={`border-b border-slate-800 ${selectedIds.includes(channel.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
-                                        <td className="p-4 w-12">
-                                            <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
-                                                   checked={selectedIds.includes(channel.id)} onChange={(e) => handleSelectOne(e, channel.id)} />
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <label className="relative inline-flex items-center cursor-pointer">
-                                                <input type="checkbox" checked={channel.enabled} className="sr-only peer" onChange={() => handleToggleEnable(channel)} />
-                                                <div className="w-11 h-6 bg-slate-700 rounded-full peer peer-checked:bg-sky-600 peer-checked:after:translate-x-full after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-                                            </label>
-                                        </td>
-                                        <td className="px-6 py-4 font-medium text-white">{channel.name}</td>
-                                        <td className="px-6 py-4">
-                                            <span className={`flex items-center font-semibold ${color}`}>
-                                                <Icon name={icon} className="w-4 h-4 mr-2" />
-                                                {channel.type}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full capitalize ${getTestResultPill(channel.lastTestResult)}`}>
-                                                {channel.lastTestResult}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">{channel.lastTestedAt}</td>
-                                        <td className="px-6 py-4 text-center">
-                                            <button onClick={() => handleTestChannel(channel.id)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="測試"><Icon name="flask-conical" className="w-4 h-4" /></button>
-                                            <button onClick={() => handleEditChannel(channel)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯"><Icon name="edit-3" className="w-4 h-4" /></button>
-                                            <button onClick={() => handleDeleteClick(channel)} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除"><Icon name="trash-2" className="w-4 h-4" /></button>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
+                                <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchChannels} />
+                            ) : channels.map((channel) => (
+                                <tr key={channel.id} className={`border-b border-slate-800 ${selectedIds.includes(channel.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
+                                    <td className="p-4 w-12">
+                                        <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
+                                               checked={selectedIds.includes(channel.id)} onChange={(e) => handleSelectOne(e, channel.id)} />
+                                    </td>
+                                    {visibleColumns.map(key => (
+                                        <td key={key} className="px-6 py-4">{renderCellContent(channel, key)}</td>
+                                    ))}
+                                    <td className="px-6 py-4 text-center">
+                                        <button onClick={() => handleTestChannel(channel.id)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="測試"><Icon name="flask-conical" className="w-4 h-4" /></button>
+                                        <button onClick={() => handleEditChannel(channel)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯"><Icon name="edit-3" className="w-4 h-4" /></button>
+                                        <button onClick={() => handleDeleteClick(channel)} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除"><Icon name="trash-2" className="w-4 h-4" /></button>
+                                    </td>
+                                </tr>
+                            ))}
                         </tbody>
                     </table>
                 </div>
@@ -261,6 +305,23 @@ const NotificationChannelPage: React.FC = () => {
                 <p>您確定要刪除管道 <strong className="text-amber-400">{deletingChannel?.name}</strong> 嗎？</p>
                 <p className="mt-2 text-slate-400">此操作無法復原。關聯的通知策略可能會受到影響。</p>
             </Modal>
+             <UnifiedSearchModal
+                page="notification-channels"
+                isOpen={isSearchModalOpen}
+                onClose={() => setIsSearchModalOpen(false)}
+                onSearch={(newFilters) => {
+                    setFilters(newFilters as NotificationChannelFilters);
+                    setIsSearchModalOpen(false);
+                }}
+                initialFilters={filters}
+            />
+            <ColumnSettingsModal
+                isOpen={isColumnSettingsModalOpen}
+                onClose={() => setIsColumnSettingsModalOpen(false)}
+                onSave={handleSaveColumnConfig}
+                allColumns={ALL_COLUMNS}
+                visibleColumnKeys={visibleColumns}
+            />
         </div>
     );
 };

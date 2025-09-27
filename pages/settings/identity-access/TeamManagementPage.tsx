@@ -8,6 +8,17 @@ import Modal from '../../../components/Modal';
 import api from '../../../services/api';
 import TableLoader from '../../../components/TableLoader';
 import TableError from '../../../components/TableError';
+import ColumnSettingsModal, { TableColumn } from '../../../components/ColumnSettingsModal';
+import { usePageMetadata } from '../../../contexts/PageMetadataContext';
+import { showToast } from '../../../services/toast';
+
+const ALL_COLUMNS: TableColumn[] = [
+    { key: 'name', label: '團隊名稱' },
+    { key: 'ownerId', label: '擁有者' },
+    { key: 'memberIds', label: '成員數' },
+    { key: 'createdAt', label: '創建時間' },
+];
+const PAGE_IDENTIFIER = 'teams';
 
 const TeamManagementPage: React.FC = () => {
     const [teams, setTeams] = useState<Team[]>([]);
@@ -21,14 +32,21 @@ const TeamManagementPage: React.FC = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingTeam, setDeletingTeam] = useState<Team | null>(null);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
+    const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+
+    const { metadata: pageMetadata } = usePageMetadata();
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
 
     const fetchTeamsAndUsers = useCallback(async () => {
+        if (!pageKey) return;
         setIsLoading(true);
         setError(null);
         try {
-            const [teamsRes, usersRes] = await Promise.all([
+            const [teamsRes, usersRes, columnsRes] = await Promise.all([
                 api.get<Team[]>('/iam/teams'),
-                api.get<{ items: User[] }>('/iam/users', { params: { page: 1, page_size: 1000 } })
+                api.get<{ items: User[] }>('/iam/users', { params: { page: 1, page_size: 1000 } }),
+                api.get<string[]>(`/settings/column-config/${pageKey}`)
             ]);
             
             setUsers(usersRes.data.items);
@@ -39,20 +57,39 @@ const TeamManagementPage: React.FC = () => {
                 team.description.toLowerCase().includes(searchTerm.toLowerCase())
             );
             setTeams(filteredTeams);
+            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
 
         } catch (err) {
             setError('無法獲取團隊或使用者列表。');
         } finally {
             setIsLoading(false);
         }
-    }, [searchTerm]);
+    }, [searchTerm, pageKey]);
 
     useEffect(() => {
-        fetchTeamsAndUsers();
-    }, [fetchTeamsAndUsers]);
+        if (pageKey) {
+            fetchTeamsAndUsers();
+        }
+    }, [fetchTeamsAndUsers, pageKey]);
     
     const userMap = useMemo(() => new Map(users.map(u => [u.id, u])), [users]);
     const findUserById = (id: string): User | undefined => userMap.get(id);
+    
+    const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
+        if (!pageKey) {
+            showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
+            return;
+        }
+        try {
+            await api.put(`/settings/column-config/${pageKey}`, newColumnKeys);
+            setVisibleColumns(newColumnKeys);
+            showToast('欄位設定已儲存。', 'success');
+        } catch (err) {
+            showToast('無法儲存欄位設定。', 'error');
+        } finally {
+            setIsColumnSettingsModalOpen(false);
+        }
+    };
 
     const handleNewTeam = () => {
         setEditingTeam(null);
@@ -136,12 +173,36 @@ const TeamManagementPage: React.FC = () => {
         <ToolbarButton icon="trash-2" text="刪除" danger onClick={handleBatchDelete} />
     );
 
+    const renderCellContent = (team: Team, columnKey: string) => {
+        switch (columnKey) {
+            case 'name':
+                return (
+                    <>
+                        <div className="font-medium text-white">{team.name}</div>
+                        <p className="text-xs text-slate-400 font-normal">{team.description}</p>
+                    </>
+                );
+            case 'ownerId':
+                return findUserById(team.ownerId)?.name || 'N/A';
+            case 'memberIds':
+                return team.memberIds.length;
+            case 'createdAt':
+                return team.createdAt;
+            default:
+                return null;
+        }
+    };
 
     return (
         <div className="h-full flex flex-col">
             <Toolbar 
                 leftActions={leftActions}
-                rightActions={<ToolbarButton icon="plus" text="新增團隊" primary onClick={handleNewTeam} />}
+                rightActions={
+                    <>
+                        <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => setIsColumnSettingsModalOpen(true)} />
+                        <ToolbarButton icon="plus" text="新增團隊" primary onClick={handleNewTeam} />
+                    </>
+                }
                 selectedCount={selectedIds.length}
                 onClearSelection={() => setSelectedIds([])}
                 batchActions={batchActions}
@@ -156,31 +217,26 @@ const TeamManagementPage: React.FC = () => {
                                     <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
                                            checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
-                                <th scope="col" className="px-6 py-3">團隊名稱</th>
-                                <th scope="col" className="px-6 py-3">擁有者</th>
-                                <th scope="col" className="px-6 py-3">成員數</th>
-                                <th scope="col" className="px-6 py-3">創建時間</th>
+                                {visibleColumns.map(key => (
+                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                ))}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <TableLoader colSpan={6} />
+                                <TableLoader colSpan={visibleColumns.length + 2} />
                             ) : error ? (
-                                <TableError colSpan={6} message={error} onRetry={fetchTeamsAndUsers} />
+                                <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchTeamsAndUsers} />
                             ) : teams.map((team) => (
                                 <tr key={team.id} className={`border-b border-slate-800 ${selectedIds.includes(team.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
                                     <td className="p-4 w-12">
                                         <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
                                                checked={selectedIds.includes(team.id)} onChange={(e) => handleSelectOne(e, team.id)} />
                                     </td>
-                                    <td className="px-6 py-4 font-medium text-white">
-                                        {team.name}
-                                        <p className="text-xs text-slate-400 font-normal">{team.description}</p>
-                                    </td>
-                                    <td className="px-6 py-4">{findUserById(team.ownerId)?.name || 'N/A'}</td>
-                                    <td className="px-6 py-4">{team.memberIds.length}</td>
-                                    <td className="px-6 py-4">{team.createdAt}</td>
+                                    {visibleColumns.map(key => (
+                                        <td key={key} className="px-6 py-4">{renderCellContent(team, key)}</td>
+                                    ))}
                                     <td className="px-6 py-4 text-center">
                                          <button onClick={() => handleEditTeam(team)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯"><Icon name="edit-3" className="w-4 h-4" /></button>
                                          <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(team); }} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除"><Icon name="trash-2" className="w-4 h-4" /></button>
@@ -214,6 +270,13 @@ const TeamManagementPage: React.FC = () => {
                 <p>您確定要刪除團隊 <strong className="text-amber-400">{deletingTeam?.name}</strong> 嗎？</p>
                 <p className="mt-2 text-slate-400">此操作無法復原，但不會刪除團隊內的成員。</p>
             </Modal>
+            <ColumnSettingsModal
+                isOpen={isColumnSettingsModalOpen}
+                onClose={() => setIsColumnSettingsModalOpen(false)}
+                onSave={handleSaveColumnConfig}
+                allColumns={ALL_COLUMNS}
+                visibleColumnKeys={visibleColumns}
+            />
         </div>
     );
 };

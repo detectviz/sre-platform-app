@@ -43,7 +43,7 @@ const TagValuesManageModal: React.FC<TagValuesManageModalProps> = ({ isOpen, onC
 
     return (
         <Modal
-            title={`管理 "${tag.key}" 的允許值`}
+            title={`管理 "${tag.key}" 的標籤值`}
             isOpen={isOpen}
             onClose={onClose}
             width="w-1/2 max-w-2xl"

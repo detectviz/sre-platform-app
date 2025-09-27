@@ -8,6 +8,17 @@ import Modal from '../../../components/Modal';
 import api from '../../../services/api';
 import TableLoader from '../../../components/TableLoader';
 import TableError from '../../../components/TableError';
+import ColumnSettingsModal, { TableColumn } from '../../../components/ColumnSettingsModal';
+import { usePageMetadata } from '../../../contexts/PageMetadataContext';
+import { showToast } from '../../../services/toast';
+
+const ALL_COLUMNS: TableColumn[] = [
+    { key: 'name', label: '角色名稱' },
+    { key: 'userCount', label: '使用者數量' },
+    { key: 'status', label: '狀態' },
+    { key: 'createdAt', label: '創建時間' },
+];
+const PAGE_IDENTIFIER = 'roles';
 
 const RoleManagementPage: React.FC = () => {
     const [roles, setRoles] = useState<Role[]>([]);
@@ -19,23 +30,51 @@ const RoleManagementPage: React.FC = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingRole, setDeletingRole] = useState<Role | null>(null);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
+    const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+
+    const { metadata: pageMetadata } = usePageMetadata();
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
 
     const fetchRoles = useCallback(async () => {
+        if (!pageKey) return;
         setIsLoading(true);
         setError(null);
         try {
-            const { data } = await api.get<Role[]>('/iam/roles');
-            setRoles(data);
+            const [rolesRes, columnsRes] = await Promise.all([
+                 api.get<Role[]>('/iam/roles'),
+                 api.get<string[]>(`/settings/column-config/${pageKey}`)
+            ]);
+            setRoles(rolesRes.data);
+            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
         } catch (err) {
             setError('無法獲取角色列表。');
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [pageKey]);
 
     useEffect(() => {
-        fetchRoles();
-    }, [fetchRoles]);
+        if (pageKey) {
+            fetchRoles();
+        }
+    }, [fetchRoles, pageKey]);
+    
+    const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
+        if (!pageKey) {
+            showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
+            return;
+        }
+        try {
+            await api.put(`/settings/column-config/${pageKey}`, newColumnKeys);
+            setVisibleColumns(newColumnKeys);
+            showToast('欄位設定已儲存。', 'success');
+        } catch (err) {
+            showToast('無法儲存欄位設定。', 'error');
+        } finally {
+            setIsColumnSettingsModalOpen(false);
+        }
+    };
 
     const handleNewRole = () => {
         setEditingRole(null);
@@ -110,10 +149,39 @@ const RoleManagementPage: React.FC = () => {
         <ToolbarButton icon="trash-2" text="刪除" danger onClick={handleBatchDelete} />
     );
 
+    const renderCellContent = (role: Role, columnKey: string) => {
+        switch (columnKey) {
+            case 'name':
+                return (
+                    <>
+                        <div className="font-medium text-white">{role.name}</div>
+                        <p className="text-xs text-slate-400 font-normal">{role.description}</p>
+                    </>
+                );
+            case 'userCount':
+                return role.userCount;
+            case 'status':
+                return (
+                    <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusPill(role.status)}`}>
+                        {role.status}
+                    </span>
+                );
+            case 'createdAt':
+                return role.createdAt;
+            default:
+                return null;
+        }
+    };
+
     return (
         <div className="h-full flex flex-col">
             <Toolbar 
-                rightActions={<ToolbarButton icon="plus" text="新增角色" primary onClick={handleNewRole} />}
+                rightActions={
+                    <>
+                        <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => setIsColumnSettingsModalOpen(true)} />
+                        <ToolbarButton icon="plus" text="新增角色" primary onClick={handleNewRole} />
+                    </>
+                }
                 selectedCount={selectedIds.length}
                 onClearSelection={() => setSelectedIds([])}
                 batchActions={batchActions}
@@ -128,35 +196,26 @@ const RoleManagementPage: React.FC = () => {
                                     <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
                                            checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
-                                <th scope="col" className="px-6 py-3">角色名稱</th>
-                                <th scope="col" className="px-6 py-3">使用者數量</th>
-                                <th scope="col" className="px-6 py-3">狀態</th>
-                                <th scope="col" className="px-6 py-3">創建時間</th>
+                                {visibleColumns.map(key => (
+                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                ))}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <TableLoader colSpan={6} />
+                                <TableLoader colSpan={visibleColumns.length + 2} />
                             ) : error ? (
-                                <TableError colSpan={6} message={error} onRetry={fetchRoles} />
+                                <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchRoles} />
                             ) : roles.map((role) => (
                                 <tr key={role.id} className={`border-b border-slate-800 ${selectedIds.includes(role.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
                                      <td className="p-4 w-12">
                                         <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
                                                checked={selectedIds.includes(role.id)} onChange={(e) => handleSelectOne(e, role.id)} />
                                     </td>
-                                    <td className="px-6 py-4 font-medium text-white">
-                                        {role.name}
-                                        <p className="text-xs text-slate-400 font-normal">{role.description}</p>
-                                    </td>
-                                    <td className="px-6 py-4">{role.userCount}</td>
-                                    <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusPill(role.status)}`}>
-                                            {role.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">{role.createdAt}</td>
+                                    {visibleColumns.map(key => (
+                                        <td key={key} className="px-6 py-4">{renderCellContent(role, key)}</td>
+                                    ))}
                                     <td className="px-6 py-4 text-center">
                                          <button onClick={() => handleEditRole(role)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯"><Icon name="edit-3" className="w-4 h-4" /></button>
                                          <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(role); }} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除"><Icon name="trash-2" className="w-4 h-4" /></button>
@@ -190,6 +249,13 @@ const RoleManagementPage: React.FC = () => {
                 <p>您確定要刪除角色 <strong className="text-amber-400">{deletingRole?.name}</strong> 嗎？</p>
                 <p className="mt-2 text-slate-400">此操作無法復原。擁有此角色的使用者將失去相關權限。</p>
             </Modal>
+            <ColumnSettingsModal
+                isOpen={isColumnSettingsModalOpen}
+                onClose={() => setIsColumnSettingsModalOpen(false)}
+                onSave={handleSaveColumnConfig}
+                allColumns={ALL_COLUMNS}
+                visibleColumnKeys={visibleColumns}
+            />
         </div>
     );
 };

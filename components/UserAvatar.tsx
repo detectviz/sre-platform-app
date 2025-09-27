@@ -9,16 +9,6 @@ interface UserAvatarProps {
 }
 
 const UserAvatar: React.FC<UserAvatarProps> = ({ user, className = 'w-8 h-8', iconClassName = 'w-5 h-5' }) => {
-  if (user?.avatar) {
-    return (
-      <img
-        src={user.avatar}
-        alt={user.name || 'User Avatar'}
-        className={`${className} rounded-full object-cover`}
-      />
-    );
-  }
-
   return (
     <div className={`${className} rounded-full bg-slate-700 flex items-center justify-center shrink-0`}>
       <Icon name="user" className={`${iconClassName} text-slate-300`} />

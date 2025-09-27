@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { SilenceRule } from '../../types';
 import Icon from '../../components/Icon';
@@ -14,6 +15,7 @@ import ImportFromCsvModal from '../../components/ImportFromCsvModal';
 import ColumnSettingsModal, { TableColumn } from '../../components/ColumnSettingsModal';
 import { showToast } from '../../services/toast';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
+import PlaceholderModal from '../../components/PlaceholderModal';
 
 const ALL_COLUMNS: TableColumn[] = [
     { key: 'enabled', label: '' },
@@ -41,6 +43,8 @@ const SilenceRulePage: React.FC = () => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+    const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
+    const [modalFeatureName, setModalFeatureName] = useState('');
 
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
@@ -165,8 +169,14 @@ const SilenceRulePage: React.FC = () => {
         }
     };
     
+    const handleAIAnalysis = () => {
+        setModalFeatureName('分析靜音規則');
+        setIsPlaceholderModalOpen(true);
+    };
+
     const batchActions = (
         <>
+            <ToolbarButton icon="brain-circuit" text="AI 分析" onClick={handleAIAnalysis} ai />
             <ToolbarButton icon="toggle-right" text="啟用" onClick={() => handleBatchAction('enable')} />
             <ToolbarButton icon="toggle-left" text="停用" onClick={() => handleBatchAction('disable')} />
             <ToolbarButton icon="trash-2" text="刪除" danger onClick={() => handleBatchAction('delete')} />
@@ -303,6 +313,11 @@ const SilenceRulePage: React.FC = () => {
                 importEndpoint="/silence-rules/import"
                 templateHeaders={['id', 'name', 'enabled', 'type', 'creator']}
                 templateFilename="silence-rules-template.csv"
+            />
+             <PlaceholderModal
+                isOpen={isPlaceholderModalOpen}
+                onClose={() => setIsPlaceholderModalOpen(false)}
+                featureName={modalFeatureName}
             />
         </div>
     );

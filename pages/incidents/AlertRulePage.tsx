@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { AlertRule } from '../../types';
 import Icon from '../../components/Icon';
@@ -15,6 +16,7 @@ import ImportFromCsvModal from '../../components/ImportFromCsvModal';
 import ColumnSettingsModal, { TableColumn } from '../../components/ColumnSettingsModal';
 import { showToast } from '../../services/toast';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
+import PlaceholderModal from '../../components/PlaceholderModal';
 
 const ALL_COLUMNS: TableColumn[] = [
     { key: 'enabled', label: '' },
@@ -45,6 +47,8 @@ const AlertRulePage: React.FC = () => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+    const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
+    const [modalFeatureName, setModalFeatureName] = useState('');
 
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
@@ -181,6 +185,11 @@ const AlertRulePage: React.FC = () => {
         }
     };
 
+    const handleAIAnalysis = () => {
+        setModalFeatureName('分析告警規則');
+        setIsPlaceholderModalOpen(true);
+    };
+
     const handleExport = () => {
         const dataToExport = selectedIds.length > 0
             ? rules.filter(r => selectedIds.includes(r.id))
@@ -237,6 +246,7 @@ const AlertRulePage: React.FC = () => {
 
     const batchActions = (
         <>
+            <ToolbarButton icon="brain-circuit" text="AI 分析" onClick={handleAIAnalysis} ai />
             <ToolbarButton icon="toggle-right" text="啟用" onClick={() => handleBatchAction('enable')} />
             <ToolbarButton icon="toggle-left" text="停用" onClick={() => handleBatchAction('disable')} />
             <ToolbarButton icon="trash-2" text="刪除" danger onClick={() => handleBatchAction('delete')} />
@@ -328,7 +338,6 @@ const AlertRulePage: React.FC = () => {
                 footer={
                     <div className="flex justify-end space-x-2">
                         <button onClick={() => setIsDeleteModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">取消</button>
-                        {/* FIX: Remove extra '>' character that was causing a JSX parsing error. */}
                         <button onClick={handleConfirmDelete} className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md">刪除</button>
                     </div>
                 }
@@ -351,6 +360,11 @@ const AlertRulePage: React.FC = () => {
                 importEndpoint="/alert-rules/import"
                 templateHeaders={['name', 'description', 'enabled', 'severity', 'conditionsSummary']}
                 templateFilename="alert-rules-template.csv"
+            />
+             <PlaceholderModal
+                isOpen={isPlaceholderModalOpen}
+                onClose={() => setIsPlaceholderModalOpen(false)}
+                featureName={modalFeatureName}
             />
         </div>
     );

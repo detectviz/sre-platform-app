@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { LayoutWidget } from '../../../types';
 import Icon from '../../../components/Icon';
 import Modal from '../../../components/Modal';
 import api from '../../../services/api';
+import { showToast } from '../../../services/toast';
 
 // FIX: Moved ListItem component outside of DualListSelector to prevent re-creation on every render and fix type errors.
 interface ListItemProps {
@@ -185,10 +187,11 @@ const LayoutSettingsPage: React.FC = () => {
                 // Also update localStorage for immediate UI feedback on other pages via PageKPIs
                 localStorage.setItem('sre-platform-layouts', JSON.stringify(savedLayouts));
                 window.dispatchEvent(new Event('storage'));
+                showToast('版面配置已成功儲存。', 'success');
                 setIsModalOpen(false);
                 setEditingPage(null);
             } catch (err) {
-                alert('Failed to save layout configuration.');
+                showToast('儲存版面配置失敗。', 'error');
             }
         }
     };

@@ -6,6 +6,7 @@ import FormRow from './FormRow';
 import { SilenceRule, SilenceMatcher, SilenceSchedule, SilenceRuleTemplate, SilenceRuleOptions } from '../types';
 import api from '../services/api';
 import { useUser } from '../contexts/UserContext';
+import { useOptions } from '../contexts/OptionsContext';
 
 interface SilenceRuleEditModalProps {
   isOpen: boolean;
@@ -18,27 +19,25 @@ const SilenceRuleEditModal: React.FC<SilenceRuleEditModalProps> = ({ isOpen, onC
     const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState<Partial<SilenceRule>>({});
     const { currentUser } = useUser();
-    const [options, setOptions] = useState<SilenceRuleOptions | null>(null);
+    const { options, isLoading: isLoadingOptions } = useOptions();
+    const silenceRuleOptions = options?.silenceRules;
     
     useEffect(() => {
         if (isOpen) {
-            api.get<SilenceRuleOptions>('/silence-rules/options')
-               .then(res => {
-                    setOptions(res.data);
-                    const initialData = rule || {
-                        name: '',
-                        description: '',
-                        enabled: true,
-                        type: 'single',
-                        matchers: [res.data.defaultMatcher],
-                        schedule: { type: 'single', startsAt: new Date().toISOString().slice(0, 16), endsAt: new Date(Date.now() + 3600 * 1000).toISOString().slice(0, 16) }
-                    };
-                    setFormData(initialData);
-               })
-               .catch(err => console.error("Failed to fetch silence rule options", err));
+            if (!silenceRuleOptions) return; // Wait for options
+            
+            const initialData = rule || {
+                name: '',
+                description: '',
+                enabled: true,
+                type: 'single',
+                matchers: [silenceRuleOptions.defaultMatcher],
+                schedule: { type: 'single', startsAt: new Date().toISOString().slice(0, 16), endsAt: new Date(Date.now() + 3600 * 1000).toISOString().slice(0, 16) }
+            };
+            setFormData(initialData);
             setCurrentStep(1);
         }
-    }, [isOpen, rule]);
+    }, [isOpen, rule, silenceRuleOptions]);
 
     const handleSave = () => {
         const finalRule: SilenceRule = {
@@ -61,8 +60,8 @@ const SilenceRuleEditModal: React.FC<SilenceRuleEditModalProps> = ({ isOpen, onC
     const renderStepContent = () => {
         switch (currentStep) {
             case 1: return <Step1 formData={formData} setFormData={setFormData} />;
-            case 2: return <Step2 formData={formData} setFormData={setFormData} options={options} />;
-            case 3: return <Step3 formData={formData} setFormData={setFormData} options={options} />;
+            case 2: return <Step2 formData={formData} setFormData={setFormData} options={silenceRuleOptions} />;
+            case 3: return <Step3 formData={formData} setFormData={setFormData} options={silenceRuleOptions} />;
             default: return null;
         }
     };
@@ -93,7 +92,7 @@ const SilenceRuleEditModal: React.FC<SilenceRuleEditModalProps> = ({ isOpen, onC
                    <Wizard currentStep={currentStep} steps={stepTitles} onStepClick={setCurrentStep} />
                 </div>
                 <div className="flex-grow pt-6 overflow-y-auto">
-                    {renderStepContent()}
+                    {isLoadingOptions ? <div className="text-center p-8"><Icon name="loader-circle" className="animate-spin w-8 h-8" /></div> : renderStepContent()}
                 </div>
             </div>
         </Modal>

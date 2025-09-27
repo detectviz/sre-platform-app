@@ -4,21 +4,24 @@ import { NotificationItem, NotificationOptions, StyleDescriptor } from '../types
 import Icon from './Icon';
 import api from '../services/api';
 import { showToast } from '../services/toast';
+import { PAGE_CONTENT } from '../constants/pages';
+
+const { NOTIFICATION_CENTER: content } = PAGE_CONTENT;
 
 const timeSince = (dateString: string) => {
     const date = new Date(dateString);
     const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
     let interval = seconds / 31536000;
-    if (interval > 1) return Math.floor(interval) + " 年前";
+    if (interval > 1) return content.TIME_UNITS.YEAR(Math.floor(interval));
     interval = seconds / 2592000;
-    if (interval > 1) return Math.floor(interval) + " 個月前";
+    if (interval > 1) return content.TIME_UNITS.MONTH(Math.floor(interval));
     interval = seconds / 86400;
-    if (interval > 1) return Math.floor(interval) + " 天前";
+    if (interval > 1) return content.TIME_UNITS.DAY(Math.floor(interval));
     interval = seconds / 3600;
-    if (interval > 1) return Math.floor(interval) + " 小時前";
+    if (interval > 1) return content.TIME_UNITS.HOUR(Math.floor(interval));
     interval = seconds / 60;
-    if (interval > 1) return Math.floor(interval) + " 分鐘前";
-    return "剛剛";
+    if (interval > 1) return content.TIME_UNITS.MINUTE(Math.floor(interval));
+    return content.TIME_UNITS.JUST_NOW;
 };
 
 const NotificationCenter: React.FC = () => {
@@ -44,7 +47,7 @@ const NotificationCenter: React.FC = () => {
         // FIX: Correctly handle promise rejection and complete the catch block syntax.
         }).catch(err => {
             console.error("Failed to fetch notifications", err);
-            showToast('無法載入通知。', 'error');
+            showToast(content.TOAST.LOAD_ERROR, 'error');
         }).finally(() => {
             if (setLoading) {
                 setIsLoading(false);
@@ -82,7 +85,7 @@ const NotificationCenter: React.FC = () => {
             .then(() => {
                 setNotifications(prev => prev.map(n => n.id === id ? { ...n, status: 'read' } : n));
             })
-            .catch(() => showToast('Failed to mark notification as read.', 'error'));
+            .catch(() => showToast(content.TOAST.MARK_ONE_ERROR, 'error'));
     };
 
     const handleMarkAllAsRead = () => {
@@ -90,7 +93,7 @@ const NotificationCenter: React.FC = () => {
             .then(() => {
                 setNotifications(prev => prev.map(n => ({ ...n, status: 'read' })));
             })
-            .catch(() => showToast('Failed to mark all as read.', 'error'));
+            .catch(() => showToast(content.TOAST.MARK_ALL_ERROR, 'error'));
     };
 
     const getSeverityStyle = (severity: NotificationItem['severity']): StyleDescriptor | undefined => {
@@ -110,14 +113,14 @@ const NotificationCenter: React.FC = () => {
             {isOpen && (
                 <div className="absolute right-0 mt-2 w-96 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 z-50 flex flex-col max-h-[70vh] animate-fade-in-down">
                     <div className="flex justify-between items-center p-4 border-b border-slate-700/50 shrink-0">
-                        <h3 className="font-semibold text-white">通知中心</h3>
-                        {unreadCount > 0 && <button onClick={handleMarkAllAsRead} className="text-xs text-sky-400 hover:text-sky-300">全部標示為已讀</button>}
+                        <h3 className="font-semibold text-white">{content.TITLE}</h3>
+                        {unreadCount > 0 && <button onClick={handleMarkAllAsRead} className="text-xs text-sky-400 hover:text-sky-300">{content.MARK_ALL_AS_READ}</button>}
                     </div>
                     <div className="flex-grow overflow-y-auto">
                         {isLoading ? (
                             <div className="flex items-center justify-center p-8"><Icon name="loader-circle" className="w-6 h-6 animate-spin text-slate-400" /></div>
                         ) : notifications.length === 0 ? (
-                            <div className="text-center p-8 text-slate-400">沒有新通知</div>
+                            <div className="text-center p-8 text-slate-400">{content.NO_NOTIFICATIONS}</div>
                         ) : (
                             <div>
                                 {notifications.map(n => {
@@ -130,11 +133,11 @@ const NotificationCenter: React.FC = () => {
                                                     <p className="text-sm text-slate-300 mt-1">{n.description}</p>
                                                     <div className="text-xs text-slate-500 mt-2 flex items-center">
                                                         <span>{timeSince(n.createdAt)}</span>
-                                                        {n.linkUrl && <Link to={n.linkUrl} className="ml-2 text-sky-400 hover:underline">查看詳情</Link>}
+                                                        {n.linkUrl && <Link to={n.linkUrl} className="ml-2 text-sky-400 hover:underline">{content.VIEW_DETAILS}</Link>}
                                                     </div>
                                                 </div>
                                                 {n.status === 'unread' && (
-                                                    <button onClick={() => handleMarkAsRead(n.id)} className="p-1.5 rounded-full hover:bg-slate-600 shrink-0 ml-2" title="標示為已讀">
+                                                    <button onClick={() => handleMarkAsRead(n.id)} className="p-1.5 rounded-full hover:bg-slate-600 shrink-0 ml-2" title={content.MARK_AS_READ_TOOLTIP}>
                                                         <Icon name="check" className="w-4 h-4 text-slate-400" />
                                                     </button>
                                                 )}

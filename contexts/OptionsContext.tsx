@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import api from '../services/api';
 import { AllOptions } from '../types';
@@ -5,6 +6,7 @@ import { AllOptions } from '../types';
 interface OptionsContextType {
   options: AllOptions | null;
   isLoading: boolean;
+  error: string | null;
 }
 
 const OptionsContext = createContext<OptionsContextType | undefined>(undefined);
@@ -12,6 +14,7 @@ const OptionsContext = createContext<OptionsContextType | undefined>(undefined);
 export const OptionsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [options, setOptions] = useState<AllOptions | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchOptions = async () => {
@@ -20,6 +23,7 @@ export const OptionsProvider: React.FC<{ children: ReactNode }> = ({ children })
         setOptions(data);
       } catch (error) {
         console.error("Failed to fetch UI options", error);
+        setError('無法載入 UI 選項配置。');
       } finally {
         setIsLoading(false);
       }
@@ -28,7 +32,7 @@ export const OptionsProvider: React.FC<{ children: ReactNode }> = ({ children })
   }, []);
 
   return (
-    <OptionsContext.Provider value={{ options, isLoading }}>
+    <OptionsContext.Provider value={{ options, isLoading, error }}>
       {children}
     </OptionsContext.Provider>
   );

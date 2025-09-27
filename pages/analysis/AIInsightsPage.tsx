@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import Icon from '../../components/Icon';
@@ -181,6 +182,7 @@ const AIInsightsPage: React.FC = () => {
                             text="重新分析"
                             onClick={fetchAllInsights}
                             disabled={isLoading}
+                            ai
                         />
                         <ToolbarButton icon="download" text="匯出報表" onClick={handleExport} />
                     </>

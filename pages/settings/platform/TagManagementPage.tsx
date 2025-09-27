@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { TagDefinition, TagValue } from '../../../types';
+import { TagDefinition, TagValue, TagManagementFilters } from '../../../types';
 import Icon from '../../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../../components/Toolbar';
 import TableContainer from '../../../components/TableContainer';
@@ -9,47 +9,87 @@ import TagDefinitionEditModal from '../../../components/TagDefinitionEditModal';
 import api from '../../../services/api';
 import TableLoader from '../../../components/TableLoader';
 import TableError from '../../../components/TableError';
+import { PAGE_CONTENT } from '../../../constants/pages';
+import UnifiedSearchModal from '../../../components/UnifiedSearchModal';
+import { exportToCsv } from '../../../services/export';
+import { showToast } from '../../../services/toast';
+import ImportFromCsvModal from '../../../components/ImportFromCsvModal';
+import ColumnSettingsModal, { TableColumn } from '../../../components/ColumnSettingsModal';
+import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 
-const ALL_CATEGORIES_VALUE = 'All';
-const ALL_CATEGORIES_LABEL = '所有分類';
+const { TAG_MANAGEMENT: content } = PAGE_CONTENT;
+
+const ALL_COLUMNS: TableColumn[] = [
+    { key: 'key', label: '標籤鍵' },
+    { key: 'category', label: '分類' },
+    { key: 'required', label: '必填' },
+    { key: 'usageCount', label: '使用次數' },
+    { key: 'allowedValues', label: '標籤值 (預覽)' },
+];
+const PAGE_IDENTIFIER = 'tag_management';
+
 
 const TagManagementPage: React.FC = () => {
     const [tags, setTags] = useState<TagDefinition[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [categories, setCategories] = useState<string[]>([ALL_CATEGORIES_VALUE]);
 
     const [isValuesModalOpen, setIsValuesModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
     const [managingTag, setManagingTag] = useState<TagDefinition | null>(null);
     const [editingTag, setEditingTag] = useState<Partial<TagDefinition> | null>(null);
     const [deletingTag, setDeletingTag] = useState<TagDefinition | null>(null);
 
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filterCategory, setFilterCategory] = useState(ALL_CATEGORIES_VALUE);
+    const [filters, setFilters] = useState<TagManagementFilters>({});
+    const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
+    const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+
+    const { metadata: pageMetadata } = usePageMetadata();
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
 
     const fetchTags = useCallback(async () => {
+        if (!pageKey) return;
         setIsLoading(true);
         setError(null);
         try {
-            const [tagsRes, categoriesRes] = await Promise.all([
+            const [tagsRes, columnsRes] = await Promise.all([
                 api.get<TagDefinition[]>('/settings/tags'),
-                api.get<{ categories: string[] }>('/settings/tags/options')
+                api.get<string[]>(`/settings/column-config/${pageKey}`)
             ]);
             setTags(tagsRes.data);
-            setCategories([ALL_CATEGORIES_VALUE, ...categoriesRes.data.categories]);
+            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
         } catch (err) {
             setError('無法獲取標籤定義。');
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [pageKey]);
 
     useEffect(() => {
-        fetchTags();
-    }, [fetchTags]);
+        if (pageKey) {
+            fetchTags();
+        }
+    }, [fetchTags, pageKey]);
+    
+    const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
+        if (!pageKey) {
+            showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
+            return;
+        }
+        try {
+            await api.put(`/settings/column-config/${pageKey}`, newColumnKeys);
+            setVisibleColumns(newColumnKeys);
+            showToast('欄位設定已儲存。', 'success');
+        } catch (err) {
+            showToast('無法儲存欄位設定。', 'error');
+        } finally {
+            setIsColumnSettingsModalOpen(false);
+        }
+    };
 
     const handleManageValues = (tag: TagDefinition) => {
         setManagingTag(tag);
@@ -113,80 +153,105 @@ const TagManagementPage: React.FC = () => {
 
     const filteredTags = useMemo(() => {
         return tags.filter(tag => {
-            const matchesSearch = tag.key.toLowerCase().includes(searchTerm.toLowerCase()) || tag.description.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesCategory = filterCategory === ALL_CATEGORIES_VALUE || tag.category === filterCategory;
+            const keyword = filters.keyword?.toLowerCase() || '';
+            const category = filters.category || '';
+            
+            const matchesSearch = !keyword || tag.key.toLowerCase().includes(keyword) || tag.description.toLowerCase().includes(keyword);
+            const matchesCategory = !category || tag.category === category;
+            
             return matchesSearch && matchesCategory;
         });
-    }, [tags, searchTerm, filterCategory]);
+    }, [tags, filters]);
+
+    const handleExport = () => {
+        if (filteredTags.length === 0) {
+            showToast("沒有可匯出的資料。", 'error');
+            return;
+        }
+        exportToCsv({
+            filename: `tag-definitions-${new Date().toISOString().split('T')[0]}.csv`,
+            headers: ['key', 'category', 'description', 'required'],
+            data: filteredTags.map(tag => ({
+                key: tag.key,
+                category: tag.category,
+                description: tag.description,
+                required: tag.required
+            })),
+        });
+    };
+    
+    const renderCellContent = (tag: TagDefinition, columnKey: string) => {
+        switch (columnKey) {
+            case 'key':
+                return (
+                    <>
+                        <div className="font-medium text-white">{tag.key}</div>
+                        <p className="text-xs text-slate-400 font-normal">{tag.description}</p>
+                    </>
+                );
+            case 'category':
+                return tag.category;
+            case 'required':
+                return tag.required ? <Icon name="check-circle" className="w-5 h-5 text-green-400" /> : <Icon name="circle" className="w-5 h-5 text-slate-500" />;
+            case 'usageCount':
+                return tag.usageCount;
+            case 'allowedValues':
+                return (
+                    <div className="flex flex-wrap gap-1">
+                        {tag.allowedValues.slice(0, 3).map(v => (
+                            <span key={v.id} className="px-2 py-0.5 text-xs bg-slate-700 rounded-full">{v.value}</span>
+                        ))}
+                        {tag.allowedValues.length > 3 && <span className="text-xs text-slate-400">...</span>}
+                    </div>
+                );
+            default:
+                return null;
+        }
+    };
 
     const leftActions = (
-        <div className="flex items-center space-x-2">
-            <div className="relative">
-                <Icon name="search" className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                <input 
-                    type="text" 
-                    placeholder="搜尋標籤鍵或描述..."
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    className="w-64 bg-slate-800/80 border border-slate-700 rounded-md pl-9 pr-4 py-1.5 text-sm"
-                />
-            </div>
-            <select 
-                value={filterCategory}
-                onChange={e => setFilterCategory(e.target.value)}
-                className="bg-slate-800/80 border border-slate-700 rounded-md px-3 py-1.5 text-sm"
-            >
-                {categories.map(cat => <option key={cat} value={cat}>{cat === ALL_CATEGORIES_VALUE ? ALL_CATEGORIES_LABEL : cat}</option>)}
-            </select>
-        </div>
+        <ToolbarButton icon="search" text="搜索和篩選" onClick={() => setIsSearchModalOpen(true)} />
+    );
+
+    const rightActions = (
+        <>
+            <ToolbarButton icon="upload" text="匯入" onClick={() => setIsImportModalOpen(true)} />
+            <ToolbarButton icon="download" text="匯出" onClick={handleExport} />
+            <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => setIsColumnSettingsModalOpen(true)} />
+            <ToolbarButton icon="plus" text="新增標籤" primary onClick={handleNewTag} />
+        </>
     );
 
     return (
         <div className="h-full flex flex-col">
             <Toolbar 
                 leftActions={leftActions}
-                rightActions={<ToolbarButton icon="plus" text="新增標籤" primary onClick={handleNewTag} />}
+                rightActions={rightActions}
             />
             <TableContainer>
                 <div className="flex-1 overflow-y-auto">
                     <table className="w-full text-sm text-left text-slate-300">
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
-                                <th scope="col" className="px-6 py-3">標籤鍵</th>
-                                <th scope="col" className="px-6 py-3">分類</th>
-                                <th scope="col" className="px-6 py-3">必填</th>
-                                <th scope="col" className="px-6 py-3">使用次數</th>
-                                <th scope="col" className="px-6 py-3">允許值 (預覽)</th>
+                                {visibleColumns.map(key => (
+                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                ))}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <TableLoader colSpan={6} />
+                                <TableLoader colSpan={visibleColumns.length + 1} />
                             ) : error ? (
-                                <TableError colSpan={6} message={error} onRetry={fetchTags} />
+                                <TableError colSpan={visibleColumns.length + 1} message={error} onRetry={fetchTags} />
                             ) : filteredTags.map((tag) => (
                                 <tr key={tag.id} className="border-b border-slate-800 hover:bg-slate-800/40">
-                                    <td className="px-6 py-4 font-medium text-white">
-                                        {tag.key}
-                                        <p className="text-xs text-slate-400 font-normal">{tag.description}</p>
-                                    </td>
-                                    <td className="px-6 py-4">{tag.category}</td>
-                                    <td className="px-6 py-4">
-                                        {tag.required ? <Icon name="check-circle" className="w-5 h-5 text-green-400" /> : <Icon name="circle" className="w-5 h-5 text-slate-500" />}
-                                    </td>
-                                    <td className="px-6 py-4">{tag.usageCount}</td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex flex-wrap gap-1">
-                                            {tag.allowedValues.slice(0, 3).map(v => (
-                                                <span key={v.id} className="px-2 py-0.5 text-xs bg-slate-700 rounded-full">{v.value}</span>
-                                            ))}
-                                            {tag.allowedValues.length > 3 && <span className="text-xs text-slate-400">...</span>}
-                                        </div>
-                                    </td>
+                                    {visibleColumns.map(key => (
+                                        <td key={key} className="px-6 py-4">{renderCellContent(tag, key)}</td>
+                                    ))}
                                     <td className="px-6 py-4 text-center">
-                                        <button onClick={() => handleManageValues(tag)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="管理允許值">
-                                            <Icon name="list" className="w-4 h-4" />
+                                        <button onClick={() => handleManageValues(tag)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="管理標籤值">
+                                            <Icon name="tags" className="w-4 h-4" />
                                         </button>
                                         <button onClick={() => handleEditTag(tag)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯">
                                             <Icon name="edit-3" className="w-4 h-4" />
@@ -233,6 +298,32 @@ const TagManagementPage: React.FC = () => {
                     <p>您確定要刪除標籤鍵 <strong className="font-mono text-amber-400">{deletingTag.key}</strong> 嗎？此操作無法復原。</p>
                 </Modal>
             )}
+            <UnifiedSearchModal
+                page="tag-management"
+                isOpen={isSearchModalOpen}
+                onClose={() => setIsSearchModalOpen(false)}
+                onSearch={(newFilters) => {
+                    setFilters(newFilters as TagManagementFilters);
+                    setIsSearchModalOpen(false);
+                }}
+                initialFilters={filters}
+            />
+            <ImportFromCsvModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                onImportSuccess={fetchTags}
+                itemName="標籤"
+                importEndpoint="/settings/tags/import"
+                templateHeaders={['key', 'category', 'description', 'required']}
+                templateFilename="tags-template.csv"
+            />
+            <ColumnSettingsModal
+                isOpen={isColumnSettingsModalOpen}
+                onClose={() => setIsColumnSettingsModalOpen(false)}
+                onSave={handleSaveColumnConfig}
+                allColumns={ALL_COLUMNS}
+                visibleColumnKeys={visibleColumns}
+            />
         </div>
     );
 };

@@ -1,8 +1,7 @@
-
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { AutomationExecution, AutomationPlaybook, AutomationExecutionOptions } from '../../types';
+import { AutomationExecution, AutomationPlaybook, AutomationHistoryFilters } from '../../types';
 import Icon from '../../components/Icon';
-import Toolbar from '../../components/Toolbar';
+import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
 import Pagination from '../../components/Pagination';
 import Drawer from '../../components/Drawer';
@@ -10,6 +9,21 @@ import ExecutionLogDetail from '../../components/ExecutionLogDetail';
 import api from '../../services/api';
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
+import { useOptions } from '../../contexts/OptionsContext';
+import { exportToCsv } from '../../services/export';
+import { showToast } from '../../services/toast';
+import UnifiedSearchModal from '../../components/UnifiedSearchModal';
+import ColumnSettingsModal, { TableColumn } from '../../components/ColumnSettingsModal';
+import { usePageMetadata } from '../../contexts/PageMetadataContext';
+
+const ALL_COLUMNS: TableColumn[] = [
+    { key: 'scriptName', label: '腳本名稱' },
+    { key: 'status', label: '狀態' },
+    { key: 'triggerSource', label: '觸發來源' },
+    { key: 'startTime', label: '開始時間' },
+    { key: 'durationMs', label: '耗時' },
+];
+const PAGE_IDENTIFIER = 'automation_history';
 
 const SortableHeader: React.FC<{
   label: string;
@@ -44,24 +58,19 @@ const AutomationHistoryPage: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [selectedExecution, setSelectedExecution] = useState<AutomationExecution | null>(null);
-    const [playbooks, setPlaybooks] = useState<AutomationPlaybook[]>([]);
-    const [options, setOptions] = useState<AutomationExecutionOptions | null>(null);
+    const { options, isLoading: isLoadingOptions } = useOptions();
+    const automationExecutionOptions = options?.automationExecutions;
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'startTime', direction: 'desc' });
-    
-    // Filters state
-    const [filters, setFilters] = useState<{ playbookId: string; status: string; startDate: string; endDate: string }>({ playbookId: '', status: '', startDate: '', endDate: '' });
+    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+    const [filters, setFilters] = useState<AutomationHistoryFilters>({});
+    const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
+    const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
 
-    useEffect(() => {
-        Promise.all([
-            api.get<AutomationPlaybook[]>('/automation/scripts'),
-            api.get<AutomationExecutionOptions>('/automation/executions/options')
-        ]).then(([playbooksRes, optionsRes]) => {
-            setPlaybooks(playbooksRes.data);
-            setOptions(optionsRes.data);
-        }).catch(err => console.error("Failed to fetch playbooks or options for filter", err));
-    }, []);
+    const { metadata: pageMetadata } = usePageMetadata();
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
 
     const fetchExecutions = useCallback(async () => {
+        if (!pageKey) return;
         setIsLoading(true);
         setError(null);
         try {
@@ -75,19 +84,42 @@ const AutomationHistoryPage: React.FC = () => {
                 params.sort_order = sortConfig.direction;
             }
 
-            const { data } = await api.get<{ items: AutomationExecution[], total: number }>('/automation/executions', { params });
-            setExecutions(data.items);
-            setTotal(data.total);
+            const [executionsRes, columnsRes] = await Promise.all([
+                 api.get<{ items: AutomationExecution[], total: number }>('/automation/executions', { params }),
+                 api.get<string[]>(`/settings/column-config/${pageKey}`)
+            ]);
+            
+            setExecutions(executionsRes.data.items);
+            setTotal(executionsRes.data.total);
+            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
         } catch (err) {
             setError('無法獲取運行歷史。');
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, filters, sortConfig]);
+    }, [currentPage, pageSize, filters, sortConfig, pageKey]);
 
     useEffect(() => {
-        fetchExecutions();
-    }, [fetchExecutions]);
+        if (pageKey) {
+            fetchExecutions();
+        }
+    }, [fetchExecutions, pageKey]);
+    
+    const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
+        if (!pageKey) {
+            showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
+            return;
+        }
+        try {
+            await api.put(`/settings/column-config/${pageKey}`, newColumnKeys);
+            setVisibleColumns(newColumnKeys);
+            showToast('欄位設定已儲存。', 'success');
+        } catch (err) {
+            showToast('無法儲存欄位設定。', 'error');
+        } finally {
+            setIsColumnSettingsModalOpen(false);
+        }
+    };
 
     const handleSort = (key: string) => {
         let direction: 'asc' | 'desc' = 'asc';
@@ -98,78 +130,88 @@ const AutomationHistoryPage: React.FC = () => {
     };
 
     const getStatusPill = (status: AutomationExecution['status']) => {
-        switch (status) {
-            case 'success': return 'bg-green-500/20 text-green-400';
-            case 'failed': return 'bg-red-500/20 text-red-400';
-            case 'running': return 'bg-sky-500/20 text-sky-400 animate-pulse';
-            case 'pending': return 'bg-yellow-500/20 text-yellow-400';
+        if (!automationExecutionOptions?.statuses) {
+            return 'bg-slate-500/20 text-slate-400'; // Fallback
         }
+        const style = automationExecutionOptions.statuses.find(s => s.value === status);
+        let className = style ? style.className : 'bg-slate-500/20 text-slate-400';
+        if (status === 'running') {
+            className += ' animate-pulse';
+        }
+        return className;
     };
     
-    const handleRetry = async (executionId: string) => {
-        try {
-            await api.post(`/automation/executions/${executionId}/retry`);
-            fetchExecutions();
-        } catch (err) {
-            alert('Failed to retry execution.');
+    const handleExport = () => {
+        if (executions.length === 0) {
+            showToast("沒有可匯出的資料。", 'error');
+            return;
+        }
+        exportToCsv({
+            filename: `automation-history-${new Date().toISOString().split('T')[0]}.csv`,
+            headers: ['id', 'scriptName', 'status', 'triggerSource', 'triggeredBy', 'startTime', 'durationMs'],
+            data: executions.map(exec => ({...exec, durationMs: exec.durationMs || 0 })),
+        });
+    };
+    
+    const renderCellContent = (exec: AutomationExecution, columnKey: string) => {
+        switch (columnKey) {
+            case 'scriptName':
+                return <span className="font-medium text-white">{exec.scriptName}</span>;
+            case 'status':
+                return (
+                    <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusPill(exec.status)}`}>
+                        {exec.status}
+                    </span>
+                );
+            case 'triggerSource':
+                return `${exec.triggerSource}: ${exec.triggeredBy}`;
+            case 'startTime':
+                return exec.startTime;
+            case 'durationMs':
+                return exec.durationMs ? `${(exec.durationMs / 1000).toFixed(2)}s` : 'N/A';
+            default:
+                return null;
         }
     };
 
-    const leftActions = (
-        <div className="flex items-center space-x-2">
-            <select value={filters.playbookId} onChange={e => setFilters({ ...filters, playbookId: e.target.value })} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm">
-                <option value="">所有腳本</option>
-                {playbooks.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-            <select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm">
-                <option value="">所有狀態</option>
-                {options?.statuses.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-            </select>
-            <input type="datetime-local" value={filters.startDate} onChange={e => setFilters({ ...filters, startDate: e.target.value })} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm" />
-            <span className="text-slate-400">to</span>
-            <input type="datetime-local" value={filters.endDate} onChange={e => setFilters({ ...filters, endDate: e.target.value })} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm" />
-        </div>
+    const leftActions = <ToolbarButton icon="search" text="搜尋和篩選" onClick={() => setIsSearchModalOpen(true)} />;
+    const rightActions = (
+        <>
+            <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => setIsColumnSettingsModalOpen(true)} />
+            <ToolbarButton icon="download" text="匯出" onClick={handleExport} />
+        </>
     );
 
     return (
         <div className="h-full flex flex-col">
-            <Toolbar leftActions={leftActions} />
+            <Toolbar
+                leftActions={leftActions}
+                rightActions={rightActions}
+            />
             <TableContainer>
                 <div className="flex-1 overflow-y-auto">
                     <table className="w-full text-sm text-left text-slate-300">
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
-                                <SortableHeader label="腳本名稱" sortKey="scriptName" sortConfig={sortConfig} onSort={handleSort} />
-                                <SortableHeader label="狀態" sortKey="status" sortConfig={sortConfig} onSort={handleSort} />
-                                <SortableHeader label="觸發來源" sortKey="triggeredBy" sortConfig={sortConfig} onSort={handleSort} />
-                                <SortableHeader label="開始時間" sortKey="startTime" sortConfig={sortConfig} onSort={handleSort} />
-                                <SortableHeader label="耗時" sortKey="durationMs" sortConfig={sortConfig} onSort={handleSort} />
-                                <th scope="col" className="px-6 py-3 text-center">操作</th>
+                                {visibleColumns.map(key => {
+                                    const col = ALL_COLUMNS.find(c => c.key === key);
+                                    if (!col) return null;
+                                    return (
+                                        <SortableHeader key={key} label={col.label} sortKey={col.key} sortConfig={sortConfig} onSort={handleSort} />
+                                    );
+                                })}
                             </tr>
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <TableLoader colSpan={6} />
+                                <TableLoader colSpan={visibleColumns.length} />
                             ) : error ? (
-                                <TableError colSpan={6} message={error} onRetry={fetchExecutions} />
+                                <TableError colSpan={visibleColumns.length} message={error} onRetry={fetchExecutions} />
                             ) : executions.map((exec) => (
                                 <tr key={exec.id} className="border-b border-slate-800 hover:bg-slate-800/40 cursor-pointer" onClick={() => setSelectedExecution(exec)}>
-                                    <td className="px-6 py-4 font-medium text-white">{exec.scriptName}</td>
-                                    <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusPill(exec.status)}`}>
-                                            {exec.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">{exec.triggeredBy}</td>
-                                    <td className="px-6 py-4">{exec.startTime}</td>
-                                    <td className="px-6 py-4">{exec.durationMs ? `${(exec.durationMs / 1000).toFixed(2)}s` : 'N/A'}</td>
-                                    <td className="px-6 py-4 text-center">
-                                        {exec.status === 'failed' && (
-                                            <button onClick={(e) => { e.stopPropagation(); handleRetry(exec.id); }} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="重試">
-                                                <Icon name="refresh-cw" className="w-4 h-4" />
-                                            </button>
-                                        )}
-                                    </td>
+                                    {visibleColumns.map(key => (
+                                        <td key={key} className="px-6 py-4">{renderCellContent(exec, key)}</td>
+                                    ))}
                                 </tr>
                             ))}
                         </tbody>
@@ -192,6 +234,24 @@ const AutomationHistoryPage: React.FC = () => {
             >
                 {selectedExecution && <ExecutionLogDetail execution={selectedExecution} />}
             </Drawer>
+            <UnifiedSearchModal
+                page="automation-history"
+                isOpen={isSearchModalOpen}
+                onClose={() => setIsSearchModalOpen(false)}
+                onSearch={(newFilters) => {
+                    setFilters(newFilters as AutomationHistoryFilters);
+                    setIsSearchModalOpen(false);
+                    setCurrentPage(1);
+                }}
+                initialFilters={filters}
+            />
+            <ColumnSettingsModal
+                isOpen={isColumnSettingsModalOpen}
+                onClose={() => setIsColumnSettingsModalOpen(false)}
+                onSave={handleSaveColumnConfig}
+                allColumns={ALL_COLUMNS}
+                visibleColumnKeys={visibleColumns}
+            />
         </div>
     );
 };

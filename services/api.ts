@@ -133,17 +133,9 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                     if (action === 'service-health') return DB.serviceHealthData;
                     if (action === 'resource-group-status') return DB.resourceGroupStatusData;
                 }
-                if (id === 'infrastructure-insights' && action === 'options') {
-                    return { timeOptions: DB.grafanaOptions.timeOptions };
-                }
                 if (id === 'available-grafana') {
                     const linkedUids = getActive(DB.dashboards).filter((d: any) => d.type === 'grafana' && d.grafana_dashboard_uid).map((d: any) => d.grafana_dashboard_uid);
                     return DB.availableGrafanaDashboards.filter((d: any) => !linkedUids.includes(d.uid));
-                }
-                if (id === 'options') {
-                     const categories = [...new Set(DB.dashboards.map((d: any) => d.category))];
-                     const owners = [...new Set(DB.teams.map((t: any) => t.name))];
-                     return { categories, owners };
                 }
                 if (id === 'templates') return DB.dashboardTemplates;
                 if (id) {
@@ -185,9 +177,6 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
             // Incidents, Rules, Silences
             case 'GET /incidents': {
-                if (id === 'options') {
-                    return { quickSilenceDurations: DB.quickSilenceDurations };
-                }
                 if (id) {
                     const incident = DB.incidents.find((i: any) => i.id === id);
                     if (!incident) throw { status: 404 };
@@ -204,7 +193,7 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                     return { message: '成功匯入 12 筆事件。' };
                 }
                 if (action === 'actions') {
-                    const { action: incidentAction, assigneeName, durationHours } = body;
+                    const { action: incidentAction, assigneeName, durationHours, details } = body;
                     const index = DB.incidents.findIndex((i: any) => i.id === id);
                     if (index === -1) throw { status: 404 };
 
@@ -231,6 +220,15 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                         const oldStatus = DB.incidents[index].status;
                         DB.incidents[index].status = 'silenced';
                         DB.incidents[index].history.push({ timestamp, user: currentUser.name, action: 'Silenced', details: `Incident silenced for ${durationHours} hour(s). Status changed from '${oldStatus}' to 'silenced'.` });
+                    }
+                    if (incidentAction === 'add_note') {
+                        DB.incidents[index].history.push({ timestamp, user: currentUser.name, action: 'Note Added', details });
+                    }
+                    if (incidentAction === 'delete_note') {
+                        const noteTimestamp = details;
+                        DB.incidents[index].history = DB.incidents[index].history.filter(
+                            (event: any) => !(event.timestamp === noteTimestamp && event.user === currentUser.name)
+                        );
                     }
                     return DB.incidents[index];
                 }
@@ -283,7 +281,6 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
             
             case 'GET /silence-rules': {
                 if (id === 'templates') return DB.silenceRuleTemplates;
-                if (id === 'options') return DB.silenceRuleOptions;
                 let rules = getActive(DB.silenceRules);
                 if (params) {
                     if (params.keyword) rules = rules.filter((r: any) => r.name.toLowerCase().includes(params.keyword.toLowerCase()));
@@ -310,17 +307,11 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
             // Resources
             case 'GET /resources': {
-                if (id === 'options') {
-                    return { 
-                        types: [...new Set(DB.resources.map((r: any) => r.type))],
-                        providers: [...new Set(DB.resources.map((r: any) => r.provider))],
-                        regions: [...new Set(DB.resources.map((r: any) => r.region))],
-                        owners: [...new Set(DB.resources.map((r: any) => r.owner))],
-                    };
-                }
                 if (id === 'topology') {
-                    if (action === 'options') return { layouts: [{value: 'force', label: 'Force Directed'}, {value: 'circular', label: 'Circular'}] };
-                    return { nodes: getActive(DB.resources), links: DB.resourceLinks };
+                    if (action === 'options') {
+                        return DB.allOptions.topology;
+                    }
+                    return { nodes: DB.resources, links: DB.resourceLinks };
                 }
                 if (id && action === 'metrics') {
                     const generateMetricData = (base: number, variance: number): [string, number][] => Array.from({ length: 30 }, (_, i) => [new Date(Date.now() - (29 - i) * 60000).toISOString(), Math.max(0, Math.min(100, base + (Math.random() - 0.5) * variance))]);
@@ -382,26 +373,14 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
             // Automation
             case 'GET /automation': {
                 if (id === 'scripts') {
-                    if (action === 'options') {
-                         return { 
-                            playbookTypes: [{value: 'shell', label: 'Shell'}, {value: 'python', label: 'Python'}],
-                            parameterTypes: [{value: 'string', label: 'String'}, {value: 'number', label: 'Number'}]
-                        };
-                    }
                     return getActive(DB.playbooks);
                 }
                 if (id === 'triggers') {
-                    if (action === 'options') {
-                        return { triggerTypes: [{value: 'Schedule', label: 'Schedule'}, {value: 'Webhook', label: 'Webhook'}], conditionKeys: ['severity'] };
-                    }
                     let triggers = getActive(DB.automationTriggers);
                     if (params && params.keyword) triggers = triggers.filter((t: any) => t.name.toLowerCase().includes(params.keyword.toLowerCase()));
                     return triggers;
                 }
                 if (id === 'executions') {
-                    if (action === 'options') {
-                        return { statuses: [{value: 'success', label: 'Success'}, {value: 'failed', label: 'Failed'}]};
-                    }
                     let executions = [...DB.automationExecutions];
                     if (params) {
                         if (params.playbookId) executions = executions.filter((e: any) => e.scriptId === params.playbookId);
@@ -477,9 +456,6 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
             // IAM
             case 'GET /iam': {
                 if (id === 'users') {
-                    if(action === 'options') {
-                        return { statuses: DB.userStatuses };
-                    }
                     let users = getActive(DB.users);
                     if (params && params.keyword) users = users.filter((u: any) => u.name.toLowerCase().includes(params.keyword.toLowerCase()) || u.email.toLowerCase().includes(params.keyword.toLowerCase()));
                     return paginate(users, params?.page, params?.page_size);
@@ -512,7 +488,7 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                     return newTeam;
                 }
                 if (id === 'roles') {
-                    const newRole = { ...body, id: `role-${uuidv4()}` };
+                    const newRole = { ...body, id: `role-${uuidv4()}`, userCount: 0, status: 'active', createdAt: new Date().toISOString() };
                     DB.roles.unshift(newRole);
                     return newRole;
                 }
@@ -567,9 +543,6 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 break;
             }
             case 'GET /logs': {
-                if (id === 'options') {
-                    return { timeRangeOptions: DB.logTimeOptions };
-                }
                 return paginate(DB.logs, params?.page, params?.page_size);
             }
             case 'GET /traces': return DB.traces;
@@ -579,7 +552,6 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 if (id === 'layouts') return DB.layouts;
                 if (id === 'widgets') return DB.layoutWidgets;
                 if (id === 'tags') {
-                    if (action === 'options') return { categories: DB.tagCategories };
                     return DB.tagDefinitions;
                 }
                 if (id === 'column-config') {
@@ -587,17 +559,6 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                     return DB.columnConfigs[pageKey] || [];
                 }
                 if (id === 'notification-strategies') {
-                    if (action === 'options') {
-                        const options = JSON.parse(JSON.stringify(DB.notificationStrategyOptions));
-                        options.tagKeys = DB.tagDefinitions.map((t: any) => t.key);
-                        options.tagValues = {};
-                        DB.tagDefinitions.forEach((t: any) => {
-                            if (t.allowedValues.length > 0) {
-                                (options.tagValues as any)[t.key] = t.allowedValues.map((v: any) => v.value);
-                            }
-                        });
-                        return options;
-                    }
                     let strategies = getActive(DB.notificationStrategies);
                     if (params?.keyword) strategies = strategies.filter((s: any) => s.name.toLowerCase().includes(params.keyword.toLowerCase()));
                     return strategies;
@@ -608,12 +569,6 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                     return channels;
                 }
                 if (id === 'notification-history') {
-                    if (action === 'options') {
-                        return { 
-                            statuses: [{value: 'success', label: 'Success'}, {value: 'failed', label: 'Failed'}],
-                            channelTypes: [{value: 'Email', label: 'Email'}, {value: 'Slack', label: 'Slack'}, {value: 'Webhook', label: 'Webhook'}]
-                        };
-                    }
                     return paginate(DB.notificationHistory, params?.page, params?.page_size);
                 }
                 if (id === 'mail') {
@@ -626,9 +581,6 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 if (id === 'platform') return DB.platformSettings;
                 if (id === 'preferences' && action === 'options') return DB.preferenceOptions;
                 if (id === 'grafana') {
-                    if (action === 'options') {
-                        return DB.grafanaOptions as GrafanaOptions;
-                    }
                     return DB.grafanaSettings;
                 }
                 break;

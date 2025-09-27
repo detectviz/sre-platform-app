@@ -6,15 +6,18 @@ import LogLevelPill from '../../components/LogLevelPill';
 import JsonViewer from '../../components/JsonViewer';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import PlaceholderModal from '../../components/PlaceholderModal';
-import { LogEntry, LogLevel, LogAnalysis, LogOptions } from '../../types';
+import { LogEntry, LogLevel, LogAnalysis } from '../../types';
 import api from '../../services/api';
 import { exportToCsv } from '../../services/export';
 import LogAnalysisModal from '../../components/LogAnalysisModal';
+import { useOptions } from '../../contexts/OptionsContext';
 
 const LogExplorerPage: React.FC = () => {
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const { options, isLoading: isLoadingOptions } = useOptions();
+    const logOptions = options?.logs;
 
     const [query, setQuery] = useState('');
     const [timeRange, setTimeRange] = useState('15m');
@@ -24,7 +27,6 @@ const LogExplorerPage: React.FC = () => {
     const logContainerRef = useRef<HTMLDivElement>(null);
     const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
     const [modalFeatureName, setModalFeatureName] = useState('');
-    const [options, setOptions] = useState<LogOptions | null>(null);
     
     // New state for AI Log Analysis
     const [isLogAnalysisModalOpen, setIsLogAnalysisModalOpen] = useState(false);
@@ -40,12 +42,6 @@ const LogExplorerPage: React.FC = () => {
             setQuery(queryFromUrl);
         }
     }, [location.search]);
-
-    useEffect(() => {
-        api.get<LogOptions>('/logs/options')
-            .then(res => setOptions(res.data))
-            .catch(err => console.error("Failed to fetch log options", err));
-    }, []);
 
     const showPlaceholderModal = (featureName: string) => {
         setModalFeatureName(featureName);
@@ -186,10 +182,10 @@ const LogExplorerPage: React.FC = () => {
                        className="w-full bg-slate-800/80 border border-slate-700 rounded-md pl-9 pr-4 py-1.5 text-sm" />
             </div>
             <div className="flex items-center space-x-1 bg-slate-800/80 border border-slate-700 rounded-md p-1 text-sm">
-                {!options ? (
+                {isLoadingOptions ? (
                      <div className="animate-pulse h-8 w-64 bg-slate-700 rounded-md"></div>
                 ) : (
-                    options?.timeRangeOptions?.map(opt => (
+                    logOptions?.timeRangeOptions?.map(opt => (
                         <button 
                             type="button"
                             key={opt.value}

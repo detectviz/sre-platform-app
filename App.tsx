@@ -47,6 +47,10 @@ import { UIConfigProvider, useUIConfig } from './contexts/UIConfigContext';
 import GrafanaSettingsPage from './pages/settings/platform/GrafanaSettingsPage';
 import { UserProvider } from './contexts/UserContext';
 import { OptionsProvider } from './contexts/OptionsContext';
+import { showToast } from './services/toast';
+import { PAGE_CONTENT } from './constants/pages';
+
+const { PAGE_LAYOUTS: pageLayouts, APP: appContent } = PAGE_CONTENT;
 
 // Lucide icons renderer
 const RenderIcons = () => {
@@ -62,8 +66,25 @@ const RenderIcons = () => {
 };
 
 const AppRoutes: React.FC = () => {
-    const { tabConfigs, isLoading } = useUIConfig();
+    const { tabConfigs, isLoading, error } = useUIConfig();
 
+    if (error) {
+        return (
+            <div className="flex flex-col items-center justify-center h-screen text-red-400">
+                <Icon name="server-crash" className="w-16 h-16 mb-4" />
+                <h1 className="text-3xl font-bold text-slate-100">{appContent.LOAD_ERROR_TITLE}</h1>
+                <p className="mt-2 text-slate-400">{error}</p>
+                <button 
+                    onClick={() => window.location.reload()}
+                    className="mt-6 px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md flex items-center"
+                >
+                    <Icon name="refresh-cw" className="w-4 h-4 mr-2" />
+                    {appContent.RELOAD_BUTTON}
+                </button>
+            </div>
+        );
+    }
+    
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-screen">
@@ -83,28 +104,28 @@ const AppRoutes: React.FC = () => {
             <Route path="dashboard/:dashboardId" element={<DashboardViewPage />} />
             <Route path="sre-war-room" element={<SREWarRoomPage />} />
             
-            <Route path="incidents" element={<PageWithTabsLayout title="事件管理" description="監控和處理系統異常事件" kpiPageName="事件管理" tabs={tabConfigs?.incidents || []} showRefresh />}>
+            <Route path="incidents" element={<PageWithTabsLayout title={pageLayouts.incidents.title} description={pageLayouts.incidents.description} kpiPageName={pageLayouts.incidents.kpiPageName} tabs={tabConfigs?.incidents || []} showRefresh />}>
                <Route index element={<IncidentListPage />} />
                <Route path="rules" element={<AlertRulePage />} />
                <Route path="silence" element={<SilenceRulePage />} />
                <Route path=":incidentId" element={<IncidentListPage />} />
             </Route>
             
-            <Route path="resources" element={<PageWithTabsLayout title="資源管理" description="探索、組織與管理您的所有基礎設施資源" kpiPageName="資源管理" tabs={tabConfigs?.resources || []} />}>
+            <Route path="resources" element={<PageWithTabsLayout title={pageLayouts.resources.title} description={pageLayouts.resources.description} kpiPageName={pageLayouts.resources.kpiPageName} tabs={tabConfigs?.resources || []} />}>
               <Route index element={<ResourceListPage />} />
               <Route path="groups" element={<ResourceGroupPage />} />
               <Route path="topology" element={<ResourceTopologyPage />} />
               <Route path=":resourceId" element={<ResourceListPage />} />
             </Route>
   
-            <Route path="dashboards" element={<PageWithTabsLayout title="儀表板管理" description="統一的系統監控與業務洞察儀表板入口" kpiPageName="儀表板管理" tabs={tabConfigs?.dashboards || []} />}>
+            <Route path="dashboards" element={<PageWithTabsLayout title={pageLayouts.dashboards.title} description={pageLayouts.dashboards.description} kpiPageName={pageLayouts.dashboards.kpiPageName} tabs={tabConfigs?.dashboards || []} />}>
               <Route index element={<DashboardListPage />} />
               <Route path="templates" element={<DashboardTemplatesPage />} />
               <Route path="new" element={<DashboardEditorPage />} />
               <Route path=":dashboardId/edit" element={<DashboardEditorPage />} />
             </Route>
             
-            <Route path="analyzing" element={<PageWithTabsLayout title="分析中心" description="深入了解系統趨勢、效能瓶頸和運營數據" kpiPageName="分析中心" tabs={tabConfigs?.analysis || []} />}>
+            <Route path="analyzing" element={<PageWithTabsLayout title={pageLayouts.analysis.title} description={pageLayouts.analysis.description} kpiPageName={pageLayouts.analysis.kpiPageName} tabs={tabConfigs?.analysis || []} />}>
               <Route index element={<AnalysisOverviewPage />} />
               <Route path="logs" element={<LogExplorerPage />} />
               <Route path="traces" element={<TraceAnalysisPage />} />
@@ -112,7 +133,7 @@ const AppRoutes: React.FC = () => {
               <Route path="insights" element={<AIInsightsPage />} />
             </Route>
             
-            <Route path="automation" element={<PageWithTabsLayout title="自動化中心" description="提供自動化腳本管理、排程配置和執行追蹤功能" kpiPageName="自動化中心" tabs={tabConfigs?.automation || []} />}>
+            <Route path="automation" element={<PageWithTabsLayout title={pageLayouts.automation.title} description={pageLayouts.automation.description} kpiPageName={pageLayouts.automation.kpiPageName} tabs={tabConfigs?.automation || []} />}>
               <Route index element={<AutomationPlaybooksPage />} />
               <Route path="history" element={<AutomationHistoryPage />} />
               <Route path="triggers" element={<AutomationTriggersPage />} />
@@ -120,18 +141,18 @@ const AppRoutes: React.FC = () => {
             
             <Route path="settings">
               <Route index element={<Navigate to="identity-access-management" replace />} />
-              <Route path="identity-access-management" element={<PageWithTabsLayout title="身份與存取管理" description="統一管理身份認證、存取權限和組織架構配置" kpiPageName="身份與存取管理" tabs={tabConfigs?.iam || []} />}>
+              <Route path="identity-access-management" element={<PageWithTabsLayout title={pageLayouts.iam.title} description={pageLayouts.iam.description} kpiPageName={pageLayouts.iam.kpiPageName} tabs={tabConfigs?.iam || []} />}>
                 <Route index element={<PersonnelManagementPage />} />
                 <Route path="teams" element={<TeamManagementPage />} />
                 <Route path="roles" element={<RoleManagementPage />} />
                 <Route path="audit-logs" element={<AuditLogsPage />} />
               </Route>
-              <Route path="notification-management" element={<PageWithTabsLayout title="通知管理" description="提供統一的通知策略配置、管道管理和歷史記錄查詢功能" kpiPageName="通知管理" tabs={tabConfigs?.notification || []} />}>
+              <Route path="notification-management" element={<PageWithTabsLayout title={pageLayouts.notification.title} description={pageLayouts.notification.description} kpiPageName={pageLayouts.notification.kpiPageName} tabs={tabConfigs?.notification || []} />}>
                 <Route index element={<NotificationStrategyPage />} />
                 <Route path="channels" element={<NotificationChannelPage />} />
                 <Route path="history" element={<NotificationHistoryPage />} />
               </Route>
-              <Route path="platform-settings" element={<PageWithTabsLayout title="平台設定" description="提供系統全域配置管理，包含標籤、郵件、身份驗證等功能" kpiPageName="平台設定" tabs={tabConfigs?.platformSettings || []} />}>
+              <Route path="platform-settings" element={<PageWithTabsLayout title={pageLayouts.platformSettings.title} description={pageLayouts.platformSettings.description} kpiPageName={pageLayouts.platformSettings.kpiPageName} tabs={tabConfigs?.platformSettings || []} />}>
                   <Route index element={<TagManagementPage />} />
                   <Route path="mail" element={<MailSettingsPage />} />
                   <Route path="auth" element={<AuthSettingsPage />} />
@@ -140,7 +161,7 @@ const AppRoutes: React.FC = () => {
               </Route>
             </Route>
   
-            <Route path="profile" element={<PageWithTabsLayout title="個人設定" description="提供用戶個人資訊管理、偏好設定和安全配置功能" kpiPageName="個人設定" tabs={tabConfigs?.profile || []} />}>
+            <Route path="profile" element={<PageWithTabsLayout title={pageLayouts.profile.title} description={pageLayouts.profile.description} kpiPageName={pageLayouts.profile.kpiPageName} tabs={tabConfigs?.profile || []} />}>
               <Route index element={<PersonalInfoPage />} />
               <Route path="security" element={<SecuritySettingsPage />} />
               <Route path="preferences" element={<PreferenceSettingsPage />} />
@@ -184,6 +205,7 @@ const DashboardRedirector: React.FC = () => {
                 setRedirectPath(dashboard?.path || '/sre-war-room');
             } catch {
                 // Fallback on API error (e.g., dashboard was deleted)
+                showToast('無法載入預設儀表板，將重導向至 SRE 戰情室。', 'error');
                 localStorage.setItem('default-dashboard', 'sre-war-room');
                 setRedirectPath('/sre-war-room');
             }

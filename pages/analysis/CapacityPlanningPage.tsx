@@ -112,7 +112,7 @@ const CapacityPlanningPage: React.FC = () => {
                 }
                 rightActions={
                     <>
-                        <ToolbarButton icon="brain-circuit" text="觸發 AI 分析" onClick={() => fetchData(true)} disabled={isRefreshing} />
+                        <ToolbarButton icon="brain-circuit" text="觸發 AI 分析" onClick={() => fetchData(true)} disabled={isRefreshing} ai />
                         <ToolbarButton icon="download" text="匯出報表" onClick={handleExport} />
                     </>
                 }

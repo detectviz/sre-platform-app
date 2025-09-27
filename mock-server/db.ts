@@ -1,4 +1,3 @@
-// FIX: Added specific option types to the import to be used for explicit typing of mock data.
 import { 
     Dashboard, DashboardTemplate, Incident, AlertRule, AlertRuleTemplate, SilenceRule, SilenceRuleTemplate,
     Resource, ResourceGroup, AutomationPlaybook, AutomationExecution, AutomationTrigger, User, Team, Role, 
@@ -28,7 +27,17 @@ import {
     ParameterDefinition,
     NotificationChannelType,
     AutomationTriggerOptions,
-    TriggerType
+    TriggerType,
+    PersonnelOptions,
+    DashboardOptions,
+    NotificationStrategyOptions,
+    AuditLogOptions,
+    LogOptions,
+    InfraInsightsOptions,
+    TagManagementOptions,
+    TopologyOptions,
+    AutomationExecutionOptions,
+    NotificationHistoryOptions
 } from '../types';
 
 // Helper to generate UUIDs
@@ -100,6 +109,17 @@ const MOCK_PAGE_METADATA: Record<string, { columnConfigKey: string }> = {
   'personnel': { columnConfigKey: 'personnel' },
   'alert_rules': { columnConfigKey: 'alert_rules' },
   'silence_rules': { columnConfigKey: 'silence_rules' },
+  'resource_groups': { columnConfigKey: 'resource_groups' },
+  'automation_playbooks': { columnConfigKey: 'automation_playbooks' },
+  'automation_history': { columnConfigKey: 'automation_history' },
+  'automation_triggers': { columnConfigKey: 'automation_triggers' },
+  'teams': { columnConfigKey: 'teams' },
+  'roles': { columnConfigKey: 'roles' },
+  'audit_logs': { columnConfigKey: 'audit_logs' },
+  'tag_management': { columnConfigKey: 'tag_management' },
+  'notification_strategies': { columnConfigKey: 'notification_strategies' },
+  'notification_channels': { columnConfigKey: 'notification_channels' },
+  'notification_history': { columnConfigKey: 'notification_history' },
 };
 
 const MOCK_ICON_MAP: Record<string, string> = {
@@ -240,11 +260,11 @@ const MOCK_AUTOMATION_TRIGGERS: AutomationTrigger[] = [
     { id: 'trig-001', name: '每日日誌歸檔', description: '在每天凌晨 3 點運行「歸檔舊日誌」腳本。', type: 'Schedule', enabled: true, targetPlaybookId: 'play-005', config: { cron: '0 3 * * *' }, lastTriggered: '18 小時前', creator: 'Admin User' },
 ];
 const MOCK_USERS: User[] = [
-    { id: 'usr-001', name: 'Admin User', email: 'admin@sre.platform', role: 'Admin', team: 'SRE Platform', status: 'active', lastLogin: '2分鐘前', avatar: 'https://i.pravatar.cc/150?u=usr-001' },
-    { id: 'usr-002', name: 'Emily White', email: 'emily.w@example.com', role: 'SRE', team: 'Core Infrastructure', status: 'active', lastLogin: '1小時前', avatar: 'https://i.pravatar.cc/150?u=usr-002' },
-    { id: 'usr-003', name: 'John Doe', email: 'john.d@example.com', role: 'Developer', team: 'API Services', status: 'active', lastLogin: '5小時前', avatar: 'https://i.pravatar.cc/150?u=usr-003' },
-    { id: 'usr-004', name: 'Sarah Connor', email: 'sarah.c@example.com', role: 'Viewer', team: 'Marketing', status: 'inactive', lastLogin: '3天前' },
-    { id: 'usr-005', name: 'pending.invite@example.com', email: 'pending.invite@example.com', role: 'Developer', team: 'API Services', status: 'invited', lastLogin: 'N/A' },
+  { id: 'usr-001', name: 'Admin User', email: 'admin@sre.platform', role: 'Admin', team: 'SRE Platform', status: 'active', lastLogin: '2分鐘前' },
+  { id: 'usr-002', name: 'Emily White', email: 'emily.w@example.com', role: 'SRE', team: 'Core Infrastructure', status: 'active', lastLogin: '1小時前' },
+  { id: 'usr-003', name: 'John Doe', email: 'john.d@example.com', role: 'Developer', team: 'API Services', status: 'active', lastLogin: '5小時前' },
+  { id: 'usr-004', name: 'Sarah Connor', email: 'sarah.c@example.com', role: 'Viewer', team: 'Marketing', status: 'inactive', lastLogin: '3天前' },
+  { id: 'usr-005', name: 'pending.invite@example.com', email: 'pending.invite@example.com', role: 'Developer', team: 'API Services', status: 'invited', lastLogin: 'N/A' },
 ];
 const MOCK_USER_STATUSES: User['status'][] = ['active', 'invited', 'inactive'];
 const MOCK_TEAMS: Team[] = [
@@ -253,12 +273,27 @@ const MOCK_TEAMS: Team[] = [
     { id: 'team-003', name: 'API Services', description: 'Develops and maintains all public APIs.', ownerId: 'usr-003', memberIds: ['usr-003', 'usr-005'], createdAt: '2024-01-03 12:00:00' },
 ];
 const MOCK_ROLES: Role[] = [
-    { id: 'role-001', name: 'Administrator', description: '擁有所有權限', userCount: 1, status: 'active', createdAt: '2024-01-01 09:00:00', permissions: [] },
-    { id: 'role-002', name: 'SRE Engineer', description: '擁有事件、資源、自動化管理權限', userCount: 1, status: 'active', createdAt: '2024-01-01 09:00:00', permissions: [] },
-    { id: 'role-003', name: 'Developer', description: '擁有應用程式開發相關權限', userCount: 2, status: 'active', createdAt: '2024-01-01 09:00:00', permissions: [] },
+    { id: 'role-001', name: 'Administrator', description: '擁有所有權限', userCount: 1, status: 'active', createdAt: '2024-01-01 09:00:00', permissions: [
+        { module: 'Incidents', actions: ['read', 'create', 'update', 'delete'] },
+        { module: 'Resources', actions: ['read', 'create', 'update', 'delete'] },
+        { module: 'Automation', actions: ['read', 'create', 'update', 'delete', 'execute'] },
+        { module: 'Settings', actions: ['read', 'update'] },
+    ] },
+    { id: 'role-002', name: 'SRE Engineer', description: '擁有事件、資源、自動化管理權限', userCount: 1, status: 'active', createdAt: '2024-01-01 09:00:00', permissions: [
+        { module: 'Incidents', actions: ['read', 'update'] },
+        { module: 'Resources', actions: ['read', 'update'] },
+        { module: 'Automation', actions: ['read', 'execute'] },
+    ] },
+    { id: 'role-003', name: 'Developer', description: '擁有應用程式開發相關權限', userCount: 2, status: 'active', createdAt: '2024-01-01 09:00:00', permissions: [
+        { module: 'Incidents', actions: ['read'] },
+        { module: 'Resources', actions: ['read'] },
+    ] },
 ];
 const AVAILABLE_PERMISSIONS = [
-    { module: 'Incidents', description: 'Manage incidents and alerts', actions: [{key: 'read', label: 'Read'}, {key: 'update', label: 'Update'}] },
+    { module: 'Incidents', description: '管理事件和警報', actions: [{key: 'read', label: '讀取'}, {key: 'create', label: '建立'}, {key: 'update', label: '更新'}, {key: 'delete', label: '刪除'}] },
+    { module: 'Resources', description: '管理基礎設施資源', actions: [{key: 'read', label: '讀取'}, {key: 'create', label: '建立'}, {key: 'update', label: '更新'}, {key: 'delete', label: '刪除'}] },
+    { module: 'Automation', description: '管理和執行自動化腳本', actions: [{key: 'read', label: '讀取'}, {key: 'create', label: '建立'}, {key: 'update', label: '更新'}, {key: 'delete', label: '刪除'}, {key: 'execute', label: '執行'}] },
+    { module: 'Settings', description: '管理平台設定', actions: [{key: 'read', label: '讀取'}, {key: 'update', label: '更新'}] },
 ];
 const MOCK_AUDIT_LOGS: AuditLog[] = [
     { id: 'log-001', timestamp: '2024-01-15 11:05:00', user: {id: 'usr-001', name: 'Admin User'}, action: 'LOGIN_SUCCESS', target: { type: 'System', name: 'Authentication' }, result: 'success', ip: '192.168.1.10', details: { client: 'WebApp' } },
@@ -274,14 +309,20 @@ const MOCK_NOTIFICATIONS: NotificationItem[] = [
 const MOCK_NOTIFICATION_STRATEGIES: NotificationStrategy[] = [
     { id: 'strat-1', name: 'Critical Database Alerts', enabled: true, triggerCondition: 'severity = critical AND resource_type = RDS', channelCount: 2, priority: 'High', creator: 'Admin', lastUpdated: '2025-09-20 10:00:00' }
 ];
-const MOCK_NOTIFICATION_STRATEGY_OPTIONS = {
+// FIX: Completed the `MOCK_NOTIFICATION_STRATEGY_OPTIONS` object by adding the required `tagKeys` and `tagValues` properties, resolving a TypeScript error.
+const MOCK_NOTIFICATION_STRATEGY_OPTIONS: NotificationStrategyOptions = {
     priorities: ['High', 'Medium', 'Low'],
+    defaultCondition: 'severity = critical',
     conditionKeys: {
         severity: ['critical', 'warning', 'info'],
         resource_type: ['API Gateway', 'RDS Database', 'EKS Cluster'],
     },
+    tagKeys: ['env', 'service'],
+    tagValues: {
+        env: ['production', 'staging', 'development'],
+        service: ['api-gateway', 'payment-service']
+    },
     stepTitles: ["基本資訊", "通知管道", "匹配條件"],
-    defaultCondition: 'severity = critical',
 };
 const MOCK_NOTIFICATION_CHANNELS: NotificationChannel[] = [
     { id: 'chan-1', name: 'SRE On-call Email', type: 'Email', enabled: true, config: { smtpServer: 'smtp.example.com' }, lastTestResult: 'success', lastTestedAt: '2025-09-22 11:00:00' },
@@ -657,8 +698,8 @@ const MOCK_TAB_CONFIGS: TabConfigMap = {
     ],
     automation: [
         { label: '腳本庫', path: '/automation', icon: 'notebook-tabs' },
-        { label: '運行歷史', path: '/automation/history', icon: 'history' },
         { label: '觸發器', path: '/automation/triggers', icon: 'zap' },
+        { label: '運行歷史', path: '/automation/history', icon: 'history' },
     ],
     iam: [
         { label: '人員管理', path: '/settings/identity-access-management', icon: 'users' },
@@ -745,6 +786,7 @@ const MOCK_RESOURCE_OPTIONS: ResourceOptions = {
     types: ['API Gateway', 'RDS Database', 'EKS Cluster', 'EC2 Instance', 'Kubernetes Service'],
     providers: ['AWS', 'GCP', 'Azure', 'On-Premise'],
     regions: ['us-east-1', 'us-west-2', 'eu-central-1', 'ap-northeast-1'],
+    owners: ['SRE Team', 'DBA Team', 'Web Team', 'API Services'],
 };
 
 const MOCK_AUTOMATION_SCRIPT_OPTIONS: AutomationScriptOptions = {
@@ -759,6 +801,15 @@ const MOCK_AUTOMATION_SCRIPT_OPTIONS: AutomationScriptOptions = {
         { value: 'number', label: 'Number' },
         { value: 'enum', label: 'Enum' },
         { value: 'boolean', label: 'Boolean' }
+    ]
+};
+
+const MOCK_AUTOMATION_EXECUTION_OPTIONS: AutomationExecutionOptions = {
+    statuses: [
+        { value: 'success', label: 'Success', className: 'bg-green-500/20 text-green-400' },
+        { value: 'failed', label: 'Failed', className: 'bg-red-500/20 text-red-400' },
+        { value: 'running', label: 'Running', className: 'bg-sky-500/20 text-sky-400' },
+        { value: 'pending', label: 'Pending', className: 'bg-yellow-500/20 text-yellow-400' },
     ]
 };
 
@@ -785,6 +836,59 @@ const MOCK_AUTOMATION_TRIGGER_OPTIONS: AutomationTriggerOptions = {
     }
 };
 
+const MOCK_PERSONNEL_OPTIONS: PersonnelOptions = {
+    statuses: [
+        { value: 'active', label: 'Active', className: 'bg-green-500/20 text-green-400' },
+        { value: 'invited', label: 'Invited', className: 'bg-yellow-500/20 text-yellow-400' },
+        { value: 'inactive', label: 'Inactive', className: 'bg-slate-500/20 text-slate-400' },
+    ],
+};
+
+const MOCK_DASHBOARD_OPTIONS: DashboardOptions = {
+    categories: ['業務與 SLA', '基礎設施', '營運與容量', '團隊自訂'],
+    owners: ['事件指揮中心', 'SRE 平台團隊', '前端團隊', 'Admin User'],
+};
+
+const MOCK_AUDIT_LOG_OPTIONS: AuditLogOptions = {
+    actionTypes: ['LOGIN_SUCCESS', 'UPDATE_EVENT_RULE', 'CREATE_USER', 'DELETE_RESOURCE'],
+};
+
+const MOCK_LOG_OPTIONS: LogOptions = {
+    timeRangeOptions: MOCK_LOG_TIME_OPTIONS,
+};
+
+const MOCK_INFRA_INSIGHTS_OPTIONS: InfraInsightsOptions = {
+    timeOptions: MOCK_GRAFANA_OPTIONS.timeOptions,
+    riskLevels: [
+        { value: 'high', label: 'High', color: '#dc2626' },
+        { value: 'medium', label: 'Medium', color: '#f97316' },
+        { value: 'low', label: 'Low', color: '#10b981' },
+    ]
+};
+
+const MOCK_TAG_MANAGEMENT_OPTIONS: TagManagementOptions = {
+    categories: MOCK_TAG_CATEGORIES,
+};
+
+const MOCK_TOPOLOGY_OPTIONS: TopologyOptions = {
+    layouts: [
+        { value: 'force', label: 'Force' },
+        { value: 'circular', label: 'Circular' },
+    ]
+};
+
+const MOCK_NOTIFICATION_HISTORY_OPTIONS: NotificationHistoryOptions = {
+    statuses: [
+        { value: 'success', label: 'Success' },
+        { value: 'failed', label: 'Failed' },
+    ],
+    channelTypes: [
+        { value: 'Email', label: 'Email' },
+        { value: 'Slack', label: 'Slack' },
+        { value: 'Webhook', label: 'Webhook' },
+    ],
+};
+
 const MOCK_ALL_OPTIONS: AllOptions = {
     incidents: MOCK_INCIDENT_OPTIONS,
     alertRules: MOCK_ALERT_RULE_OPTIONS,
@@ -793,6 +897,17 @@ const MOCK_ALL_OPTIONS: AllOptions = {
     automationScripts: MOCK_AUTOMATION_SCRIPT_OPTIONS,
     notificationChannels: MOCK_NOTIFICATION_CHANNEL_OPTIONS,
     automationTriggers: MOCK_AUTOMATION_TRIGGER_OPTIONS,
+    personnel: MOCK_PERSONNEL_OPTIONS,
+    dashboards: MOCK_DASHBOARD_OPTIONS,
+    notificationStrategies: MOCK_NOTIFICATION_STRATEGY_OPTIONS,
+    grafana: MOCK_GRAFANA_OPTIONS,
+    auditLogs: MOCK_AUDIT_LOG_OPTIONS,
+    logs: MOCK_LOG_OPTIONS,
+    infraInsights: MOCK_INFRA_INSIGHTS_OPTIONS,
+    tagManagement: MOCK_TAG_MANAGEMENT_OPTIONS,
+    topology: MOCK_TOPOLOGY_OPTIONS,
+    automationExecutions: MOCK_AUTOMATION_EXECUTION_OPTIONS,
+    notificationHistory: MOCK_NOTIFICATION_HISTORY_OPTIONS,
 };
 
 
@@ -848,10 +963,22 @@ function createInitialDB() {
         kpiData: JSON.parse(JSON.stringify(KPI_DATA)),
         columnConfigs: {
             dashboards: ['name', 'type', 'category', 'owner', 'updatedAt'],
+            incidents: ['summary', 'status', 'severity', 'priority', 'assignee', 'triggeredAt'],
             resources: ['status', 'name', 'type', 'provider', 'region', 'owner', 'lastCheckIn'],
             personnel: ['name', 'role', 'team', 'status', 'lastLogin'],
-            alert_rules: ['name', 'target', 'conditionsSummary', 'severity', 'automationEnabled', 'creator', 'lastUpdated'],
-            silence_rules: ['name', 'type', 'matchers', 'schedule', 'creator', 'createdAt'],
+            alert_rules: ['enabled', 'name', 'target', 'conditionsSummary', 'severity', 'automationEnabled', 'creator', 'lastUpdated'],
+            silence_rules: ['enabled', 'name', 'type', 'matchers', 'schedule', 'creator', 'createdAt'],
+            resource_groups: ['name', 'ownerTeam', 'memberIds', 'statusSummary'],
+            automation_playbooks: ['name', 'trigger', 'lastRunStatus', 'lastRunTime', 'runCount'],
+            automation_history: ['scriptName', 'status', 'triggerSource', 'startTime', 'durationMs'],
+            automation_triggers: ['enabled', 'name', 'type', 'targetPlaybookId', 'lastTriggered'],
+            teams: ['name', 'ownerId', 'memberIds', 'createdAt'],
+            roles: ['name', 'userCount', 'status', 'createdAt'],
+            audit_logs: ['timestamp', 'user', 'action', 'target', 'result', 'ip'],
+            tag_management: ['key', 'category', 'required', 'usageCount', 'allowedValues'],
+            notification_strategies: ['enabled', 'name', 'triggerCondition', 'channelCount', 'priority', 'creator', 'lastUpdated'],
+            notification_channels: ['enabled', 'name', 'type', 'lastTestResult', 'lastTestedAt'],
+            notification_history: ['timestamp', 'strategy', 'channel', 'recipient', 'status', 'content'],
         },
         // NEW DYNAMIC UI CONFIGS
         tabConfigs: JSON.parse(JSON.stringify(MOCK_TAB_CONFIGS)),

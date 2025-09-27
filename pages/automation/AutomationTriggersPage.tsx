@@ -1,11 +1,27 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { AutomationTrigger, TriggerType, AutomationPlaybook } from '../../types';
+import { AutomationTrigger, TriggerType, AutomationPlaybook, AutomationTriggerFilters } from '../../types';
 import Icon from '../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
 import AutomationTriggerEditModal from '../../components/AutomationTriggerEditModal';
 import Modal from '../../components/Modal';
 import api from '../../services/api';
+import UnifiedSearchModal from '../../components/UnifiedSearchModal';
+import ColumnSettingsModal, { TableColumn } from '../../components/ColumnSettingsModal';
+import { usePageMetadata } from '../../contexts/PageMetadataContext';
+import { showToast } from '../../services/toast';
+// FIX: Add missing imports for TableLoader and TableError to resolve 'Cannot find name' errors.
+import TableLoader from '../../components/TableLoader';
+import TableError from '../../components/TableError';
+
+const ALL_COLUMNS: TableColumn[] = [
+    { key: 'enabled', label: '' },
+    { key: 'name', label: '名稱' },
+    { key: 'type', label: '類型' },
+    { key: 'targetPlaybookId', label: '目標腳本' },
+    { key: 'lastTriggered', label: '上次觸發' },
+];
+const PAGE_IDENTIFIER = 'automation_triggers';
 
 const AutomationTriggersPage: React.FC = () => {
     const [triggers, setTriggers] = useState<AutomationTrigger[]>([]);
@@ -15,35 +31,62 @@ const AutomationTriggersPage: React.FC = () => {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTrigger, setEditingTrigger] = useState<AutomationTrigger | null>(null);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [filters, setFilters] = useState<AutomationTriggerFilters>({});
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingTrigger, setDeletingTrigger] = useState<AutomationTrigger | null>(null);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+    const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
+    const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+    
+    const { metadata: pageMetadata } = usePageMetadata();
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
 
     const fetchTriggersAndPlaybooks = useCallback(async () => {
+        if (!pageKey) return;
         setIsLoading(true);
         setError(null);
         try {
-            const [triggersRes, playbooksRes] = await Promise.all([
-                api.get<AutomationTrigger[]>('/automation/triggers', { params: { keyword: searchTerm } }),
-                api.get<AutomationPlaybook[]>('/automation/scripts')
+            const [triggersRes, playbooksRes, columnsRes] = await Promise.all([
+                api.get<AutomationTrigger[]>('/automation/triggers', { params: filters }),
+                api.get<AutomationPlaybook[]>('/automation/scripts'),
+                api.get<string[]>(`/settings/column-config/${pageKey}`)
             ]);
             setTriggers(triggersRes.data);
             setPlaybooks(playbooksRes.data);
+            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
         } catch (err) {
             setError('Failed to fetch triggers or playbooks.');
         } finally {
             setIsLoading(false);
         }
-    }, [searchTerm]);
+    }, [filters, pageKey]);
 
     useEffect(() => {
-        fetchTriggersAndPlaybooks();
-    }, [fetchTriggersAndPlaybooks]);
+        if (pageKey) {
+            fetchTriggersAndPlaybooks();
+        }
+    }, [fetchTriggersAndPlaybooks, pageKey]);
 
     const playbookNameMap = useMemo(() => {
         return new Map(playbooks.map(p => [p.id, p.name]));
     }, [playbooks]);
+    
+    const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
+        if (!pageKey) {
+            showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
+            return;
+        }
+        try {
+            await api.put(`/settings/column-config/${pageKey}`, newColumnKeys);
+            setVisibleColumns(newColumnKeys);
+            showToast('欄位設定已儲存。', 'success');
+        } catch (err) {
+            showToast('無法儲存欄位設定。', 'error');
+        } finally {
+            setIsColumnSettingsModalOpen(false);
+        }
+    };
 
     const handleNewTrigger = () => {
         setEditingTrigger(null);
@@ -137,18 +180,43 @@ const AutomationTriggersPage: React.FC = () => {
     };
     
     const findPlaybookName = (playbookId: string) => playbookNameMap.get(playbookId) || 'Unknown Playbook';
+    
+    const renderCellContent = (trigger: AutomationTrigger, columnKey: string) => {
+        switch (columnKey) {
+            case 'enabled':
+                return (
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked={trigger.enabled} className="sr-only peer" onChange={() => handleToggleEnable(trigger)} />
+                        <div className="w-11 h-6 bg-slate-700 rounded-full peer peer-checked:bg-sky-600 peer-checked:after:translate-x-full after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                    </label>
+                );
+            case 'name':
+                return <span className="font-medium text-white">{trigger.name}</span>;
+            case 'type':
+                return (
+                    <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getTriggerTypePill(trigger.type)}`}>
+                        {trigger.type}
+                    </span>
+                );
+            case 'targetPlaybookId':
+                return findPlaybookName(trigger.targetPlaybookId);
+            case 'lastTriggered':
+                return trigger.lastTriggered;
+            default:
+                return null;
+        }
+    };
 
     return (
         <div className="h-full flex flex-col">
             <Toolbar
-                leftActions={
-                    <div className="relative">
-                        <Icon name="search" className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                        <input type="text" placeholder="搜尋觸發器..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-                               className="w-64 bg-slate-800/80 border border-slate-700 rounded-md pl-9 pr-4 py-1.5 text-sm" />
-                    </div>
+                leftActions={<ToolbarButton icon="search" text="搜尋和篩選" onClick={() => setIsSearchModalOpen(true)} />}
+                rightActions={
+                    <>
+                        <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => setIsColumnSettingsModalOpen(true)} />
+                        <ToolbarButton icon="plus" text="新增觸發器" primary onClick={handleNewTrigger} />
+                    </>
                 }
-                rightActions={<ToolbarButton icon="plus" text="新增觸發器" primary onClick={handleNewTrigger} />}
                 selectedCount={selectedIds.length}
                 onClearSelection={() => setSelectedIds([])}
                 batchActions={batchActions}
@@ -162,39 +230,26 @@ const AutomationTriggersPage: React.FC = () => {
                                     <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
                                            checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
-                                <th scope="col" className="px-6 py-3"></th>
-                                <th scope="col" className="px-6 py-3">名稱</th>
-                                <th scope="col" className="px-6 py-3">類型</th>
-                                <th scope="col" className="px-6 py-3">目標腳本</th>
-                                <th scope="col" className="px-6 py-3">上次觸發</th>
+                                {visibleColumns.map(key => (
+                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                ))}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <tr><td colSpan={7} className="text-center py-10"><Icon name="loader-circle" className="w-6 h-6 animate-spin inline-block"/></td></tr>
+                                <TableLoader colSpan={visibleColumns.length + 2} />
                             ) : error ? (
-                                <tr><td colSpan={7} className="text-center py-10 text-red-400">{error}</td></tr>
+                                <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchTriggersAndPlaybooks} />
                             ) : triggers.map((trigger) => (
                                 <tr key={trigger.id} className={`border-b border-slate-800 ${selectedIds.includes(trigger.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
                                     <td className="p-4 w-12">
                                         <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
                                                checked={selectedIds.includes(trigger.id)} onChange={(e) => handleSelectOne(e, trigger.id)} />
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <label className="relative inline-flex items-center cursor-pointer">
-                                            <input type="checkbox" checked={trigger.enabled} className="sr-only peer" onChange={() => handleToggleEnable(trigger)} />
-                                            <div className="w-11 h-6 bg-slate-700 rounded-full peer peer-checked:bg-sky-600 peer-checked:after:translate-x-full after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-                                        </label>
-                                    </td>
-                                    <td className="px-6 py-4 font-medium text-white">{trigger.name}</td>
-                                    <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getTriggerTypePill(trigger.type)}`}>
-                                            {trigger.type}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">{findPlaybookName(trigger.targetPlaybookId)}</td>
-                                    <td className="px-6 py-4">{trigger.lastTriggered}</td>
+                                    {visibleColumns.map(key => (
+                                        <td key={key} className="px-6 py-4">{renderCellContent(trigger, key)}</td>
+                                    ))}
                                     <td className="px-6 py-4 text-center space-x-1">
                                         <button onClick={() => handleEditTrigger(trigger)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯"><Icon name="edit-3" className="w-4 h-4" /></button>
                                         <button onClick={() => handleDeleteClick(trigger)} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除"><Icon name="trash-2" className="w-4 h-4" /></button>
@@ -228,6 +283,23 @@ const AutomationTriggersPage: React.FC = () => {
                 <p>您確定要刪除觸發器 <strong className="text-amber-400">{deletingTrigger?.name}</strong> 嗎？</p>
                 <p className="mt-2 text-slate-400">此操作無法復原。</p>
             </Modal>
+             <UnifiedSearchModal
+                page="automation-triggers"
+                isOpen={isSearchModalOpen}
+                onClose={() => setIsSearchModalOpen(false)}
+                onSearch={(newFilters) => {
+                    setFilters(newFilters as AutomationTriggerFilters);
+                    setIsSearchModalOpen(false);
+                }}
+                initialFilters={filters}
+            />
+            <ColumnSettingsModal
+                isOpen={isColumnSettingsModalOpen}
+                onClose={() => setIsColumnSettingsModalOpen(false)}
+                onSave={handleSaveColumnConfig}
+                allColumns={ALL_COLUMNS}
+                visibleColumnKeys={visibleColumns}
+            />
         </div>
     );
 };

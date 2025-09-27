@@ -9,6 +9,7 @@ import ContextualKPICard from '../../components/ContextualKPICard';
 import Modal from '../../components/Modal';
 import { showToast } from '../../services/toast';
 import { useUser } from '../../contexts/UserContext';
+import { useOptions } from '../../contexts/OptionsContext';
 import { PAGE_CONTENT } from '../../constants/pages';
 
 const COLS = 12;
@@ -27,6 +28,7 @@ const DashboardEditorPage: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { currentUser } = useUser();
+    const { options, isLoading: isLoadingOptions } = useOptions();
     const isEditMode = !!dashboardId;
     const { DASHBOARD_EDITOR: content } = PAGE_CONTENT;
     const gridRef = useRef<HTMLDivElement>(null);
@@ -45,51 +47,62 @@ const DashboardEditorPage: React.FC = () => {
     const [kpiData, setKpiData] = useState<Record<string, any>>({});
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [defaultCategory, setDefaultCategory] = useState<string | null>(null);
 
     useEffect(() => {
-        const fetchAllData = async () => {
-            setIsLoading(true);
-            try {
-                const [widgetsRes, kpiDataRes, optionsRes] = await Promise.all([
-                    api.get<LayoutWidget[]>('/settings/widgets'),
-                    api.get<Record<string, any>>('/kpi-data'),
-                    api.get<{ categories: string[] }>('/dashboards/options'),
-                ]);
-                const allFetchedWidgets = widgetsRes.data;
-                setAllWidgets(allFetchedWidgets);
-                setKpiData(kpiDataRes.data);
-                setDefaultCategory(optionsRes.data.categories[0] || null);
+        if (options?.dashboards?.categories?.length) {
+            setDefaultCategory(options.dashboards.categories[0]);
+        }
+    }, [options]);
 
-                if (isEditMode) {
-                    const { data: dashboardData } = await api.get<Dashboard>(`/dashboards/${dashboardId}`);
-                    setDashboardName(dashboardData.name);
-                    setLayout(dashboardData.layout || []);
-                    const dashboardWidgetIds = (dashboardData.layout || []).map(item => item.i);
-                    setWidgets(allFetchedWidgets.filter(w => dashboardWidgetIds.includes(w.id)));
+    const fetchAllData = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const [widgetsRes, kpiDataRes] = await Promise.all([
+                api.get<LayoutWidget[]>('/settings/widgets'),
+                api.get<Record<string, any>>('/kpi-data'),
+            ]);
+            const allFetchedWidgets = widgetsRes.data;
+            setAllWidgets(allFetchedWidgets);
+            setKpiData(kpiDataRes.data);
+
+            if (isEditMode) {
+                const { data: dashboardData } = await api.get<Dashboard>(`/dashboards/${dashboardId}`);
+                setDashboardName(dashboardData.name);
+                setLayout(dashboardData.layout || []);
+                const dashboardWidgetIds = (dashboardData.layout || []).map(item => item.i);
+                setWidgets(allFetchedWidgets.filter(w => dashboardWidgetIds.includes(w.id)));
+                setIsNamePristine(false);
+            } else {
+                const template = location.state?.template as DashboardTemplate | undefined;
+                if (template) {
+                    setDashboardName(template.name);
                     setIsNamePristine(false);
                 } else {
-                    const template = location.state?.template as DashboardTemplate | undefined;
-                    if (template) {
-                        setDashboardName(template.name);
-                        setIsNamePristine(false);
-                    } else {
-                        setDashboardName(content.DEFAULT_NAME);
-                        setIsNamePristine(true);
-                    }
-                    setWidgets([]);
-                    setLayout([]);
+                    setDashboardName(content.DEFAULT_NAME);
+                    setIsNamePristine(true);
                 }
-                setHistory([]);
-            } catch (error) {
-                showToast(isEditMode ? content.LOAD_ERROR : content.EDITOR_LOAD_ERROR, 'error');
-                navigate('/dashboards');
-            } finally {
-                setIsLoading(false);
+                setWidgets([]);
+                setLayout([]);
             }
-        };
-        fetchAllData();
-    }, [dashboardId, isEditMode, navigate, location.state, content]);
+            setHistory([]);
+        } catch (error) {
+            const errorMessage = isEditMode ? content.LOAD_ERROR : content.EDITOR_LOAD_ERROR;
+            setError(errorMessage);
+            showToast(errorMessage, 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [dashboardId, isEditMode, location.state, content]);
+    
+    useEffect(() => {
+        // Only fetch when options are available to prevent race conditions on create
+        if (!isLoadingOptions) {
+            fetchAllData();
+        }
+    }, [fetchAllData, isLoadingOptions]);
     
     const availableWidgets = allWidgets.filter(w => !widgets.some(sw => sw.id === w.id));
 
@@ -252,7 +265,7 @@ const DashboardEditorPage: React.FC = () => {
     };
     
     const renderDescription = (descriptionText: string) => {
-      return descriptionText.split(/(↑\d+(\.\d+)?%|↓\d+(\.\d+)?%|\d+ 嚴重)/g).map((part, index) => {
+      return descriptionText.split(/(↑\d+(\.\d+)?%|↓\d+ 嚴重)/g).map((part, index) => {
           if (part?.startsWith('↑')) return <span key={index} className="text-green-400">{part}</span>;
           if (part?.startsWith('↓')) return <span key={index} className="text-red-400">{part}</span>;
           if (part?.endsWith('嚴重')) return <span key={index} className="text-red-400 font-semibold">{part}</span>;
@@ -274,7 +287,7 @@ const DashboardEditorPage: React.FC = () => {
                     <button onClick={() => navigate('/dashboards')} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700/50 hover:bg-slate-700 rounded-md">
                         {content.CANCEL_BUTTON}
                     </button>
-                    <button onClick={handleSave} disabled={isSaving} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md flex items-center disabled:opacity-50 disabled:cursor-not-allowed">
+                    <button onClick={handleSave} disabled={isSaving || isLoading || (isLoadingOptions && !isEditMode)} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md flex items-center disabled:opacity-50 disabled:cursor-not-allowed">
                         {isSaving ? <Icon name="loader-circle" className="w-4 h-4 mr-2 animate-spin" /> : <Icon name="save" className="w-4 h-4 mr-2" />}
                         {isSaving ? '儲存中...' : content.SAVE_DASHBOARD}
                     </button>
@@ -288,10 +301,11 @@ const DashboardEditorPage: React.FC = () => {
             </div>
 
             <div ref={gridRef} className="flex-grow glass-card rounded-xl p-4 overflow-auto relative">
-                 {isLoading && <div className="h-full flex flex-col items-center justify-center text-slate-500"><Icon name="loader-circle" className="w-12 h-12 animate-spin" /></div>}
-                 {!isLoading && widgets.length === 0 && <div className="h-full flex flex-col items-center justify-center text-slate-500"><Icon name="layout-dashboard" className="w-24 h-24 mb-4" /><h2 className="text-xl font-bold text-slate-300">{content.EMPTY_STATE_TITLE}</h2><p className="mt-2">{content.EMPTY_STATE_MESSAGE}</p></div>}
+                 {(isLoading || (isLoadingOptions && !isEditMode)) && <div className="h-full flex flex-col items-center justify-center text-slate-500"><Icon name="loader-circle" className="w-12 h-12 animate-spin" /></div>}
+                 {error && <div className="h-full flex flex-col items-center justify-center text-red-400"><Icon name="alert-circle" className="w-12 h-12 mb-4" /><p className="font-semibold">{error}</p></div>}
+                 {!isLoading && !isLoadingOptions && !error && widgets.length === 0 && <div className="h-full flex flex-col items-center justify-center text-slate-500"><Icon name="layout-dashboard" className="w-24 h-24 mb-4" /><h2 className="text-xl font-bold text-slate-300">{content.EMPTY_STATE_TITLE}</h2><p className="mt-2">{content.EMPTY_STATE_MESSAGE}</p></div>}
                  
-                 {gridRef.current && layout.map(item => {
+                 {!isLoading && !isLoadingOptions && !error && gridRef.current && layout.map(item => {
                     const widget = widgets.find(w => w.id === item.i);
                     const isInteracting = interactionState?.item.i === item.i;
                     const { top, left, width, height } = getPixelValues(item, gridRef.current!.offsetWidth);

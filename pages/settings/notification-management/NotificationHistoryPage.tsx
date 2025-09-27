@@ -1,17 +1,31 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { NotificationHistoryRecord, NotificationChannelType, NotificationHistoryOptions } from '../../../types';
+import { NotificationHistoryRecord, NotificationChannelType, NotificationHistoryFilters } from '../../../types';
 import Icon from '../../../components/Icon';
 import TableContainer from '../../../components/TableContainer';
 import Drawer from '../../../components/Drawer';
 import Toolbar, { ToolbarButton } from '../../../components/Toolbar';
-import PlaceholderModal from '../../../components/PlaceholderModal';
 import api from '../../../services/api';
 import Pagination from '../../../components/Pagination';
 import TableLoader from '../../../components/TableLoader';
 import TableError from '../../../components/TableError';
 import { exportToCsv } from '../../../services/export';
+import UnifiedSearchModal from '../../../components/UnifiedSearchModal';
+import { showToast } from '../../../services/toast';
+import ColumnSettingsModal, { TableColumn } from '../../../components/ColumnSettingsModal';
+import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 
 type IconConfig = Record<NotificationChannelType | 'Default', { icon: string; color: string; }>;
+
+const ALL_COLUMNS: TableColumn[] = [
+    { key: 'timestamp', label: '時間' },
+    { key: 'strategy', label: '策略' },
+    { key: 'channel', label: '管道' },
+    { key: 'recipient', label: '接收者' },
+    { key: 'status', label: '狀態' },
+    { key: 'content', label: '內容' },
+];
+const PAGE_IDENTIFIER = 'notification_history';
+
 
 const NotificationHistoryPage: React.FC = () => {
     const [history, setHistory] = useState<NotificationHistoryRecord[]>([]);
@@ -20,37 +34,26 @@ const NotificationHistoryPage: React.FC = () => {
     const [totalHistory, setTotalHistory] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
-    const [options, setOptions] = useState<NotificationHistoryOptions | null>(null);
     const [iconConfig, setIconConfig] = useState<IconConfig | null>(null);
 
     const [selectedRecord, setSelectedRecord] = useState<NotificationHistoryRecord | null>(null);
     const [resendingId, setResendingId] = useState<string | null>(null);
-    const [filters, setFilters] = useState({
-        keyword: '',
-        status: '',
-        channelType: '',
-        startDate: '',
-        endDate: '',
-    });
-    const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
-    const [modalFeatureName, setModalFeatureName] = useState('');
-
-    const showPlaceholderModal = (featureName: string) => {
-        setModalFeatureName(featureName);
-        setIsPlaceholderModalOpen(true);
-    };
+    const [filters, setFilters] = useState<NotificationHistoryFilters>({});
+    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+    const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
+    const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+    
+    const { metadata: pageMetadata } = usePageMetadata();
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
     
     useEffect(() => {
-        Promise.all([
-            api.get<NotificationHistoryOptions>('/settings/notification-history/options'),
-            api.get<IconConfig>('/ui/icons-config')
-        ]).then(([optionsRes, iconsRes]) => {
-            setOptions(optionsRes.data);
-            setIconConfig(iconsRes.data);
-        }).catch(err => console.error("Failed to fetch notification history options or icon config", err));
+        api.get<IconConfig>('/ui/icons-config')
+            .then(res => setIconConfig(res.data))
+            .catch(err => console.error("Failed to fetch icon config", err));
     }, []);
 
     const fetchHistory = useCallback(async () => {
+        if (!pageKey) return;
         setIsLoading(true);
         setError(null);
         try {
@@ -59,28 +62,51 @@ const NotificationHistoryPage: React.FC = () => {
                 page_size: pageSize,
                 ...filters
             };
-            const { data } = await api.get<{ items: NotificationHistoryRecord[], total: number }>('/settings/notification-history', { params });
-            setHistory(data.items);
-            setTotalHistory(data.total);
+            const [historyRes, columnsRes] = await Promise.all([
+                api.get<{ items: NotificationHistoryRecord[], total: number }>('/settings/notification-history', { params }),
+                api.get<string[]>(`/settings/column-config/${pageKey}`)
+            ]);
+            setHistory(historyRes.data.items);
+            setTotalHistory(historyRes.data.total);
+            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
         } catch (err) {
             setError('無法獲取通知歷史。');
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, filters]);
+    }, [currentPage, pageSize, filters, pageKey]);
     
     useEffect(() => {
-        fetchHistory();
-    }, [fetchHistory]);
+        if (pageKey) {
+            fetchHistory();
+        }
+    }, [fetchHistory, pageKey]);
+    
+    const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
+        if (!pageKey) {
+            showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
+            return;
+        }
+        try {
+            await api.put(`/settings/column-config/${pageKey}`, newColumnKeys);
+            setVisibleColumns(newColumnKeys);
+            showToast('欄位設定已儲存。', 'success');
+        } catch (err) {
+            showToast('無法儲存欄位設定。', 'error');
+        } finally {
+            setIsColumnSettingsModalOpen(false);
+        }
+    };
 
     const handleResend = async (recordId: string) => {
         setResendingId(recordId);
         try {
             await api.post(`/settings/notification-history/${recordId}/resend`, {});
-            // Re-fetch to see the new successful record
+            showToast('通知已成功重新發送。', 'success');
+            setSelectedRecord(null); // Close drawer on success
             fetchHistory();
         } catch(err) {
-            alert('Failed to resend notification.');
+            showToast('重新發送通知失敗。', 'error');
         } finally {
             setResendingId(null);
         }
@@ -94,7 +120,7 @@ const NotificationHistoryPage: React.FC = () => {
 
     const handleExport = () => {
         if (history.length === 0) {
-            alert("沒有可匯出的資料。");
+            showToast("沒有可匯出的資料。", "error");
             return;
         }
         exportToCsv({
@@ -104,91 +130,90 @@ const NotificationHistoryPage: React.FC = () => {
         });
     };
     
+    const renderDrawerExtra = () => {
+        if (selectedRecord?.status === 'failed') {
+            const isResending = resendingId === selectedRecord.id;
+            return (
+                <button
+                    onClick={() => handleResend(selectedRecord.id)}
+                    disabled={isResending}
+                    className="flex items-center text-sm px-4 py-2 rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:opacity-50 disabled:cursor-not-allowed text-slate-300 bg-slate-700/50 border border-slate-600/80 hover:bg-slate-700/80 hover:border-slate-500/80 focus:ring-slate-500"
+                >
+                    {isResending ? (
+                        <>
+                            <Icon name="loader-circle" className="w-4 h-4 mr-2 animate-spin" />
+                            重送中...
+                        </>
+                    ) : (
+                        <>
+                            <Icon name="send" className="w-4 h-4 mr-2" />
+                            重新發送
+                        </>
+                    )}
+                </button>
+            );
+        }
+        return null;
+    };
+    
+    const renderCellContent = (record: NotificationHistoryRecord, columnKey: string) => {
+        const { icon, color } = getChannelTypeIcon(record.channelType);
+        switch (columnKey) {
+            case 'timestamp': return record.timestamp;
+            case 'strategy': return record.strategy;
+            case 'channel':
+                return (
+                    <span className={`flex items-center font-semibold ${color}`}>
+                        <Icon name={icon} className="w-4 h-4 mr-2" />
+                        {record.channel}
+                    </span>
+                );
+            case 'recipient': return record.recipient;
+            case 'status':
+                return (
+                    <span className={`font-semibold ${record.status === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                        {record.status.toUpperCase()}
+                    </span>
+                );
+            case 'content': return <span className="truncate max-w-xs block">{record.content}</span>;
+            default: return null;
+        }
+    };
+
+
     return (
         <div className="h-full flex flex-col">
             <Toolbar
-                leftActions={
-                    <div className="flex items-center space-x-2 flex-grow">
-                        <div className="relative flex-grow">
-                            <Icon name="search" className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                            <input
-                                type="text"
-                                placeholder="搜尋策略、內容..."
-                                value={filters.keyword}
-                                onChange={e => setFilters({...filters, keyword: e.target.value})}
-                                className="w-full bg-slate-800/80 border border-slate-700 rounded-md pl-9 pr-4 py-1.5 text-sm"
-                            />
-                        </div>
-                        <select value={filters.status} onChange={e => setFilters({...filters, status: e.target.value})} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm">
-                            <option value="">所有狀態</option>
-                            {options?.statuses?.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                        </select>
-                        <select value={filters.channelType} onChange={e => setFilters({...filters, channelType: e.target.value})} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm">
-                            <option value="">所有管道</option>
-                            {options?.channelTypes?.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                        </select>
-                        <input type="datetime-local" value={filters.startDate} onChange={e => setFilters({...filters, startDate: e.target.value})} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm" />
-                        <span className="text-slate-400">to</span>
-                        <input type="datetime-local" value={filters.endDate} onChange={e => setFilters({...filters, endDate: e.target.value})} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm" />
-                    </div>
+                leftActions={<ToolbarButton icon="search" text="搜尋和篩選" onClick={() => setIsSearchModalOpen(true)} />}
+                rightActions={
+                    <>
+                        <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => setIsColumnSettingsModalOpen(true)} />
+                        <ToolbarButton icon="download" text="匯出" onClick={handleExport} />
+                    </>
                 }
-                rightActions={<ToolbarButton icon="download" text="匯出" onClick={handleExport} />}
             />
             <TableContainer>
                 <div className="flex-1 overflow-y-auto">
                     <table className="w-full text-sm text-left text-slate-300">
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
-                                <th scope="col" className="px-6 py-3">時間</th>
-                                <th scope="col" className="px-6 py-3">策略</th>
-                                <th scope="col" className="px-6 py-3">管道</th>
-                                <th scope="col" className="px-6 py-3">接收者</th>
-                                <th scope="col" className="px-6 py-3">狀態</th>
-                                <th scope="col" className="px-6 py-3">內容</th>
-                                <th scope="col" className="px-6 py-3 text-center">操作</th>
+                                {visibleColumns.map(key => (
+                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                ))}
                             </tr>
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <TableLoader colSpan={7} />
+                                <TableLoader colSpan={visibleColumns.length} />
                             ) : error ? (
-                                <TableError colSpan={7} message={error} onRetry={fetchHistory} />
-                            ) : history.map((record) => {
-                                 const { icon, color } = getChannelTypeIcon(record.channelType);
-                                return (
-                                <tr key={record.id} className="border-b border-slate-800 hover:bg-slate-800/40">
-                                    <td className="px-6 py-4">{record.timestamp}</td>
-                                    <td className="px-6 py-4">{record.strategy}</td>
-                                    <td className="px-6 py-4">
-                                        <span className={`flex items-center font-semibold ${color}`}>
-                                            <Icon name={icon} className="w-4 h-4 mr-2" />
-                                            {record.channel}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">{record.recipient}</td>
-                                    <td className="px-6 py-4">
-                                        <span className={`font-semibold ${record.status === 'success' ? 'text-green-400' : 'text-red-400'}`}>
-                                            {record.status.toUpperCase()}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 truncate max-w-xs">{record.content}</td>
-                                    <td className="px-6 py-4 text-center">
-                                        <div className="flex items-center justify-center space-x-1">
-                                            <button onClick={() => setSelectedRecord(record)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="查看詳情"><Icon name="eye" className="w-4 h-4" /></button>
-                                            {record.status === 'failed' && (
-                                                <button 
-                                                    onClick={() => handleResend(record.id)} 
-                                                    disabled={resendingId === record.id}
-                                                    className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white disabled:opacity-50 disabled:cursor-wait" 
-                                                    title="重新發送"
-                                                >
-                                                    {resendingId === record.id ? <Icon name="loader-circle" className="w-4 h-4 animate-spin" /> : <Icon name="send" className="w-4 h-4" />}
-                                                </button>
-                                            )}
-                                        </div>
-                                    </td>
+                                <TableError colSpan={visibleColumns.length} message={error} onRetry={fetchHistory} />
+                            ) : history.map((record) => (
+                                <tr key={record.id} onClick={() => setSelectedRecord(record)} className="border-b border-slate-800 hover:bg-slate-800/40 cursor-pointer">
+                                    {visibleColumns.map(key => (
+                                        <td key={key} className="px-6 py-4">{renderCellContent(record, key)}</td>
+                                    ))}
                                 </tr>
-                            )})}
+                            ))}
                         </tbody>
                     </table>
                 </div>
@@ -206,6 +231,7 @@ const NotificationHistoryPage: React.FC = () => {
                 onClose={() => setSelectedRecord(null)}
                 title={`通知詳情: ${selectedRecord?.id}`}
                 width="w-1/2"
+                extra={renderDrawerExtra()}
             >
                 {selectedRecord && (
                     <div className="bg-slate-950 rounded-lg p-4 font-mono text-sm text-slate-300 overflow-x-auto">
@@ -213,10 +239,23 @@ const NotificationHistoryPage: React.FC = () => {
                     </div>
                 )}
             </Drawer>
-            <PlaceholderModal
-                isOpen={isPlaceholderModalOpen}
-                onClose={() => setIsPlaceholderModalOpen(false)}
-                featureName={modalFeatureName}
+            <UnifiedSearchModal
+                page="notification-history"
+                isOpen={isSearchModalOpen}
+                onClose={() => setIsSearchModalOpen(false)}
+                onSearch={(newFilters) => {
+                    setFilters(newFilters as NotificationHistoryFilters);
+                    setIsSearchModalOpen(false);
+                    setCurrentPage(1);
+                }}
+                initialFilters={filters}
+            />
+            <ColumnSettingsModal
+                isOpen={isColumnSettingsModalOpen}
+                onClose={() => setIsColumnSettingsModalOpen(false)}
+                onSave={handleSaveColumnConfig}
+                allColumns={ALL_COLUMNS}
+                visibleColumnKeys={visibleColumns}
             />
         </div>
     );

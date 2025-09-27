@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { User } from '../../../types';
+import { User, PersonnelFilters } from '../../../types';
 import Icon from '../../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../../components/Toolbar';
 import TableContainer from '../../../components/TableContainer';
@@ -16,6 +16,7 @@ import { showToast } from '../../../services/toast';
 import ColumnSettingsModal, { TableColumn } from '../../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 import UserAvatar from '../../../components/UserAvatar';
+import UnifiedSearchModal from '../../../components/UnifiedSearchModal';
 
 const ALL_COLUMNS: TableColumn[] = [
     { key: 'name', label: '名稱' },
@@ -32,7 +33,7 @@ const PersonnelManagementPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [totalUsers, setTotalUsers] = useState(0);
 
-    const [searchTerm, setSearchTerm] = useState('');
+    const [filters, setFilters] = useState<PersonnelFilters>({});
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
 
@@ -43,11 +44,9 @@ const PersonnelManagementPage: React.FC = () => {
     const [deletingUser, setDeletingUser] = useState<User | null>(null);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     
-    const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-    const dropdownRef = useRef<HTMLDivElement>(null);
-
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
+    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
 
     const { metadata: pageMetadata } = usePageMetadata();
@@ -61,7 +60,7 @@ const PersonnelManagementPage: React.FC = () => {
             const params = {
                 page: currentPage,
                 page_size: pageSize,
-                keyword: searchTerm,
+                ...filters,
             };
             
             const [usersRes, columnsRes] = await Promise.all([
@@ -78,25 +77,13 @@ const PersonnelManagementPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, searchTerm, pageKey]);
+    }, [currentPage, pageSize, filters, pageKey]);
 
     useEffect(() => {
         if (pageKey) {
             fetchUsers();
         }
     }, [fetchUsers, pageKey]);
-
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setActiveDropdown(null);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, []);
 
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
         if (!pageKey) {
@@ -135,7 +122,6 @@ const PersonnelManagementPage: React.FC = () => {
     const handleEditClick = (user: User) => {
         setEditingUser(user);
         setIsEditModalOpen(true);
-        setActiveDropdown(null);
     };
 
     const handleSaveUser = async (updatedUser: User) => {
@@ -151,7 +137,6 @@ const PersonnelManagementPage: React.FC = () => {
     const handleDeleteClick = (user: User) => {
         setDeletingUser(user);
         setIsDeleteModalOpen(true);
-        setActiveDropdown(null);
     };
 
     const handleConfirmDelete = async () => {
@@ -209,7 +194,7 @@ const PersonnelManagementPage: React.FC = () => {
         exportToCsv({
             filename: `personnel-${new Date().toISOString().split('T')[0]}.csv`,
             headers: ['id', 'name', 'email', 'role', 'team', 'status', 'lastLogin'],
-            data: dataToExport.map(({ avatar, ...rest }) => rest), // Exclude avatar
+            data: dataToExport,
         });
     };
     
@@ -234,16 +219,7 @@ const PersonnelManagementPage: React.FC = () => {
     };
 
     const leftActions = (
-         <div className="relative">
-            <Icon name="search" className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400 w-4 h-4" />
-            <input
-                type="text"
-                placeholder="依名稱、Email、角色搜尋..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="w-80 bg-slate-800/80 border border-slate-700 rounded-md pl-9 pr-4 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-            />
-        </div>
+         <ToolbarButton icon="search" text="搜尋和篩選" onClick={() => setIsSearchModalOpen(true)} />
     );
 
     const batchActions = (
@@ -306,22 +282,13 @@ const PersonnelManagementPage: React.FC = () => {
                                     {visibleColumns.map(key => (
                                         <td key={key} className="px-6 py-4">{renderCellContent(user, key)}</td>
                                     ))}
-                                    <td className="px-6 py-4 text-center">
-                                        <div className="relative" ref={activeDropdown === user.id ? dropdownRef : null}>
-                                            <button onClick={() => setActiveDropdown(activeDropdown === user.id ? null : user.id)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white">
-                                                <Icon name="more-horizontal" className="w-4 h-4" />
-                                            </button>
-                                            {activeDropdown === user.id && (
-                                                <div className="absolute right-0 z-10 w-32 mt-2 p-2 origin-top-right rounded-md shadow-lg bg-slate-800 ring-1 ring-black ring-opacity-5">
-                                                    <button onClick={() => handleEditClick(user)} className="w-full flex items-center px-3 py-2 text-sm rounded-md text-left text-slate-300 hover:bg-slate-700">
-                                                        <Icon name="edit-3" className="w-4 h-4 mr-2" /> 編輯
-                                                    </button>
-                                                    <button onClick={() => handleDeleteClick(user)} className="w-full flex items-center px-3 py-2 text-sm rounded-md text-left text-red-400 hover:bg-red-500/20">
-                                                        <Icon name="trash-2" className="w-4 h-4 mr-2" /> 刪除
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
+                                    <td className="px-6 py-4 text-center space-x-1">
+                                        <button onClick={() => handleEditClick(user)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯">
+                                            <Icon name="edit-3" className="w-4 h-4" />
+                                        </button>
+                                        <button onClick={() => handleDeleteClick(user)} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除">
+                                            <Icon name="trash-2" className="w-4 h-4" />
+                                        </button>
                                     </td>
                                 </tr>
                             ))}
@@ -379,6 +346,17 @@ const PersonnelManagementPage: React.FC = () => {
                 importEndpoint="/iam/users/import"
                 templateHeaders={['id', 'name', 'email', 'role', 'team', 'status']}
                 templateFilename="personnel-template.csv"
+            />
+            <UnifiedSearchModal
+                page="personnel"
+                isOpen={isSearchModalOpen}
+                onClose={() => setIsSearchModalOpen(false)}
+                onSearch={(newFilters) => {
+                    setFilters(newFilters as PersonnelFilters);
+                    setIsSearchModalOpen(false);
+                    setCurrentPage(1);
+                }}
+                initialFilters={filters}
             />
         </div>
     );

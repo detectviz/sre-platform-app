@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Incident, IncidentAnalysis, MultiIncidentAnalysis, IncidentOptions, StyleDescriptor } from '../../types';
+import { Incident, IncidentAnalysis, MultiIncidentAnalysis, IncidentOptions, StyleDescriptor, User } from '../../types';
 import Icon from '../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
@@ -20,6 +21,8 @@ import { usePageMetadata } from '../../contexts/PageMetadataContext';
 import { useUser } from '../../contexts/UserContext';
 import { useOptions } from '../../contexts/OptionsContext';
 import AssignIncidentModal from '../../components/AssignIncidentModal';
+import UserAvatar from '../../components/UserAvatar';
+import ImportFromCsvModal from '../../components/ImportFromCsvModal';
 
 
 const ALL_COLUMNS: TableColumn[] = [
@@ -39,6 +42,7 @@ const IncidentListPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [totalIncidents, setTotalIncidents] = useState(0);
+    const [users, setUsers] = useState<User[]>([]);
 
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
@@ -54,6 +58,7 @@ const IncidentListPage: React.FC = () => {
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
     const [assigningIncident, setAssigningIncident] = useState<Incident | null>(null);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     
     const { options, isLoading: isLoadingOptions } = useOptions();
     const incidentOptions = options?.incidents;
@@ -75,14 +80,16 @@ const IncidentListPage: React.FC = () => {
                 page_size: pageSize,
                 ...filters,
             };
-            const [incidentsRes, columnsRes] = await Promise.all([
+            const [incidentsRes, columnsRes, usersRes] = await Promise.all([
                 api.get<{ items: Incident[], total: number }>('/incidents', { params }),
                 api.get<string[]>(`/settings/column-config/${pageKey}`),
+                api.get<{ items: User[] }>('/iam/users', { params: { page: 1, page_size: 1000 } })
             ]);
             
             setIncidents(incidentsRes.data.items);
             setTotalIncidents(incidentsRes.data.total);
             setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
+            setUsers(usersRes.data.items);
         } catch (err) {
             setError('無法獲取事故列表。');
         } finally {
@@ -99,6 +106,8 @@ const IncidentListPage: React.FC = () => {
     useEffect(() => {
         setSelectedIds([]);
     }, [currentPage, pageSize, filters]);
+
+    const userMap = useMemo(() => new Map(users.map(u => [u.name, u])), [users]);
 
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
         if (!pageKey) {
@@ -134,13 +143,23 @@ const IncidentListPage: React.FC = () => {
     };
 
     const handleAcknowledge = async (ids: string[]) => {
-        await Promise.all(ids.map(id => api.post(`/incidents/${id}/actions`, { action: 'acknowledge' })));
-        fetchIncidents();
+        try {
+            await Promise.all(ids.map(id => api.post(`/incidents/${id}/actions`, { action: 'acknowledge' })));
+            showToast(`成功認領 ${ids.length} 個事件。`, 'success');
+            fetchIncidents();
+        } catch (error) {
+            showToast('認領事件失敗。', 'error');
+        }
     };
 
     const handleResolve = async (ids: string[]) => {
-        await Promise.all(ids.map(id => api.post(`/incidents/${id}/actions`, { action: 'resolve' })));
-        fetchIncidents();
+        try {
+            await Promise.all(ids.map(id => api.post(`/incidents/${id}/actions`, { action: 'resolve' })));
+            showToast(`成功解決 ${ids.length} 個事件。`, 'success');
+            fetchIncidents();
+        } catch (error) {
+            showToast('解決事件失敗。', 'error');
+        }
     };
 
     const handleQuickSilence = (incident: Incident) => {
@@ -168,10 +187,11 @@ const IncidentListPage: React.FC = () => {
         try {
             await api.post('/silence-rules', newSilenceRule);
             await api.post(`/incidents/${id}/actions`, { action: 'silence', durationHours });
+            showToast(`事件 "${incidentToSilence.summary}" 已成功靜音 ${durationHours} 小時。`, 'success');
             setIsQuickSilenceModalOpen(false);
             fetchIncidents();
         } catch (err) {
-            alert('Failed to create silence rule.');
+            showToast('建立靜音規則失敗。', 'error');
         }
     };
     
@@ -189,7 +209,7 @@ const IncidentListPage: React.FC = () => {
             setAnalysisReport(data);
         } catch (err) {
             console.error(err);
-            setAnalysisReport("Failed to generate AI analysis.");
+            setAnalysisReport("無法生成 AI 分析報告。");
         } finally {
             setIsAnalysisLoading(false);
         }
@@ -204,9 +224,14 @@ const IncidentListPage: React.FC = () => {
 
     const handleConfirmAssign = async (assigneeName: string) => {
         if (!assigningIncident) return;
-        await api.post(`/incidents/${assigningIncident.id}/actions`, { action: 'assign', assigneeName });
-        setAssigningIncident(null);
-        fetchIncidents();
+        try {
+            await api.post(`/incidents/${assigningIncident.id}/actions`, { action: 'assign', assigneeName });
+            showToast(`事件已成功指派給 ${assigneeName}。`, 'success');
+            setAssigningIncident(null);
+            fetchIncidents();
+        } catch (error) {
+            showToast('指派事件失敗。', 'error');
+        }
     };
 
     const isAllSelected = incidents.length > 0 && selectedIds.length === incidents.length;
@@ -243,13 +268,15 @@ const IncidentListPage: React.FC = () => {
                         </button>
                     );
                 }
+                const assigneeUser = userMap.get(inc.assignee);
                 return (
                     <button
                         onClick={(e) => { e.stopPropagation(); handleReassignClick(inc); }}
-                        className="flex items-center space-x-2 text-sky-400 hover:underline"
+                        className="group flex items-center space-x-2 p-1 -m-1 rounded-md hover:bg-slate-700/50 transition-colors"
                     >
-                        <span>{inc.assignee}</span>
-                        <Icon name="repeat" className="w-3 h-3" />
+                        <UserAvatar user={assigneeUser || { name: inc.assignee }} className="w-6 h-6" iconClassName="w-4 h-4" />
+                        <span className="text-slate-200 group-hover:text-sky-400">{inc.assignee}</span>
+                        <Icon name="repeat" className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </button>
                 );
             case 'triggeredAt':
@@ -263,6 +290,7 @@ const IncidentListPage: React.FC = () => {
     
     const rightActions = (
         <>
+            <ToolbarButton icon="upload" text="匯入" onClick={() => setIsImportModalOpen(true)} />
             <ToolbarButton icon="download" text="匯出" onClick={handleExport} />
             <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => setIsColumnSettingsModalOpen(true)} />
         </>
@@ -327,7 +355,7 @@ const IncidentListPage: React.FC = () => {
             </TableContainer>
 
             <Drawer isOpen={!!incidentId} onClose={() => navigate('/incidents')} title={`事故詳情: ${incidentId}`} width="w-3/5" extra={<ToolbarButton icon="brain-circuit" text="AI 分析" onClick={() => { if(incidentId) { setSelectedIds([incidentId]); handleRunAIAnalysis(); }}} ai />}>
-                {incidentId && <IncidentDetailPage incidentId={incidentId} onUpdate={fetchIncidents} />}
+                {incidentId && <IncidentDetailPage incidentId={incidentId} onUpdate={fetchIncidents} currentUser={currentUser} />}
             </Drawer>
             
             <UnifiedSearchModal page="incidents" isOpen={isSearchModalOpen} onClose={() => setIsSearchModalOpen(false)} onSearch={(newFilters) => { setFilters(newFilters as IncidentFilters); setIsSearchModalOpen(false); setCurrentPage(1); }} initialFilters={filters} />
@@ -348,6 +376,15 @@ const IncidentListPage: React.FC = () => {
                 onClose={() => setAssigningIncident(null)}
                 onAssign={handleConfirmAssign}
                 incident={assigningIncident}
+            />
+            <ImportFromCsvModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                onImportSuccess={fetchIncidents}
+                itemName="事件"
+                importEndpoint="/incidents/import"
+                templateHeaders={['id', 'summary', 'resource', 'status', 'severity', 'priority', 'assignee', 'triggeredAt']}
+                templateFilename="incidents-template.csv"
             />
         </div>
     );

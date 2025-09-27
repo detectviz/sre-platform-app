@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Resource, ResourceFilters } from '../../types';
@@ -18,6 +19,7 @@ import ImportFromCsvModal from '../../components/ImportFromCsvModal';
 import ColumnSettingsModal, { TableColumn } from '../../components/ColumnSettingsModal';
 import { showToast } from '../../services/toast';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
+import PlaceholderModal from '../../components/PlaceholderModal';
 
 const ALL_COLUMNS: TableColumn[] = [
     { key: 'status', label: '狀態' },
@@ -58,6 +60,8 @@ const ResourceListPage: React.FC = () => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+    const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
+    const [modalFeatureName, setModalFeatureName] = useState('');
     
     const { resourceId } = useParams<{ resourceId: string }>();
 
@@ -133,13 +137,15 @@ const ResourceListPage: React.FC = () => {
         try {
             if (editingResource) {
                 await api.patch(`/resources/${editingResource.id}`, resourceData);
+                showToast(`資源 "${resourceData.name}" 已成功更新。`, 'success');
             } else {
                 await api.post('/resources', resourceData);
+                showToast(`資源 "${resourceData.name}" 已成功新增。`, 'success');
             }
             setIsEditModalOpen(false);
             fetchResources();
         } catch (err) {
-            alert('Failed to save resource.');
+            showToast('儲存資源失敗。', 'error');
         }
     };
     
@@ -152,11 +158,12 @@ const ResourceListPage: React.FC = () => {
         if (deletingResource) {
             try {
                 await api.del(`/resources/${deletingResource.id}`);
+                showToast(`資源 "${deletingResource.name}" 已成功刪除。`, 'success');
                 setIsDeleteModalOpen(false);
                 setDeletingResource(null);
                 fetchResources();
             } catch (err) {
-                alert('Failed to delete resource.');
+                showToast('刪除資源失敗。', 'error');
             }
         }
     };
@@ -188,11 +195,17 @@ const ResourceListPage: React.FC = () => {
     const handleBatchDelete = async () => {
         try {
             await api.post('/resources/batch-actions', { action: 'delete', ids: selectedIds });
+            showToast(`已成功刪除 ${selectedIds.length} 個資源。`, 'success');
             setSelectedIds([]);
             fetchResources();
         } catch (err) {
-            alert('Failed to delete selected resources.');
+            showToast('批次刪除資源失敗。', 'error');
         }
+    };
+    
+    const handleAIAnalysis = () => {
+        setModalFeatureName('分析資源風險');
+        setIsPlaceholderModalOpen(true);
     };
 
     const handleExport = () => {
@@ -201,7 +214,7 @@ const ResourceListPage: React.FC = () => {
             : resources;
         
         if (dataToExport.length === 0) {
-            alert("沒有可匯出的資料。");
+            showToast("沒有可匯出的資料。", 'error');
             return;
         }
         
@@ -236,7 +249,10 @@ const ResourceListPage: React.FC = () => {
     );
     
     const batchActions = (
-        <ToolbarButton icon="trash-2" text="刪除" danger onClick={handleBatchDelete} />
+        <>
+            <ToolbarButton icon="brain-circuit" text="AI 分析" onClick={handleAIAnalysis} ai />
+            <ToolbarButton icon="trash-2" text="刪除" danger onClick={handleBatchDelete} />
+        </>
     );
 
     return (
@@ -366,6 +382,11 @@ const ResourceListPage: React.FC = () => {
                 importEndpoint="/resources/import"
                 templateHeaders={['id', 'name', 'status', 'type', 'provider', 'region', 'owner']}
                 templateFilename="resources-template.csv"
+            />
+            <PlaceholderModal
+                isOpen={isPlaceholderModalOpen}
+                onClose={() => setIsPlaceholderModalOpen(false)}
+                featureName={modalFeatureName}
             />
         </div>
     );

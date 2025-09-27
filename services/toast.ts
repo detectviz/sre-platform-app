@@ -20,29 +20,59 @@ export const showToast = (message: string, type: 'error' | 'success' = 'error') 
         ? 'bg-red-900/80 border-red-700/80 text-red-200'
         : 'bg-green-900/80 border-green-700/80 text-green-200';
     
-    toast.className = `flex items-center p-4 rounded-lg shadow-2xl border backdrop-blur-md animate-fade-in-down`;
+    toast.className = `flex items-center p-4 rounded-lg shadow-2xl border backdrop-blur-md`;
     toast.classList.add(...typeClasses.split(' '));
+
+    // --- Transition logic ---
     toast.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
-    
+    // Initial state (off-screen to the right)
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(100%)';
+
     const iconName = type === 'error' ? 'alert-circle' : 'check-circle';
     const iconColor = type === 'error' ? 'text-red-400' : 'text-green-400';
     
     toast.innerHTML = `
         <i data-lucide="${iconName}" class="w-5 h-5 mr-3 shrink-0 ${iconColor}"></i>
         <span class="flex-grow">${message}</span>
+        <button class="ml-4 p-1 rounded-full text-slate-400 hover:bg-slate-700 hover:text-white shrink-0">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
     `;
+
+    const hideAndRemove = () => {
+        // Prevent multiple calls
+        if (toast.dataset.hiding) return;
+        toast.dataset.hiding = 'true';
+
+        clearTimeout(hideTimeout);
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)'; // Slide out to the right
+        toast.addEventListener('transitionend', () => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, { once: true });
+    };
+
+    const closeButton = toast.querySelector('button');
+    closeButton?.addEventListener('click', hideAndRemove);
+
+    const hideTimeout = setTimeout(hideAndRemove, 3500);
 
     container.prepend(toast);
     
     // @ts-ignore
     if (window.lucide) {
         // @ts-ignore
-        window.lucide.createIcons();
+        window.lucide.createIcons({
+            nodes: [toast]
+        });
     }
 
+    // Trigger fade-in transition
     setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(100%)';
-        toast.addEventListener('transitionend', () => toast.remove());
-    }, 5000);
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(0)';
+    }, 10);
 };

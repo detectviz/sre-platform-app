@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Dashboard } from '../../types';
+// FIX: Import DashboardFilters from types.ts
+import { Dashboard, DashboardFilters } from '../../types';
 import Icon from '../../components/Icon';
 import TableContainer from '../../components/TableContainer';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
@@ -14,6 +16,11 @@ import TableError from '../../components/TableError';
 import ColumnSettingsModal, { TableColumn } from '../../components/ColumnSettingsModal';
 import { showToast } from '../../services/toast';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
+import { useOptions } from '../../contexts/OptionsContext';
+// FIX: UnifiedSearchModal is a default export, DashboardFilters is not exported from here.
+import UnifiedSearchModal from '../../components/UnifiedSearchModal';
+import { exportToCsv } from '../../services/export';
+import ImportFromCsvModal from '../../components/ImportFromCsvModal';
 
 const ALL_COLUMNS: TableColumn[] = [
     { key: 'name', label: '名稱' },
@@ -29,12 +36,12 @@ const DashboardListPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [totalDashboards, setTotalDashboards] = useState(0);
-    const [categories, setCategories] = useState<string[]>(['All']);
-
+    
+    const { options, isLoading: isLoadingOptions } = useOptions();
+    
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [activeCategory, setActiveCategory] = useState('All');
+    const [filters, setFilters] = useState<DashboardFilters>({});
     
     const [defaultDashboard, setDefaultDashboard] = useState<string>('');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -46,25 +53,23 @@ const DashboardListPage: React.FC = () => {
     const [editingDashboard, setEditingDashboard] = useState<Dashboard | null>(null);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
+    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
-
-    useEffect(() => {
-        api.get<{ categories: string[] }>('/dashboards/options')
-            .then(res => setCategories(['All', ...res.data.categories]))
-            .catch(err => console.error("Failed to fetch dashboard categories", err));
-    }, []);
 
     const fetchDashboards = useCallback(async () => {
         if (!pageKey) return;
         setIsLoading(true);
         setError(null);
         try {
-            const params: any = { page: currentPage, page_size: pageSize };
-            if (activeCategory !== 'All') params.category = activeCategory;
-            if (searchTerm) params.keyword = searchTerm;
+            const params: any = { 
+                page: currentPage, 
+                page_size: pageSize,
+                ...filters
+            };
             
             const [dashboardsRes, columnsRes] = await Promise.all([
                  api.get<{ items: Dashboard[], total: number }>('/dashboards', { params }),
@@ -80,7 +85,7 @@ const DashboardListPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, activeCategory, searchTerm, pageKey]);
+    }, [currentPage, pageSize, filters, pageKey]);
 
     useEffect(() => {
         if (pageKey) {
@@ -152,7 +157,6 @@ const DashboardListPage: React.FC = () => {
     };
 
     const handleEditClick = (dashboard: Dashboard) => {
-        // FIX: Changed enum comparison to string literal comparison.
         if (dashboard.type === 'built-in') {
             navigate(`/dashboards/${dashboard.id}/edit`);
         } else {
@@ -193,6 +197,23 @@ const DashboardListPage: React.FC = () => {
         }
     };
 
+    const handleExport = () => {
+        const dataToExport = selectedIds.length > 0
+            ? dashboards.filter(d => selectedIds.includes(d.id))
+            : dashboards;
+        
+        if (dataToExport.length === 0) {
+            showToast("沒有可匯出的資料。", 'error');
+            return;
+        }
+        
+        exportToCsv({
+            filename: `dashboards-${new Date().toISOString().split('T')[0]}.csv`,
+            headers: ['id', 'name', 'type', 'category', 'description', 'owner', 'updatedAt', 'path'],
+            data: dataToExport,
+        });
+    };
+
     const renderCellContent = (dashboard: Dashboard, columnKey: string) => {
         switch (columnKey) {
             case 'name':
@@ -222,15 +243,13 @@ const DashboardListPage: React.FC = () => {
     };
 
     const leftActions = (
-        <div className="relative">
-            <Icon name="search" className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400 w-4 h-4" />
-            <input type="text" placeholder="搜尋儀表板..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-                   className="w-64 bg-slate-800/80 border border-slate-700 rounded-md pl-9 pr-4 py-1.5 text-sm" />
-        </div>
+        <ToolbarButton icon="search" text="搜尋和篩選" onClick={() => setIsSearchModalOpen(true)} />
     );
     
     const rightActions = (
         <>
+            <ToolbarButton icon="upload" text="匯入" onClick={() => setIsImportModalOpen(true)} />
+            <ToolbarButton icon="download" text="匯出" onClick={handleExport} />
             <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => setIsColumnSettingsModalOpen(true)} />
             <ToolbarButton icon="plus" text="新增儀表板" primary onClick={() => setIsAddModalOpen(true)} />
         </>
@@ -249,16 +268,6 @@ const DashboardListPage: React.FC = () => {
                 onClearSelection={() => setSelectedIds([])}
                 batchActions={batchActions}
             />
-            <div className="flex items-center space-x-2 mb-4">
-                {categories.map(category => (
-                    <button key={category} onClick={() => setActiveCategory(category)}
-                            className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
-                                activeCategory === category ? 'bg-sky-600 text-white' : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
-                            }`}>
-                        {category === 'All' ? '全部' : category}
-                    </button>
-                ))}
-            </div>
             <TableContainer>
                 <div className="overflow-x-auto flex-grow">
                     <table className="w-full text-sm text-left text-slate-300">
@@ -290,15 +299,16 @@ const DashboardListPage: React.FC = () => {
                                             {renderCellContent(d, key)}
                                         </td>
                                     ))}
-                                    <td className="px-6 py-4 text-center">
-                                        <div className="relative group" onClick={e => e.stopPropagation()}>
-                                            <button className="p-1 rounded-full hover:bg-slate-700"><Icon name="more-horizontal" className="w-5 h-5" /></button>
-                                            <div className="absolute right-0 z-10 hidden w-48 p-2 mt-2 origin-top-right rounded-md shadow-lg group-hover:block bg-slate-800 ring-1 ring-black ring-opacity-5">
-                                                <button onClick={() => handleSetDefault(d.id)} className="w-full flex items-center px-4 py-2 text-sm rounded-md text-left text-slate-300 hover:bg-slate-700 disabled:opacity-50"><Icon name="star" className={`w-4 h-4 mr-2 ${defaultDashboard === d.id ? 'fill-current text-yellow-400' : ''}`} /> 設為首頁</button>
-                                                <button onClick={() => handleEditClick(d)} className="w-full flex items-center px-4 py-2 text-sm rounded-md text-left text-slate-300 hover:bg-slate-700"><Icon name="settings" className="w-4 h-4 mr-2" /> 設定</button>
-                                                <button onClick={() => handleDeleteClick(d)} className="w-full flex items-center px-4 py-2 text-sm rounded-md text-left text-red-400 hover:bg-red-500/20"><Icon name="trash-2" className="w-4 h-4 mr-2" /> 刪除</button>
-                                            </div>
-                                        </div>
+                                    <td className="px-6 py-4 text-center space-x-1" onClick={e => e.stopPropagation()}>
+                                        <button onClick={() => handleSetDefault(d.id)} className={`p-1.5 rounded-md ${defaultDashboard === d.id ? 'text-yellow-400 hover:bg-yellow-500/20' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`} title="設為首頁">
+                                            <Icon name="star" className={`w-4 h-4 ${defaultDashboard === d.id ? 'fill-current' : ''}`} />
+                                        </button>
+                                        <button onClick={() => handleEditClick(d)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯">
+                                            <Icon name="edit-3" className="w-4 h-4" />
+                                        </button>
+                                        <button onClick={() => handleDeleteClick(d)} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除">
+                                            <Icon name="trash-2" className="w-4 h-4" />
+                                        </button>
                                     </td>
                                 </tr>
                             ))}
@@ -320,6 +330,26 @@ const DashboardListPage: React.FC = () => {
                 onSave={handleSaveColumnConfig}
                 allColumns={ALL_COLUMNS}
                 visibleColumnKeys={visibleColumns}
+            />
+            <UnifiedSearchModal
+                page="dashboards"
+                isOpen={isSearchModalOpen}
+                onClose={() => setIsSearchModalOpen(false)}
+                onSearch={(newFilters) => {
+                    setFilters(newFilters as DashboardFilters);
+                    setIsSearchModalOpen(false);
+                    setCurrentPage(1);
+                }}
+                initialFilters={filters}
+            />
+             <ImportFromCsvModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                onImportSuccess={fetchDashboards}
+                itemName="儀表板"
+                importEndpoint="/dashboards/import"
+                templateHeaders={['id', 'name', 'type', 'category', 'description', 'owner']}
+                templateFilename="dashboards-template.csv"
             />
         </div>
     );

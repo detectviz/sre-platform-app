@@ -167,6 +167,7 @@ export interface AutomationExecution {
     stdout: string;
     stderr: string;
   };
+  deleted_at?: string;
 }
 
 export type TriggerType = 'Schedule' | 'Webhook' | 'Event';
@@ -212,7 +213,6 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  avatar?: string;
   role: 'Admin' | 'SRE' | 'Developer' | 'Viewer';
   team: string;
   status: 'active' | 'invited' | 'inactive';
@@ -423,6 +423,61 @@ export interface TagDefinition {
   allowedValues: TagValue[];
   required: boolean;
   usageCount: number;
+  deleted_at?: string;
+}
+
+export interface TagManagementFilters {
+  keyword?: string;
+  category?: string;
+}
+
+export interface AuditLogFilters {
+  keyword?: string;
+  user?: string;
+  action?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface DashboardFilters {
+  keyword?: string;
+  category?: string;
+}
+
+export interface AutomationHistoryFilters {
+  keyword?: string;
+  playbookId?: string;
+  status?: AutomationExecution['status'];
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface PersonnelFilters {
+  keyword?: string;
+}
+
+export interface ResourceGroupFilters {
+  keyword?: string;
+}
+
+export interface AutomationTriggerFilters {
+  keyword?: string;
+}
+
+export interface NotificationStrategyFilters {
+  keyword?: string;
+}
+
+export interface NotificationChannelFilters {
+  keyword?: string;
+}
+
+export interface NotificationHistoryFilters {
+  keyword?: string;
+  status?: NotificationHistoryRecord['status'];
+  channelType?: NotificationChannelType;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface NotificationItem {
@@ -538,6 +593,7 @@ export interface CapacityPlanningData {
     suggestions: {
         title: string;
         impact: '高' | '中' | '低';
+        effort: '高' | '中' | '低';
         details: string;
     }[];
     resource_analysis: {
@@ -650,9 +706,9 @@ export interface ResourceOptions {
     types: string[];
     providers: string[];
     regions: string[];
+    owners: string[];
 }
 
-// FIX: Define Anomaly and Suggestion types used in AIInsightsOptions.
 export interface Anomaly {
   severity: 'critical' | 'warning' | 'info';
   description: string;
@@ -692,6 +748,15 @@ export interface NotificationChannelOptions {
     httpMethods: ('POST' | 'PUT' | 'GET')[];
 }
 
+export interface NotificationStrategyOptions {
+    priorities: ('High' | 'Medium' | 'Low')[];
+    defaultCondition: string;
+    conditionKeys: Record<string, string[]>;
+    tagKeys: string[];
+    tagValues: Record<string, string[]>;
+    stepTitles: string[];
+}
+
 export interface AutomationTriggerOptions {
     triggerTypes: { value: TriggerType, label: string }[];
     conditionKeys: string[];
@@ -702,7 +767,17 @@ export interface TopologyOptions {
     layouts: { value: string, label: string }[];
 }
 
+export interface DashboardOptions {
+    categories: string[];
+    owners: string[];
+}
+
+export interface TagManagementOptions {
+    categories: string[];
+}
+
 export interface AllOptions {
+    // Existing
     incidents: IncidentOptions;
     alertRules: AlertRuleOptions;
     silenceRules: SilenceRuleOptions;
@@ -710,4 +785,16 @@ export interface AllOptions {
     automationScripts: AutomationScriptOptions;
     notificationChannels: NotificationChannelOptions;
     automationTriggers: AutomationTriggerOptions;
+    personnel: PersonnelOptions;
+    // New additions for v2.24
+    dashboards: DashboardOptions;
+    notificationStrategies: NotificationStrategyOptions;
+    grafana: GrafanaOptions;
+    auditLogs: AuditLogOptions;
+    logs: LogOptions;
+    infraInsights: InfraInsightsOptions;
+    tagManagement: TagManagementOptions;
+    topology: TopologyOptions;
+    automationExecutions: AutomationExecutionOptions;
+    notificationHistory: NotificationHistoryOptions;
 }

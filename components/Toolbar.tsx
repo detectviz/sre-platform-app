@@ -1,5 +1,8 @@
 import React from 'react';
 import Icon from './Icon';
+import { PAGE_CONTENT } from '../constants/pages';
+
+const { GLOBAL: globalContent } = PAGE_CONTENT;
 
 interface BatchActionToolbarProps {
     count: number;
@@ -11,10 +14,10 @@ const BatchActionToolbar: React.FC<BatchActionToolbarProps> = ({ count, onClear,
     return (
         <div className="flex justify-between items-center bg-sky-900/50 border border-sky-700/80 rounded-lg px-4 py-2 mb-4 animate-fade-in-down">
             <div className="flex items-center space-x-4">
-                <button onClick={onClear} className="p-1.5 rounded-full text-slate-300 hover:bg-slate-700/50 hover:text-white" title="取消選擇">
+                <button onClick={onClear} className="p-1.5 rounded-full text-slate-300 hover:bg-slate-700/50 hover:text-white" title={globalContent.CLEAR_SELECTION}>
                     <Icon name="x" className="w-5 h-5" />
                 </button>
-                <span className="font-semibold text-white">{`已選擇 ${count} 項`}</span>
+                <span className="font-semibold text-white">{globalContent.ITEMS_SELECTED(count)}</span>
             </div>
             <div className="flex items-center space-x-2">
                 {children}

@@ -4,6 +4,7 @@ import FormRow from './FormRow';
 import { TagDefinition } from '../types';
 import api from '../services/api';
 import Icon from './Icon';
+import { useOptions } from '../contexts/OptionsContext';
 
 interface TagDefinitionEditModalProps {
   isOpen: boolean;
@@ -14,38 +15,26 @@ interface TagDefinitionEditModalProps {
 
 const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen, onClose, onSave, tag }) => {
     const [formData, setFormData] = useState<Partial<TagDefinition>>({});
-    const [categories, setCategories] = useState<string[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const { options, isLoading: isLoadingOptions, error: optionsError } = useOptions();
+    const tagManagementOptions = options?.tagManagement;
 
     useEffect(() => {
         if (isOpen) {
-            setIsLoading(true);
-            setError(null);
-            api.get<{ categories: string[] }>('/settings/tags/options')
-                .then(res => {
-                    const fetchedCategories = res.data.categories;
-                    if (!fetchedCategories || fetchedCategories.length === 0) {
-                        setError('後端未提供任何可用的標籤分類。');
-                        setCategories([]);
-                        setFormData(tag || { key: '', category: '' as TagDefinition['category'], description: '', required: false });
-                        return;
-                    }
-                    setCategories(fetchedCategories);
-                    setFormData(tag || { 
-                        key: '', 
-                        category: (fetchedCategories[0]) as TagDefinition['category'], 
-                        description: '', 
-                        required: false 
-                    });
-                })
-                .catch(err => {
-                    console.error("Failed to load tag categories", err);
-                    setError('無法載入標籤分類選項。');
-                })
-                .finally(() => setIsLoading(false));
+            if (isLoadingOptions || !tagManagementOptions) return;
+
+            const categories = tagManagementOptions.categories || [];
+            if (categories.length > 0) {
+                setFormData(tag || { 
+                    key: '', 
+                    category: categories[0] as TagDefinition['category'], 
+                    description: '', 
+                    required: false 
+                });
+            } else {
+                 setFormData(tag || { key: '', category: '' as TagDefinition['category'], description: '', required: false });
+            }
         }
-    }, [isOpen, tag]);
+    }, [isOpen, tag, isLoadingOptions, tagManagementOptions]);
 
     const handleSave = () => {
         onSave(formData);
@@ -54,6 +43,10 @@ const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen,
     const handleChange = (field: keyof TagDefinition, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
+
+    const categories = tagManagementOptions?.categories || [];
+    const error = optionsError;
+    const isLoading = isLoadingOptions;
 
     return (
         <Modal

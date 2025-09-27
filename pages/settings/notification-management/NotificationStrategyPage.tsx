@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { NotificationStrategy } from '../../../types';
+import { NotificationStrategy, NotificationStrategyFilters } from '../../../types';
 import Icon from '../../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../../components/Toolbar';
 import TableContainer from '../../../components/TableContainer';
@@ -8,6 +8,22 @@ import Modal from '../../../components/Modal';
 import api from '../../../services/api';
 import TableLoader from '../../../components/TableLoader';
 import TableError from '../../../components/TableError';
+import UnifiedSearchModal from '../../../components/UnifiedSearchModal';
+import ColumnSettingsModal, { TableColumn } from '../../../components/ColumnSettingsModal';
+import { usePageMetadata } from '../../../contexts/PageMetadataContext';
+import { showToast } from '../../../services/toast';
+
+const ALL_COLUMNS: TableColumn[] = [
+    { key: 'enabled', label: '' },
+    { key: 'name', label: '策略名稱' },
+    { key: 'triggerCondition', label: '觸發條件' },
+    { key: 'channelCount', label: '管道數' },
+    { key: 'priority', label: '優先級' },
+    { key: 'creator', label: '創建者' },
+    { key: 'lastUpdated', label: '最後更新' },
+];
+const PAGE_IDENTIFIER = 'notification_strategies';
+
 
 const NotificationStrategyPage: React.FC = () => {
     const [strategies, setStrategies] = useState<NotificationStrategy[]>([]);
@@ -16,28 +32,56 @@ const NotificationStrategyPage: React.FC = () => {
     
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingStrategy, setEditingStrategy] = useState<NotificationStrategy | null>(null);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [filters, setFilters] = useState<NotificationStrategyFilters>({});
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingStrategy, setDeletingStrategy] = useState<NotificationStrategy | null>(null);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+    const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
+    const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+    
+    const { metadata: pageMetadata } = usePageMetadata();
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
 
     const fetchStrategies = useCallback(async () => {
+        if (!pageKey) return;
         setIsLoading(true);
         setError(null);
         try {
-            const { data } = await api.get<NotificationStrategy[]>('/settings/notification-strategies', { params: { keyword: searchTerm } });
-            setStrategies(data);
+            const [strategiesRes, columnsRes] = await Promise.all([
+                api.get<NotificationStrategy[]>('/settings/notification-strategies', { params: filters }),
+                api.get<string[]>(`/settings/column-config/${pageKey}`)
+            ]);
+            setStrategies(strategiesRes.data);
+            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
         } catch(err) {
             setError('無法獲取通知策略。');
         } finally {
             setIsLoading(false);
         }
-    }, [searchTerm]);
+    }, [filters, pageKey]);
 
     useEffect(() => {
-        fetchStrategies();
-    }, [fetchStrategies]);
-
+        if (pageKey) {
+            fetchStrategies();
+        }
+    }, [fetchStrategies, pageKey]);
+    
+    const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
+        if (!pageKey) {
+            showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
+            return;
+        }
+        try {
+            await api.put(`/settings/column-config/${pageKey}`, newColumnKeys);
+            setVisibleColumns(newColumnKeys);
+            showToast('欄位設定已儲存。', 'success');
+        } catch (err) {
+            showToast('無法儲存欄位設定。', 'error');
+        } finally {
+            setIsColumnSettingsModalOpen(false);
+        }
+    };
 
     const handleNewStrategy = () => {
         setEditingStrategy(null);
@@ -133,23 +177,39 @@ const NotificationStrategyPage: React.FC = () => {
     );
 
     const leftActions = (
-         <div className="relative">
-            <Icon name="search" className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400 w-4 h-4" />
-            <input 
-                type="text" 
-                placeholder="搜尋策略..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="w-64 bg-slate-800/80 border border-slate-700 rounded-md pl-9 pr-4 py-1.5 text-sm"
-            />
-        </div>
+        <ToolbarButton icon="search" text="搜尋和篩選" onClick={() => setIsSearchModalOpen(true)} />
     );
+    
+    const renderCellContent = (strategy: NotificationStrategy, columnKey: string) => {
+        switch (columnKey) {
+            case 'enabled':
+                return (
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked={strategy.enabled} className="sr-only peer" onChange={() => handleToggleEnable(strategy)} />
+                        <div className="w-11 h-6 bg-slate-700 rounded-full peer peer-focus:ring-4 peer-focus:ring-sky-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
+                    </label>
+                );
+            case 'name': return <span className="font-medium text-white">{strategy.name}</span>;
+            case 'triggerCondition': return <span className="font-mono text-xs">{strategy.triggerCondition}</span>;
+            case 'channelCount': return strategy.channelCount;
+            case 'priority': return strategy.priority;
+            case 'creator': return strategy.creator;
+            case 'lastUpdated': return strategy.lastUpdated;
+            default: return null;
+        }
+    };
+
 
     return (
         <div className="h-full flex flex-col">
             <Toolbar
                 leftActions={leftActions}
-                rightActions={<ToolbarButton icon="plus" text="新增策略" primary onClick={handleNewStrategy} />}
+                rightActions={
+                    <>
+                        <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => setIsColumnSettingsModalOpen(true)} />
+                        <ToolbarButton icon="plus" text="新增策略" primary onClick={handleNewStrategy} />
+                    </>
+                }
                 selectedCount={selectedIds.length}
                 onClearSelection={() => setSelectedIds([])}
                 batchActions={batchActions}
@@ -163,39 +223,26 @@ const NotificationStrategyPage: React.FC = () => {
                                     <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
                                            checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
-                                <th scope="col" className="px-6 py-3"></th>
-                                <th scope="col" className="px-6 py-3">策略名稱</th>
-                                <th scope="col" className="px-6 py-3">觸發條件</th>
-                                <th scope="col" className="px-6 py-3">管道數</th>
-                                <th scope="col" className="px-6 py-3">優先級</th>
-                                <th scope="col" className="px-6 py-3">創建者</th>
-                                <th scope="col" className="px-6 py-3">最後更新</th>
+                                {visibleColumns.map(key => (
+                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                ))}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <TableLoader colSpan={9} />
+                                <TableLoader colSpan={visibleColumns.length + 2} />
                             ) : error ? (
-                                <TableError colSpan={9} message={error} onRetry={fetchStrategies} />
+                                <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchStrategies} />
                             ) : strategies.map((strategy) => (
                                 <tr key={strategy.id} className={`border-b border-slate-800 ${selectedIds.includes(strategy.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
                                     <td className="p-4 w-12">
                                         <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
                                                checked={selectedIds.includes(strategy.id)} onChange={(e) => handleSelectOne(e, strategy.id)} />
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <label className="relative inline-flex items-center cursor-pointer">
-                                            <input type="checkbox" checked={strategy.enabled} className="sr-only peer" onChange={() => handleToggleEnable(strategy)} />
-                                            <div className="w-11 h-6 bg-slate-700 rounded-full peer peer-focus:ring-4 peer-focus:ring-sky-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
-                                        </label>
-                                    </td>
-                                    <td className="px-6 py-4 font-medium text-white">{strategy.name}</td>
-                                    <td className="px-6 py-4 font-mono text-xs">{strategy.triggerCondition}</td>
-                                    <td className="px-6 py-4">{strategy.channelCount}</td>
-                                    <td className="px-6 py-4">{strategy.priority}</td>
-                                    <td className="px-6 py-4">{strategy.creator}</td>
-                                    <td className="px-6 py-4">{strategy.lastUpdated}</td>
+                                    {visibleColumns.map(key => (
+                                        <td key={key} className="px-6 py-4">{renderCellContent(strategy, key)}</td>
+                                    ))}
                                     <td className="px-6 py-4 text-center space-x-1">
                                         <button onClick={() => handleEditStrategy(strategy)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯"><Icon name="edit-3" className="w-4 h-4" /></button>
                                         <button onClick={() => handleDuplicateStrategy(strategy)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="複製"><Icon name="copy" className="w-4 h-4" /></button>
@@ -230,6 +277,23 @@ const NotificationStrategyPage: React.FC = () => {
                 <p>您確定要刪除策略 <strong className="text-amber-400">{deletingStrategy?.name}</strong> 嗎？</p>
                 <p className="mt-2 text-slate-400">此操作無法復原。</p>
             </Modal>
+             <UnifiedSearchModal
+                page="notification-strategies"
+                isOpen={isSearchModalOpen}
+                onClose={() => setIsSearchModalOpen(false)}
+                onSearch={(newFilters) => {
+                    setFilters(newFilters as NotificationStrategyFilters);
+                    setIsSearchModalOpen(false);
+                }}
+                initialFilters={filters}
+            />
+            <ColumnSettingsModal
+                isOpen={isColumnSettingsModalOpen}
+                onClose={() => setIsColumnSettingsModalOpen(false)}
+                onSave={handleSaveColumnConfig}
+                allColumns={ALL_COLUMNS}
+                visibleColumnKeys={visibleColumns}
+            />
         </div>
     );
 };

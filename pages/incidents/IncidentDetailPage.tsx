@@ -1,15 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Incident, IncidentOptions, StyleDescriptor } from '../../types';
+import { Incident, StyleDescriptor, User, IncidentEvent } from '../../types';
 import Icon from '../../components/Icon';
 import AIAnalysisDisplay from '../../components/AIAnalysisDisplay';
 import api from '../../services/api';
 import AssignIncidentModal from '../../components/AssignIncidentModal';
 import UserAvatar from '../../components/UserAvatar';
+import { useOptions } from '../../contexts/OptionsContext';
+import { showToast } from '../../services/toast';
+import Modal from '../../components/Modal';
 
 interface IncidentDetailPageProps {
   incidentId: string;
   onUpdate: () => void;
+  currentUser: User | null;
 }
 
 const InfoItem = ({ label, children }: { label: string; children?: React.ReactNode }) => (
@@ -19,25 +23,25 @@ const InfoItem = ({ label, children }: { label: string; children?: React.ReactNo
     </div>
 );
 
-const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onUpdate }) => {
+const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onUpdate, currentUser }) => {
   const [incident, setIncident] = useState<Incident | null>(null);
-  const [options, setOptions] = useState<IncidentOptions | null>(null);
+  const { options } = useOptions();
+  const incidentOptions = options?.incidents;
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [assigningIncident, setAssigningIncident] = useState<Incident | null>(null);
   const [refreshCounter, setRefreshCounter] = useState(0);
+  const [newNote, setNewNote] = useState('');
+  const [isAddingNote, setIsAddingNote] = useState(false);
+  const [deletingNote, setDeletingNote] = useState<IncidentEvent | null>(null);
 
   const fetchIncident = useCallback(async () => {
     if (!incidentId) return;
     setIsLoading(true);
     setError(null);
     try {
-      const [incidentRes, optionsRes] = await Promise.all([
-        api.get<Incident>(`/incidents/${incidentId}`),
-        api.get<IncidentOptions>('/incidents/options')
-      ]);
-      setIncident(incidentRes.data);
-      setOptions(optionsRes.data);
+      const { data: incidentRes } = await api.get<Incident>(`/incidents/${incidentId}`);
+      setIncident(incidentRes);
     } catch (err) {
       setError(`Failed to fetch incident ${incidentId}.`);
     } finally {
@@ -52,13 +56,45 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onU
   const handleAcknowledge = async () => {
     if (!incident) return;
     await api.post(`/incidents/${incident.id}/actions`, { action: 'acknowledge' });
+    showToast('事件已成功認領。', 'success');
     setRefreshCounter(c => c + 1);
     onUpdate(); // Notify list page to refresh as well
+  };
+  
+  const handleAddNote = async () => {
+    if (!incident || !newNote.trim()) return;
+    setIsAddingNote(true);
+    try {
+        await api.post(`/incidents/${incident.id}/actions`, { action: 'add_note', details: newNote.trim() });
+        showToast('備註已成功新增。', 'success');
+        setNewNote('');
+        setRefreshCounter(c => c + 1);
+        onUpdate();
+    } catch (err) {
+        showToast('新增備註失敗。', 'error');
+    } finally {
+        setIsAddingNote(false);
+    }
+  };
+
+  const handleConfirmDeleteNote = async () => {
+    if (!deletingNote || !incident) return;
+    try {
+        await api.post(`/incidents/${incident.id}/actions`, { action: 'delete_note', details: deletingNote.timestamp });
+        showToast('備註已成功刪除。', 'success');
+        setDeletingNote(null);
+        setRefreshCounter(c => c + 1);
+        onUpdate();
+    } catch (err) {
+        showToast('刪除備註失敗。', 'error');
+        setDeletingNote(null);
+    }
   };
 
   const handleConfirmAssign = async (assigneeName: string) => {
       if (!assigningIncident) return;
       await api.post(`/incidents/${assigningIncident.id}/actions`, { action: 'assign', assigneeName });
+      showToast('事件已成功指派。', 'success');
       setAssigningIncident(null);
       setRefreshCounter(c => c + 1);
       onUpdate();
@@ -108,17 +144,17 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onU
         <div className="pb-4 mb-4 border-b border-slate-700/50 shrink-0">
           <dl className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-6">
               <InfoItem label="狀態">
-                  <span className={`px-3 py-1 text-sm font-semibold rounded-full capitalize ${getStyle(options?.statuses, incident.status)}`}>
+                  <span className={`px-3 py-1 text-sm font-semibold rounded-full capitalize ${getStyle(incidentOptions?.statuses, incident.status)}`}>
                       {incident.status}
                   </span>
               </InfoItem>
               <InfoItem label="嚴重性">
-                  <span className={`px-3 py-1 text-sm font-semibold rounded-full border ${getStyle(options?.severities, incident.severity)}`}>
+                  <span className={`px-3 py-1 text-sm font-semibold rounded-full border ${getStyle(incidentOptions?.severities, incident.severity)}`}>
                       {incident.severity}
                   </span>
               </InfoItem>
               <InfoItem label="優先級">
-                  <span className={`px-3 py-1 text-sm font-semibold rounded-full ${getStyle(options?.priorities, incident.priority)}`}>
+                  <span className={`px-3 py-1 text-sm font-semibold rounded-full ${getStyle(incidentOptions?.priorities, incident.priority)}`}>
                       {incident.priority || 'N/A'}
                   </span>
               </InfoItem>
@@ -128,7 +164,7 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onU
                             <span className="text-slate-400">無</span>
                             <button onClick={handleAcknowledge} className="px-3 py-1 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-md transition-colors flex items-center">
                                 <Icon name="user-check" className="w-4 h-4 mr-2" />
-                                確認此事件
+                                認領事件
                             </button>
                         </div>
                     ) : (
@@ -157,7 +193,7 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onU
                           </Link>
                       </InfoItem>
                       <InfoItem label="服務影響">
-                          <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(options?.serviceImpacts, incident.serviceImpact)}`}>
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(incidentOptions?.serviceImpacts, incident.serviceImpact)}`}>
                               {incident.serviceImpact}
                           </span>
                       </InfoItem>
@@ -193,8 +229,11 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onU
               <ol className="relative border-l border-slate-700 ml-4">                  
                 {incident.history.map((event, index) => {
                     const { icon, color } = getTimelineIconAndColor(event.action);
+                    const isUserNote = event.action.toLowerCase().includes('note');
+                    const isCurrentUserNote = isUserNote && event.user === currentUser?.name;
+
                     return (
-                        <li key={index} className="mb-8 ml-8">            
+                        <li key={index} className="mb-8 ml-8 group">            
                             <span className={`absolute flex items-center justify-center w-8 h-8 rounded-full -left-4 ring-4 ring-slate-900 ${color}`}>
                                 <Icon name={icon} className="w-4 h-4 text-white" />
                             </span>
@@ -203,11 +242,41 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onU
                               <time className="text-xs font-normal text-slate-500">{event.timestamp}</time>
                             </div>
                             <p className="text-sm font-normal text-slate-400">by <span className="font-medium text-slate-300">{event.user}</span></p>
-                            {event.details && <p className="mt-2 text-sm p-3 bg-slate-900/50 rounded-md border border-slate-700">{event.details}</p>}
+                            {event.details && (
+                                <div className="relative">
+                                    <p className="mt-2 text-sm p-3 bg-slate-900/50 rounded-md border border-slate-700 pr-10">{event.details}</p>
+                                    {isCurrentUserNote && (
+                                        <button 
+                                            onClick={() => setDeletingNote(event)}
+                                            title="刪除備註"
+                                            className="absolute top-1/2 right-2 -translate-y-1/2 p-1.5 rounded-full text-slate-500 hover:bg-red-500/20 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            <Icon name="trash-2" className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                </div>
+                            )}
                         </li>
                     );
                 })}
               </ol>
+               <div className="ml-12 mt-4 space-y-2">
+                    <textarea
+                        value={newNote}
+                        onChange={(e) => setNewNote(e.target.value)}
+                        placeholder="新增備註..."
+                        rows={3}
+                        className="w-full bg-slate-800 border border-slate-700 rounded-md p-2 text-sm"
+                    />
+                    <button
+                        onClick={handleAddNote}
+                        disabled={isAddingNote || !newNote.trim()}
+                        className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md flex items-center disabled:bg-slate-600 disabled:cursor-not-allowed"
+                    >
+                        {isAddingNote ? <Icon name="loader-circle" className="w-4 h-4 mr-2 animate-spin" /> : <Icon name="plus" className="w-4 h-4 mr-2" />}
+                        {isAddingNote ? '新增中...' : '新增備註'}
+                    </button>
+                </div>
             </div>
           </div>
         </div>
@@ -218,6 +287,25 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onU
           onAssign={handleConfirmAssign}
           incident={assigningIncident}
       />
+      <Modal
+        isOpen={!!deletingNote}
+        onClose={() => setDeletingNote(null)}
+        title="確認刪除備註"
+        width="w-1/3"
+        footer={
+          <>
+            <button onClick={() => setDeletingNote(null)} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">
+              取消
+            </button>
+            <button onClick={handleConfirmDeleteNote} className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md">
+              確認刪除
+            </button>
+          </>
+        }
+      >
+        <p>您確定要刪除這條備註嗎？</p>
+        <p className="mt-2 text-slate-400">此操作無法復原。</p>
+      </Modal>
     </>
   );
 };

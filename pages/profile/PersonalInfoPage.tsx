@@ -1,11 +1,8 @@
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import FormRow from '../../components/FormRow';
 import Icon from '../../components/Icon';
 import api from '../../services/api';
 import { User, AuthSettings } from '../../types';
-import UserAvatar from '../../components/UserAvatar';
 
 const PersonalInfoPage: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -45,14 +42,13 @@ const PersonalInfoPage: React.FC = () => {
   return (
     <div className="max-w-2xl">
       <div className="glass-card rounded-xl p-6">
-        <div className="flex items-center mb-6">
-          <UserAvatar user={currentUser} className="w-20 h-20 mr-6" iconClassName="w-10 h-10" />
-          <div>
-            <h3 className="text-2xl font-bold text-white">{currentUser.name}</h3>
-            <p className="text-slate-400">{currentUser.email}</p>
-          </div>
-        </div>
         <div className="space-y-4">
+          <FormRow label="名稱">
+            <p className="text-white bg-slate-800/50 rounded-md px-3 py-2">{currentUser.name}</p>
+          </FormRow>
+          <FormRow label="電子郵件">
+            <p className="text-white bg-slate-800/50 rounded-md px-3 py-2">{currentUser.email}</p>
+          </FormRow>
           <FormRow label="角色">
             <p className="text-white bg-slate-800/50 rounded-md px-3 py-2">{currentUser.role}</p>
           </FormRow>

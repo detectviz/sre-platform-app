@@ -3,6 +3,7 @@ import Modal from './Modal';
 import FormRow from './FormRow';
 import { User, Team, Role } from '../types';
 import api from '../services/api';
+import { useOptions } from '../contexts/OptionsContext';
 
 interface UserEditModalProps {
   isOpen: boolean;
@@ -15,23 +16,23 @@ const UserEditModal: React.FC<UserEditModalProps> = ({ isOpen, onClose, onSave, 
     const [formData, setFormData] = useState<Partial<User>>({});
     const [teams, setTeams] = useState<Team[]>([]);
     const [roles, setRoles] = useState<Role[]>([]);
-    const [statuses, setStatuses] = useState<string[]>([]);
-    const [isLoadingOptions, setIsLoadingOptions] = useState(false);
+    const [isLoadingLocalOptions, setIsLoadingLocalOptions] = useState(false);
+
+    const { options, isLoading: isLoadingGlobalOptions } = useOptions();
+    const personnelOptions = options?.personnel;
 
     useEffect(() => {
         if (isOpen) {
             if(user) setFormData(user);
-            setIsLoadingOptions(true);
+            setIsLoadingLocalOptions(true);
             Promise.all([
                 api.get<Team[]>('/iam/teams'),
                 api.get<Role[]>('/iam/roles'),
-                api.get<{ statuses: string[] }>('/iam/users/options')
-            ]).then(([teamsRes, rolesRes, optionsRes]) => {
+            ]).then(([teamsRes, rolesRes]) => {
                 setTeams(teamsRes.data);
                 setRoles(rolesRes.data);
-                setStatuses(optionsRes.data.statuses);
             }).catch(err => console.error("Failed to fetch teams or roles", err))
-            .finally(() => setIsLoadingOptions(false));
+            .finally(() => setIsLoadingLocalOptions(false));
         }
     }, [isOpen, user]);
 
@@ -69,20 +70,20 @@ const UserEditModal: React.FC<UserEditModalProps> = ({ isOpen, onClose, onSave, 
                 </FormRow>
                 <FormRow label="角色">
                     <select value={formData.role || ''} onChange={e => handleChange('role', e.target.value as User['role'])}
-                            className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoadingOptions}>
-                        {isLoadingOptions ? <option>載入中...</option> : roles.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
+                            className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoadingLocalOptions}>
+                        {isLoadingLocalOptions ? <option>載入中...</option> : roles.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
                     </select>
                 </FormRow>
                 <FormRow label="團隊">
                     <select value={formData.team || ''} onChange={e => handleChange('team', e.target.value)}
-                            className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoadingOptions}>
-                         {isLoadingOptions ? <option>載入中...</option> : teams.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+                            className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoadingLocalOptions}>
+                         {isLoadingLocalOptions ? <option>載入中...</option> : teams.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
                     </select>
                 </FormRow>
                 <FormRow label="狀態">
                     <select value={formData.status || ''} onChange={e => handleChange('status', e.target.value as User['status'])}
-                            className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoadingOptions}>
-                        {isLoadingOptions ? <option>載入中...</option> : statuses.map(s => <option key={s} value={s} className="capitalize">{s}</option>)}
+                            className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoadingGlobalOptions}>
+                        {isLoadingGlobalOptions ? <option>載入中...</option> : personnelOptions?.statuses.map(s => <option key={s.value} value={s.value} className="capitalize">{s.label}</option>)}
                     </select>
                 </FormRow>
             </div>

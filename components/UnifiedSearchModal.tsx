@@ -1,9 +1,12 @@
 
-
 import React, { useState, useEffect, useMemo } from 'react';
 import Modal from './Modal';
 import Icon from './Icon';
-import { Resource, ResourceFilters, AlertRule, Incident, SilenceRule } from '../types';
+import { 
+    Resource, ResourceFilters, AlertRule, Incident, SilenceRule, TagManagementFilters, User, AuditLogFilters,
+    DashboardFilters, AutomationHistoryFilters, PersonnelFilters, ResourceGroupFilters, AutomationTriggerFilters,
+    NotificationStrategyFilters, NotificationChannelFilters, NotificationHistoryFilters, AutomationPlaybook
+} from '../types';
 import api from '../services/api';
 import { PAGE_CONTENT } from '../constants/pages';
 import { useOptions } from '../contexts/OptionsContext';
@@ -31,10 +34,10 @@ export interface SilenceRuleFilters {
     enabled?: boolean;
 }
 
-type Filters = IncidentFilters | AlertRuleFilters | SilenceRuleFilters | ResourceFilters;
+type Filters = IncidentFilters | AlertRuleFilters | SilenceRuleFilters | ResourceFilters | TagManagementFilters | AuditLogFilters | DashboardFilters | AutomationHistoryFilters | PersonnelFilters | ResourceGroupFilters | AutomationTriggerFilters | NotificationStrategyFilters | NotificationChannelFilters | NotificationHistoryFilters;
 
 interface UnifiedSearchModalProps {
-  page: 'incidents' | 'alert-rules' | 'silence-rules' | 'resources';
+  page: 'incidents' | 'alert-rules' | 'silence-rules' | 'resources' | 'tag-management' | 'audit-logs' | 'dashboards' | 'automation-history' | 'personnel' | 'resource-groups' | 'automation-triggers' | 'notification-strategies' | 'notification-channels' | 'notification-history' | 'teams' | 'roles';
   isOpen: boolean;
   onClose: () => void;
   onSearch: (filters: Filters) => void;
@@ -51,12 +54,24 @@ const FormRow = ({ label, children }: { label: string; children?: React.ReactNod
 const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, onClose, onSearch, initialFilters }) => {
   const [filters, setFilters] = useState<Filters>(initialFilters);
   const { options, isLoading: isLoadingOptions } = useOptions();
+  const [users, setUsers] = useState<User[]>([]);
+  const [playbooks, setPlaybooks] = useState<AutomationPlaybook[]>([]);
 
   useEffect(() => {
     if (isOpen) {
       setFilters(initialFilters);
+      if (page === 'audit-logs') {
+        api.get<{ items: User[] }>('/iam/users', { params: { page: 1, page_size: 1000 } })
+          .then(res => setUsers(res.data.items))
+          .catch(err => console.error("Failed to fetch users for filter", err));
+      }
+      if (page === 'automation-history') {
+        api.get<AutomationPlaybook[]>('/automation/scripts')
+          .then(res => setPlaybooks(res.data))
+          .catch(err => console.error("Failed to fetch playbooks for filter", err));
+      }
     }
-  }, [isOpen, initialFilters]);
+  }, [isOpen, initialFilters, page]);
 
   const handleSearch = () => {
     onSearch(filters);
@@ -157,6 +172,107 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
     </>
   );
 
+  const renderTagManagementFilters = () => (
+    <>
+      <FormRow label={content.TAG_MANAGEMENT.CATEGORY}>
+        <select 
+          value={(filters as TagManagementFilters).category || ''} 
+          onChange={e => setFilters(prev => ({ ...(prev as TagManagementFilters), category: e.target.value as TagManagementFilters['category'] }))} 
+          className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
+        >
+          <option value="">{content.TAG_MANAGEMENT.ALL_CATEGORIES}</option>
+          {options?.tagManagement.categories.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+        </select>
+      </FormRow>
+    </>
+  );
+
+  const renderAuditLogFilters = () => (
+    <>
+      <FormRow label={content.AUDIT_LOGS.USER}>
+        <select value={(filters as AuditLogFilters).user || ''} onChange={e => setFilters(prev => ({ ...(prev as AuditLogFilters), user: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
+          <option value="">{content.AUDIT_LOGS.ALL_USERS}</option>
+          {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+        </select>
+      </FormRow>
+      <FormRow label={content.AUDIT_LOGS.ACTION}>
+        <select value={(filters as AuditLogFilters).action || ''} onChange={e => setFilters(prev => ({ ...(prev as AuditLogFilters), action: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
+          <option value="">{content.AUDIT_LOGS.ALL_ACTIONS}</option>
+          {options?.auditLogs.actionTypes.map(a => <option key={a} value={a}>{a}</option>)}
+        </select>
+      </FormRow>
+       <div className="col-span-2">
+        <FormRow label={content.AUDIT_LOGS.TIME_RANGE}>
+          <div className="flex space-x-2">
+            <input type="datetime-local" value={(filters as AuditLogFilters).startDate || ''} onChange={e => setFilters(prev => ({ ...(prev as AuditLogFilters), startDate: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+            <input type="datetime-local" value={(filters as AuditLogFilters).endDate || ''} onChange={e => setFilters(prev => ({ ...(prev as AuditLogFilters), endDate: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+          </div>
+        </FormRow>
+      </div>
+    </>
+  );
+  
+  const renderDashboardFilters = () => (
+    <>
+      <FormRow label={content.DASHBOARDS.CATEGORY}>
+        <select value={(filters as DashboardFilters).category || ''} onChange={e => setFilters(prev => ({ ...prev, category: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
+          <option value="">{content.DASHBOARDS.ALL_CATEGORIES}</option>
+          {options?.dashboards.categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+        </select>
+      </FormRow>
+    </>
+  );
+  
+  const renderAutomationHistoryFilters = () => (
+    <>
+      <FormRow label={content.AUTOMATION_HISTORY.PLAYBOOK}>
+        <select value={(filters as AutomationHistoryFilters).playbookId || ''} onChange={e => setFilters(prev => ({ ...prev, playbookId: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
+          <option value="">{content.AUTOMATION_HISTORY.ALL_PLAYBOOKS}</option>
+          {playbooks.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+      </FormRow>
+      <FormRow label={content.AUTOMATION_HISTORY.STATUS}>
+        <select value={(filters as AutomationHistoryFilters).status || ''} onChange={e => setFilters(prev => ({ ...prev, status: e.target.value as any }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
+          <option value="">{content.ALL_STATUSES}</option>
+          {options?.automationExecutions.statuses.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+        </select>
+      </FormRow>
+      <div className="col-span-2">
+        <FormRow label={content.AUTOMATION_HISTORY.TIME_RANGE}>
+          <div className="flex space-x-2">
+            <input type="datetime-local" value={(filters as AutomationHistoryFilters).startDate || ''} onChange={e => setFilters(prev => ({ ...prev, startDate: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+            <input type="datetime-local" value={(filters as AutomationHistoryFilters).endDate || ''} onChange={e => setFilters(prev => ({ ...prev, endDate: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+          </div>
+        </FormRow>
+      </div>
+    </>
+  );
+
+  const renderNotificationHistoryFilters = () => (
+    <>
+      <FormRow label={content.NOTIFICATION_HISTORY.STATUS}>
+        <select value={(filters as NotificationHistoryFilters).status || ''} onChange={e => setFilters(prev => ({ ...prev, status: e.target.value as any }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
+          <option value="">{content.ALL_STATUSES}</option>
+          {options?.notificationHistory.statuses.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+        </select>
+      </FormRow>
+      <FormRow label={content.NOTIFICATION_HISTORY.CHANNEL_TYPE}>
+        <select value={(filters as NotificationHistoryFilters).channelType || ''} onChange={e => setFilters(prev => ({ ...prev, channelType: e.target.value as any }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
+          <option value="">{content.NOTIFICATION_HISTORY.ALL_CHANNEL_TYPES}</option>
+          {options?.notificationHistory.channelTypes.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+        </select>
+      </FormRow>
+      <div className="col-span-2">
+        <FormRow label={content.NOTIFICATION_HISTORY.TIME_RANGE}>
+          <div className="flex space-x-2">
+            <input type="datetime-local" value={(filters as NotificationHistoryFilters).startDate || ''} onChange={e => setFilters(prev => ({ ...prev, startDate: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+            <input type="datetime-local" value={(filters as NotificationHistoryFilters).endDate || ''} onChange={e => setFilters(prev => ({ ...prev, endDate: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+          </div>
+        </FormRow>
+      </div>
+    </>
+  );
+
 
   return (
     <Modal
@@ -190,6 +306,12 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
                 {page === 'alert-rules' && renderAlertRuleFilters()}
                 {page === 'silence-rules' && renderSilenceRuleFilters()}
                 {page === 'resources' && renderResourceFilters()}
+                {page === 'tag-management' && renderTagManagementFilters()}
+                {page === 'audit-logs' && renderAuditLogFilters()}
+                {page === 'dashboards' && renderDashboardFilters()}
+                {page === 'automation-history' && renderAutomationHistoryFilters()}
+                {page === 'notification-history' && renderNotificationHistoryFilters()}
+                {/* No specific filters for personnel, resource-groups, teams, roles, triggers, strategies, channels yet besides keyword */}
             </>
         )}
       </div>

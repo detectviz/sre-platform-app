@@ -9,6 +9,18 @@ import Modal from '../../components/Modal';
 import api from '../../services/api';
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
+import ColumnSettingsModal, { TableColumn } from '../../components/ColumnSettingsModal';
+import { usePageMetadata } from '../../contexts/PageMetadataContext';
+import { showToast } from '../../services/toast';
+
+const ALL_COLUMNS: TableColumn[] = [
+    { key: 'name', label: '腳本名稱' },
+    { key: 'trigger', label: '觸發器' },
+    { key: 'lastRunStatus', label: '上次運行狀態' },
+    { key: 'lastRun', label: '上次運行時間' },
+    { key: 'runCount', label: '運行次數' },
+];
+const PAGE_IDENTIFIER = 'automation_playbooks';
 
 const AutomationPlaybooksPage: React.FC = () => {
     const [playbooks, setPlaybooks] = useState<AutomationPlaybook[]>([]);
@@ -22,24 +34,52 @@ const AutomationPlaybooksPage: React.FC = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingPlaybook, setDeletingPlaybook] = useState<AutomationPlaybook | null>(null);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
+    const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+    
+    const { metadata: pageMetadata } = usePageMetadata();
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
 
     const fetchPlaybooks = useCallback(async () => {
+        if (!pageKey) return;
         setIsLoading(true);
         setError(null);
         try {
-            const { data } = await api.get<AutomationPlaybook[]>('/automation/scripts');
-            setPlaybooks(data);
+            const [playbooksRes, columnsRes] = await Promise.all([
+                 api.get<AutomationPlaybook[]>('/automation/scripts'),
+                 api.get<string[]>(`/settings/column-config/${pageKey}`)
+            ]);
+            setPlaybooks(playbooksRes.data);
+            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
         } catch (err) {
             setError('無法獲取自動化腳本。');
             console.error(err);
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [pageKey]);
 
     useEffect(() => {
-        fetchPlaybooks();
-    }, [fetchPlaybooks]);
+        if (pageKey) {
+            fetchPlaybooks();
+        }
+    }, [fetchPlaybooks, pageKey]);
+
+    const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
+        if (!pageKey) {
+            showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
+            return;
+        }
+        try {
+            await api.put(`/settings/column-config/${pageKey}`, newColumnKeys);
+            setVisibleColumns(newColumnKeys);
+            showToast('欄位設定已儲存。', 'success');
+        } catch (err) {
+            showToast('無法儲存欄位設定。', 'error');
+        } finally {
+            setIsColumnSettingsModalOpen(false);
+        }
+    };
 
     const handleRunClick = (playbook: AutomationPlaybook) => {
         setRunningPlaybook(playbook);
@@ -120,12 +160,42 @@ const AutomationPlaybooksPage: React.FC = () => {
     const batchActions = (
         <ToolbarButton icon="trash-2" text="刪除" danger onClick={handleBatchDelete} />
     );
+    
+    const renderCellContent = (pb: AutomationPlaybook, columnKey: string) => {
+        switch (columnKey) {
+            case 'name':
+                return (
+                    <>
+                        <div className="font-medium text-white">{pb.name}</div>
+                        <p className="text-xs text-slate-400 font-normal">{pb.description}</p>
+                    </>
+                );
+            case 'trigger':
+                return pb.trigger;
+            case 'lastRunStatus':
+                return (
+                    <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusPill(pb.lastRunStatus)}`}>
+                        {pb.lastRunStatus}
+                    </span>
+                );
+            case 'lastRun':
+                return pb.lastRun;
+            case 'runCount':
+                return pb.runCount;
+            default:
+                return null;
+        }
+    };
+
 
     return (
         <div className="h-full flex flex-col">
             <Toolbar 
                 rightActions={
-                    <ToolbarButton icon="plus" text="新增腳本" primary onClick={handleNewPlaybook} />
+                    <>
+                        <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => setIsColumnSettingsModalOpen(true)} />
+                        <ToolbarButton icon="plus" text="新增腳本" primary onClick={handleNewPlaybook} />
+                    </>
                 }
                 selectedCount={selectedIds.length}
                 onClearSelection={() => setSelectedIds([])}
@@ -140,37 +210,26 @@ const AutomationPlaybooksPage: React.FC = () => {
                                     <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
                                            checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
-                                <th scope="col" className="px-6 py-3">腳本名稱</th>
-                                <th scope="col" className="px-6 py-3">觸發器</th>
-                                <th scope="col" className="px-6 py-3">上次運行狀態</th>
-                                <th scope="col" className="px-6 py-3">上次運行時間</th>
-                                <th scope="col" className="px-6 py-3">運行次數</th>
+                                {visibleColumns.map(key => (
+                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                ))}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <TableLoader colSpan={7} />
+                                <TableLoader colSpan={visibleColumns.length + 2} />
                             ) : error ? (
-                                <TableError colSpan={7} message={error} onRetry={fetchPlaybooks} />
+                                <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchPlaybooks} />
                             ) : playbooks.map((pb) => (
                                 <tr key={pb.id} className={`border-b border-slate-800 ${selectedIds.includes(pb.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
                                      <td className="p-4 w-12">
                                         <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
                                                checked={selectedIds.includes(pb.id)} onChange={(e) => handleSelectOne(e, pb.id)} />
                                     </td>
-                                    <td className="px-6 py-4 font-medium text-white">
-                                        {pb.name}
-                                        <p className="text-xs text-slate-400 font-normal">{pb.description}</p>
-                                    </td>
-                                    <td className="px-6 py-4">{pb.trigger}</td>
-                                    <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusPill(pb.lastRunStatus)}`}>
-                                            {pb.lastRunStatus}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">{pb.lastRun}</td>
-                                    <td className="px-6 py-4">{pb.runCount}</td>
+                                    {visibleColumns.map(key => (
+                                        <td key={key} className="px-6 py-4">{renderCellContent(pb, key)}</td>
+                                    ))}
                                     <td className="px-6 py-4 text-center space-x-1">
                                         <button onClick={() => handleRunClick(pb)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="運行">
                                             <Icon name="play" className="w-4 h-4" />
@@ -217,6 +276,13 @@ const AutomationPlaybooksPage: React.FC = () => {
                 <p>您確定要刪除腳本 <strong className="text-amber-400">{deletingPlaybook?.name}</strong> 嗎？</p>
                 <p className="mt-2 text-slate-400">此操作無法復原。</p>
             </Modal>
+            <ColumnSettingsModal
+                isOpen={isColumnSettingsModalOpen}
+                onClose={() => setIsColumnSettingsModalOpen(false)}
+                onSave={handleSaveColumnConfig}
+                allColumns={ALL_COLUMNS}
+                visibleColumnKeys={visibleColumns}
+            />
         </div>
     );
 };

@@ -3,22 +3,15 @@ import Modal from './Modal';
 import Icon from './Icon';
 import Wizard from './Wizard';
 import FormRow from './FormRow';
-import { NotificationStrategy, Team, NotificationChannel } from '../types';
+// FIX: Import `NotificationStrategyOptions` to resolve type errors.
+import { NotificationStrategy, Team, NotificationChannel, NotificationStrategyOptions } from '../types';
 import api from '../services/api';
+import { useOptions } from '../contexts/OptionsContext';
 
 interface StrategyCondition {
   key: string;
   operator: '=' | '!=' | '~=';
   value: string;
-}
-
-interface NotificationStrategyOptions {
-    priorities: ('High' | 'Medium' | 'Low')[];
-    defaultCondition: string;
-    conditionKeys: Record<string, string[]>;
-    tagKeys: string[];
-    tagValues: Record<string, string[]>;
-    stepTitles: string[];
 }
 
 interface NotificationStrategyEditModalProps {
@@ -50,33 +43,31 @@ const serializeConditions = (conditions: StrategyCondition[]): string => {
 const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps> = ({ isOpen, onClose, onSave, strategy }) => {
     const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState<Partial<NotificationStrategy>>({});
-    const [options, setOptions] = useState<NotificationStrategyOptions | null>(null);
+    const { options, isLoading: isLoadingOptions } = useOptions();
+    const strategyOptions = options?.notificationStrategies;
     const [stepTitles, setStepTitles] = useState(["基本資訊", "通知管道", "匹配條件"]);
     
     useEffect(() => {
         if (isOpen) {
-            api.get<NotificationStrategyOptions>('/settings/notification-strategies/options')
-                .then(res => {
-                    setOptions(res.data);
-                    if (res.data.stepTitles) {
-                        setStepTitles(res.data.stepTitles);
-                    }
-                    const initialData = strategy || {
-                        name: '',
-                        enabled: true,
-                        triggerCondition: res.data.defaultCondition,
-                        channelCount: 1,
-                        priority: res.data.priorities[1] || 'Medium',
-                    };
-                    if(strategy && !strategy.id) { // This is a duplicated strategy
-                        initialData.name = `Copy of ${strategy.name}`;
-                    }
-                    setFormData(initialData);
-                    setCurrentStep(1);
-                })
-                .catch(err => console.error("Failed to load strategy options", err));
+            if (!isLoadingOptions && strategyOptions) {
+                 if (strategyOptions.stepTitles) {
+                    setStepTitles(strategyOptions.stepTitles);
+                }
+                const initialData = strategy || {
+                    name: '',
+                    enabled: true,
+                    triggerCondition: strategyOptions.defaultCondition,
+                    channelCount: 1,
+                    priority: strategyOptions.priorities[1] || 'Medium',
+                };
+                if(strategy && !strategy.id) { // This is a duplicated strategy
+                    initialData.name = `Copy of ${strategy.name}`;
+                }
+                setFormData(initialData);
+                setCurrentStep(1);
+            }
         }
-    }, [isOpen, strategy]);
+    }, [isOpen, strategy, isLoadingOptions, strategyOptions]);
 
     const handleSave = () => {
         onSave(formData as NotificationStrategy);
@@ -87,9 +78,9 @@ const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps
     
     const renderStepContent = () => {
         switch (currentStep) {
-            case 1: return <Step1 formData={formData} setFormData={setFormData} options={options} />;
+            case 1: return <Step1 formData={formData} setFormData={setFormData} options={strategyOptions} />;
             case 2: return <Step2 formData={formData} setFormData={setFormData} />;
-            case 3: return <Step3 formData={formData} setFormData={setFormData} options={options} />;
+            case 3: return <Step3 formData={formData} setFormData={setFormData} options={strategyOptions} />;
             default: return null;
         }
     };

@@ -36,7 +36,6 @@ export const PAGE_CONTENT = {
     NO_DATA_TO_EXPORT: '沒有可匯出的資料。',
     LOADING_OPTIONS: '載入中...',
     SELECT_OPTION: '請選擇...',
-    ALL_CATEGORIES: '所有分類',
     ALL_STATUSES: '所有狀態',
     NO_RESULTS: '找不到結果',
     SUCCESS: '成功',
@@ -46,6 +45,13 @@ export const PAGE_CONTENT = {
     YES: '是',
     NO: '否',
     NA: 'N/A',
+    CLEAR_SELECTION: '取消選擇',
+    ITEMS_SELECTED: (count: number) => `已選擇 ${count} 項`,
+  },
+
+  APP: {
+    LOAD_ERROR_TITLE: '應用程式載入失敗',
+    RELOAD_BUTTON: '重新載入頁面',
   },
 
   MODAL: {
@@ -86,10 +92,33 @@ export const PAGE_CONTENT = {
     SHARE_DASHBOARD: 'Share Dashboard',
     GRAFANA_URL_NOT_CONFIGURED: 'Grafana URL not configured.',
   },
+  PLACEHOLDER_PAGE: {
+    UNDER_CONSTRUCTION: '此頁面正在施工中。',
+  },
   PLACEHOLDER_MODAL: {
     TITLE: '功能開發中',
     OK_BUTTON: '了解',
     MESSAGE: (featureName: string) => `「${featureName}」功能目前正在開發中，敬請期待！`,
+  },
+  NOTIFICATION_CENTER: {
+    TITLE: '通知中心',
+    MARK_ALL_AS_READ: '全部標示為已讀',
+    NO_NOTIFICATIONS: '沒有新通知',
+    VIEW_DETAILS: '查看詳情',
+    MARK_AS_READ_TOOLTIP: '標示為已讀',
+    TIME_UNITS: {
+      YEAR: (count: number) => `${count} 年前`,
+      MONTH: (count: number) => `${count} 個月前`,
+      DAY: (count: number) => `${count} 天前`,
+      HOUR: (count: number) => `${count} 小時前`,
+      MINUTE: (count: number) => `${count} 分鐘前`,
+      JUST_NOW: '剛剛',
+    },
+    TOAST: {
+      LOAD_ERROR: '無法載入通知。',
+      MARK_ONE_ERROR: '將通知標示為已讀失敗。',
+      MARK_ALL_ERROR: '將所有通知標示為已讀失敗。',
+    },
   },
   UNIFIED_SEARCH: {
     TITLE: '進階搜索與篩選',
@@ -115,6 +144,33 @@ export const PAGE_CONTENT = {
       PROVIDER: '提供商',
       REGION: '區域',
     },
+    TAG_MANAGEMENT: {
+      CATEGORY: '分類',
+      ALL_CATEGORIES: '所有分類',
+    },
+    AUDIT_LOGS: {
+      USER: '使用者',
+      ACTION: '操作類型',
+      TIME_RANGE: '時間範圍',
+      ALL_USERS: '所有使用者',
+      ALL_ACTIONS: '所有操作',
+    },
+    DASHBOARDS: {
+      CATEGORY: '類別',
+      ALL_CATEGORIES: '所有類別',
+    },
+    AUTOMATION_HISTORY: {
+      PLAYBOOK: '腳本',
+      ALL_PLAYBOOKS: '所有腳本',
+      STATUS: '狀態',
+      TIME_RANGE: '時間範圍',
+    },
+    NOTIFICATION_HISTORY: {
+      STATUS: '狀態',
+      CHANNEL_TYPE: '管道類型',
+      ALL_CHANNEL_TYPES: '所有類型',
+      TIME_RANGE: '時間範圍',
+    },
   },
   ROLE_EDIT_MODAL: {
     ADD_TITLE: '新增角色',
@@ -122,6 +178,44 @@ export const PAGE_CONTENT = {
     ROLE_NAME: '角色名稱',
     PERMISSION_SETTINGS: '權限設定',
     SELECT_ALL: '全選',
+  },
+  AUTOMATION_PLAYBOOK_EDIT_MODAL: {
+    ADD_TITLE: '新增腳本',
+    EDIT_TITLE: '編輯腳本',
+    NAME_LABEL: '腳本名稱 *',
+    TYPE_LABEL: '類型',
+    DESCRIPTION_LABEL: '描述',
+    CONTENT_LABEL: '腳本內容',
+    CONTENT_PLACEHOLDER: '#!/bin/bash\n# Your script here...\necho "Hello, $1!"',
+    GENERATE_WITH_AI_BUTTON: '使用 AI 生成',
+    PARAMETERS_TITLE: '參數定義',
+    ADD_PARAMETER_BUTTON: '新增參數',
+    PARAM_NAME_PLACEHOLDER: 'Name (e.g., pod_name)',
+    PARAM_LABEL_PLACEHOLDER: 'Label (e.g., Pod Name)',
+    PARAM_REQUIRED_LABEL: 'Required',
+    PARAM_DEFAULT_VALUE_LABEL: 'Default Value',
+    PARAM_PLACEHOLDER_LABEL: 'Placeholder',
+    PARAM_OPTIONS_LABEL: 'Options',
+    PARAM_ADD_OPTION_BUTTON: '+ Add Option',
+    PARAM_OPTION_VALUE_PLACEHOLDER: 'Value',
+    PARAM_OPTION_LABEL_PLACEHOLDER: 'Label',
+    BOOLEAN_ENABLED: 'Enabled',
+    BOOLEAN_DISABLED: 'Disabled',
+  },
+  GENERATE_PLAYBOOK_WITH_AI_MODAL: {
+    TITLE: '使用 AI 生成腳本',
+    APPLY_BUTTON: '套用',
+    PROMPT_LABEL: '描述您的自動化需求',
+    PROMPT_PLACEHOLDER: '例如: 建立一個 shell 腳本來重啟 Kubernetes pod，需要傳入 namespace 和 pod 名稱...',
+    GENERATE_BUTTON: '生成腳本',
+    GENERATING_BUTTON: '生成中...',
+    LOADING_MESSAGE: '正在生成 AI 分析報告，請稍候...',
+    ERROR_MESSAGE: '無法生成腳本。請檢查您的提示或 API 金鑰並再試一次。',
+    RESULTS_TITLE: '生成結果',
+    SCRIPT_TYPE_LABEL: '腳本類型',
+    CONTENT_LABEL: '腳本內容',
+    PARAMETERS_LABEL: '偵測到的參數',
+    NO_PARAMETERS_DETECTED: '未偵測到參數。',
   },
   EXECUTION_LOG_DETAIL: {
       STATUS: '狀態',
@@ -154,6 +248,53 @@ export const PAGE_CONTENT = {
   },
 
   // Pages & Modals
+  PAGE_LAYOUTS: {
+    incidents: {
+        title: '事件管理',
+        description: '監控和處理系統異常事件',
+        kpiPageName: '事件管理'
+    },
+    resources: {
+        title: '資源管理',
+        description: '探索、組織與管理您的所有基礎設施資源',
+        kpiPageName: '資源管理'
+    },
+    dashboards: {
+        title: '儀表板管理',
+        description: '統一的系統監控與業務洞察儀表板入口',
+        kpiPageName: '儀表板管理'
+    },
+    analysis: {
+        title: '分析中心',
+        description: '深入了解系統趨勢、效能瓶頸和運營數據',
+        kpiPageName: '分析中心'
+    },
+    automation: {
+        title: '自動化中心',
+        description: '提供自動化腳本管理、排程配置和執行追蹤功能',
+        kpiPageName: '自動化中心'
+    },
+    iam: {
+        title: '身份與存取管理',
+        description: '統一管理身份認證、存取權限和組織架構配置',
+        kpiPageName: '身份與存取管理'
+    },
+    notification: {
+        title: '通知管理',
+        description: '提供統一的通知策略配置、管道管理和歷史記錄查詢功能',
+        kpiPageName: '通知管理'
+    },
+    platformSettings: {
+        title: '平台設定',
+        description: '提供系統全域配置管理，包含標籤、郵件、身份驗證等功能',
+        kpiPageName: '平台設定'
+    },
+    profile: {
+        title: '個人設定',
+        description: '提供用戶個人資訊管理、偏好設定和安全配置功能',
+        kpiPageName: '個人設定'
+    },
+  },
   SRE_WAR_ROOM: {
     PAGE_KPI_NAME: "SREWarRoom",
     AI_BRIEFING_TITLE: 'AI 每日簡報',
@@ -488,6 +629,10 @@ export const PAGE_CONTENT = {
       SAVE_ERROR: 'Failed to save user.',
       DELETE_ERROR: 'Failed to delete user.',
       BATCH_ACTION_ERROR: (action: string) => `Failed to ${action} selected users.`,
+  },
+  TAG_MANAGEMENT: {
+    ALL_CATEGORIES_VALUE: 'All',
+    ALL_CATEGORIES_LABEL: '所有分類',
   },
   LAYOUT_SETTINGS: {
       INFO_TEXT: 'Adjust the KPI cards and their order for each hub page. Changes take effect immediately after saving.',

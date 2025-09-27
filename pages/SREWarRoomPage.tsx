@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import EChartsReact from '../components/EChartsReact';
@@ -30,6 +31,8 @@ const SREWarRoomPage: React.FC = () => {
     const [serviceHealthData, setServiceHealthData] = useState<ServiceHealthData | null>(null);
     const [resourceGroupData, setResourceGroupData] = useState<ResourceGroupStatusData | null>(null);
     const [isChartLoading, setIsChartLoading] = useState(true);
+    const [serviceHealthError, setServiceHealthError] = useState<string | null>(null);
+    const [resourceGroupError, setResourceGroupError] = useState<string | null>(null);
     const navigate = useNavigate();
 
     const fetchBriefing = useCallback(async () => {
@@ -47,6 +50,8 @@ const SREWarRoomPage: React.FC = () => {
     
     const fetchChartData = useCallback(async () => {
         setIsChartLoading(true);
+        setServiceHealthError(null);
+        setResourceGroupError(null);
         try {
             const [healthRes, groupRes] = await Promise.all([
                 api.get<ServiceHealthData>('/dashboards/sre-war-room/service-health'),
@@ -56,6 +61,8 @@ const SREWarRoomPage: React.FC = () => {
             setResourceGroupData(groupRes.data);
         } catch (error) {
              console.error("Fetch Chart Data Error:", error);
+             setServiceHealthError('無法載入服務健康度資料。');
+             setResourceGroupError('無法載入資源群組狀態資料。');
         } finally {
             setIsChartLoading(false);
         }
@@ -183,6 +190,12 @@ const SREWarRoomPage: React.FC = () => {
              <h2 className="text-xl font-bold mb-4">{content.SERVICE_HEALTH_TITLE}</h2>
              {isChartLoading ? (
                 <div className="h-[300px] bg-slate-800/50 rounded-lg animate-pulse"></div>
+             ) : serviceHealthError ? (
+                <div className="h-[300px] flex flex-col items-center justify-center text-red-400">
+                    <Icon name="alert-circle" className="w-8 h-8 mb-2" />
+                    <p className="font-semibold">{serviceHealthError}</p>
+                    <button onClick={fetchChartData} className="mt-4 px-3 py-1.5 text-sm text-white bg-sky-600 rounded-md">重試</button>
+                </div>
              ) : (
                 <EChartsReact option={serviceHealthOption} style={{ height: '300px' }} onEvents={serviceHealthEvents} />
              )}
@@ -191,6 +204,12 @@ const SREWarRoomPage: React.FC = () => {
              <h2 className="text-xl font-bold mb-4">{content.RESOURCE_GROUP_STATUS_TITLE}</h2>
              {isChartLoading ? (
                 <div className="h-[300px] bg-slate-800/50 rounded-lg animate-pulse"></div>
+             ) : resourceGroupError ? (
+                <div className="h-[300px] flex flex-col items-center justify-center text-red-400">
+                    <Icon name="alert-circle" className="w-8 h-8 mb-2" />
+                    <p className="font-semibold">{resourceGroupError}</p>
+                    <button onClick={fetchChartData} className="mt-4 px-3 py-1.5 text-sm text-white bg-sky-600 rounded-md">重試</button>
+                </div>
              ) : (
                 <EChartsReact option={resourceGroupOption} style={{ height: '300px' }} onEvents={resourceGroupEvents} />
              )}
