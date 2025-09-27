@@ -84,7 +84,7 @@ const DashboardViewer: React.FC<DashboardViewerProps> = ({ dashboard }) => {
                 ) : options && (
                     <>
                         <div className="flex items-center space-x-4">
-                            <Dropdown label="主題" options={[{label: '深色', value: 'dark'}, {label: '淺色', value: 'light'}]} value={theme} onChange={setTheme} minWidth="w-24" />
+                            <Dropdown label="主題" options={options.themeOptions || []} value={theme} onChange={setTheme} minWidth="w-24" />
                             <Dropdown label="TV 模式" options={options.tvModeOptions} value={tvMode} onChange={setTvMode} minWidth="w-24" />
                             <Dropdown label="刷新" options={options.refreshOptions} value={refresh} onChange={setRefresh} minWidth="w-24" />
                         </div>

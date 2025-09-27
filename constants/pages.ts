@@ -48,18 +48,6 @@ export const PAGE_CONTENT = {
     NA: 'N/A',
   },
 
-  COMMAND_PALETTE: {
-    TITLE: 'Command Palette',
-    SEARCH_PLACEHOLDER: 'Search...',
-    PLACEHOLDER_ROOT: 'Search or type `>` for commands...',
-    PLACEHOLDER_SILENCE_SEARCH: 'Search for a resource to silence...',
-    PLACEHOLDER_SILENCE_DURATION: 'Enter duration (e.g., 30m, 2h, 1d)...',
-    PLACEHOLDER_RUN_PLAYBOOK: 'Search for a playbook to run...',
-    SILENCE_PREFIX: (name?: string) => `Silence ${name || ''}`,
-    RUN_PLAYBOOK_PREFIX: 'Run Playbook',
-    NO_RESULTS: 'No results found.',
-  },
-
   MODAL: {
     DEFAULT_WIDTH: 'w-1/2',
     BASE_CLASSES: 'glass-card rounded-xl border border-slate-700/50 shadow-2xl flex flex-col max-w-4xl max-h-[80vh] animate-fade-in-down',

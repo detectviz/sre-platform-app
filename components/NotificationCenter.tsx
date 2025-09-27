@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { NotificationItem, NotificationOptions, StyleDescriptor } from '../types';
@@ -103,7 +102,9 @@ const NotificationCenter: React.FC = () => {
             <button onClick={handleOpen} className="relative p-2 rounded-full hover:bg-slate-700/50">
                 <Icon name="bell" className="w-5 h-5" />
                 {unreadCount > 0 && (
-                    <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-slate-900" />
+                    <span className="absolute top-1 right-1 flex items-center justify-center min-w-[1rem] h-4 px-1 rounded-full bg-red-500 text-white text-xs font-bold ring-2 ring-slate-900">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
                 )}
             </button>
             {isOpen && (

@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 export interface NavItem {
@@ -83,7 +82,7 @@ export interface Incident {
   status: 'new' | 'acknowledged' | 'resolved' | 'silenced';
   severity: 'critical' | 'warning' | 'info';
   priority?: 'P0' | 'P1' | 'P2' | 'P3';
-  assignee: string;
+  assignee?: string;
   triggeredAt: string;
   history: IncidentEvent[];
   aiAnalysis?: IncidentAnalysis;
@@ -605,6 +604,8 @@ export interface SilenceRuleOptions {
     values: Record<string, string[]>;
     defaultMatcher: SilenceMatcher;
     weekdays: { value: number, label: string }[];
+    types: { value: SilenceRule['type'], label: string }[];
+    statuses: { value: boolean, label: string }[];
 }
 
 export interface InfraInsightsOptions {
@@ -645,6 +646,9 @@ export interface NotificationOptions {
 export interface ResourceOptions {
     statuses: StyleDescriptor<Resource['status']>[];
     statusColors: ColorDescriptor<Resource['status']>[];
+    types: string[];
+    providers: string[];
+    regions: string[];
 }
 
 // FIX: Define Anomaly and Suggestion types used in AIInsightsOptions.
@@ -695,4 +699,11 @@ export interface AutomationTriggerOptions {
 
 export interface TopologyOptions {
     layouts: { value: string, label: string }[];
+}
+
+export interface AllOptions {
+    incidents: IncidentOptions;
+    alertRules: AlertRuleOptions;
+    silenceRules: SilenceRuleOptions;
+    resources: ResourceOptions;
 }

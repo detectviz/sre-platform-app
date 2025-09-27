@@ -46,6 +46,7 @@ import { PageMetadataProvider } from './contexts/PageMetadataContext';
 import { UIConfigProvider, useUIConfig } from './contexts/UIConfigContext';
 import GrafanaSettingsPage from './pages/settings/platform/GrafanaSettingsPage';
 import { UserProvider } from './contexts/UserContext';
+import { OptionsProvider } from './contexts/OptionsContext';
 
 // Lucide icons renderer
 const RenderIcons = () => {
@@ -158,7 +159,9 @@ const App: React.FC = () => {
         <UIConfigProvider>
             <PageMetadataProvider>
                 <UserProvider>
-                    <AppRoutes />
+                    <OptionsProvider>
+                        <AppRoutes />
+                    </OptionsProvider>
                 </UserProvider>
             </PageMetadataProvider>
         </UIConfigProvider>

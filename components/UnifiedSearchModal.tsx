@@ -1,10 +1,12 @@
 
+
 import React, { useState, useEffect, useMemo } from 'react';
 import Modal from './Modal';
 import Icon from './Icon';
-import { Resource, ResourceFilters } from '../types';
+import { Resource, ResourceFilters, AlertRule, Incident, SilenceRule } from '../types';
 import api from '../services/api';
 import { PAGE_CONTENT } from '../constants/pages';
+import { useOptions } from '../contexts/OptionsContext';
 
 const { GLOBAL: globalContent, UNIFIED_SEARCH: content } = PAGE_CONTENT;
 
@@ -48,16 +50,13 @@ const FormRow = ({ label, children }: { label: string; children?: React.ReactNod
 
 const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, onClose, onSearch, initialFilters }) => {
   const [filters, setFilters] = useState<Filters>(initialFilters);
-  const [resourceOptions, setResourceOptions] = useState<{ types: string[], providers: string[], regions: string[] }>({ types: [], providers: [], regions: [] });
+  const { options, isLoading: isLoadingOptions } = useOptions();
 
   useEffect(() => {
     if (isOpen) {
       setFilters(initialFilters);
-      if (page === 'resources') {
-        api.get<any>('/resources/options').then(res => setResourceOptions(res.data));
-      }
     }
-  }, [isOpen, initialFilters, page]);
+  }, [isOpen, initialFilters]);
 
   const handleSearch = () => {
     onSearch(filters);
@@ -70,34 +69,24 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
   const renderIncidentFilters = () => (
     <>
       <FormRow label={content.INCIDENTS.STATUS}>
-        {/* FIX: Use functional update with type casting to prevent type errors on union state. */}
         <select value={(filters as IncidentFilters).status || ''} onChange={e => setFilters(prev => ({ ...(prev as IncidentFilters), status: e.target.value as IncidentFilters['status'] }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
           <option value="">{content.ALL_STATUSES}</option>
-          <option value="new">New</option>
-          <option value="acknowledged">Acknowledged</option>
-          <option value="resolved">Resolved</option>
-          <option value="silenced">Silenced</option>
+          {options?.incidents.statuses.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
         </select>
       </FormRow>
       <FormRow label={content.INCIDENTS.SEVERITY}>
-        {/* FIX: Use functional update with type casting to prevent type errors on union state. */}
         <select value={(filters as IncidentFilters).severity || ''} onChange={e => setFilters(prev => ({ ...(prev as IncidentFilters), severity: e.target.value as IncidentFilters['severity'] }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
           <option value="">{content.ALL_SEVERITIES}</option>
-          <option value="critical">Critical</option>
-          <option value="warning">Warning</option>
-          <option value="info">Info</option>
+          {options?.incidents.severities.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
         </select>
       </FormRow>
       <FormRow label={content.INCIDENTS.ASSIGNEE}>
-        {/* FIX: Use functional update with type casting to prevent type errors on union state. */}
         <input type="text" value={(filters as IncidentFilters).assignee || ''} onChange={e => setFilters(prev => ({ ...(prev as IncidentFilters), assignee: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
       </FormRow>
       <div className="col-span-2">
         <FormRow label={content.INCIDENTS.TRIGGER_TIME_RANGE}>
           <div className="flex space-x-2">
-            {/* FIX: Use functional update with type casting to prevent type errors on union state. */}
             <input type="datetime-local" value={(filters as IncidentFilters).startTime || ''} onChange={e => setFilters(prev => ({ ...(prev as IncidentFilters), startTime: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
-            {/* FIX: Use functional update with type casting to prevent type errors on union state. */}
             <input type="datetime-local" value={(filters as IncidentFilters).endTime || ''} onChange={e => setFilters(prev => ({ ...(prev as IncidentFilters), endTime: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
           </div>
         </FormRow>
@@ -108,20 +97,15 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
   const renderAlertRuleFilters = () => (
      <>
       <FormRow label={content.ALERT_RULES.SEVERITY}>
-        {/* FIX: Use functional update with type casting to prevent type errors on union state. */}
         <select value={(filters as AlertRuleFilters).severity || ''} onChange={e => setFilters(prev => ({ ...(prev as AlertRuleFilters), severity: e.target.value as AlertRuleFilters['severity'] }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
           <option value="">{content.ALL_SEVERITIES}</option>
-          <option value="critical">Critical</option>
-          <option value="warning">Warning</option>
-          <option value="info">Info</option>
+          {options?.alertRules.severities.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
         </select>
       </FormRow>
       <FormRow label={globalContent.STATUS}>
-        {/* FIX: Use functional update with type casting to prevent type errors on union state. */}
         <select value={(filters as AlertRuleFilters).enabled === undefined ? '' : String((filters as AlertRuleFilters).enabled)} onChange={e => setFilters(prev => ({ ...(prev as AlertRuleFilters), enabled: e.target.value === '' ? undefined : e.target.value === 'true' }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
           <option value="">{globalContent.ALL}</option>
-          <option value="true">{globalContent.ENABLED}</option>
-          <option value="false">{globalContent.DISABLED}</option>
+          {options?.alertRules.statuses.map(opt => <option key={String(opt.value)} value={String(opt.value)}>{opt.label}</option>)}
         </select>
       </FormRow>
     </>
@@ -130,20 +114,15 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
   const renderSilenceRuleFilters = () => (
     <>
       <FormRow label={globalContent.TYPE}>
-        {/* FIX: Use functional update with type casting to prevent type errors on union state. */}
         <select value={(filters as SilenceRuleFilters).type || ''} onChange={e => setFilters(prev => ({ ...(prev as SilenceRuleFilters), type: e.target.value as SilenceRuleFilters['type'] }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
           <option value="">{content.ALL_TYPES}</option>
-          <option value="single">Single</option>
-          <option value="repeat">Repeat</option>
-          <option value="condition">Condition</option>
+          {options?.silenceRules.types.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
         </select>
       </FormRow>
        <FormRow label={globalContent.STATUS}>
-        {/* FIX: Use functional update with type casting to prevent type errors on union state. */}
         <select value={(filters as SilenceRuleFilters).enabled === undefined ? '' : String((filters as SilenceRuleFilters).enabled)} onChange={e => setFilters(prev => ({ ...(prev as SilenceRuleFilters), enabled: e.target.value === '' ? undefined : e.target.value === 'true' }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
           <option value="">{globalContent.ALL}</option>
-          <option value="true">{globalContent.ENABLED}</option>
-          <option value="false">{globalContent.DISABLED}</option>
+          {options?.silenceRules.statuses.map(opt => <option key={String(opt.value)} value={String(opt.value)}>{opt.label}</option>)}
         </select>
       </FormRow>
     </>
@@ -152,34 +131,27 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
   const renderResourceFilters = () => (
     <>
       <FormRow label={globalContent.STATUS}>
-        {/* FIX: Use functional update with type casting to prevent type errors on union state. */}
         <select value={(filters as ResourceFilters).status || ''} onChange={e => setFilters(prev => ({ ...(prev as ResourceFilters), status: e.target.value as Resource['status'] }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
           <option value="">{content.ALL_STATUSES}</option>
-          <option value="healthy">Healthy</option>
-          <option value="warning">Warning</option>
-          <option value="critical">Critical</option>
-          <option value="offline">Offline</option>
+          {options?.resources.statuses.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
         </select>
       </FormRow>
       <FormRow label={globalContent.TYPE}>
-        {/* FIX: Use functional update with type casting to prevent type errors on union state. */}
         <select value={(filters as ResourceFilters).type || ''} onChange={e => setFilters(prev => ({ ...(prev as ResourceFilters), type: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
           <option value="">{content.ALL_TYPES}</option>
-          {resourceOptions?.types.map(t => <option key={t} value={t}>{t}</option>)}
+          {options?.resources.types.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
       </FormRow>
       <FormRow label={content.RESOURCES.PROVIDER}>
-        {/* FIX: Use functional update with type casting to prevent type errors on union state. */}
         <select value={(filters as ResourceFilters).provider || ''} onChange={e => setFilters(prev => ({ ...(prev as ResourceFilters), provider: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
           <option value="">{content.ALL_PROVIDERS}</option>
-          {resourceOptions?.providers.map(p => <option key={p} value={p}>{p}</option>)}
+          {options?.resources.providers.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
       </FormRow>
       <FormRow label={content.RESOURCES.REGION}>
-        {/* FIX: Use functional update with type casting to prevent type errors on union state. */}
         <select value={(filters as ResourceFilters).region || ''} onChange={e => setFilters(prev => ({ ...(prev as ResourceFilters), region: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
           <option value="">{content.ALL_REGIONS}</option>
-          {resourceOptions?.regions.map(r => <option key={r} value={r}>{r}</option>)}
+          {options?.resources.regions.map(r => <option key={r} value={r}>{r}</option>)}
         </select>
       </FormRow>
     </>
@@ -205,14 +177,21 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="md:col-span-2">
             <FormRow label={content.KEYWORD_SEARCH}>
-                 {/* FIX: Use functional update for consistency and best practices. */}
                  <input type="text" placeholder={content.KEYWORD_PLACEHOLDER} value={filters.keyword || ''} onChange={e => setFilters(prev => ({ ...prev, keyword: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
             </FormRow>
         </div>
-        {page === 'incidents' && renderIncidentFilters()}
-        {page === 'alert-rules' && renderAlertRuleFilters()}
-        {page === 'silence-rules' && renderSilenceRuleFilters()}
-        {page === 'resources' && renderResourceFilters()}
+        {isLoadingOptions ? (
+             <div className="md:col-span-2 text-center p-8">
+                <Icon name="loader-circle" className="w-6 h-6 animate-spin inline-block text-slate-400" />
+            </div>
+        ) : (
+            <>
+                {page === 'incidents' && renderIncidentFilters()}
+                {page === 'alert-rules' && renderAlertRuleFilters()}
+                {page === 'silence-rules' && renderSilenceRuleFilters()}
+                {page === 'resources' && renderResourceFilters()}
+            </>
+        )}
       </div>
     </Modal>
   );

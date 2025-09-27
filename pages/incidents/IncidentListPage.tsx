@@ -18,6 +18,8 @@ import { showToast } from '../../services/toast';
 import { exportToCsv } from '../../services/export';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
 import { useUser } from '../../contexts/UserContext';
+import { useOptions } from '../../contexts/OptionsContext';
+import AssignIncidentModal from '../../components/AssignIncidentModal';
 
 
 const ALL_COLUMNS: TableColumn[] = [
@@ -51,7 +53,10 @@ const IncidentListPage: React.FC = () => {
     const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
-    const [options, setOptions] = useState<IncidentOptions | null>(null);
+    const [assigningIncident, setAssigningIncident] = useState<Incident | null>(null);
+    
+    const { options, isLoading: isLoadingOptions } = useOptions();
+    const incidentOptions = options?.incidents;
 
     const { incidentId } = useParams<{ incidentId: string }>();
     const navigate = useNavigate();
@@ -70,16 +75,14 @@ const IncidentListPage: React.FC = () => {
                 page_size: pageSize,
                 ...filters,
             };
-            const [incidentsRes, columnsRes, optionsRes] = await Promise.all([
+            const [incidentsRes, columnsRes] = await Promise.all([
                 api.get<{ items: Incident[], total: number }>('/incidents', { params }),
                 api.get<string[]>(`/settings/column-config/${pageKey}`),
-                api.get<IncidentOptions>('/incidents/options')
             ]);
             
             setIncidents(incidentsRes.data.items);
             setTotalIncidents(incidentsRes.data.total);
             setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
-            setOptions(optionsRes.data);
         } catch (err) {
             setError('無法獲取事故列表。');
         } finally {
@@ -194,6 +197,17 @@ const IncidentListPage: React.FC = () => {
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => setSelectedIds(e.target.checked ? incidents.map(i => i.id) : []);
     const handleSelectOne = (e: React.ChangeEvent<HTMLInputElement>, id: string) => setSelectedIds(prev => e.target.checked ? [...prev, id] : prev.filter(sid => sid !== id));
     
+    const handleReassignClick = (incident: Incident) => {
+        setAssigningIncident(incident);
+    };
+
+    const handleConfirmAssign = async (assigneeName: string) => {
+        if (!assigningIncident) return;
+        await api.post(`/incidents/${assigningIncident.id}/actions`, { action: 'assign', assigneeName });
+        setAssigningIncident(null);
+        fetchIncidents();
+    };
+
     const isAllSelected = incidents.length > 0 && selectedIds.length === incidents.length;
     const isIndeterminate = selectedIds.length > 0 && selectedIds.length < incidents.length;
     
@@ -207,30 +221,35 @@ const IncidentListPage: React.FC = () => {
             case 'summary':
                 return <span className="font-medium text-white">{inc.summary}</span>;
             case 'status':
-                return <span className={`px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStyle(options?.statuses, inc.status)}`}>{inc.status}</span>;
+                return <span className={`px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStyle(incidentOptions?.statuses, inc.status)}`}>{inc.status}</span>;
             case 'severity':
-                return <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(options?.severities, inc.severity)}`}>{inc.severity}</span>;
+                return <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(incidentOptions?.severities, inc.severity)}`}>{inc.severity}</span>;
             case 'priority':
-                return <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStyle(options?.priorities, inc.priority)}`}>{inc.priority || 'N/A'}</span>;
+                return <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStyle(incidentOptions?.priorities, inc.priority)}`}>{inc.priority || 'N/A'}</span>;
             case 'serviceImpact':
-                return <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(options?.serviceImpacts, inc.serviceImpact)}`}>{inc.serviceImpact}</span>;
+                return <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(incidentOptions?.serviceImpacts, inc.serviceImpact)}`}>{inc.serviceImpact}</span>;
             case 'resource':
                 return inc.resource;
             case 'assignee':
-                return (
-                    inc.status === 'new' ? (
+                if (inc.status === 'new' || !inc.assignee) {
+                    return (
                         <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleAcknowledge([inc.id]);
-                            }}
-                            className="px-3 py-1 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-md transition-colors"
+                            onClick={(e) => { e.stopPropagation(); handleAcknowledge([inc.id]); }}
+                            className="px-3 py-1 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-md transition-colors flex items-center"
                         >
+                            <Icon name="user-check" className="w-3 h-3 mr-1.5" />
                             認領
                         </button>
-                    ) : (
-                        inc.assignee
-                    )
+                    );
+                }
+                return (
+                    <button
+                        onClick={(e) => { e.stopPropagation(); handleReassignClick(inc); }}
+                        className="flex items-center space-x-2 text-sky-400 hover:underline"
+                    >
+                        <span>{inc.assignee}</span>
+                        <Icon name="repeat" className="w-3 h-3" />
+                    </button>
                 );
             case 'triggeredAt':
                 return inc.triggeredAt;
@@ -281,7 +300,7 @@ const IncidentListPage: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {isLoading ? (
+                            {isLoading || isLoadingOptions ? (
                                 <TableLoader colSpan={visibleColumns.length + 2} />
                             ) : error ? (
                                 <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchIncidents} />
@@ -307,7 +326,7 @@ const IncidentListPage: React.FC = () => {
             </TableContainer>
 
             <Drawer isOpen={!!incidentId} onClose={() => navigate('/incidents')} title={`事故詳情: ${incidentId}`} width="w-3/5" extra={<ToolbarButton icon="brain-circuit" text="AI 分析" onClick={() => { if(incidentId) { setSelectedIds([incidentId]); handleRunAIAnalysis(); }}} ai />}>
-                {incidentId && <IncidentDetailPage incidentId={incidentId} />}
+                {incidentId && <IncidentDetailPage incidentId={incidentId} onUpdate={fetchIncidents} />}
             </Drawer>
             
             <UnifiedSearchModal page="incidents" isOpen={isSearchModalOpen} onClose={() => setIsSearchModalOpen(false)} onSearch={(newFilters) => { setFilters(newFilters as IncidentFilters); setIsSearchModalOpen(false); setCurrentPage(1); }} initialFilters={filters} />
@@ -322,6 +341,12 @@ const IncidentListPage: React.FC = () => {
                 onSave={handleSaveColumnConfig}
                 allColumns={ALL_COLUMNS}
                 visibleColumnKeys={visibleColumns}
+            />
+            <AssignIncidentModal 
+                isOpen={!!assigningIncident}
+                onClose={() => setAssigningIncident(null)}
+                onAssign={handleConfirmAssign}
+                incident={assigningIncident}
             />
         </div>
     );

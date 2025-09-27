@@ -1,3 +1,4 @@
+// FIX: Added specific option types to the import to be used for explicit typing of mock data.
 import { 
     Dashboard, DashboardTemplate, Incident, AlertRule, AlertRuleTemplate, SilenceRule, SilenceRuleTemplate,
     Resource, ResourceGroup, AutomationPlaybook, AutomationExecution, AutomationTrigger, User, Team, Role, 
@@ -16,6 +17,11 @@ import {
     PreferenceOptions,
     GrafanaSettings,
     GrafanaOptions,
+    AllOptions,
+    IncidentOptions,
+    AlertRuleOptions,
+    SilenceRuleOptions,
+    ResourceOptions
 } from '../types';
 
 // Helper to generate UUIDs
@@ -28,6 +34,50 @@ export function uuidv4() {
 }
 
 // --- ALL MOCK DATA DEFINITIONS ---
+
+const MOCK_COMMAND_PALETTE_CONTENT = {
+    TITLE: 'Command Palette',
+    SEARCH_PLACEHOLDER: 'Search...',
+    PLACEHOLDER_ROOT: 'Search or type `>` for commands...',
+    PLACEHOLDER_SILENCE_SEARCH: 'Search for a resource to silence...',
+    PLACEHOLDER_SILENCE_DURATION: 'Enter duration (e.g., 30m, 2h, 1d)...',
+    PLACEHOLDER_RUN_PLAYBOOK: 'Search for a playbook to run...',
+    SILENCE_PREFIX_TEMPLATE: 'Silence {name}',
+    RUN_PLAYBOOK_PREFIX: 'Run Playbook',
+    NO_RESULTS: 'No results found.',
+};
+
+const MOCK_EXECUTION_LOG_DETAIL_CONTENT = {
+    STATUS: '狀態',
+    SCRIPT_NAME: '腳本名稱',
+    TRIGGER_SOURCE: '觸發來源',
+    DURATION: '耗時',
+    PARAMETERS: '執行參數',
+    STDOUT: 'Standard Output (stdout)',
+    STDERR: 'Standard Error (stderr)',
+    TRIGGER_BY_TEMPLATE: '{source} by {by}',
+    NO_STDOUT: 'No standard output.',
+};
+
+const MOCK_IMPORT_MODAL_CONTENT = {
+    TITLE_TEMPLATE: '從 CSV 匯入{itemName}',
+    INSTRUCTIONS_TITLE: '操作說明',
+    DOWNLOAD_LINK: '下載 CSV 範本檔案',
+    DRAG_TEXT: '拖曳 CSV 檔案至此',
+    OR: '或',
+    CLICK_TO_UPLOAD: '點擊此處上傳',
+    INVALID_FILE_ERROR: '請上傳有效的 CSV 檔案。',
+    IMPORT_SUCCESS_TEMPLATE: '{itemName} 已成功匯入。',
+    IMPORT_ERROR_TEMPLATE: '無法匯入 {itemName}。請檢查檔案格式並再試一次。',
+    START_IMPORT: '開始匯入',
+    IMPORTING: '匯入中...',
+    INSTRUCTIONS_STEPS: [
+      '下載 CSV 範本檔案',
+      '根據範本格式填寫您的資料。',
+      '將填寫好的 CSV 檔案拖曳至下方區域或點擊上傳。',
+    ],
+};
+
 
 const MOCK_PAGE_METADATA: Record<string, { columnConfigKey: string }> = {
   'dashboards': { columnConfigKey: 'dashboards' },
@@ -107,7 +157,7 @@ const MOCK_DASHBOARD_TEMPLATES: DashboardTemplate[] = [
     { id: 'tpl-002', name: 'Business KPI Overview', description: 'Track key business metrics like user sign-ups, revenue, and conversion rates.', icon: 'briefcase', category: 'Business' },
 ];
 const MOCK_INCIDENTS: Incident[] = [
-    { id: 'INC-001', summary: 'API 延遲超過閾值', resource: 'api-server-01', resourceId: 'res-001', serviceImpact: 'High', rule: 'API 延遲規則', ruleId: 'rule-002', status: 'new', severity: 'warning', priority: 'P1', assignee: '張三', triggeredAt: '2024-01-15 10:30:00', history: [ { timestamp: '2024-01-15 10:30:00', user: 'System', action: 'Incident created from rule "API 延遲規則".' } ] },
+    { id: 'INC-001', summary: 'API 延遲超過閾值', resource: 'api-server-01', resourceId: 'res-001', serviceImpact: 'High', rule: 'API 延遲規則', ruleId: 'rule-002', status: 'new', severity: 'warning', priority: 'P1', triggeredAt: '2024-01-15 10:30:00', history: [ { timestamp: '2024-01-15 10:30:00', user: 'System', action: 'Incident created from rule "API 延遲規則".' } ] },
     { id: 'INC-002', summary: '資料庫連接超時', resource: 'db-primary', resourceId: 'res-002', serviceImpact: 'High', rule: '資料庫連接規則', ruleId: 'rule-db-conn', status: 'acknowledged', severity: 'critical', priority: 'P0', assignee: '李四', triggeredAt: '2024-01-15 10:15:00', history: [ { timestamp: '2024-01-15 10:15:00', user: 'System', action: 'Incident created from rule "資料庫連接規則".' } ] },
     {
         id: 'INC-003',
@@ -145,14 +195,28 @@ const MOCK_SILENCE_RULE_TEMPLATES: SilenceRuleTemplate[] = [
     { id: 'srt-001', name: 'Staging Maintenance', emoji: '🚧', data: { description: 'Silence all alerts from the staging environment.', matchers: [{ key: 'env', operator: '=', value: 'staging' }] } },
     { id: 'srt-002', name: 'Weekend Silence', emoji: '😴', data: { description: 'Silence non-critical alerts over the weekend.', matchers: [{ key: 'severity', operator: '!=', value: 'critical' }], schedule: { type: 'recurring', cron: '0 0 * * 6' } } },
 ];
-const MOCK_SILENCE_RULE_OPTIONS = {
+// FIX: Explicitly typed the mock object with `SilenceRuleOptions` to ensure its properties conform to the interface, resolving type inference errors.
+const MOCK_SILENCE_RULE_OPTIONS: SilenceRuleOptions = {
     keys: ['severity', 'env', 'service', 'resource_type'],
     values: {
         severity: ['critical', 'warning', 'info'],
         env: ['production', 'staging', 'development'],
     },
-    defaultMatcher: { key: 'env', operator: '=' as const, value: 'staging' },
-    weekdays: ['日', '一', '二', '三', '四', '五', '六']
+    defaultMatcher: { key: 'env' as const, operator: '=' as const, value: 'staging' },
+    weekdays: [
+        { value: 0, label: '日' }, { value: 1, label: '一' }, { value: 2, label: '二' },
+        { value: 3, label: '三' }, { value: 4, label: '四' }, { value: 5, label: '五' },
+        { value: 6, label: '六' }
+    ],
+    types: [
+        { value: 'single', label: 'Single Event' },
+        { value: 'repeat', label: 'Recurring' },
+        { value: 'condition', label: 'Conditional' }
+    ],
+    statuses: [
+        { value: true, label: 'Enabled' },
+        { value: false, label: 'Disabled' }
+    ],
 };
 const MOCK_RESOURCES: Resource[] = [
     { id: 'res-001', name: 'api-gateway-prod-01', status: 'healthy', type: 'API Gateway', provider: 'AWS', region: 'us-east-1', owner: 'SRE Team', lastCheckIn: '30s ago' },
@@ -618,6 +682,77 @@ const MOCK_TAB_CONFIGS: TabConfigMap = {
     ]
 };
 
+// FIX: Explicitly typed the mock object with `IncidentOptions` to ensure its properties conform to the interface, resolving type inference errors.
+const MOCK_INCIDENT_OPTIONS: IncidentOptions = {
+    statuses: [
+        { value: 'new', label: 'New', className: 'bg-orange-500/20 text-orange-400' },
+        { value: 'acknowledged', label: 'Acknowledged', className: 'bg-sky-500/20 text-sky-400' },
+        { value: 'resolved', label: 'Resolved', className: 'bg-green-500/20 text-green-400' },
+        { value: 'silenced', label: 'Silenced', className: 'bg-slate-500/20 text-slate-400' },
+    ],
+    severities: [
+        { value: 'critical', label: 'Critical', className: 'border-red-500 text-red-400' },
+        { value: 'warning', label: 'Warning', className: 'border-orange-500 text-orange-400' },
+        { value: 'info', label: 'Info', className: 'border-sky-500 text-sky-400' },
+    ],
+    priorities: [
+        { value: 'P0', label: 'P0', className: 'bg-red-700 text-white' },
+        { value: 'P1', label: 'P1', className: 'bg-red-500 text-white' },
+        { value: 'P2', label: 'P2', className: 'bg-orange-500 text-white' },
+        { value: 'P3', label: 'P3', className: 'bg-yellow-500 text-black' },
+    ],
+    serviceImpacts: [
+        { value: 'High', label: 'High', className: 'border-red-500 text-red-400' },
+        { value: 'Medium', label: 'Medium', className: 'border-orange-500 text-orange-400' },
+        { value: 'Low', label: 'Low', className: 'border-yellow-500 text-yellow-400' },
+    ],
+    quickSilenceDurations: [
+        { label: '1 Hour', value: 1 },
+        { label: '4 Hours', value: 4 },
+        { label: '1 Day', value: 24 },
+    ],
+};
+
+// FIX: Explicitly typed the mock object with `AlertRuleOptions` to ensure its properties conform to the interface, resolving type inference errors.
+const MOCK_ALERT_RULE_OPTIONS: AlertRuleOptions = {
+    severities: [
+        { value: 'critical', label: 'Critical' },
+        { value: 'warning', label: 'Warning' },
+        { value: 'info', label: 'Info' },
+    ],
+    statuses: [
+        { value: true, label: 'Enabled' },
+        { value: false, label: 'Disabled' },
+    ]
+};
+
+// FIX: Explicitly typed the mock object with `ResourceOptions` to ensure its properties conform to the interface, resolving type inference errors.
+const MOCK_RESOURCE_OPTIONS: ResourceOptions = {
+    statuses: [
+        { value: 'healthy', label: 'Healthy', className: 'bg-green-500/20 text-green-400' },
+        { value: 'warning', label: 'Warning', className: 'bg-yellow-500/20 text-yellow-400' },
+        { value: 'critical', label: 'Critical', className: 'bg-red-500/20 text-red-400' },
+        { value: 'offline', label: 'Offline', className: 'bg-slate-500/20 text-slate-400' },
+    ],
+    statusColors: [
+        { value: 'healthy', label: 'Healthy', color: '#10b981' },
+        { value: 'warning', label: 'Warning', color: '#f97316' },
+        { value: 'critical', label: 'Critical', color: '#dc2626' },
+        { value: 'offline', label: 'Offline', color: '#64748b' },
+    ],
+    types: ['API Gateway', 'RDS Database', 'EKS Cluster', 'EC2 Instance', 'Kubernetes Service'],
+    providers: ['AWS', 'GCP', 'Azure', 'On-Premise'],
+    regions: ['us-east-1', 'us-west-2', 'eu-central-1', 'ap-northeast-1'],
+};
+
+const MOCK_ALL_OPTIONS: AllOptions = {
+    incidents: MOCK_INCIDENT_OPTIONS,
+    alertRules: MOCK_ALERT_RULE_OPTIONS,
+    silenceRules: MOCK_SILENCE_RULE_OPTIONS,
+    resources: MOCK_RESOURCE_OPTIONS
+};
+
+
 function createInitialDB() {
     // Deep clone to make it mutable
     return {
@@ -678,6 +813,9 @@ function createInitialDB() {
         tabConfigs: JSON.parse(JSON.stringify(MOCK_TAB_CONFIGS)),
         platformSettings: JSON.parse(JSON.stringify(MOCK_PLATFORM_SETTINGS)),
         preferenceOptions: JSON.parse(JSON.stringify(MOCK_PREFERENCE_OPTIONS)),
+        commandPaletteContent: JSON.parse(JSON.stringify(MOCK_COMMAND_PALETTE_CONTENT)),
+        executionLogDetailContent: JSON.parse(JSON.stringify(MOCK_EXECUTION_LOG_DETAIL_CONTENT)),
+        importModalContent: JSON.parse(JSON.stringify(MOCK_IMPORT_MODAL_CONTENT)),
         // AI DATA
         aiBriefing: JSON.parse(JSON.stringify(MOCK_AI_BRIEFING)),
         aiRiskPrediction: JSON.parse(JSON.stringify(MOCK_AI_RISK_PREDICTION)),
@@ -696,6 +834,8 @@ function createInitialDB() {
         serviceHealthData: JSON.parse(JSON.stringify(MOCK_SERVICE_HEALTH_DATA)),
         resourceGroupStatusData: JSON.parse(JSON.stringify(MOCK_RESOURCE_GROUP_STATUS_DATA)),
         analysisOverviewData: JSON.parse(JSON.stringify(MOCK_ANALYSIS_OVERVIEW_DATA)),
+        // Consolidated UI Options
+        allOptions: JSON.parse(JSON.stringify(MOCK_ALL_OPTIONS)),
     };
 }
 
