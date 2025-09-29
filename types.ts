@@ -104,6 +104,9 @@ export interface Resource {
   region: string;
   owner: string;
   lastCheckIn: string;
+  // New fields for lineage
+  discoveredByJobId?: string;
+  monitoringAgent?: string;
 }
 
 export interface ResourceFilters {
@@ -294,6 +297,12 @@ export interface AlertRule {
   deleted_at?: string;
 }
 
+export interface MetricMetadata {
+  id: string;
+  name: string;
+  unit: string | null;
+}
+
 export interface SilenceMatcher {
   key: string;
   operator: '=' | '!=' | '~=';
@@ -321,11 +330,24 @@ export interface SilenceRule {
   deleted_at?: string;
 }
 
+export interface ResourceType {
+    id: string;
+    name: string;
+    icon: string;
+}
+
 export interface AlertRuleTemplate {
   id: string;
   name: string;
   emoji: string;
+  description: string;
+  resourceType: string;
   data: Partial<AlertRule>;
+  preview: {
+    conditions: string[];
+    notification: string;
+    automation?: string;
+  };
 }
 
 export interface SilenceRuleTemplate {
@@ -335,7 +357,7 @@ export interface SilenceRuleTemplate {
   data: Partial<SilenceRule>;
 }
 
-export type NotificationChannelType = 'Email' | 'Slack' | 'Webhook';
+export type NotificationChannelType = 'Email' | 'Webhook (通用)' | 'Slack' | 'LINE Notify' | 'SMS';
 
 export interface NotificationChannel {
   id: string;
@@ -343,15 +365,20 @@ export interface NotificationChannel {
   type: NotificationChannelType;
   enabled: boolean;
   config: {
-    // Webhook
-    webhookUrl?: string;
-    httpMethod?: 'POST' | 'PUT' | 'GET';
-    headers?: string; // JSON string
-    bodyTemplate?: string; // JSON string
     // Email
-    smtpServer?: string;
-    port?: number;
-    username?: string;
+    to?: string;
+    cc?: string;
+    bcc?: string;
+    // Webhook (通用) & Slack
+    webhookUrl?: string;
+    // Webhook (通用) only
+    httpMethod?: 'POST' | 'PUT' | 'GET';
+    // Slack only
+    mention?: string;
+    // LINE Notify
+    accessToken?: string;
+    // SMS
+    phoneNumber?: string;
   };
   lastTestResult: 'success' | 'failed' | 'pending';
   lastTestedAt: string;
@@ -490,37 +517,6 @@ export interface NotificationItem {
   linkUrl?: string;
 }
 
-export interface SpanLog {
-  timestamp: number; // unix timestamp in ms
-  fields: Record<string, any>;
-}
-
-export interface Span {
-  traceId: string;
-  spanId: string;
-  parentId?: string;
-  operationName: string;
-  serviceName: string;
-  startTime: number; // unix timestamp in ms
-  duration: number; // in ms
-  status: 'ok' | 'error';
-  tags: Record<string, any>;
-  logs: SpanLog[];
-}
-
-export interface Trace {
-  traceId: string;
-  spans: Span[];
-  root: {
-    serviceName: string;
-    operationName: string;
-  };
-  duration: number; // total duration in ms
-  services: string[];
-  errorCount: number;
-  startTime: number; // unix timestamp in ms
-}
-
 export type LogLevel = 'info' | 'warning' | 'error' | 'debug';
 export interface LogEntry {
     id: string;
@@ -541,20 +537,12 @@ export interface LogAnalysis {
   recommendations: string[];
 }
 
-export interface Bottleneck {
-  span_name: string;
-  service_name: string;
-  duration_percent: number;
-  description: string;
-}
-
-export interface TraceAnalysis {
-  summary: string;
-  bottlenecks: Bottleneck[];
-  recommendations: string[];
-}
-
 export type TimeSeriesData = [string, number][];
+
+export interface MetricsData {
+    cpu: TimeSeriesData;
+    memory: TimeSeriesData;
+}
 
 export interface ServiceHealthData {
     heatmap_data: [number, number, number][];
@@ -570,8 +558,30 @@ export interface ResourceGroupStatusData {
     }[];
 }
 
+export interface Anomaly {
+  severity: 'critical' | 'warning' | 'info';
+  description: string;
+  timestamp: string;
+}
+
+export interface Suggestion {
+  title: string;
+  impact: '高' | '中' | '低';
+  effort: '高' | '中' | '低';
+  details: string;
+  action_button_text?: string;
+  action_link?: string;
+}
+
+export interface HealthScore {
+    score: number;
+    summary: string;
+}
+
 export interface AnalysisOverviewData {
-    health_score_data: { name: string; value: [Date, number] }[];
+    health_score: HealthScore;
+    anomalies: Anomaly[];
+    suggestions: Suggestion[];
     event_correlation_data: {
         nodes: { id: string; name: string; value: number; symbolSize: number; category: number }[];
         links: { source: string; target: string }[];
@@ -617,6 +627,7 @@ export interface TabItemConfig {
   label: string;
   path: string;
   icon?: string;
+  disabled?: boolean;
 }
 export type TabConfigMap = Record<string, TabItemConfig[]>;
 
@@ -649,6 +660,11 @@ export interface GrafanaOptions {
     refreshOptions: { label: string, value: string }[];
     tvModeOptions: { label: string, value: string }[];
     themeOptions: { label: string, value: string }[];
+    // New additions for data centralization
+    themeLabel: string;
+    tvModeLabel: string;
+    refreshLabel: string;
+    timeLabel: string;
 }
 
 export interface LogOptions {
@@ -668,6 +684,9 @@ export interface SilenceRuleOptions {
 export interface InfraInsightsOptions {
     timeOptions: { label: string, value: string }[];
     riskLevels: ColorDescriptor[];
+    refreshOptions: { label: string, value: string }[];
+    tvModeOptions: { label: string, value: string }[];
+    themeOptions: { label: string, value: string }[];
 }
 
 export interface IncidentOptions {
@@ -681,6 +700,9 @@ export interface IncidentOptions {
 export interface AlertRuleOptions {
     severities: { value: AlertRule['severity'], label: string, className: string }[];
     statuses: { value: boolean, label: string }[];
+    operators: string[];
+    scopeModes: { value: string; label: string; }[];
+    variables: string[];
 }
 
 export interface AutomationExecutionOptions {
@@ -707,27 +729,6 @@ export interface ResourceOptions {
     providers: string[];
     regions: string[];
     owners: string[];
-}
-
-export interface Anomaly {
-  severity: 'critical' | 'warning' | 'info';
-  description: string;
-  timestamp: string;
-}
-
-export interface Suggestion {
-  title: string;
-  impact: '高' | '中' | '低';
-  effort: '高' | '中' | '低';
-  details: string;
-  action_button_text?: string;
-  action_link?: string;
-}
-
-export interface AIInsightsOptions {
-    severities: StyleDescriptor<Anomaly['severity']>[];
-    impacts: StyleDescriptor<Suggestion['impact']>[];
-    efforts: StyleDescriptor<Suggestion['effort']>[];
 }
 
 export interface PersonnelOptions {
@@ -776,6 +777,125 @@ export interface TagManagementOptions {
     categories: string[];
 }
 
+export interface LogExplorerFilters {
+  keyword?: string;
+  timeRange?: string;
+}
+
+// --- Datasource & Discovery Types ---
+export type DatasourceType = 'VictoriaMetrics' | 'Grafana' | 'Elasticsearch' | 'Prometheus' | 'Custom';
+export type AuthMethod = 'Token' | 'Basic Auth' | 'Keycloak Integration' | 'None';
+export type ConnectionStatus = 'ok' | 'error' | 'pending';
+
+export interface KeyValueTag {
+    id: string;
+    key: string;
+    value: string;
+}
+
+export interface Datasource {
+    id: string;
+    name: string;
+    type: DatasourceType;
+    status: ConnectionStatus;
+    createdAt: string;
+    url: string;
+    authMethod: AuthMethod;
+    tags: KeyValueTag[];
+    deleted_at?: string;
+}
+
+export type DiscoveryJobType = 'K8s' | 'SNMP' | 'Cloud Provider' | 'Static Range' | 'Custom Script';
+export type DiscoveryJobStatus = 'success' | 'partial_failure' | 'failed' | 'running';
+
+export type ExporterType = 'none' | 'node_exporter' | 'snmp_exporter' | 'modbus_exporter' | 'ipmi_exporter';
+
+export interface ExporterConfig {
+    type: ExporterType;
+    mibProfile?: string; // for snmp
+    customConfigYaml?: string; // for others that need yaml
+}
+
+export interface DiscoveryJob {
+    id: string;
+    name: string;
+    type: DiscoveryJobType;
+    schedule: string;
+    lastRun: string;
+    status: DiscoveryJobStatus;
+    config: Record<string, any>;
+    tags: KeyValueTag[];
+    exporterConfig?: ExporterConfig;
+    deleted_at?: string;
+}
+
+export interface DatasourceFilters {
+    keyword?: string;
+    type?: DatasourceType;
+}
+
+export interface DiscoveryJobFilters {
+    keyword?: string;
+    type?: DiscoveryJobType;
+    status?: DiscoveryJobStatus;
+}
+
+// FIX: Add missing DiscoveredResource type and its status enum. This type is used by the auto-discovery results page and import modal.
+export type DiscoveredResourceStatus = 'new' | 'imported' | 'ignored';
+
+export interface DiscoveredResource {
+    id: string;
+    name: string;
+    ip: string;
+    type: string;
+    tags: KeyValueTag[];
+    status: DiscoveredResourceStatus;
+}
+
+export interface ResourceOverviewData {
+  distributionByType: { value: number; name: string }[];
+  distributionByProvider: { provider: string; count: number }[];
+  recentlyDiscovered: { id: string; name: string; type: string; discoveredAt: string; jobId: string }[];
+  groupsWithMostAlerts: { id: string; name: string; criticals: number; warnings: number }[];
+}
+// --- AI Resource Analysis Types ---
+export interface ResourceRisk {
+    resourceId: string;
+    resourceName: string;
+    riskLevel: 'High' | 'Medium' | 'Low';
+    reason: string;
+    recommendation: string;
+}
+
+export interface OptimizationSuggestion {
+    resourceId: string;
+    resourceName: string;
+    suggestion: string;
+    type: 'Cost' | 'Performance' | 'Security';
+}
+
+export interface ResourceAnalysis {
+    summary: string;
+    riskAnalysis: ResourceRisk[];
+    optimizationSuggestions: OptimizationSuggestion[];
+}
+// ------------------------------------
+
+export interface LicenseInfo {
+  status: "valid" | "invalid";
+  expiresAt?: string;
+}
+
+export interface DatasourceOptions {
+    types: DatasourceType[];
+    authMethods: AuthMethod[];
+}
+
+export interface AutoDiscoveryOptions {
+    jobTypes: DiscoveryJobType[];
+    exporterTypes: ExporterType[];
+}
+
 export interface AllOptions {
     // Existing
     incidents: IncidentOptions;
@@ -797,4 +917,13 @@ export interface AllOptions {
     topology: TopologyOptions;
     automationExecutions: AutomationExecutionOptions;
     notificationHistory: NotificationHistoryOptions;
+    // New additions for data centralization
+    datasources: DatasourceOptions;
+    autoDiscovery: AutoDiscoveryOptions;
+}
+
+// New additions for data centralization
+export interface TableColumn {
+  key: string;
+  label: string;
 }

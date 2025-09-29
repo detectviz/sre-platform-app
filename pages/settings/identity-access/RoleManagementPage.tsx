@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Role } from '../../../types';
+// FIX: Import TableColumn from types.ts
+import { Role, TableColumn } from '../../../types';
 import Icon from '../../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../../components/Toolbar';
 import TableContainer from '../../../components/TableContainer';
@@ -8,9 +9,12 @@ import Modal from '../../../components/Modal';
 import api from '../../../services/api';
 import TableLoader from '../../../components/TableLoader';
 import TableError from '../../../components/TableError';
-import ColumnSettingsModal, { TableColumn } from '../../../components/ColumnSettingsModal';
+// FIX: Import TableColumn from types.ts, not from ColumnSettingsModal
+import ColumnSettingsModal from '../../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 import { showToast } from '../../../services/toast';
+import Pagination from '../../../components/Pagination';
+import UnifiedSearchModal from '../../../components/UnifiedSearchModal';
 
 const ALL_COLUMNS: TableColumn[] = [
     { key: 'name', label: '角色名稱' },
@@ -24,6 +28,10 @@ const RoleManagementPage: React.FC = () => {
     const [roles, setRoles] = useState<Role[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [totalRoles, setTotalRoles] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [filters, setFilters] = useState<{ keyword?: string }>({});
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingRole, setEditingRole] = useState<Role | null>(null);
@@ -32,6 +40,7 @@ const RoleManagementPage: React.FC = () => {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
@@ -41,18 +50,20 @@ const RoleManagementPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
+            const params = { page: currentPage, page_size: pageSize, ...filters };
             const [rolesRes, columnsRes] = await Promise.all([
-                 api.get<Role[]>('/iam/roles'),
+                 api.get<{ items: Role[], total: number }>('/iam/roles', { params }),
                  api.get<string[]>(`/settings/column-config/${pageKey}`)
             ]);
-            setRoles(rolesRes.data);
+            setRoles(rolesRes.data.items);
+            setTotalRoles(rolesRes.data.total);
             setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
         } catch (err) {
             setError('無法獲取角色列表。');
         } finally {
             setIsLoading(false);
         }
-    }, [pageKey]);
+    }, [pageKey, currentPage, pageSize, filters]);
 
     useEffect(() => {
         if (pageKey) {
@@ -176,6 +187,7 @@ const RoleManagementPage: React.FC = () => {
     return (
         <div className="h-full flex flex-col">
             <Toolbar 
+                leftActions={<ToolbarButton icon="search" text="搜尋和篩選" onClick={() => setIsSearchModalOpen(true)} />}
                 rightActions={
                     <>
                         <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => setIsColumnSettingsModalOpen(true)} />
@@ -225,6 +237,7 @@ const RoleManagementPage: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
+                <Pagination total={totalRoles} page={currentPage} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
             </TableContainer>
             {isModalOpen && 
                 <RoleEditModal
@@ -255,6 +268,17 @@ const RoleManagementPage: React.FC = () => {
                 onSave={handleSaveColumnConfig}
                 allColumns={ALL_COLUMNS}
                 visibleColumnKeys={visibleColumns}
+            />
+            <UnifiedSearchModal
+                page="roles"
+                isOpen={isSearchModalOpen}
+                onClose={() => setIsSearchModalOpen(false)}
+                onSearch={(newFilters) => {
+                    setFilters(newFilters as { keyword?: string });
+                    setIsSearchModalOpen(false);
+                    setCurrentPage(1);
+                }}
+                initialFilters={filters}
             />
         </div>
     );

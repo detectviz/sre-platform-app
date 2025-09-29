@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import EChartsReact from '../../components/EChartsReact';
@@ -5,13 +6,6 @@ import { Resource, TopologyOptions } from '../../types';
 import Icon from '../../components/Icon';
 import api from '../../services/api';
 import { useOptions } from '../../contexts/OptionsContext';
-
-const statusColors: { [key in Resource['status']]: string } = {
-    healthy: '#10b981', // green-500
-    warning: '#f97316', // orange-500
-    critical: '#dc2626', // red-600
-    offline: '#64748b',  // slate-500
-};
 
 interface TopologyData {
     nodes: Resource[];
@@ -38,6 +32,14 @@ const ResourceTopologyPage: React.FC = () => {
     }>({ visible: false, x: 0, y: 0, nodeData: null });
 
     const contextMenuRef = useRef<HTMLDivElement>(null);
+    
+    const statusColorMap = useMemo(() => {
+        if (!options?.resources.statusColors) return {};
+        return options.resources.statusColors.reduce((acc, curr) => {
+            acc[curr.value] = curr.color;
+            return acc;
+        }, {} as Record<Resource['status'], string>);
+    }, [options]);
 
     const fetchTopology = useCallback(async () => {
         setIsLoading(true);
@@ -86,7 +88,7 @@ const ResourceTopologyPage: React.FC = () => {
             symbolSize: 40,
             category: res.type,
             itemStyle: {
-                color: statusColors[res.status],
+                color: statusColorMap[res.status] || '#64748b',
                 borderColor: '#f8fafc', // slate-50
                 borderWidth: 2,
             },
@@ -149,7 +151,7 @@ const ResourceTopologyPage: React.FC = () => {
                 }
             }]
         };
-    }, [topologyData, filterType, layout]);
+    }, [topologyData, filterType, layout, statusColorMap]);
 
     const echartsEvents = {
         contextmenu: (params: any) => {
@@ -179,7 +181,7 @@ const ResourceTopologyPage: React.FC = () => {
         
         switch(action) {
             case 'details':
-                navigate(`/resources/${resourceId}`);
+                navigate(`/resources/list/${resourceId}`);
                 break;
             case 'incidents':
                 navigate('/incidents');

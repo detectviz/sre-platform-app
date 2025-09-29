@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import Modal from './Modal';
 import FormRow from './FormRow';
@@ -114,14 +115,21 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
         setConditions(newConditions);
         handleConfigChange('eventConditions', serializeConditions(newConditions));
     };
+    
     const handleConditionChange = (index: number, field: 'key' | 'operator' | 'value', value: string) => {
-        const newConditions = [...conditions];
-        newConditions[index][field] = value;
-        if (field === 'key') {
-            newConditions[index].value = '';
-        }
+        const newConditions = conditions.map((cond, i) => {
+            if (i === index) {
+                const newCond = { ...cond, [field]: value };
+                if (field === 'key') {
+                    newCond.value = '';
+                }
+                return newCond;
+            }
+            return cond;
+        });
         updateConditionsInForm(newConditions);
     };
+
     const addCondition = () => {
         updateConditionsInForm([...conditions, { key: '', operator: '=', value: '' }]);
     };

@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { AutomationExecution, AutomationPlaybook, AutomationHistoryFilters } from '../../types';
+// FIX: Import TableColumn from types.ts
+import { AutomationExecution, AutomationPlaybook, AutomationHistoryFilters, TableColumn } from '../../types';
 import Icon from '../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
@@ -13,42 +14,20 @@ import { useOptions } from '../../contexts/OptionsContext';
 import { exportToCsv } from '../../services/export';
 import { showToast } from '../../services/toast';
 import UnifiedSearchModal from '../../components/UnifiedSearchModal';
-import ColumnSettingsModal, { TableColumn } from '../../components/ColumnSettingsModal';
+// FIX: Import TableColumn from types.ts, not from ColumnSettingsModal
+import ColumnSettingsModal from '../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
+import SortableHeader from '../../components/SortableHeader';
 
 const ALL_COLUMNS: TableColumn[] = [
     { key: 'scriptName', label: '腳本名稱' },
     { key: 'status', label: '狀態' },
     { key: 'triggerSource', label: '觸發來源' },
+    { key: 'triggeredBy', label: '觸發者' },
     { key: 'startTime', label: '開始時間' },
-    { key: 'durationMs', label: '耗時' },
+    { key: 'durationMs', label: '耗時 (ms)' },
 ];
 const PAGE_IDENTIFIER = 'automation_history';
-
-const SortableHeader: React.FC<{
-  label: string;
-  sortKey: string;
-  sortConfig: { key: string; direction: 'asc' | 'desc' } | null;
-  onSort: (key: string) => void;
-  className?: string;
-}> = ({ label, sortKey, sortConfig, onSort, className = '' }) => {
-  const isSorted = sortConfig?.key === sortKey;
-  const direction = isSorted ? sortConfig.direction : null;
-
-  return (
-    <th scope="col" className={`px-6 py-3 cursor-pointer select-none ${className}`} onClick={() => onSort(sortKey)}>
-      <div className="flex items-center">
-        {label}
-        {isSorted ? (
-          <Icon name={direction === 'asc' ? 'arrow-up' : 'arrow-down'} className="w-4 h-4 ml-1.5" />
-        ) : (
-          <Icon name="chevrons-up-down" className="w-4 h-4 ml-1.5 text-slate-600" />
-        )}
-      </div>
-    </th>
-  );
-};
-
 
 const AutomationHistoryPage: React.FC = () => {
     const [executions, setExecutions] = useState<AutomationExecution[]>([]);
@@ -57,14 +36,16 @@ const AutomationHistoryPage: React.FC = () => {
     const [total, setTotal] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
-    const [selectedExecution, setSelectedExecution] = useState<AutomationExecution | null>(null);
-    const { options, isLoading: isLoadingOptions } = useOptions();
-    const automationExecutionOptions = options?.automationExecutions;
-    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'startTime', direction: 'desc' });
-    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [filters, setFilters] = useState<AutomationHistoryFilters>({});
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'startTime', direction: 'desc' });
+    const [selectedExecution, setSelectedExecution] = useState<AutomationExecution | null>(null);
+    
+    const { options, isLoading: isLoadingOptions } = useOptions();
+    const executionOptions = options?.automationExecutions;
 
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
@@ -83,27 +64,33 @@ const AutomationHistoryPage: React.FC = () => {
                 params.sort_by = sortConfig.key;
                 params.sort_order = sortConfig.direction;
             }
-
             const [executionsRes, columnsRes] = await Promise.all([
-                 api.get<{ items: AutomationExecution[], total: number }>('/automation/executions', { params }),
-                 api.get<string[]>(`/settings/column-config/${pageKey}`)
+                api.get<{ items: AutomationExecution[], total: number }>('/automation/executions', { params }),
+                api.get<string[]>(`/settings/column-config/${pageKey}`)
             ]);
-            
             setExecutions(executionsRes.data.items);
             setTotal(executionsRes.data.total);
             setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
         } catch (err) {
-            setError('無法獲取運行歷史。');
+            setError('無法獲取執行歷史。');
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, filters, sortConfig, pageKey]);
+    }, [currentPage, pageSize, filters, pageKey, sortConfig]);
 
     useEffect(() => {
         if (pageKey) {
             fetchExecutions();
         }
     }, [fetchExecutions, pageKey]);
+
+    const handleSort = (key: string) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
     
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
         if (!pageKey) {
@@ -120,131 +107,143 @@ const AutomationHistoryPage: React.FC = () => {
             setIsColumnSettingsModalOpen(false);
         }
     };
-
-    const handleSort = (key: string) => {
-        let direction: 'asc' | 'desc' = 'asc';
-        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
-            direction = 'desc';
-        }
-        setSortConfig({ key, direction });
-    };
-
-    const getStatusPill = (status: AutomationExecution['status']) => {
-        if (!automationExecutionOptions?.statuses) {
-            return 'bg-slate-500/20 text-slate-400'; // Fallback
-        }
-        const style = automationExecutionOptions.statuses.find(s => s.value === status);
-        let className = style ? style.className : 'bg-slate-500/20 text-slate-400';
-        if (status === 'running') {
-            className += ' animate-pulse';
-        }
-        return className;
-    };
     
     const handleExport = () => {
-        if (executions.length === 0) {
+        const dataToExport = selectedIds.length > 0
+            ? executions.filter(e => selectedIds.includes(e.id))
+            : executions;
+        
+        if (dataToExport.length === 0) {
             showToast("沒有可匯出的資料。", 'error');
             return;
         }
+        
         exportToCsv({
             filename: `automation-history-${new Date().toISOString().split('T')[0]}.csv`,
-            headers: ['id', 'scriptName', 'status', 'triggerSource', 'triggeredBy', 'startTime', 'durationMs'],
-            data: executions.map(exec => ({...exec, durationMs: exec.durationMs || 0 })),
+            headers: ['id', 'scriptName', 'status', 'triggerSource', 'triggeredBy', 'startTime', 'endTime', 'durationMs'],
+            data: dataToExport,
         });
     };
     
-    const renderCellContent = (exec: AutomationExecution, columnKey: string) => {
+    const handleRetry = async (executionId: string) => {
+        try {
+            await api.post(`/automation/executions/${executionId}/retry`);
+            showToast('重試請求已成功發送。', 'success');
+            fetchExecutions();
+        } catch (error) {
+            showToast('重試執行失敗。', 'error');
+        }
+    };
+
+    const getStatusPill = (status: AutomationExecution['status']) => {
+        const style = executionOptions?.statuses.find(s => s.value === status);
+        return style ? style.className : 'bg-slate-500/20 text-slate-400';
+    };
+
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => setSelectedIds(e.target.checked ? executions.map(ex => ex.id) : []);
+    const handleSelectOne = (e: React.ChangeEvent<HTMLInputElement>, id: string) => setSelectedIds(prev => e.target.checked ? [...prev, id] : prev.filter(sid => sid !== id));
+
+    const isAllSelected = executions.length > 0 && selectedIds.length === executions.length;
+    const isIndeterminate = selectedIds.length > 0 && selectedIds.length < executions.length;
+    
+    const renderCellContent = (ex: AutomationExecution, columnKey: string) => {
         switch (columnKey) {
             case 'scriptName':
-                return <span className="font-medium text-white">{exec.scriptName}</span>;
+                return <span className="font-medium text-white">{ex.scriptName}</span>;
             case 'status':
-                return (
-                    <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusPill(exec.status)}`}>
-                        {exec.status}
-                    </span>
-                );
+                return <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusPill(ex.status)}`}>{ex.status}</span>;
             case 'triggerSource':
-                return `${exec.triggerSource}: ${exec.triggeredBy}`;
+                return ex.triggerSource;
+            case 'triggeredBy':
+                return ex.triggeredBy;
             case 'startTime':
-                return exec.startTime;
+                return ex.startTime;
             case 'durationMs':
-                return exec.durationMs ? `${(exec.durationMs / 1000).toFixed(2)}s` : 'N/A';
+                return ex.durationMs ? `${ex.durationMs}ms` : 'N/A';
             default:
                 return null;
         }
     };
-
+    
     const leftActions = <ToolbarButton icon="search" text="搜尋和篩選" onClick={() => setIsSearchModalOpen(true)} />;
+    
     const rightActions = (
         <>
-            <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => setIsColumnSettingsModalOpen(true)} />
             <ToolbarButton icon="download" text="匯出" onClick={handleExport} />
+            <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => setIsColumnSettingsModalOpen(true)} />
         </>
     );
 
     return (
         <div className="h-full flex flex-col">
-            <Toolbar
+            <Toolbar 
                 leftActions={leftActions}
                 rightActions={rightActions}
+                selectedCount={selectedIds.length}
+                onClearSelection={() => setSelectedIds([])}
             />
+            
             <TableContainer>
                 <div className="flex-1 overflow-y-auto">
                     <table className="w-full text-sm text-left text-slate-300">
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
+                                <th scope="col" className="p-4 w-12">
+                                     <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded" checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
+                                </th>
                                 {visibleColumns.map(key => {
                                     const col = ALL_COLUMNS.find(c => c.key === key);
                                     if (!col) return null;
-                                    return (
-                                        <SortableHeader key={key} label={col.label} sortKey={col.key} sortConfig={sortConfig} onSort={handleSort} />
-                                    );
+                                    return <SortableHeader key={key} label={col.label} sortKey={col.key} sortConfig={sortConfig} onSort={handleSort} />;
                                 })}
+                                <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {isLoading ? (
-                                <TableLoader colSpan={visibleColumns.length} />
+                            {isLoading || isLoadingOptions ? (
+                                <TableLoader colSpan={visibleColumns.length + 2} />
                             ) : error ? (
-                                <TableError colSpan={visibleColumns.length} message={error} onRetry={fetchExecutions} />
-                            ) : executions.map((exec) => (
-                                <tr key={exec.id} className="border-b border-slate-800 hover:bg-slate-800/40 cursor-pointer" onClick={() => setSelectedExecution(exec)}>
+                                <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchExecutions} />
+                            ) : executions.map((ex) => (
+                                <tr key={ex.id} onClick={() => setSelectedExecution(ex)} className={`border-b border-slate-800 cursor-pointer ${selectedIds.includes(ex.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
+                                    <td className="p-4 w-12" onClick={e => e.stopPropagation()}>
+                                        <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded" checked={selectedIds.includes(ex.id)} onChange={(e) => handleSelectOne(e, ex.id)} />
+                                    </td>
                                     {visibleColumns.map(key => (
-                                        <td key={key} className="px-6 py-4">{renderCellContent(exec, key)}</td>
+                                        <td key={key} className="px-6 py-4">
+                                            {renderCellContent(ex, key)}
+                                        </td>
                                     ))}
+                                    <td className="px-6 py-4 text-center" onClick={e => e.stopPropagation()}>
+                                        {ex.status === 'failed' && (
+                                            <button onClick={() => handleRetry(ex.id)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="重試"><Icon name="refresh-cw" className="w-4 h-4" /></button>
+                                        )}
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
-                <Pagination 
-                    total={total}
-                    page={currentPage}
-                    pageSize={pageSize}
-                    onPageChange={setCurrentPage}
-                    onPageSizeChange={setPageSize}
-                 />
+                <Pagination total={total} page={currentPage} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
             </TableContainer>
 
             <Drawer
                 isOpen={!!selectedExecution}
                 onClose={() => setSelectedExecution(null)}
-                title={`執行日誌: ${selectedExecution?.scriptName} (${selectedExecution?.id})`}
+                title={`執行日誌: ${selectedExecution?.scriptName}`}
                 width="w-3/5"
             >
                 {selectedExecution && <ExecutionLogDetail execution={selectedExecution} />}
             </Drawer>
+            
             <UnifiedSearchModal
                 page="automation-history"
                 isOpen={isSearchModalOpen}
                 onClose={() => setIsSearchModalOpen(false)}
-                onSearch={(newFilters) => {
-                    setFilters(newFilters as AutomationHistoryFilters);
-                    setIsSearchModalOpen(false);
-                    setCurrentPage(1);
-                }}
+                onSearch={(newFilters) => { setFilters(newFilters as AutomationHistoryFilters); setIsSearchModalOpen(false); setCurrentPage(1); }}
                 initialFilters={filters}
             />
+            
             <ColumnSettingsModal
                 isOpen={isColumnSettingsModalOpen}
                 onClose={() => setIsColumnSettingsModalOpen(false)}

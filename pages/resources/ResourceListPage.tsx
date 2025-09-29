@@ -1,7 +1,9 @@
 
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Resource, ResourceFilters } from '../../types';
+// FIX: Import TableColumn from types.ts
+import { Resource, ResourceFilters, TableColumn } from '../../types';
 import Icon from '../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
@@ -16,10 +18,11 @@ import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
 import { exportToCsv } from '../../services/export';
 import ImportFromCsvModal from '../../components/ImportFromCsvModal';
-import ColumnSettingsModal, { TableColumn } from '../../components/ColumnSettingsModal';
+// FIX: Import TableColumn from types.ts, not from ColumnSettingsModal
+import ColumnSettingsModal from '../../components/ColumnSettingsModal';
 import { showToast } from '../../services/toast';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
-import PlaceholderModal from '../../components/PlaceholderModal';
+import ResourceAnalysisModal from '../../components/ResourceAnalysisModal';
 
 const ALL_COLUMNS: TableColumn[] = [
     { key: 'status', label: '狀態' },
@@ -60,8 +63,8 @@ const ResourceListPage: React.FC = () => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
-    const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
-    const [modalFeatureName, setModalFeatureName] = useState('');
+    const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
+    const [analyzingResources, setAnalyzingResources] = useState<Resource[]>([]);
     
     const { resourceId } = useParams<{ resourceId: string }>();
 
@@ -116,11 +119,11 @@ const ResourceListPage: React.FC = () => {
     };
 
     const handleViewDetails = (id: string) => {
-        navigate(`/resources/${id}`);
+        navigate(`/resources/list/${id}`);
     };
 
     const handleCloseDrawer = () => {
-        navigate('/resources');
+        navigate('/resources/list');
     };
 
     const handleNewResource = () => {
@@ -204,8 +207,13 @@ const ResourceListPage: React.FC = () => {
     };
     
     const handleAIAnalysis = () => {
-        setModalFeatureName('分析資源風險');
-        setIsPlaceholderModalOpen(true);
+        const selected = resources.filter(r => selectedIds.includes(r.id));
+        if (selected.length > 0) {
+            setAnalyzingResources(selected);
+            setIsAnalysisModalOpen(true);
+        } else {
+            showToast('請至少選擇一個資源進行分析。', 'error');
+        }
     };
 
     const handleExport = () => {
@@ -383,10 +391,10 @@ const ResourceListPage: React.FC = () => {
                 templateHeaders={['id', 'name', 'status', 'type', 'provider', 'region', 'owner']}
                 templateFilename="resources-template.csv"
             />
-            <PlaceholderModal
-                isOpen={isPlaceholderModalOpen}
-                onClose={() => setIsPlaceholderModalOpen(false)}
-                featureName={modalFeatureName}
+            <ResourceAnalysisModal
+                isOpen={isAnalysisModalOpen}
+                onClose={() => setIsAnalysisModalOpen(false)}
+                resources={analyzingResources}
             />
         </div>
     );

@@ -1,10 +1,9 @@
-
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { AlertRule } from '../../types';
+// FIX: Import TableColumn from types.ts
+import { AlertRule, TableColumn } from '../../types';
 import Icon from '../../components/Icon';
 import AlertRuleEditModal from '../../components/AlertRuleEditModal';
 import UnifiedSearchModal, { AlertRuleFilters } from '../../components/UnifiedSearchModal';
-import TestRuleModal from '../../components/TestRuleModal';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
 import Modal from '../../components/Modal';
@@ -13,7 +12,8 @@ import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
 import { exportToCsv } from '../../services/export';
 import ImportFromCsvModal from '../../components/ImportFromCsvModal';
-import ColumnSettingsModal, { TableColumn } from '../../components/ColumnSettingsModal';
+// FIX: Import TableColumn from types.ts, not from ColumnSettingsModal
+import ColumnSettingsModal from '../../components/ColumnSettingsModal';
 import { showToast } from '../../services/toast';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
 import PlaceholderModal from '../../components/PlaceholderModal';
@@ -37,9 +37,7 @@ const AlertRulePage: React.FC = () => {
 
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
-    const [isTestModalOpen, setIsTestModalOpen] = useState(false);
     const [editingRule, setEditingRule] = useState<AlertRule | null>(null);
-    const [testingRule, setTestingRule] = useState<AlertRule | null>(null);
     const [filters, setFilters] = useState<AlertRuleFilters>({});
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -114,21 +112,18 @@ const AlertRulePage: React.FC = () => {
         setIsEditModalOpen(true);
     };
 
-    const handleTestRule = (rule: AlertRule) => {
-        setTestingRule(rule);
-        setIsTestModalOpen(true);
-    };
-
-    const handleSaveRule = async (savedRule: AlertRule) => {
+    const handleSaveRule = async (savedRule: Partial<AlertRule>) => {
         try {
-            if (editingRule && editingRule.id) {
-                await api.patch(`/alert-rules/${editingRule.id}`, savedRule);
+            if (savedRule.id) {
+                await api.patch(`/alert-rules/${savedRule.id}`, savedRule);
+                showToast(`規則 "${savedRule.name}" 已成功更新。`, 'success');
             } else {
-                await api.post('/alert-rules', savedRule);
+                const { data: createdRule } = await api.post<AlertRule>('/alert-rules', savedRule);
+                showToast(`規則 "${createdRule.name}" 已成功新增。`, 'success');
             }
             fetchRules();
         } catch (err) {
-            alert('Failed to save rule.');
+            showToast('儲存規則失敗。', 'error');
         } finally {
             setIsEditModalOpen(false);
             setEditingRule(null);
@@ -144,9 +139,10 @@ const AlertRulePage: React.FC = () => {
         if (deletingRule) {
             try {
                 await api.del(`/alert-rules/${deletingRule.id}`);
+                showToast(`規則 "${deletingRule.name}" 已成功刪除。`, 'success');
                 fetchRules();
             } catch (err) {
-                alert('Failed to delete rule.');
+                showToast('刪除規則失敗。', 'error');
             } finally {
                 setIsDeleteModalOpen(false);
                 setDeletingRule(null);
@@ -308,7 +304,6 @@ const AlertRulePage: React.FC = () => {
                                     ))}
                                     <td className="px-6 py-4 text-center space-x-1">
                                          <button onClick={() => handleEditRule(rule)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯"><Icon name="edit-3" className="w-4 h-4" /></button>
-                                         <button onClick={() => handleTestRule(rule)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="測試"><Icon name="flask-conical" className="w-4 h-4" /></button>
                                          <button onClick={() => handleCopyRule(rule)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="複製"><Icon name="copy" className="w-4 h-4" /></button>
                                          <button onClick={() => handleDeleteClick(rule)} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除"><Icon name="trash-2" className="w-4 h-4" /></button>
                                     </td>
@@ -329,7 +324,6 @@ const AlertRulePage: React.FC = () => {
                 }}
                 initialFilters={filters}
             />
-            {isTestModalOpen && <TestRuleModal isOpen={isTestModalOpen} onClose={() => setIsTestModalOpen(false)} rule={testingRule}/>}
             <Modal
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}

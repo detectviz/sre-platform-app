@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Incident, IncidentAnalysis, MultiIncidentAnalysis, IncidentOptions, StyleDescriptor, User } from '../../types';
+// FIX: Import TableColumn from types.ts
+import { Incident, IncidentAnalysis, MultiIncidentAnalysis, IncidentOptions, StyleDescriptor, User, TableColumn } from '../../types';
 import Icon from '../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
@@ -14,7 +15,8 @@ import QuickSilenceModal from '../../components/QuickSilenceModal';
 import api from '../../services/api';
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
-import ColumnSettingsModal, { TableColumn } from '../../components/ColumnSettingsModal';
+// FIX: Import TableColumn from types.ts, not from ColumnSettingsModal
+import ColumnSettingsModal from '../../components/ColumnSettingsModal';
 import { showToast } from '../../services/toast';
 import { exportToCsv } from '../../services/export';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
@@ -354,7 +356,7 @@ const IncidentListPage: React.FC = () => {
                 <Pagination total={totalIncidents} page={currentPage} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
             </TableContainer>
 
-            <Drawer isOpen={!!incidentId} onClose={() => navigate('/incidents')} title={`事故詳情: ${incidentId}`} width="w-3/5" extra={<ToolbarButton icon="brain-circuit" text="AI 分析" onClick={() => { if(incidentId) { setSelectedIds([incidentId]); handleRunAIAnalysis(); }}} ai />}>
+            <Drawer isOpen={!!incidentId} onClose={() => navigate('/incidents')} title={`事故詳情: ${incidentId}`} width="w-3/5">
                 {incidentId && <IncidentDetailPage incidentId={incidentId} onUpdate={fetchIncidents} currentUser={currentUser} />}
             </Drawer>
             

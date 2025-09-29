@@ -6,21 +6,28 @@ import LogLevelPill from '../../components/LogLevelPill';
 import JsonViewer from '../../components/JsonViewer';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import PlaceholderModal from '../../components/PlaceholderModal';
-import { LogEntry, LogLevel, LogAnalysis } from '../../types';
+import { LogEntry, LogLevel, LogAnalysis, LogExplorerFilters } from '../../types';
 import api from '../../services/api';
 import { exportToCsv } from '../../services/export';
 import LogAnalysisModal from '../../components/LogAnalysisModal';
 import { useOptions } from '../../contexts/OptionsContext';
+import UnifiedSearchModal from '../../components/UnifiedSearchModal';
 
 const LogExplorerPage: React.FC = () => {
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const { options, isLoading: isLoadingOptions } = useOptions();
-    const logOptions = options?.logs;
-
-    const [query, setQuery] = useState('');
-    const [timeRange, setTimeRange] = useState('15m');
+    
+    const location = useLocation();
+    const params = new URLSearchParams(location.search);
+    const queryFromUrl = params.get('q');
+    
+    const [filters, setFilters] = useState<LogExplorerFilters>({
+        keyword: queryFromUrl || '',
+        timeRange: '15m',
+    });
+    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isLive, setIsLive] = useState(false);
     const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
     const liveIntervalRef = useRef<number | null>(null);
@@ -33,16 +40,6 @@ const LogExplorerPage: React.FC = () => {
     const [logAnalysisReport, setLogAnalysisReport] = useState<LogAnalysis | null>(null);
     const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
 
-    const location = useLocation();
-
-    useEffect(() => {
-        const params = new URLSearchParams(location.search);
-        const queryFromUrl = params.get('q');
-        if (queryFromUrl) {
-            setQuery(queryFromUrl);
-        }
-    }, [location.search]);
-
     const showPlaceholderModal = (featureName: string) => {
         setModalFeatureName(featureName);
         setIsPlaceholderModalOpen(true);
@@ -51,7 +48,7 @@ const LogExplorerPage: React.FC = () => {
     const fetchData = useCallback((isLiveUpdate = false) => {
         if (!isLiveUpdate) setIsLoading(true);
         setError(null);
-        api.get<{ items: LogEntry[] }>('/logs', { params: { page: 1, page_size: isLiveUpdate ? 5 : 200, keyword: query } })
+        api.get<{ items: LogEntry[] }>('/logs', { params: { page: 1, page_size: isLiveUpdate ? 5 : 200, ...filters } })
             .then(response => {
                 if (isLiveUpdate) {
                     setLogs(prev => [...response.data.items, ...prev].slice(0, 200));
@@ -67,7 +64,7 @@ const LogExplorerPage: React.FC = () => {
             .finally(() => {
                 if (!isLiveUpdate) setIsLoading(false);
             });
-    }, [query]);
+    }, [filters]);
     
     useEffect(() => {
         // Initial fetch
@@ -137,7 +134,7 @@ const LogExplorerPage: React.FC = () => {
         setIsAnalysisLoading(true);
         setLogAnalysisReport(null);
         try {
-            const { data } = await api.post<LogAnalysis>('/ai/logs/summarize', { query });
+            const { data } = await api.post<LogAnalysis>('/ai/logs/summarize', { query: filters.keyword });
             setLogAnalysisReport(data);
         } catch (err) {
             console.error(err);
@@ -165,39 +162,9 @@ const LogExplorerPage: React.FC = () => {
             })),
         });
     };
-    
-    const handleSearchSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLive(false); // Stop live feed when performing a new search
-        fetchData();
-    };
-
 
     const leftActions = (
-        <form onSubmit={handleSearchSubmit} className="flex items-center space-x-2 flex-grow">
-            <div className="relative flex-grow">
-                <Icon name="search" className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                <input type="text" placeholder='搜尋日誌... (例如: status:500 AND service:"payment-api")'
-                       value={query} onChange={e => setQuery(e.target.value)}
-                       className="w-full bg-slate-800/80 border border-slate-700 rounded-md pl-9 pr-4 py-1.5 text-sm" />
-            </div>
-            <div className="flex items-center space-x-1 bg-slate-800/80 border border-slate-700 rounded-md p-1 text-sm">
-                {isLoadingOptions ? (
-                     <div className="animate-pulse h-8 w-64 bg-slate-700 rounded-md"></div>
-                ) : (
-                    logOptions?.timeRangeOptions?.map(opt => (
-                        <button 
-                            type="button"
-                            key={opt.value}
-                            onClick={() => setTimeRange(opt.value)}
-                            className={`px-2 py-1 rounded ${timeRange === opt.value ? 'bg-sky-600 text-white' : 'hover:bg-slate-700 text-slate-300'}`}
-                        >
-                            {opt.label}
-                        </button>
-                    ))
-                )}
-            </div>
-        </form>
+        <ToolbarButton icon="search" text="搜尋和篩選" onClick={() => setIsSearchModalOpen(true)} />
     );
 
     const rightActions = (
@@ -272,6 +239,17 @@ const LogExplorerPage: React.FC = () => {
                 onClose={() => setIsLogAnalysisModalOpen(false)}
                 report={logAnalysisReport}
                 isLoading={isAnalysisLoading}
+            />
+            <UnifiedSearchModal
+                page="logs"
+                isOpen={isSearchModalOpen}
+                onClose={() => setIsSearchModalOpen(false)}
+                onSearch={(newFilters) => {
+                    setFilters(newFilters as LogExplorerFilters);
+                    setIsSearchModalOpen(false);
+                    setIsLive(false);
+                }}
+                initialFilters={filters}
             />
         </div>
     );

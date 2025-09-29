@@ -1,17 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Resource, Incident } from '../../types';
+import { Resource, Incident, MetricsData } from '../../types';
 import Icon from '../../components/Icon';
 import EChartsReact from '../../components/EChartsReact';
 import api from '../../services/api';
 
 interface ResourceDetailPageProps {
   resourceId: string;
-}
-
-interface MetricsData {
-    cpu: [string, number][];
-    memory: [string, number][];
 }
 
 const InfoItem = ({ label, children }: { label: string; children?: React.ReactNode }) => (

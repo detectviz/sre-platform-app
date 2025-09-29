@@ -1,8 +1,6 @@
 import React, { useEffect } from 'react';
 import Icon from './Icon';
-import { PAGE_CONTENT } from '../constants/pages';
-
-const { MODAL: modalContent } = PAGE_CONTENT;
+import { useContent } from '../contexts/ContentContext';
 
 interface ModalProps {
   title: string;
@@ -14,7 +12,10 @@ interface ModalProps {
   className?: string;
 }
 
-const Modal: React.FC<ModalProps> = ({ title, isOpen, onClose, children, footer, width = modalContent.DEFAULT_WIDTH, className }) => {
+const Modal: React.FC<ModalProps> = ({ title, isOpen, onClose, children, footer, width, className }) => {
+  const { content } = useContent();
+  const modalContent = content?.MODAL;
+  
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -29,7 +30,8 @@ const Modal: React.FC<ModalProps> = ({ title, isOpen, onClose, children, footer,
 
   if (!isOpen) return null;
 
-  const finalClassName = className || `${modalContent.BASE_CLASSES} ${width}`;
+  const finalWidth = width || modalContent?.DEFAULT_WIDTH || 'w-1/2';
+  const finalClassName = className || `${modalContent?.BASE_CLASSES || ''} ${finalWidth}`;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-start pt-20 transition-opacity duration-300" onClick={onClose}>

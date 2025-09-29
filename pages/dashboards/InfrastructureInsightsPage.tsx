@@ -4,9 +4,10 @@ import Icon from '../../components/Icon';
 import Dropdown from '../../components/Dropdown';
 import PlaceholderModal from '../../components/PlaceholderModal';
 import api from '../../services/api';
-import { Resource, InfraInsightsOptions } from '../../types';
+import { Resource } from '../../types';
 import PageKPIs from '../../components/PageKPIs';
 import { exportToCsv } from '../../services/export';
+import { useOptions } from '../../contexts/OptionsContext';
 
 // AI Response Types
 interface RiskPrediction {
@@ -30,8 +31,18 @@ const InfrastructureInsightsPage: React.FC = () => {
     const [isBookmarkLoading, setIsBookmarkLoading] = useState(true);
     const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
     const [modalFeatureName, setModalFeatureName] = useState('');
-    const [options, setOptions] = useState<InfraInsightsOptions | null>(null);
-    const [timeRange, setTimeRange] = useState('from=now-6h&to=now');
+    
+    const { options } = useOptions();
+    const infraInsightsOptions = options?.infraInsights;
+    const [timeRange, setTimeRange] = useState('');
+
+    useEffect(() => {
+        if (infraInsightsOptions && infraInsightsOptions.timeOptions.length > 0) {
+            const defaultTime = infraInsightsOptions.timeOptions.find(opt => opt.value.includes('6h'));
+            setTimeRange(defaultTime ? defaultTime.value : infraInsightsOptions.timeOptions[0].value);
+        }
+    }, [infraInsightsOptions]);
+
 
     const showPlaceholderModal = (featureName: string) => {
         setModalFeatureName(featureName);
@@ -66,23 +77,10 @@ const InfrastructureInsightsPage: React.FC = () => {
         }
     }, []);
 
-    const fetchOptions = useCallback(async () => {
-        try {
-            const { data } = await api.get<InfraInsightsOptions>('/dashboards/infrastructure-insights/options');
-            setOptions(data);
-            if (data.timeOptions.length > 0) {
-                setTimeRange(data.timeOptions[0].value);
-            }
-        } catch (error) {
-            console.error("Failed to fetch infrastructure insights options", error);
-        }
-    }, []);
-
     const fetchData = useCallback(() => {
         fetchRiskPrediction();
         fetchBookmarkedResources();
-        fetchOptions();
-    }, [fetchRiskPrediction, fetchBookmarkedResources, fetchOptions]);
+    }, [fetchRiskPrediction, fetchBookmarkedResources]);
 
     useEffect(() => {
         fetchData();
@@ -152,7 +150,7 @@ const InfrastructureInsightsPage: React.FC = () => {
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold">基礎設施洞察</h1>
                 <div className="flex items-center space-x-2">
-                    {options && <Dropdown label="時間範圍" options={options.timeOptions || []} value={timeRange} onChange={setTimeRange} />}
+                    {infraInsightsOptions && <Dropdown label="時間範圍" options={infraInsightsOptions.timeOptions || []} value={timeRange} onChange={setTimeRange} />}
                     <button onClick={handleRefresh} className="p-2 rounded-lg hover:bg-slate-700/50 flex items-center text-sm px-3 bg-slate-800/60 border border-slate-700"><Icon name="refresh-cw" className="w-4 h-4 mr-2" />刷新</button>
                     <button onClick={handleExport} className="p-2 rounded-lg hover:bg-slate-700/50 flex items-center text-sm px-3 bg-slate-800/60 border border-slate-700"><Icon name="download" className="w-4 h-4 mr-2" />匯出</button>
                 </div>

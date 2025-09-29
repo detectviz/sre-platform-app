@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { User, PersonnelFilters } from '../../../types';
+// FIX: Import TableColumn from types.ts
+import { User, PersonnelFilters, TableColumn } from '../../../types';
 import Icon from '../../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../../components/Toolbar';
 import TableContainer from '../../../components/TableContainer';
@@ -13,10 +14,12 @@ import TableError from '../../../components/TableError';
 import { exportToCsv } from '../../../services/export';
 import ImportFromCsvModal from '../../../components/ImportFromCsvModal';
 import { showToast } from '../../../services/toast';
-import ColumnSettingsModal, { TableColumn } from '../../../components/ColumnSettingsModal';
+// FIX: Import TableColumn from types.ts, not from ColumnSettingsModal
+import ColumnSettingsModal from '../../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 import UserAvatar from '../../../components/UserAvatar';
 import UnifiedSearchModal from '../../../components/UnifiedSearchModal';
+import { useOptions } from '../../../contexts/OptionsContext';
 
 const ALL_COLUMNS: TableColumn[] = [
     { key: 'name', label: '名稱' },
@@ -48,6 +51,8 @@ const PersonnelManagementPage: React.FC = () => {
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+    
+    const { options } = useOptions();
 
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
@@ -102,11 +107,8 @@ const PersonnelManagementPage: React.FC = () => {
     };
 
     const getStatusPill = (status: User['status']) => {
-        switch (status) {
-            case 'active': return 'bg-green-500/20 text-green-400';
-            case 'invited': return 'bg-yellow-500/20 text-yellow-400';
-            case 'inactive': return 'bg-slate-500/20 text-slate-400';
-        }
+        const style = options?.personnel?.statuses.find(s => s.value === status);
+        return style ? style.className : 'bg-slate-500/20 text-slate-400';
     };
 
     const handleInvite = async (details: { email: string; name?: string; role: User['role']; team: string }) => {

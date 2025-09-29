@@ -1,5 +1,5 @@
 import { DB, uuidv4 } from '../mock-server/db';
-import { AutomationExecution, Dashboard, GrafanaOptions } from '../types';
+import { AutomationExecution, Dashboard, GrafanaOptions, LogEntry, Resource, TabConfigMap, TableColumn } from '../types';
 import { showToast } from './toast';
 
 const getActive = (collection: any[] | undefined) => {
@@ -23,6 +23,39 @@ const paginate = (array: any[], page: any, pageSize: any) => {
     };
 };
 
+const sortData = (data: any[], sortBy: string, sortOrder: 'asc' | 'desc') => {
+    return [...data].sort((a, b) => {
+        const valA = a[sortBy];
+        const valB = b[sortBy];
+
+        if (valA === undefined || valA === null) return 1;
+        if (valB === undefined || valB === null) return -1;
+        
+        if (typeof valA === 'number' && typeof valB === 'number') {
+            return sortOrder === 'asc' ? valA - valB : valB - valA;
+        }
+
+        if (typeof valA === 'string' && typeof valB === 'string') {
+            return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        }
+
+        if (typeof valA === 'boolean' && typeof valB === 'boolean') {
+            // FIX: Explicitly convert boolean to number to avoid type errors during arithmetic sort operation.
+            const valueA = Number(valA);
+            const valueB = Number(valB);
+            // FIX: Use the converted number variables for subtraction.
+            // FIX: Corrected the arithmetic operation to use the numeric representations of booleans (`valueA`, `valueB`) instead of the boolean values themselves, resolving the type error.
+            return sortOrder === 'asc' ? valueA - valueB : valueB - valueA;
+        }
+        
+        // Fallback for other types
+        if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+        if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+        return 0;
+    });
+};
+
+
 const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', url: string, params: any, body: any) => {
     try {
         console.log(`[Mock API] ${method} ${url}`, { params, body });
@@ -31,8 +64,8 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
         const urlParts = url.split('?')[0].split('/').filter(Boolean);
         const resource = urlParts[0];
         const id = urlParts[1];
-        const action = urlParts[2];
-        const subAction = urlParts[3];
+        const subId = urlParts[2];
+        const action = urlParts[3];
 
         switch (`${method} /${resource}`) {
             // Navigation
@@ -48,6 +81,12 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 if (id === 'metadata') {
                     return DB.pageMetadata;
                 }
+                if (id === 'columns' && subId) {
+                    // FIX: Property 'allColumns' does not exist on type '{ ... }'.
+                    const pageKey = subId as keyof typeof DB.allColumns;
+                    // FIX: Property 'allColumns' does not exist on type '{ ... }'.
+                    return DB.allColumns[pageKey] || [];
+                }
                 break;
             }
             // UI Configs
@@ -55,9 +94,25 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 if (id === 'options') {
                     return DB.allOptions;
                 }
+                if (id === 'content') {
+                    return DB.pageContent;
+                }
                 if (id === 'icons') return DB.iconMap;
                 if (id === 'themes' && action === 'charts') return DB.chartColors;
-                if (id === 'tabs') return DB.tabConfigs;
+                if (id === 'tabs') {
+                    const VITE_EDITION = 'community'; // Simulate portfolio mode
+                    let tabsConfig = JSON.parse(JSON.stringify(DB.tabConfigs)) as TabConfigMap;
+                    if (VITE_EDITION === 'community') {
+                        const platformSettingsTabs = tabsConfig.platformSettings;
+                        if (platformSettingsTabs) {
+                            const licenseTab = platformSettingsTabs.find(t => t.path.endsWith('/license'));
+                            if (licenseTab) {
+                                licenseTab.disabled = true;
+                            }
+                        }
+                    }
+                    return tabsConfig;
+                }
                 if (id === 'icons-config') return DB.notificationChannelIcons;
                 if (id === 'content') {
                     if (action === 'command-palette') return DB.commandPaletteContent;
@@ -103,26 +158,23 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
             // AI Copilot
             case 'GET /ai': {
                 if (id === 'briefing') return DB.aiBriefing;
-                if (id === 'infra' && action === 'risk-prediction') return DB.aiRiskPrediction;
-                if (id === 'insights') {
-                    if (action === 'health-score') return DB.aiHealthScore;
-                    if (action === 'anomalies') return DB.aiAnomalies;
-                    if (action === 'suggestions') return DB.aiSuggestions;
-                }
+                if (id === 'infra' && subId === 'risk-prediction') return DB.aiRiskPrediction;
                 break;
             }
             case 'POST /ai': {
-                if (id === 'briefing' && action === 'generate') return DB.aiBriefing;
-                if (id === 'incidents' && action === 'analyze') {
+                if (id === 'briefing' && subId === 'generate') return DB.aiBriefing;
+                if (id === 'incidents' && subId === 'analyze') {
                     const { incident_ids } = body;
                     return incident_ids.length > 1 ? DB.multiIncidentAnalysis : DB.singleIncidentAnalysis;
                 }
-                if (id === 'automation' && action === 'generate-script') return DB.generatedPlaybook;
-                if (id === 'logs' && action === 'summarize') {
+                if (id === 'automation' && subId === 'generate-script') return DB.generatedPlaybook;
+                if (id === 'logs' && subId === 'summarize') {
                     return DB.logAnalysis;
                 }
-                if (id === 'traces' && action === 'analyze') {
-                    return DB.traceAnalysis;
+                if (id === 'resources' && subId === 'analyze') {
+                    const { resourceIds } = body;
+                    // Mock: just return the same analysis regardless of input ids
+                    return DB.resourceAnalysis;
                 }
                 break;
             }
@@ -130,8 +182,11 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
             // Dashboards
             case 'GET /dashboards': {
                  if (id === 'sre-war-room') {
-                    if (action === 'service-health') return DB.serviceHealthData;
-                    if (action === 'resource-group-status') return DB.resourceGroupStatusData;
+                    if (subId === 'service-health') return DB.serviceHealthData;
+                    if (subId === 'resource-group-status') return DB.resourceGroupStatusData;
+                }
+                if (id === 'infrastructure-insights' && subId === 'options') {
+                    return DB.allOptions.infraInsights;
                 }
                 if (id === 'available-grafana') {
                     const linkedUids = getActive(DB.dashboards).filter((d: any) => d.type === 'grafana' && d.grafana_dashboard_uid).map((d: any) => d.grafana_dashboard_uid);
@@ -147,6 +202,9 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 if (params) {
                     if (params.category && params.category !== 'All') dashboards = dashboards.filter((d: any) => d.category === params.category);
                     if (params.keyword) dashboards = dashboards.filter((d: any) => d.name.toLowerCase().includes(params.keyword.toLowerCase()));
+                }
+                 if (params?.sort_by && params?.sort_order) {
+                    dashboards = sortData(dashboards, params.sort_by, params.sort_order);
                 }
                 return paginate(dashboards, params?.page, params?.page_size);
             }
@@ -186,13 +244,16 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 if (params?.resource_name) {
                     incidents = incidents.filter((i: any) => i.resource === params.resource_name);
                 }
+                if (params?.sort_by && params?.sort_order) {
+                    incidents = sortData(incidents, params.sort_by, params.sort_order);
+                }
                 return paginate(incidents, params?.page, params?.page_size);
             }
             case 'POST /incidents': {
                 if (id === 'import') {
                     return { message: '成功匯入 12 筆事件。' };
                 }
-                if (action === 'actions') {
+                if (subId === 'actions') {
                     const { action: incidentAction, assigneeName, durationHours, details } = body;
                     const index = DB.incidents.findIndex((i: any) => i.id === id);
                     if (index === -1) throw { status: 404 };
@@ -237,11 +298,31 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
             
             case 'GET /alert-rules': {
                 if (id === 'templates') return DB.alertRuleTemplates;
+                if (id === 'resource-types') return DB.resourceTypes;
+                if (id === 'metrics') return DB.metricMetadata;
+                if (id === 'count') {
+                    let rules = getActive(DB.alertRules);
+                    if (params?.matchers) {
+                        const matchers = JSON.parse(params.matchers);
+                        matchers.forEach((matcher: any) => {
+                           if (matcher.key === 'severity') {
+                               rules = rules.filter((r: any) => r.severity === matcher.value);
+                           }
+                           if (matcher.key === 'target') {
+                               rules = rules.filter((r: any) => r.target.includes(matcher.value));
+                           }
+                        });
+                    }
+                    return { count: rules.length };
+                }
                 let rules = getActive(DB.alertRules);
                 if (params) {
                     if (params.keyword) rules = rules.filter((r: any) => r.name.toLowerCase().includes(params.keyword.toLowerCase()));
                     if (params.severity) rules = rules.filter((r: any) => r.severity === params.severity);
                     if (params.enabled !== undefined) rules = rules.filter((r: any) => String(r.enabled) === params.enabled);
+                }
+                if (params?.sort_by && params?.sort_order) {
+                    rules = sortData(rules, params.sort_by, params.sort_order);
                 }
                 return rules;
             }
@@ -249,7 +330,7 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 if (id === 'import') {
                     return { message: '成功匯入 8 條告警規則。' };
                 }
-                if (action === 'test') {
+                if (subId === 'test') {
                     const ruleId = id;
                     const { payload } = body;
                     const rule = DB.alertRules.find((r: any) => r.id === ruleId);
@@ -267,13 +348,13 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                         };
                     }
                 }
-                const newRule = { ...body, id: `rule-${uuidv4()}` };
+                const newRule = { ...body, id: `rule-${uuidv4()}`, automationEnabled: !!body.automation?.enabled };
                 DB.alertRules.unshift(newRule);
                 return newRule;
             case 'PATCH /alert-rules':
                 const ruleIndex = DB.alertRules.findIndex((r: any) => r.id === id);
                 if (ruleIndex === -1) throw { status: 404 };
-                DB.alertRules[ruleIndex] = { ...DB.alertRules[ruleIndex], ...body };
+                DB.alertRules[ruleIndex] = { ...DB.alertRules[ruleIndex], ...body, automationEnabled: !!body.automation?.enabled };
                 return DB.alertRules[ruleIndex];
             case 'DELETE /alert-rules':
                 DB.alertRules = DB.alertRules.filter((r: any) => r.id !== id);
@@ -286,6 +367,9 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                     if (params.keyword) rules = rules.filter((r: any) => r.name.toLowerCase().includes(params.keyword.toLowerCase()));
                     if (params.type) rules = rules.filter((r: any) => r.type === params.type);
                     if (params.enabled !== undefined) rules = rules.filter((r: any) => String(r.enabled) === params.enabled);
+                }
+                if (params?.sort_by && params?.sort_order) {
+                    rules = sortData(rules, params.sort_by, params.sort_order);
                 }
                 return rules;
             }
@@ -307,13 +391,37 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
             // Resources
             case 'GET /resources': {
-                if (id === 'topology') {
-                    if (action === 'options') {
-                        return DB.allOptions.topology;
+                if (id === 'datasources') {
+                    let datasources = getActive(DB.datasources);
+                    if (params?.sort_by && params?.sort_order) {
+                        datasources = sortData(datasources, params.sort_by, params.sort_order);
                     }
+                    return datasources;
+                }
+                if (id === 'discovery-jobs') {
+                    if (subId && action === 'results') {
+                        return DB.discoveredResources;
+                    }
+                    let jobs = getActive(DB.discoveryJobs);
+                    if (params?.sort_by && params?.sort_order) {
+                        jobs = sortData(jobs, params.sort_by, params.sort_order);
+                    }
+                    return jobs;
+                }
+                if (id === 'overview') {
+                    return DB.resourceOverviewData;
+                }
+                if (id === 'count') {
+                    const query = params.query || '';
+                    if (!query) return { count: DB.resources.length };
+                    const randomCount = Math.floor(Math.random() * (DB.resources.length / 2)) + 5;
+                    return { count: randomCount };
+                }
+                if (id === 'topology') {
+                    if (subId === 'options') return DB.allOptions.topology;
                     return { nodes: DB.resources, links: DB.resourceLinks };
                 }
-                if (id && action === 'metrics') {
+                if (id && subId === 'metrics') {
                     const generateMetricData = (base: number, variance: number): [string, number][] => Array.from({ length: 30 }, (_, i) => [new Date(Date.now() - (29 - i) * 60000).toISOString(), Math.max(0, Math.min(100, base + (Math.random() - 0.5) * variance))]);
                     return { cpu: generateMetricData(50, 20), memory: generateMetricData(60, 15) };
                 }
@@ -324,10 +432,71 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 }
                 let resources = getActive(DB.resources);
                 if (params?.bookmarked) resources = resources.slice(0, 4);
+                 if (params?.sort_by && params?.sort_order) {
+                    resources = sortData(resources, params.sort_by, params.sort_order);
+                }
                 return paginate(resources, params?.page, params?.page_size);
             }
             case 'POST /resources': {
-                if (id && action === 'silence') {
+                if (id === 'datasources') {
+                    if (subId && action === 'test') {
+                        const dsId = subId;
+                        const ds = DB.datasources.find((d: any) => d.id === dsId);
+                        if (!ds) throw { status: 404 };
+                        ds.status = 'pending';
+                        setTimeout(() => {
+                            const idx = DB.datasources.findIndex((d: any) => d.id === dsId);
+                            if (idx > -1) DB.datasources[idx].status = Math.random() > 0.3 ? 'ok' : 'error';
+                        }, 1500);
+                        return { success: true, message: 'Test initiated.' };
+                    }
+                    const newDs = { ...body, id: `ds-${uuidv4()}`, createdAt: new Date().toISOString().slice(0, 19).replace('T', ' '), status: 'pending' };
+                    DB.datasources.unshift(newDs);
+                    return newDs;
+                }
+                if (id === 'discovery-jobs') {
+                    if (subId && action === 'run') {
+                        const jobId = subId;
+                        const jobIndex = DB.discoveryJobs.findIndex((j: any) => j.id === jobId);
+                        if (jobIndex === -1) throw { status: 404 };
+                        DB.discoveryJobs[jobIndex].status = 'running';
+                        setTimeout(() => {
+                           const idx = DB.discoveryJobs.findIndex((j: any) => j.id === jobId);
+                           if (idx > -1) {
+                               DB.discoveryJobs[idx].status = Math.random() > 0.2 ? 'success' : 'partial_failure';
+                               DB.discoveryJobs[idx].lastRun = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                           }
+                        }, 3000);
+                        return { message: 'Run triggered.' };
+                    }
+                    const newJob = { ...body, id: `dj-${uuidv4()}`, lastRun: 'N/A', status: 'success' };
+                    DB.discoveryJobs.unshift(newJob);
+                    return newJob;
+                }
+                if (id === 'import-discovered') {
+                    const { discoveredResourceIds, jobId, deployAgent } = body;
+                    discoveredResourceIds.forEach((resId: string) => {
+                        const resIndex = DB.discoveredResources.findIndex((r: any) => r.id === resId);
+                        if (resIndex > -1) {
+                            DB.discoveredResources[resIndex].status = 'imported';
+                            const newResource = {
+                                id: `res-${uuidv4()}`,
+                                name: DB.discoveredResources[resIndex].name,
+                                status: 'healthy',
+                                type: DB.discoveredResources[resIndex].type,
+                                provider: 'Discovered',
+                                region: 'N/A',
+                                owner: 'Unassigned',
+                                lastCheckIn: new Date().toISOString(),
+                                discoveredByJobId: jobId,
+                                monitoringAgent: deployAgent ? 'node_exporter' : undefined
+                            };
+                            DB.resources.unshift(newResource);
+                        }
+                    });
+                    return { message: 'Import successful' };
+                }
+                if (id && subId === 'silence') {
                     const resourceToSilence = DB.resources.find((r: any) => r.id === id);
                     if (!resourceToSilence) throw { status: 404 };
                     return { message: `Resource ${resourceToSilence.name} silenced successfully for ${body.duration}.` };
@@ -345,17 +514,51 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                      return newResource;
                 }
             }
-            case 'PATCH /resources':
+            case 'PATCH /resources': {
+                if (id === 'datasources') {
+                    const dsId = subId;
+                    const index = DB.datasources.findIndex((d: any) => d.id === dsId);
+                    if (index === -1) throw { status: 404 };
+                    DB.datasources[index] = { ...DB.datasources[index], ...body };
+                    return DB.datasources[index];
+                }
+                if (id === 'discovery-jobs') {
+                    const jobId = subId;
+                    const index = DB.discoveryJobs.findIndex((j: any) => j.id === jobId);
+                    if (index === -1) throw { status: 404 };
+                    DB.discoveryJobs[index] = { ...DB.discoveryJobs[index], ...body };
+                    return DB.discoveryJobs[index];
+                }
                 const resIndex = DB.resources.findIndex((r: any) => r.id === id);
                 if (resIndex === -1) throw { status: 404 };
                 DB.resources[resIndex] = { ...DB.resources[resIndex], ...body };
                 return DB.resources[resIndex];
-            case 'DELETE /resources':
-                 const delResIndex = DB.resources.findIndex((r: any) => r.id === id);
-                 if (delResIndex > -1) DB.resources[delResIndex].deleted_at = new Date().toISOString();
-                 return {};
+            }
+            case 'DELETE /resources': {
+                 if (id === 'datasources') {
+                    const dsId = subId;
+                    const index = DB.datasources.findIndex((d: any) => d.id === dsId);
+                    if (index > -1) (DB.datasources[index] as any).deleted_at = new Date().toISOString();
+                    return {};
+                 }
+                 if (id === 'discovery-jobs') {
+                    const jobId = subId;
+                    const index = DB.discoveryJobs.findIndex((j: any) => j.id === jobId);
+                    if (index > -1) (DB.discoveryJobs[index] as any).deleted_at = new Date().toISOString();
+                    return {};
+                 }
+                const delResIndex = DB.resources.findIndex((r: any) => r.id === id);
+                if (delResIndex > -1) DB.resources[delResIndex].deleted_at = new Date().toISOString();
+                return {};
+            }
             
-            case 'GET /resource-groups': return getActive(DB.resourceGroups);
+            case 'GET /resource-groups': {
+                let groups = getActive(DB.resourceGroups);
+                if (params?.sort_by && params?.sort_order) {
+                    groups = sortData(groups, params.sort_by, params.sort_order);
+                }
+                return groups;
+            }
             case 'POST /resource-groups':
                 const newGroup = { ...body, id: `rg-${uuidv4()}` };
                 DB.resourceGroups.unshift(newGroup);
@@ -377,8 +580,10 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 }
                 if (id === 'triggers') {
                     let triggers = getActive(DB.automationTriggers);
-                    if (params && params.keyword) triggers = triggers.filter((t: any) => t.name.toLowerCase().includes(params.keyword.toLowerCase()));
-                    return triggers;
+                    if (params?.keyword) {
+                        triggers = triggers.filter((t: any) => t.name.toLowerCase().includes(params.keyword.toLowerCase()));
+                    }
+                    return paginate(triggers, params?.page, params?.page_size);
                 }
                 if (id === 'executions') {
                     let executions = [...DB.automationExecutions];
@@ -386,20 +591,8 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                         if (params.playbookId) executions = executions.filter((e: any) => e.scriptId === params.playbookId);
                         if (params.status) executions = executions.filter((e: any) => e.status === params.status);
                     }
-                    if (params?.sort_by) {
-                        const { sort_by, sort_order } = params;
-                        executions.sort((a, b) => {
-                            const key = sort_by as keyof AutomationExecution;
-                            const valA = a[key];
-                            const valB = b[key];
-                            
-                            if (valA === undefined || valA === null) return 1;
-                            if (valB === undefined || valB === null) return -1;
-                    
-                            if (valA < valB) return sort_order === 'asc' ? -1 : 1;
-                            if (valA > valB) return sort_order === 'asc' ? 1 : -1;
-                            return 0;
-                        });
+                    if (params?.sort_by && params?.sort_order) {
+                        executions = sortData(executions, params.sort_by, params.sort_order);
                     }
                     return paginate(executions, params?.page, params?.page_size);
                 }
@@ -407,8 +600,8 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
             }
              case 'POST /automation': {
                 if (id === 'scripts') {
-                    if (action === 'execute') {
-                        const scriptId = urlParts[2];
+                    if (subId === 'execute') {
+                        const scriptId = id;
                         const script = DB.playbooks.find((p: any) => p.id === scriptId);
                         if (!script) throw { status: 404 };
                         const newExec = { id: `exec-${uuidv4()}`, scriptId, scriptName: script.name, status: 'running', triggerSource: 'manual', triggeredBy: 'Admin User', startTime: new Date().toISOString(), parameters: body.parameters, logs: { stdout: 'Execution started...', stderr: '' } };
@@ -420,12 +613,7 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                     DB.playbooks.unshift(newScript);
                     return newScript;
                 }
-                if (id === 'triggers') {
-                    const newTrigger = { ...body, id: `trig-${uuidv4()}` };
-                    DB.automationTriggers.unshift(newTrigger);
-                    return newTrigger;
-                }
-                if (id === 'executions' && action === 'retry') {
+                if (id === 'executions' && subId === 'retry') {
                     const executionId = urlParts[2];
                     const executionIndex = DB.automationExecutions.findIndex((e: any) => e.id === executionId);
                     if (executionIndex === -1) throw { status: 404 };
@@ -434,22 +622,44 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                     DB.automationExecutions.unshift(newExec);
                     return newExec;
                 }
+                if (id === 'triggers') {
+                    const newTrigger = { ...body, id: `trig-${uuidv4()}` };
+                    DB.automationTriggers.unshift(newTrigger);
+                    return newTrigger;
+                }
                 break;
             }
             case 'PATCH /automation': { 
-                const collection = id === 'scripts' ? DB.playbooks : DB.automationTriggers;
-                const itemId = urlParts[2];
-                const index = collection.findIndex((p: any) => p.id === itemId);
-                if (index === -1) throw { status: 404 };
-                collection[index] = { ...collection[index], ...body };
-                return collection[index];
+                if (id === 'scripts') {
+                    const itemId = subId;
+                    const index = DB.playbooks.findIndex((p: any) => p.id === itemId);
+                    if (index === -1) throw { status: 404 };
+                    DB.playbooks[index] = { ...DB.playbooks[index], ...body };
+                    return DB.playbooks[index];
+                }
+                if (id === 'triggers') {
+                     const itemId = subId;
+                    const index = DB.automationTriggers.findIndex((t: any) => t.id === itemId);
+                    if (index === -1) throw { status: 404 };
+                    DB.automationTriggers[index] = { ...DB.automationTriggers[index], ...body };
+                    return DB.automationTriggers[index];
+                }
+                break;
             }
             case 'DELETE /automation': {
-                const collection = id === 'scripts' ? DB.playbooks : DB.automationTriggers;
-                const itemId = urlParts[2];
-                const index = collection.findIndex((item: any) => item.id === itemId);
-                if (index > -1) collection[index].deleted_at = new Date().toISOString();
-                return {};
+                if (id === 'scripts') {
+                    const itemId = subId;
+                    const index = DB.playbooks.findIndex((item: any) => item.id === itemId);
+                    if (index > -1) (DB.playbooks[index] as any).deleted_at = new Date().toISOString();
+                    return {};
+                }
+                 if (id === 'triggers') {
+                    const itemId = subId;
+                    const index = DB.automationTriggers.findIndex((item: any) => item.id === itemId);
+                    if (index > -1) (DB.automationTriggers[index] as any).deleted_at = new Date().toISOString();
+                    return {};
+                }
+                break;
             }
 
 
@@ -458,23 +668,46 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 if (id === 'users') {
                     let users = getActive(DB.users);
                     if (params && params.keyword) users = users.filter((u: any) => u.name.toLowerCase().includes(params.keyword.toLowerCase()) || u.email.toLowerCase().includes(params.keyword.toLowerCase()));
+                    if (params?.sort_by && params?.sort_order) {
+                        users = sortData(users, params.sort_by, params.sort_order);
+                    }
                     return paginate(users, params?.page, params?.page_size);
                 }
-                if (id === 'teams') return getActive(DB.teams);
-                if (id === 'roles') return getActive(DB.roles);
+                if (id === 'teams') {
+                    let teams = getActive(DB.teams);
+                    if (params?.keyword) teams = teams.filter((t: any) => t.name.toLowerCase().includes(params.keyword.toLowerCase()));
+                    if (params?.sort_by && params?.sort_order) {
+                        teams = sortData(teams, params.sort_by, params.sort_order);
+                    }
+                    return paginate(teams, params?.page, params?.page_size);
+                }
+                if (id === 'roles') {
+                    let roles = getActive(DB.roles);
+                    if (params?.keyword) roles = roles.filter((r: any) => r.name.toLowerCase().includes(params.keyword.toLowerCase()));
+                     if (params?.sort_by && params?.sort_order) {
+                        roles = sortData(roles, params.sort_by, params.sort_order);
+                    }
+                    return paginate(roles, params?.page, params?.page_size);
+                }
                 if (id === 'permissions') return DB.availablePermissions;
-                if (id === 'audit-logs') return paginate(DB.auditLogs, params?.page, params?.page_size);
+                if (id === 'audit-logs') {
+                    let logs = DB.auditLogs;
+                    if (params?.sort_by && params?.sort_order) {
+                        logs = sortData(logs, params.sort_by, params.sort_order);
+                    }
+                    return paginate(logs, params?.page, params?.page_size);
+                }
                 break;
             }
             case 'POST /iam': {
                 if (id === 'users') {
-                    if (action === 'batch-actions') {
+                    if (subId === 'batch-actions') {
                         const { action: batchAction, ids } = body;
                         if (batchAction === 'delete') DB.users.forEach((u: any) => { if (ids.includes(u.id)) u.deleted_at = new Date().toISOString(); });
                         if (batchAction === 'disable') DB.users.forEach((u: any) => { if (ids.includes(u.id)) u.status = 'inactive'; });
                         return { success: true };
                     }
-                    if (action === 'import') {
+                    if (subId === 'import') {
                         return { message: '成功匯入 25 位人員。' };
                     } else {
                         const newUser = { ...body, id: `usr-${uuidv4()}`, status: 'invited', lastLogin: 'N/A' };
@@ -483,11 +716,21 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                     }
                 }
                 if (id === 'teams') {
+                     if (subId === 'batch-actions') {
+                        const { action: batchAction, ids } = body;
+                        if (batchAction === 'delete') DB.teams.forEach((t: any) => { if (ids.includes(t.id)) t.deleted_at = new Date().toISOString(); });
+                        return { success: true };
+                    }
                     const newTeam = { ...body, id: `team-${uuidv4()}` };
                     DB.teams.unshift(newTeam);
                     return newTeam;
                 }
                 if (id === 'roles') {
+                     if (subId === 'batch-actions') {
+                        const { action: batchAction, ids } = body;
+                        if (batchAction === 'delete') DB.roles.forEach((r: any) => { if (ids.includes(r.id)) r.deleted_at = new Date().toISOString(); });
+                        return { success: true };
+                    }
                     const newRole = { ...body, id: `role-${uuidv4()}`, userCount: 0, status: 'active', createdAt: new Date().toISOString() };
                     DB.roles.unshift(newRole);
                     return newRole;
@@ -496,17 +739,17 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
             }
             case 'PATCH /iam': {
                 const collection = id === 'users' ? DB.users : id === 'teams' ? DB.teams : DB.roles;
-                const itemId = urlParts[2];
+                const itemId = subId;
                 const index = collection.findIndex((item: any) => item.id === itemId);
                 if (index === -1) throw { status: 404 };
                 collection[index] = { ...collection[index], ...body };
                 return collection[index];
             }
             case 'DELETE /iam': {
-                const collection = id === 'users' ? DB.users : id === 'teams' ? DB.teams : DB.roles;
-                const itemId = urlParts[2];
+                const collection = id === 'users' ? DB.users : id === 'teams' ? DB.roles : DB.teams;
+                const itemId = subId;
                 const index = collection.findIndex((item: any) => item.id === itemId);
-                if (index > -1) collection[index].deleted_at = new Date().toISOString();
+                if (index > -1) (collection[index] as any).deleted_at = new Date().toISOString();
                 return {};
             }
 
@@ -543,33 +786,54 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 break;
             }
             case 'GET /logs': {
-                return paginate(DB.logs, params?.page, params?.page_size);
+                let logs = DB.logs;
+                if (params?.keyword) {
+                    const keyword = params.keyword.toLowerCase();
+                    logs = logs.filter((log: LogEntry) => 
+                        log.message.toLowerCase().includes(keyword) || 
+                        log.service.toLowerCase().includes(keyword)
+                    );
+                }
+                return paginate(logs, params?.page, params?.page_size);
             }
-            case 'GET /traces': return DB.traces;
 
             // Settings
             case 'GET /settings': {
                 if (id === 'layouts') return DB.layouts;
                 if (id === 'widgets') return DB.layoutWidgets;
                 if (id === 'tags') {
-                    return DB.tagDefinitions;
+                    let tags = DB.tagDefinitions;
+                    if (params?.sort_by && params?.sort_order) {
+                       tags = sortData(tags, params.sort_by, params.sort_order);
+                    }
+                    return tags;
                 }
                 if (id === 'column-config') {
-                    const pageKey = action as keyof typeof DB.columnConfigs;
+                    const pageKey = subId as keyof typeof DB.columnConfigs;
                     return DB.columnConfigs[pageKey] || [];
                 }
                 if (id === 'notification-strategies') {
                     let strategies = getActive(DB.notificationStrategies);
                     if (params?.keyword) strategies = strategies.filter((s: any) => s.name.toLowerCase().includes(params.keyword.toLowerCase()));
+                    if (params?.sort_by && params?.sort_order) {
+                        strategies = sortData(strategies, params.sort_by, params.sort_order);
+                    }
                     return strategies;
                 }
                 if (id === 'notification-channels') {
                     let channels = getActive(DB.notificationChannels);
                     if (params?.keyword) channels = channels.filter((c: any) => c.name.toLowerCase().includes(params.keyword.toLowerCase()));
+                    if (params?.sort_by && params?.sort_order) {
+                       channels = sortData(channels, params.sort_by, params.sort_order);
+                    }
                     return channels;
                 }
                 if (id === 'notification-history') {
-                    return paginate(DB.notificationHistory, params?.page, params?.page_size);
+                    let history = DB.notificationHistory;
+                    if (params?.sort_by && params?.sort_order) {
+                       history = sortData(history, params.sort_by, params.sort_order);
+                    }
+                    return paginate(history, params?.page, params?.page_size);
                 }
                 if (id === 'mail') {
                     if (!DB.mailSettings.encryptionModes) {
@@ -579,7 +843,7 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 }
                 if (id === 'auth') return DB.authSettings;
                 if (id === 'platform') return DB.platformSettings;
-                if (id === 'preferences' && action === 'options') return DB.preferenceOptions;
+                if (id === 'preferences' && subId === 'options') return DB.preferenceOptions;
                 if (id === 'grafana') {
                     return DB.grafanaSettings;
                 }
@@ -599,7 +863,7 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                     return DB.layouts;
                 }
                 if (id === 'column-config') {
-                    const pageKey = action as keyof typeof DB.columnConfigs;
+                    const pageKey = subId as keyof typeof DB.columnConfigs;
                     DB.columnConfigs[pageKey] = body;
                     return DB.columnConfigs[pageKey];
                 }
@@ -620,16 +884,16 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                 break;
             }
              case 'POST /settings': {
-                if (urlParts[1] === 'notification-channels' && action === 'test') {
+                if (urlParts[1] === 'notification-channels' && subId === 'test') {
                     return { success: true, message: 'Test initiated.' };
                 }
-                if (urlParts[1] === 'notification-history' && action === 'resend') {
+                if (urlParts[1] === 'notification-history' && subId === 'resend') {
                     return { success: true };
                 }
-                if (id === 'mail' && action === 'test') {
+                if (id === 'mail' && subId === 'test') {
                     return { success: true, message: 'Test email sent successfully.' };
                 }
-                if (id === 'grafana' && action === 'test') {
+                if (id === 'grafana' && subId === 'test') {
                     const { url, apiKey } = body;
                     if (url.includes('fail')) {
                         return { success: false, message: '連線失敗：無效的 URL 或網路問題。' };
@@ -712,7 +976,7 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
                     DB.notifications.forEach((n: any) => n.status = 'read');
                     return { success: true };
                 }
-                if (id && action === 'read') {
+                if (id && subId === 'read') {
                     const index = DB.notifications.findIndex((n: any) => n.id === id);
                     if (index > -1) {
                         DB.notifications[index].status = 'read';
@@ -725,6 +989,11 @@ const handleRequest = async (method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
         }
     } catch (e: any) {
         console.error(`[Mock ${method} Error] ${url.split('?')[0]}`, e.message);
+        // License Interceptor Logic
+        if (e?.status === 403 && (e?.message?.toLowerCase().includes('license') || e?.code === 'LICENSE_INVALID')) {
+            console.warn("License invalid or expired");
+            showToast('您的 License 無效或已過期，部分功能可能受限。', 'error');
+        }
         throw e;
     }
 

@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-// FIX: Import DashboardFilters from types.ts
-import { Dashboard, DashboardFilters } from '../../types';
+// FIX: Import TableColumn from types.ts
+import { Dashboard, DashboardFilters, TableColumn } from '../../types';
 import Icon from '../../components/Icon';
 import TableContainer from '../../components/TableContainer';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
@@ -13,7 +12,8 @@ import api from '../../services/api';
 import Pagination from '../../components/Pagination';
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
-import ColumnSettingsModal, { TableColumn } from '../../components/ColumnSettingsModal';
+// FIX: Import TableColumn from types.ts, not from ColumnSettingsModal
+import ColumnSettingsModal from '../../components/ColumnSettingsModal';
 import { showToast } from '../../services/toast';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
 import { useOptions } from '../../contexts/OptionsContext';
@@ -21,14 +21,8 @@ import { useOptions } from '../../contexts/OptionsContext';
 import UnifiedSearchModal from '../../components/UnifiedSearchModal';
 import { exportToCsv } from '../../services/export';
 import ImportFromCsvModal from '../../components/ImportFromCsvModal';
+import { useContent } from '../../contexts/ContentContext';
 
-const ALL_COLUMNS: TableColumn[] = [
-    { key: 'name', label: '名稱' },
-    { key: 'type', label: '類型' },
-    { key: 'category', label: '類別' },
-    { key: 'owner', label: '擁有者' },
-    { key: 'updatedAt', label: '最後更新' },
-];
 const PAGE_IDENTIFIER = 'dashboards';
 
 const DashboardListPage: React.FC = () => {
@@ -36,8 +30,12 @@ const DashboardListPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [totalDashboards, setTotalDashboards] = useState(0);
+    const [allColumns, setAllColumns] = useState<TableColumn[]>([]);
     
     const { options, isLoading: isLoadingOptions } = useOptions();
+    const { content } = useContent();
+    const pageContent = content?.DASHBOARD_LIST;
+    const globalContent = content?.GLOBAL;
     
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
@@ -61,7 +59,7 @@ const DashboardListPage: React.FC = () => {
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
 
     const fetchDashboards = useCallback(async () => {
-        if (!pageKey) return;
+        if (!pageKey || !pageContent) return;
         setIsLoading(true);
         setError(null);
         try {
@@ -71,27 +69,29 @@ const DashboardListPage: React.FC = () => {
                 ...filters
             };
             
-            const [dashboardsRes, columnsRes] = await Promise.all([
+            const [dashboardsRes, columnsRes, allColumnsRes] = await Promise.all([
                  api.get<{ items: Dashboard[], total: number }>('/dashboards', { params }),
-                 api.get<string[]>(`/settings/column-config/${pageKey}`)
+                 api.get<string[]>(`/settings/column-config/${pageKey}`),
+                 api.get<TableColumn[]>(`/pages/columns/${pageKey}`),
             ]);
             
+            setAllColumns(allColumnsRes.data);
             setDashboards(dashboardsRes.data.items);
             setTotalDashboards(dashboardsRes.data.total);
-            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
+            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : allColumnsRes.data.map(c => c.key));
         } catch (err) {
-            setError('無法獲取儀表板列表。');
+            setError(pageContent.FETCH_ERROR);
             console.error(err);
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, filters, pageKey]);
+    }, [currentPage, pageSize, filters, pageKey, pageContent]);
 
     useEffect(() => {
-        if (pageKey) {
+        if (pageKey && pageContent) {
             fetchDashboards();
         }
-    }, [fetchDashboards, pageKey]);
+    }, [fetchDashboards, pageKey, pageContent]);
 
     useEffect(() => {
         const storedDefault = localStorage.getItem('default-dashboard') || 'sre-war-room';
@@ -99,16 +99,16 @@ const DashboardListPage: React.FC = () => {
     }, []);
 
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
-        if (!pageKey) {
-            showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
+        if (!pageKey || !pageContent) {
+            showToast(pageContent.COLUMN_CONFIG_MISSING_ERROR, 'error');
             return;
         }
         try {
             await api.put(`/settings/column-config/${pageKey}`, newColumnKeys);
             setVisibleColumns(newColumnKeys);
-            showToast('欄位設定已儲存。', 'success');
+            showToast(pageContent.COLUMN_CONFIG_SAVE_SUCCESS, 'success');
         } catch (err) {
-            showToast('無法儲存欄位設定。', 'error');
+            showToast(pageContent.COLUMN_CONFIG_SAVE_ERROR, 'error');
         } finally {
             setIsColumnSettingsModalOpen(false);
         }
@@ -129,7 +129,7 @@ const DashboardListPage: React.FC = () => {
             setIsAddModalOpen(false);
             fetchDashboards();
         } catch (err) {
-            alert('Failed to save dashboard.');
+            showToast(pageContent?.SAVE_ERROR || 'Failed to save dashboard.', 'error');
         }
     };
 
@@ -151,7 +151,7 @@ const DashboardListPage: React.FC = () => {
                 setDeletingDashboard(null);
                 fetchDashboards(); // Re-fetch
             } catch (err) {
-                alert('Failed to delete dashboard.');
+                showToast(pageContent?.DELETE_ERROR || 'Failed to delete dashboard.', 'error');
             }
         }
     };
@@ -172,7 +172,7 @@ const DashboardListPage: React.FC = () => {
             setEditingDashboard(null);
             fetchDashboards(); // Re-fetch
         } catch (err) {
-            alert('Failed to update dashboard.');
+            showToast(pageContent?.UPDATE_ERROR || 'Failed to update dashboard.', 'error');
         }
     };
     
@@ -193,7 +193,7 @@ const DashboardListPage: React.FC = () => {
             setSelectedIds([]);
             fetchDashboards();
         } catch (err) {
-            alert('Failed to delete selected dashboards.');
+            showToast(pageContent?.BATCH_DELETE_ERROR || 'Failed to delete selected dashboards.', 'error');
         }
     };
 
@@ -203,7 +203,7 @@ const DashboardListPage: React.FC = () => {
             : dashboards;
         
         if (dataToExport.length === 0) {
-            showToast("沒有可匯出的資料。", 'error');
+            showToast(globalContent?.NO_DATA_TO_EXPORT || "沒有可匯出的資料。", 'error');
             return;
         }
         
@@ -215,16 +215,17 @@ const DashboardListPage: React.FC = () => {
     };
 
     const renderCellContent = (dashboard: Dashboard, columnKey: string) => {
+        if (!pageContent) return null;
         switch (columnKey) {
             case 'name':
                 return (
                     <>
                         <div className="flex items-center space-x-3 cursor-pointer">
-                            <div title={dashboard.type === 'built-in' ? '內建儀表板' : 'Grafana 儀表板'}>
+                            <div title={dashboard.type === 'built-in' ? pageContent.BUILT_IN_TOOLTIP : pageContent.GRAFANA_TOOLTIP}>
                                 <Icon name={dashboard.type === 'built-in' ? "layout-dashboard" : "area-chart"} className={`w-5 h-5 ${dashboard.type === 'built-in' ? 'text-sky-400' : 'text-green-400'}`} />
                             </div>
                             <span>{dashboard.name}</span>
-                            {defaultDashboard === dashboard.id && <span className="text-xs bg-sky-500 text-white px-2 py-0.5 rounded-full">首頁</span>}
+                            {defaultDashboard === dashboard.id && <span className="text-xs bg-sky-500 text-white px-2 py-0.5 rounded-full">{pageContent.HOME_BADGE}</span>}
                         </div>
                         <div className="text-xs text-slate-400 pl-8">{dashboard.description}</div>
                     </>
@@ -242,21 +243,25 @@ const DashboardListPage: React.FC = () => {
         }
     };
 
+    if (!pageContent || !globalContent) {
+        return <div className="flex items-center justify-center h-full"><Icon name="loader-circle" className="w-8 h-8 animate-spin" /></div>;
+    }
+
     const leftActions = (
-        <ToolbarButton icon="search" text="搜尋和篩選" onClick={() => setIsSearchModalOpen(true)} />
+        <ToolbarButton icon="search" text={pageContent.SEARCH_PLACEHOLDER} onClick={() => setIsSearchModalOpen(true)} />
     );
     
     const rightActions = (
         <>
-            <ToolbarButton icon="upload" text="匯入" onClick={() => setIsImportModalOpen(true)} />
-            <ToolbarButton icon="download" text="匯出" onClick={handleExport} />
-            <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => setIsColumnSettingsModalOpen(true)} />
-            <ToolbarButton icon="plus" text="新增儀表板" primary onClick={() => setIsAddModalOpen(true)} />
+            <ToolbarButton icon="upload" text={globalContent.IMPORT} onClick={() => setIsImportModalOpen(true)} />
+            <ToolbarButton icon="download" text={globalContent.EXPORT} onClick={handleExport} />
+            <ToolbarButton icon="settings-2" text={globalContent.COLUMN_SETTINGS} onClick={() => setIsColumnSettingsModalOpen(true)} />
+            <ToolbarButton icon="plus" text={pageContent.ADD_DASHBOARD} primary onClick={() => setIsAddModalOpen(true)} />
         </>
     );
     
     const batchActions = (
-        <ToolbarButton icon="trash-2" text="刪除" danger onClick={handleBatchDelete} />
+        <ToolbarButton icon="trash-2" text={globalContent.DELETE} danger onClick={handleBatchDelete} />
     );
 
     return (
@@ -278,9 +283,9 @@ const DashboardListPage: React.FC = () => {
                                            checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
                                 {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                    <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
                                 ))}
-                                <th scope="col" className="px-6 py-3 text-center">操作</th>
+                                <th scope="col" className="px-6 py-3 text-center">{globalContent.OPERATIONS}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -300,13 +305,13 @@ const DashboardListPage: React.FC = () => {
                                         </td>
                                     ))}
                                     <td className="px-6 py-4 text-center space-x-1" onClick={e => e.stopPropagation()}>
-                                        <button onClick={() => handleSetDefault(d.id)} className={`p-1.5 rounded-md ${defaultDashboard === d.id ? 'text-yellow-400 hover:bg-yellow-500/20' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`} title="設為首頁">
+                                        <button onClick={() => handleSetDefault(d.id)} className={`p-1.5 rounded-md ${defaultDashboard === d.id ? 'text-yellow-400 hover:bg-yellow-500/20' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`} title={pageContent.ACTIONS.SET_AS_HOME}>
                                             <Icon name="star" className={`w-4 h-4 ${defaultDashboard === d.id ? 'fill-current' : ''}`} />
                                         </button>
-                                        <button onClick={() => handleEditClick(d)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯">
+                                        <button onClick={() => handleEditClick(d)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title={globalContent.EDIT}>
                                             <Icon name="edit-3" className="w-4 h-4" />
                                         </button>
-                                        <button onClick={() => handleDeleteClick(d)} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除">
+                                        <button onClick={() => handleDeleteClick(d)} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title={globalContent.DELETE}>
                                             <Icon name="trash-2" className="w-4 h-4" />
                                         </button>
                                     </td>
@@ -319,16 +324,16 @@ const DashboardListPage: React.FC = () => {
             </TableContainer>
             <AddDashboardModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onSave={handleSaveDashboard} />
             <DashboardEditModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} onSave={handleUpdateDashboard} dashboard={editingDashboard} />
-            <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="確認刪除" width="w-1/3"
-                   footer={<><button onClick={() => setIsDeleteModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 rounded-md">取消</button><button onClick={handleConfirmDelete} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md">刪除</button></>}>
-                <p>您確定要刪除儀表板 <strong className="text-amber-400">{deletingDashboard?.name}</strong> 嗎？</p>
-                <p className="mt-2 text-slate-400">此操作無法復原。</p>
+            <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title={pageContent.DELETE_MODAL_TITLE} width="w-1/3"
+                   footer={<><button onClick={() => setIsDeleteModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 rounded-md">{globalContent.CANCEL}</button><button onClick={handleConfirmDelete} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md">{globalContent.DELETE}</button></>}>
+                <p>{pageContent.DELETE_MODAL_MESSAGE.replace('{name}', deletingDashboard?.name || '')}</p>
+                <p className="mt-2 text-slate-400">{globalContent.CONFIRM_DELETE_MESSAGE}</p>
             </Modal>
             <ColumnSettingsModal
                 isOpen={isColumnSettingsModalOpen}
                 onClose={() => setIsColumnSettingsModalOpen(false)}
                 onSave={handleSaveColumnConfig}
-                allColumns={ALL_COLUMNS}
+                allColumns={allColumns}
                 visibleColumnKeys={visibleColumns}
             />
             <UnifiedSearchModal

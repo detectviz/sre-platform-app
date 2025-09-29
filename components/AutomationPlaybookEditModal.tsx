@@ -1,15 +1,13 @@
 
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Modal from './Modal';
 import Icon from './Icon';
 import FormRow from './FormRow';
 import { AutomationPlaybook, ParameterDefinition } from '../types';
 import GeneratePlaybookWithAIModal from './GeneratePlaybookWithAIModal';
 import { useOptions } from '../contexts/OptionsContext';
-import { PAGE_CONTENT } from '../constants/pages';
-
-const { AUTOMATION_PLAYBOOK_EDIT_MODAL: content, GLOBAL: globalContent } = PAGE_CONTENT;
+import { useContent } from '../contexts/ContentContext';
+import { showToast } from '../services/toast';
 
 interface AutomationPlaybookEditModalProps {
   isOpen: boolean;
@@ -23,6 +21,10 @@ const AutomationPlaybookEditModal: React.FC<AutomationPlaybookEditModalProps> = 
     const [isAIOpen, setIsAIOpen] = useState(false);
     const { options, isLoading: isLoadingOptions, error: optionsError } = useOptions();
     const scriptOptions = options?.automationScripts;
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const { content: pageContent } = useContent();
+    const content = pageContent?.AUTOMATION_PLAYBOOK_EDIT_MODAL;
+    const globalContent = pageContent?.GLOBAL;
 
     useEffect(() => {
         if (isOpen) {
@@ -49,9 +51,12 @@ const AutomationPlaybookEditModal: React.FC<AutomationPlaybookEditModalProps> = 
     };
 
     const handleParamChange = (index: number, field: keyof ParameterDefinition, value: any) => {
-        const newParams = [...(formData.parameters || [])];
-        // @ts-ignore
-        newParams[index][field] = value;
+        const newParams = (formData.parameters || []).map((param, i) => {
+            if (i === index) {
+                return { ...param, [field]: value };
+            }
+            return param;
+        });
         handleChange('parameters', newParams);
     };
     
@@ -67,8 +72,18 @@ const AutomationPlaybookEditModal: React.FC<AutomationPlaybookEditModalProps> = 
     };
     
     const handleOptionChange = (paramIndex: number, optionIndex: number, field: 'value' | 'label', value: string) => {
-        const newParams = JSON.parse(JSON.stringify(formData.parameters || []));
-        newParams[paramIndex].options[optionIndex][field] = value;
+        const newParams = (formData.parameters || []).map((param, pIndex) => {
+            if (pIndex === paramIndex) {
+                const newOptions = (param.options || []).map((opt, oIndex) => {
+                    if (oIndex === optionIndex) {
+                        return { ...opt, [field]: value };
+                    }
+                    return opt;
+                });
+                return { ...param, options: newOptions };
+            }
+            return param;
+        });
         handleChange('parameters', newParams);
     };
 
@@ -97,6 +112,36 @@ const AutomationPlaybookEditModal: React.FC<AutomationPlaybookEditModalProps> = 
         }));
     };
     
+    const handleFileUploadClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) {
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target?.result as string;
+            let detectedType: AutomationPlaybook['type'] = formData.type || 'shell';
+
+            if (file.name.endsWith('.sh')) detectedType = 'shell';
+            if (file.name.endsWith('.py')) detectedType = 'python';
+
+            setFormData(prev => ({ ...prev, content: text, type: detectedType }));
+            showToast(`腳本 "${file.name}" 已成功載入。`, 'success');
+        };
+        reader.onerror = () => {
+            showToast('讀取檔案時發生錯誤。', 'error');
+        };
+        reader.readAsText(file);
+
+        // Reset input value to allow re-uploading the same file
+        event.target.value = '';
+    };
+
     const renderDefaultValueInput = (param: ParameterDefinition, index: number) => {
         const commonProps = {
             value: param.defaultValue as any,
@@ -122,6 +167,10 @@ const AutomationPlaybookEditModal: React.FC<AutomationPlaybookEditModalProps> = 
         }
         return <input type="text" {...commonProps} />;
     };
+
+    if (!content || !globalContent) {
+        return null;
+    }
 
     return (
         <>
@@ -166,10 +215,23 @@ const AutomationPlaybookEditModal: React.FC<AutomationPlaybookEditModalProps> = 
                                           className="w-full bg-slate-900/70 border border-slate-700 rounded-md p-3 text-sm font-mono"
                                           placeholder={content.CONTENT_PLACEHOLDER}
                                 />
-                                <button onClick={() => setIsAIOpen(true)} className="absolute top-2 right-2 flex items-center text-xs font-semibold text-white bg-purple-600 hover:bg-purple-500 rounded-md px-3 py-1.5">
-                                    <Icon name="brain-circuit" className="w-4 h-4 mr-1.5" />
-                                    {content.GENERATE_WITH_AI_BUTTON}
-                                </button>
+                                <div className="absolute top-2 right-2 flex items-center space-x-2">
+                                    <input 
+                                        type="file" 
+                                        ref={fileInputRef}
+                                        className="hidden" 
+                                        onChange={handleFileSelect}
+                                        accept=".sh,.py,.txt,application/x-sh,text/x-python"
+                                    />
+                                    <button onClick={handleFileUploadClick} className="flex items-center text-xs font-semibold text-white bg-slate-600 hover:bg-slate-500 rounded-md px-3 py-1.5">
+                                        <Icon name="upload" className="w-4 h-4 mr-1.5" />
+                                        {content.UPLOAD_SCRIPT_BUTTON}
+                                    </button>
+                                    <button onClick={() => setIsAIOpen(true)} className="flex items-center text-xs font-semibold text-white bg-purple-600 hover:bg-purple-500 rounded-md px-3 py-1.5">
+                                        <Icon name="brain-circuit" className="w-4 h-4 mr-1.5" />
+                                        {content.GENERATE_WITH_AI_BUTTON}
+                                    </button>
+                                </div>
                             </div>
                         </FormRow>
 

@@ -5,6 +5,7 @@ import Icon from './Icon';
 import api from '../services/api';
 import { Dashboard, Resource, User, AutomationPlaybook } from '../types';
 import { showToast } from '../services/toast';
+import { useContent } from '../contexts/ContentContext';
 
 // Interfaces
 interface Command {
@@ -36,13 +37,14 @@ const GlobalSearchModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
     const [payload, setPayload] = useState<any>({});
     const inputRef = useRef<HTMLInputElement>(null);
     const navigate = useNavigate();
-    const [content, setContent] = useState<any>(null);
+    const { content } = useContent();
+    const modalContent = content?.COMMAND_PALETTE;
+
     const [commands, setCommands] = useState<Command[]>([]);
 
-    // Fetch content
+    // Fetch commands
     useEffect(() => {
         if (isOpen) {
-            api.get('/ui/content/command-palette').then(res => setContent(res.data));
             api.get<Command[]>('/commands').then(res => setCommands(res.data));
         }
     }, [isOpen]);
@@ -251,25 +253,25 @@ const GlobalSearchModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
     };
     
     const getPlaceholder = () => {
-        if (!content) return 'Loading...';
+        if (!modalContent) return 'Loading...';
         switch(step) {
-            case 'root': return content.PLACEHOLDER_ROOT;
-            case 'silence_resource_search': return content.PLACEHOLDER_SILENCE_SEARCH;
-            case 'silence_duration': return content.PLACEHOLDER_SILENCE_DURATION;
-            case 'run_playbook_search': return content.PLACEHOLDER_RUN_PLAYBOOK;
-            default: return content.SEARCH_PLACEHOLDER;
+            case 'root': return modalContent.PLACEHOLDER_ROOT;
+            case 'silence_resource_search': return modalContent.PLACEHOLDER_SILENCE_SEARCH;
+            case 'silence_duration': return modalContent.PLACEHOLDER_SILENCE_DURATION;
+            case 'run_playbook_search': return modalContent.PLACEHOLDER_RUN_PLAYBOOK;
+            default: return modalContent.SEARCH_PLACEHOLDER;
         }
     };
 
-    const silencePrefix = content?.SILENCE_PREFIX_TEMPLATE?.replace('{name}', payload.resource?.name || '') || '';
+    const silencePrefix = modalContent?.SILENCE_PREFIX_TEMPLATE?.replace('{name}', payload.resource?.name || '') || '';
 
     return (
         <Modal title="" isOpen={isOpen} onClose={onClose} width="w-1/2 max-w-3xl" className="glass-card rounded-xl border border-slate-700/50 shadow-2xl flex flex-col max-w-4xl max-h-[60vh] animate-fade-in-down">
             <div className="p-3 border-b border-slate-700/50">
                  <div className="relative flex items-center">
-                    {step === 'silence_resource_search' && <span className="pl-4 pr-2 text-slate-400 font-semibold">{content?.SILENCE_PREFIX_TEMPLATE?.replace('{name}', '')}</span>}
+                    {step === 'silence_resource_search' && <span className="pl-4 pr-2 text-slate-400 font-semibold">{modalContent?.SILENCE_PREFIX_TEMPLATE?.replace('{name}', '')}</span>}
                     {step === 'silence_duration' && <span className="pl-4 pr-2 text-slate-400 font-semibold">{silencePrefix}</span>}
-                    {step === 'run_playbook_search' && <span className="pl-4 pr-2 text-slate-400 font-semibold">{content?.RUN_PLAYBOOK_PREFIX}</span>}
+                    {step === 'run_playbook_search' && <span className="pl-4 pr-2 text-slate-400 font-semibold">{modalContent?.RUN_PLAYBOOK_PREFIX}</span>}
                     
                     <Icon name={isLoading ? "loader-circle" : "search"} className={`absolute ${step === 'root' ? 'left-4' : 'left-auto'} text-slate-400 w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} style={{ left: step === 'root' ? '1rem' : 'auto' }} />
                     
@@ -285,18 +287,16 @@ const GlobalSearchModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                 </div>
             </div>
             <div className="flex-grow overflow-y-auto">
-                {!isLoading && query.length > 1 && results.length === 0 && <div className="text-center p-8 text-slate-400">{content?.NO_RESULTS}</div>}
+                {!isLoading && query.length > 1 && results.length === 0 && <div className="text-center p-8 text-slate-400">{modalContent?.NO_RESULTS}</div>}
                 {Object.entries(groupedResults).map(([type, items]) => (
                     <div key={type} className="px-2 pt-2">
                         <h3 className="text-xs font-semibold text-slate-400 px-3 py-1">{type}</h3>
                         <ul>
-                            {/* FIX: Cast `items` to SearchResult[] to resolve 'map does not exist on type unknown' error, which can occur with stricter TypeScript settings. */}
                             {(items as SearchResult[]).map((item, index) => {
                                 let itemIndex = index;
                                 const typeKeys = Object.keys(groupedResults);
                                 const currentTypeIndex = typeKeys.indexOf(type);
                                 for (let i = 0; i < currentTypeIndex; i++) {
-                                    // FIX: Add a guard to prevent runtime error if a key is unexpectedly not in the object.
                                     const group = groupedResults[typeKeys[i]];
                                     if (group) {
                                        itemIndex += group.length;

@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { NotificationHistoryRecord, NotificationChannelType, NotificationHistoryFilters } from '../../../types';
+// FIX: Import TableColumn from types.ts
+import { NotificationHistoryRecord, NotificationChannelType, NotificationHistoryFilters, TableColumn } from '../../../types';
 import Icon from '../../../components/Icon';
 import TableContainer from '../../../components/TableContainer';
 import Drawer from '../../../components/Drawer';
@@ -11,7 +12,8 @@ import TableError from '../../../components/TableError';
 import { exportToCsv } from '../../../services/export';
 import UnifiedSearchModal from '../../../components/UnifiedSearchModal';
 import { showToast } from '../../../services/toast';
-import ColumnSettingsModal, { TableColumn } from '../../../components/ColumnSettingsModal';
+// FIX: Import TableColumn from types.ts, not from ColumnSettingsModal
+import ColumnSettingsModal from '../../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 
 type IconConfig = Record<NotificationChannelType | 'Default', { icon: string; color: string; }>;

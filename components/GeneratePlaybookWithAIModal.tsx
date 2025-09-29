@@ -1,14 +1,13 @@
 
 
+
 import React, { useState, useCallback } from 'react';
 import Modal from './Modal';
 import Icon from './Icon';
 import { ParameterDefinition, AutomationPlaybook } from '../types';
 import FormRow from './FormRow';
 import api from '../services/api';
-import { PAGE_CONTENT } from '../constants/pages';
-
-const { GENERATE_PLAYBOOK_WITH_AI_MODAL: content, GLOBAL: globalContent } = PAGE_CONTENT;
+import { useContent } from '../contexts/ContentContext';
 
 interface GeneratedPlaybook {
   type: AutomationPlaybook['type'];
@@ -27,9 +26,13 @@ const GeneratePlaybookWithAIModal: React.FC<GeneratePlaybookWithAIModalProps> = 
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState<GeneratedPlaybook | null>(null);
     const [error, setError] = useState<string | null>(null);
+    // FIX: Use content from context instead of deprecated constant file.
+    const { content: pageContent } = useContent();
+    const content = pageContent?.GENERATE_PLAYBOOK_WITH_AI_MODAL;
+    const globalContent = pageContent?.GLOBAL;
 
     const handleGenerate = useCallback(async () => {
-        if (!prompt) return;
+        if (!prompt || !content) return;
         setIsLoading(true);
         setResult(null);
         setError(null);
@@ -42,7 +45,7 @@ const GeneratePlaybookWithAIModal: React.FC<GeneratePlaybookWithAIModalProps> = 
         } finally {
             setIsLoading(false);
         }
-    }, [prompt, content.ERROR_MESSAGE]);
+    }, [prompt, content]);
     
     const handleApply = () => {
         if (result) {
@@ -50,6 +53,10 @@ const GeneratePlaybookWithAIModal: React.FC<GeneratePlaybookWithAIModalProps> = 
             onClose();
         }
     };
+
+    if (!content || !globalContent) {
+        return null;
+    }
     
     return (
         <Modal

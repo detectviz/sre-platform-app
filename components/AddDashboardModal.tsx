@@ -103,7 +103,6 @@ const AddDashboardModal: React.FC<AddDashboardModalProps> = ({ isOpen, onClose, 
             grafanaUrl: grafanaData.grafana_url,
             grafana_dashboard_uid: grafanaData.grafana_dashboard_uid,
             grafana_folder_uid: grafanaData.grafana_folder_uid,
-            path: `/dashboard/new-${Date.now()}`
         };
         onSave(newDashboard);
         onClose();

@@ -52,7 +52,7 @@ const DashboardViewPage: React.FC = () => {
   // FIX: Changed enum comparison to string literal comparison.
   if (dashboard.type === 'built-in') {
     // Handle special, hardcoded built-in dashboards that have their own page components
-    if (dashboard.path === '/sre-war-room' || dashboard.path === '/dashboard/infrastructure-insights') {
+    if (dashboard.path === '/sre-war-room' || dashboard.path === '/dashboard/infrastructure-insights' || dashboard.path === '/dashboard/resource-overview') {
       return <Navigate to={dashboard.path} replace />;
     }
     // Handle generic, user-created built-in dashboards that have a layout property

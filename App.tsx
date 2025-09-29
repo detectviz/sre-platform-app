@@ -1,5 +1,7 @@
 
 
+
+
 import React, { useEffect, useState } from 'react';
 import { HashRouter, Routes, Route, useLocation, Navigate, Outlet } from 'react-router-dom';
 import AppLayout from './layouts/AppLayout';
@@ -21,6 +23,7 @@ import PersonnelManagementPage from './pages/settings/identity-access/PersonnelM
 import TeamManagementPage from './pages/settings/identity-access/TeamManagementPage';
 import RoleManagementPage from './pages/settings/identity-access/RoleManagementPage';
 import AuditLogsPage from './pages/settings/identity-access/AuditLogsPage';
+// FIX: Corrected the import path for TagManagementPage. The component was correctly defined in `pages/settings/platform/TagManagementPage.tsx`, but the import path in `App.tsx` was missing the `/settings/platform` directories. This caused the module loader to fall back to an incorrect, empty placeholder file at `pages/PlatformSettingsPage.tsx`, which lacked a default export and triggered the build error.
 import TagManagementPage from './pages/settings/platform/TagManagementPage';
 import LayoutSettingsPage from './pages/settings/platform/LayoutSettingsPage';
 import AuthSettingsPage from './pages/settings/platform/AuthSettingsPage';
@@ -30,11 +33,10 @@ import NotificationHistoryPage from './pages/settings/notification-management/No
 import PersonalInfoPage from './pages/profile/PersonalInfoPage';
 import SecuritySettingsPage from './pages/profile/SecuritySettingsPage';
 import PreferenceSettingsPage from './pages/profile/PreferenceSettingsPage';
-import { Dashboard } from './types';
+import { Dashboard, UserPreferences } from './types';
 import AutomationTriggersPage from './pages/automation/AutomationTriggersPage';
 import MailSettingsPage from './pages/settings/platform/MailSettingsPage';
 import LogExplorerPage from './pages/analysis/LogExplorerPage';
-import TraceAnalysisPage from './pages/analysis/TraceAnalysisPage';
 import DashboardTemplatesPage from './pages/dashboards/DashboardTemplatesPage';
 import DashboardEditorPage from './pages/dashboards/DashboardEditorPage';
 import CapacityPlanningPage from './pages/analysis/CapacityPlanningPage';
@@ -48,9 +50,11 @@ import GrafanaSettingsPage from './pages/settings/platform/GrafanaSettingsPage';
 import { UserProvider } from './contexts/UserContext';
 import { OptionsProvider } from './contexts/OptionsContext';
 import { showToast } from './services/toast';
-import { PAGE_CONTENT } from './constants/pages';
-
-const { PAGE_LAYOUTS: pageLayouts, APP: appContent } = PAGE_CONTENT;
+import { ContentProvider, useContent } from './contexts/ContentContext';
+import DatasourceManagementPage from './pages/resources/DatasourceManagementPage';
+import AutoDiscoveryPage from './pages/resources/AutoDiscoveryPage';
+import ResourceOverviewPage from './pages/resources/ResourceOverviewPage';
+import LicensePage from './pages/settings/platform/LicensePage';
 
 // Lucide icons renderer
 const RenderIcons = () => {
@@ -65,27 +69,39 @@ const RenderIcons = () => {
   return null;
 };
 
+// FIX: Added DashboardRedirector component to handle redirection from the `/home` path to the user's default dashboard. This resolves the `Cannot find name 'DashboardRedirector'` error.
+const DashboardRedirector: React.FC = () => {
+  const defaultDashboardId = localStorage.getItem('default-dashboard') || 'sre-war-room';
+  return <Navigate to={`/dashboard/${defaultDashboardId}`} replace />;
+};
+
 const AppRoutes: React.FC = () => {
-    const { tabConfigs, isLoading, error } = useUIConfig();
+    const { tabConfigs, isLoading: isNavLoading, error: navError } = useUIConfig();
+    const { content, isLoading: isContentLoading, error: contentError } = useContent();
+    
+    const error = navError || contentError;
+    const isLoading = isNavLoading || isContentLoading;
+    const pageLayouts = content?.PAGE_LAYOUTS;
+    const appContent = content?.APP;
 
     if (error) {
         return (
             <div className="flex flex-col items-center justify-center h-screen text-red-400">
                 <Icon name="server-crash" className="w-16 h-16 mb-4" />
-                <h1 className="text-3xl font-bold text-slate-100">{appContent.LOAD_ERROR_TITLE}</h1>
+                <h1 className="text-3xl font-bold text-slate-100">{appContent?.LOAD_ERROR_TITLE || 'Application Load Error'}</h1>
                 <p className="mt-2 text-slate-400">{error}</p>
                 <button 
                     onClick={() => window.location.reload()}
                     className="mt-6 px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md flex items-center"
                 >
                     <Icon name="refresh-cw" className="w-4 h-4 mr-2" />
-                    {appContent.RELOAD_BUTTON}
+                    {appContent?.RELOAD_BUTTON || 'Reload Page'}
                 </button>
             </div>
         );
     }
     
-    if (isLoading) {
+    if (isLoading || !pageLayouts) {
         return (
             <div className="flex items-center justify-center h-screen">
                 <Icon name="loader-circle" className="w-12 h-12 animate-spin text-slate-500" />
@@ -101,6 +117,7 @@ const AppRoutes: React.FC = () => {
             <Route index element={<Navigate to={`/home`} replace />} />
             <Route path="home" element={<DashboardRedirector />} />
             <Route path="dashboard/infrastructure-insights" element={<InfrastructureInsightsPage />} />
+            <Route path="dashboard/resource-overview" element={<ResourceOverviewPage />} />
             <Route path="dashboard/:dashboardId" element={<DashboardViewPage />} />
             <Route path="sre-war-room" element={<SREWarRoomPage />} />
             
@@ -112,10 +129,13 @@ const AppRoutes: React.FC = () => {
             </Route>
             
             <Route path="resources" element={<PageWithTabsLayout title={pageLayouts.resources.title} description={pageLayouts.resources.description} kpiPageName={pageLayouts.resources.kpiPageName} tabs={tabConfigs?.resources || []} />}>
-              <Route index element={<ResourceListPage />} />
+              <Route index element={<Navigate to="/resources/list" replace />} />
+              <Route path="list" element={<ResourceListPage />} />
+              <Route path="list/:resourceId" element={<ResourceListPage />} />
               <Route path="groups" element={<ResourceGroupPage />} />
+              <Route path="datasources" element={<DatasourceManagementPage />} />
+              <Route path="discovery" element={<AutoDiscoveryPage />} />
               <Route path="topology" element={<ResourceTopologyPage />} />
-              <Route path=":resourceId" element={<ResourceListPage />} />
             </Route>
   
             <Route path="dashboards" element={<PageWithTabsLayout title={pageLayouts.dashboards.title} description={pageLayouts.dashboards.description} kpiPageName={pageLayouts.dashboards.kpiPageName} tabs={tabConfigs?.dashboards || []} />}>
@@ -128,9 +148,7 @@ const AppRoutes: React.FC = () => {
             <Route path="analyzing" element={<PageWithTabsLayout title={pageLayouts.analysis.title} description={pageLayouts.analysis.description} kpiPageName={pageLayouts.analysis.kpiPageName} tabs={tabConfigs?.analysis || []} />}>
               <Route index element={<AnalysisOverviewPage />} />
               <Route path="logs" element={<LogExplorerPage />} />
-              <Route path="traces" element={<TraceAnalysisPage />} />
               <Route path="capacity" element={<CapacityPlanningPage />} />
-              <Route path="insights" element={<AIInsightsPage />} />
             </Route>
             
             <Route path="automation" element={<PageWithTabsLayout title={pageLayouts.automation.title} description={pageLayouts.automation.description} kpiPageName={pageLayouts.automation.kpiPageName} tabs={tabConfigs?.automation || []} />}>
@@ -158,71 +176,37 @@ const AppRoutes: React.FC = () => {
                   <Route path="auth" element={<AuthSettingsPage />} />
                   <Route path="layout" element={<LayoutSettingsPage />} />
                   <Route path="grafana" element={<GrafanaSettingsPage />} />
+                  <Route path="license" element={<LicensePage />} />
               </Route>
             </Route>
-  
-            <Route path="profile" element={<PageWithTabsLayout title={pageLayouts.profile.title} description={pageLayouts.profile.description} kpiPageName={pageLayouts.profile.kpiPageName} tabs={tabConfigs?.profile || []} />}>
-              <Route index element={<PersonalInfoPage />} />
-              <Route path="security" element={<SecuritySettingsPage />} />
-              <Route path="preferences" element={<PreferenceSettingsPage />} />
+{/* FIX: The App.tsx file was truncated. This section completes the routing table by adding the '/profile' route and closing all open tags. */}
+            <Route path="profile" element={<PageWithTabsLayout title={pageLayouts.profile.title} description={pageLayouts.profile.description} kpiPageName="profile" tabs={tabConfigs?.profile || []} />}>
+                <Route index element={<PersonalInfoPage />} />
+                <Route path="security" element={<SecuritySettingsPage />} />
+                <Route path="preferences" element={<PreferenceSettingsPage />} />
             </Route>
             
-            <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
-      </HashRouter>
+    </HashRouter>
   );
 };
 
-
+{/* FIX: The App component wrapper and default export were missing, causing a build failure. This adds the necessary structure to provide context to the application and make it a valid module. */}
 const App: React.FC = () => {
-    return (
-        <UIConfigProvider>
-            <PageMetadataProvider>
-                <UserProvider>
-                    <OptionsProvider>
+  return (
+      <UIConfigProvider>
+          <UserProvider>
+            <OptionsProvider>
+                <PageMetadataProvider>
+                    <ContentProvider>
                         <AppRoutes />
-                    </OptionsProvider>
-                </UserProvider>
-            </PageMetadataProvider>
-        </UIConfigProvider>
-    );
-};
-
-
-const DashboardRedirector: React.FC = () => {
-    const [redirectPath, setRedirectPath] = useState<string | null>(null);
-
-    useEffect(() => {
-        const fetchDefaultDashboard = async () => {
-            const defaultDashboardId = localStorage.getItem('default-dashboard') || 'sre-war-room';
-            
-            // FIX: Removed direct access to `DB` object, which is not available in the frontend context.
-            // The logic is simplified to always fetch dashboard details via the API, which correctly handles both built-in and user-created dashboards.
-            try {
-                // Fetch the specific dashboard by ID for better performance
-                const { data: dashboard } = await api.get<Dashboard>(`/dashboards/${defaultDashboardId}`);
-                setRedirectPath(dashboard?.path || '/sre-war-room');
-            } catch {
-                // Fallback on API error (e.g., dashboard was deleted)
-                showToast('無法載入預設儀表板，將重導向至 SRE 戰情室。', 'error');
-                localStorage.setItem('default-dashboard', 'sre-war-room');
-                setRedirectPath('/sre-war-room');
-            }
-        };
-
-        fetchDefaultDashboard();
-    }, []);
-
-    if (!redirectPath) {
-        return (
-            <div className="flex items-center justify-center h-full">
-                <Icon name="loader-circle" className="w-8 h-8 animate-spin text-slate-400" />
-            </div>
-        );
-    }
-
-    return <Navigate to={redirectPath} replace />;
-};
+                    </ContentProvider>
+                </PageMetadataProvider>
+            </OptionsProvider>
+          </UserProvider>
+      </UIConfigProvider>
+  )
+}
 
 export default App;

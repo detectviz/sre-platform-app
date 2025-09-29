@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Team, User } from '../../../types';
+// FIX: Import TableColumn from types.ts
+import { Team, User, TableColumn } from '../../../types';
 import Icon from '../../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../../components/Toolbar';
 import TableContainer from '../../../components/TableContainer';
@@ -8,9 +9,12 @@ import Modal from '../../../components/Modal';
 import api from '../../../services/api';
 import TableLoader from '../../../components/TableLoader';
 import TableError from '../../../components/TableError';
-import ColumnSettingsModal, { TableColumn } from '../../../components/ColumnSettingsModal';
+// FIX: Import TableColumn from types.ts, not from ColumnSettingsModal
+import ColumnSettingsModal from '../../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 import { showToast } from '../../../services/toast';
+import Pagination from '../../../components/Pagination';
+import UnifiedSearchModal from '../../../components/UnifiedSearchModal';
 
 const ALL_COLUMNS: TableColumn[] = [
     { key: 'name', label: '團隊名稱' },
@@ -25,15 +29,19 @@ const TeamManagementPage: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [totalTeams, setTotalTeams] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [filters, setFilters] = useState<{ keyword?: string }>({});
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTeam, setEditingTeam] = useState<Team | null>(null);
-    const [searchTerm, setSearchTerm] = useState('');
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingTeam, setDeletingTeam] = useState<Team | null>(null);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
@@ -43,20 +51,16 @@ const TeamManagementPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
+            const params = { page: currentPage, page_size: pageSize, ...filters };
             const [teamsRes, usersRes, columnsRes] = await Promise.all([
-                api.get<Team[]>('/iam/teams'),
+                api.get<{ items: Team[], total: number }>('/iam/teams', { params }),
                 api.get<{ items: User[] }>('/iam/users', { params: { page: 1, page_size: 1000 } }),
                 api.get<string[]>(`/settings/column-config/${pageKey}`)
             ]);
             
             setUsers(usersRes.data.items);
-            
-            // Mock search locally as API doesn't support it yet
-            const filteredTeams = teamsRes.data.filter(team =>
-                team.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                team.description.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-            setTeams(filteredTeams);
+            setTeams(teamsRes.data.items);
+            setTotalTeams(teamsRes.data.total);
             setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
 
         } catch (err) {
@@ -64,7 +68,7 @@ const TeamManagementPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [searchTerm, pageKey]);
+    }, [currentPage, pageSize, filters, pageKey]);
 
     useEffect(() => {
         if (pageKey) {
@@ -146,16 +150,7 @@ const TeamManagementPage: React.FC = () => {
     };
 
     const leftActions = (
-         <div className="relative">
-            <Icon name="search" className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400 w-4 h-4" />
-            <input
-                type="text"
-                placeholder="依團隊名稱、描述搜尋..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="w-80 bg-slate-800/80 border border-slate-700 rounded-md pl-9 pr-4 py-1.5 text-sm"
-            />
-        </div>
+         <ToolbarButton icon="search" text="搜尋和篩選" onClick={() => setIsSearchModalOpen(true)} />
     );
     
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -246,6 +241,7 @@ const TeamManagementPage: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
+                <Pagination total={totalTeams} page={currentPage} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
             </TableContainer>
             {isModalOpen && 
                 <TeamEditModal 
@@ -276,6 +272,17 @@ const TeamManagementPage: React.FC = () => {
                 onSave={handleSaveColumnConfig}
                 allColumns={ALL_COLUMNS}
                 visibleColumnKeys={visibleColumns}
+            />
+            <UnifiedSearchModal
+                page="teams"
+                isOpen={isSearchModalOpen}
+                onClose={() => setIsSearchModalOpen(false)}
+                onSearch={(newFilters) => {
+                    setFilters(newFilters as { keyword?: string });
+                    setIsSearchModalOpen(false);
+                    setCurrentPage(1);
+                }}
+                initialFilters={filters}
             />
         </div>
     );

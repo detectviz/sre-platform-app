@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import Icon from './Icon';
 import { AlertRule } from '../types';
@@ -12,9 +13,26 @@ interface TestRuleModalProps {
 }
 
 const TestRuleModal: React.FC<TestRuleModalProps> = ({ isOpen, onClose, rule }) => {
-    const [payload, setPayload] = useState('{\n  "metric": "cpu_usage_percent",\n  "value": 95,\n  "resource": "web-server-01"\n}');
+    const [payload, setPayload] = useState('');
     const [result, setResult] = useState<{ matches: boolean; preview: string } | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        if (isOpen && rule) {
+            const firstCondition = rule.conditionGroups?.[0]?.conditions?.[0];
+            if (firstCondition) {
+                const examplePayload = {
+                    metric: firstCondition.metric,
+                    value: firstCondition.threshold + (firstCondition.operator.startsWith('<') ? -1 : 1),
+                    resource: "example-resource-01",
+                };
+                setPayload(JSON.stringify(examplePayload, null, 2));
+            } else {
+                setPayload('{\n  "metric": "cpu_usage_percent",\n  "value": 95,\n  "resource": "web-server-01"\n}');
+            }
+            setResult(null);
+        }
+    }, [isOpen, rule]);
 
     const handleTest = async () => {
         if (!rule) return;

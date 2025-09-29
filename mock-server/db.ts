@@ -2,14 +2,12 @@ import {
     Dashboard, DashboardTemplate, Incident, AlertRule, AlertRuleTemplate, SilenceRule, SilenceRuleTemplate,
     Resource, ResourceGroup, AutomationPlaybook, AutomationExecution, AutomationTrigger, User, Team, Role, 
     AuditLog, TagDefinition, NotificationItem, NotificationStrategy, NotificationChannel,
-    NotificationHistoryRecord, LoginHistoryRecord, LogEntry, Trace, MailSettings, AuthSettings, LayoutWidget,
+    NotificationHistoryRecord, LoginHistoryRecord, LogEntry, MailSettings, AuthSettings, LayoutWidget,
     UserPreferences,
     IncidentAnalysis,
     MultiIncidentAnalysis,
     LogAnalysis,
     LogLevel,
-    TraceAnalysis,
-    Span,
     NavItem,
     TabConfigMap,
     PlatformSettings,
@@ -37,7 +35,18 @@ import {
     TagManagementOptions,
     TopologyOptions,
     AutomationExecutionOptions,
-    NotificationHistoryOptions
+    NotificationHistoryOptions,
+    ResourceType,
+    MetricMetadata,
+    RolePermission,
+    Datasource,
+    DiscoveryJob,
+    DiscoveredResource,
+    ResourceOverviewData,
+    ResourceAnalysis,
+    DatasourceOptions,
+    AutoDiscoveryOptions,
+    TableColumn
 } from '../types';
 
 // Helper to generate UUIDs
@@ -50,6 +59,700 @@ export function uuidv4() {
 }
 
 // --- ALL MOCK DATA DEFINITIONS ---
+
+const PAGE_CONTENT = {
+  // Global & Common Strings
+  GLOBAL: {
+    SEARCH_PLACEHOLDER: '搜尋...',
+    SAVE: '儲存',
+    CANCEL: '取消',
+    DELETE: '刪除',
+    EDIT: '編輯',
+    CONFIRM_DELETE_TITLE: '確認刪除',
+    CONFIRM_DELETE_MESSAGE: '此操作無法復原。',
+    COLUMN_SETTINGS: '欄位設定',
+    ADD_NEW: '新增',
+    IMPORT: '匯入',
+    EXPORT: '匯出',
+    RETRY: '重試',
+    LOADING: '載入中...',
+    OPERATIONS: '操作',
+    STATUS: '狀態',
+    TYPE: '類型',
+    NAME: '名稱',
+    DESCRIPTION: '描述',
+    OWNER: '擁有者',
+    CREATOR: '創建者',
+    CREATED_AT: '創建時間',
+    UPDATED_AT: '最後更新',
+    ENABLED: '啟用',
+    DISABLED: '停用',
+    ALL: '全部',
+    CLOSE: '關閉',
+    PREVIOUS_STEP: '上一步',
+    NEXT_STEP: '下一步',
+    FINISH: '完成',
+    ACTIONS: '操作',
+    NO_DATA_TO_EXPORT: '沒有可匯出的資料。',
+    LOADING_OPTIONS: '載入中...',
+    SELECT_OPTION: '請選擇...',
+    ALL_STATUSES: '所有狀態',
+    NO_RESULTS: '找不到結果',
+    SUCCESS: '成功',
+    FAILED: '失敗',
+    PENDING: '處理中',
+    RUNNING: '執行中',
+    YES: '是',
+    NO: '否',
+    NA: 'N/A',
+    CLEAR_SELECTION: '取消選擇',
+    ITEMS_SELECTED: '已選擇 {count} 項',
+  },
+
+  APP: {
+    LOAD_ERROR_TITLE: '應用程式載入失敗',
+    RELOAD_BUTTON: '重新載入頁面',
+  },
+
+  MODAL: {
+    DEFAULT_WIDTH: 'w-1/2',
+    BASE_CLASSES: 'glass-card rounded-xl border border-slate-700/50 shadow-2xl flex flex-col max-w-4xl max-h-[80vh] animate-fade-in-down',
+  },
+
+  // Layouts & Shared Components
+  APP_LAYOUT: {
+    SIDEBAR_TITLE: 'SRE Platform',
+    SEARCH_PLACEHOLDER: 'Search... (Ctrl+K)',
+    PROFILE_MENU: {
+      SETTINGS: '個人設定',
+      HELP_CENTER: '幫助中心',
+      LOGOUT: '登出',
+    },
+    HOME_BREADCRUMB: 'Home',
+    TOAST: {
+      LOAD_SETTINGS_ERROR: '無法載入平台設定。',
+      LOGOUT_SUCCESS: '您已成功登出。',
+      HELP_CENTER_NOT_CONFIGURED: '幫助中心 URL 尚未設定。',
+    }
+  },
+  NOTIFICATION_CENTER: {
+    TITLE: '通知中心',
+    MARK_ALL_AS_READ: '全部標示為已讀',
+    NO_NOTIFICATIONS: '沒有新的通知',
+    VIEW_DETAILS: '查看詳情',
+    MARK_AS_READ_TOOLTIP: '標示為已讀',
+    TIME_UNITS: {
+      YEAR: '{n} 年前',
+      MONTH: '{n} 個月前',
+      DAY: '{n} 天前',
+      HOUR: '{n} 小時前',
+      MINUTE: '{n} 分鐘前',
+      JUST_NOW: '剛剛',
+    },
+    TOAST: {
+      LOAD_ERROR: '無法載入通知。',
+      MARK_ONE_ERROR: '無法標示為已讀。',
+      MARK_ALL_ERROR: '無法將所有通知標示為已讀。',
+    }
+  },
+  PAGE_WITH_TABS: {
+    REFRESH: '刷新',
+  },
+  DASHBOARD_VIEWER: {
+    THEME_LABEL: '主題',
+    TV_MODE_LABEL: 'TV 模式',
+    REFRESH_LABEL: '刷新',
+    TIME_LABEL: '時間',
+    THEME: '主題',
+    THEME_DARK: '深色',
+    THEME_LIGHT: '淺色',
+    TV_MODE: 'TV 模式',
+    TV_MODE_OFF: 'Off',
+    TV_MODE_ON: 'TV',
+    REFRESH: '刷新',
+    REFRESH_OFF: 'Off',
+    TIME: '時間',
+    ZOOM_IN: 'Zoom In',
+    SHARE_DASHBOARD: 'Share Dashboard',
+    GRAFANA_URL_NOT_CONFIGURED: 'Grafana URL not configured.',
+  },
+  PLACEHOLDER_PAGE: {
+    UNDER_CONSTRUCTION: '此頁面正在施工中。',
+  },
+  PLACEHOLDER_MODAL: {
+    TITLE: '功能開發中',
+    OK_BUTTON: '了解',
+    MESSAGE: '「{featureName}」功能目前正在開發中，敬請期待！',
+  },
+  COMMAND_PALETTE: {
+    TITLE: 'Command Palette',
+    SEARCH_PLACEHOLDER: 'Search...',
+    PLACEHOLDER_ROOT: 'Search or type `>` for commands...',
+    PLACEHOLDER_SILENCE_SEARCH: 'Search for a resource to silence...',
+    PLACEHOLDER_SILENCE_DURATION: 'Enter duration (e.g., 30m, 2h, 1d)...',
+    PLACEHOLDER_RUN_PLAYBOOK: 'Search for a playbook to run...',
+    SILENCE_PREFIX_TEMPLATE: 'Silence {name}',
+    RUN_PLAYBOOK_PREFIX: 'Run Playbook',
+    NO_RESULTS: 'No results found.',
+  },
+  UNIFIED_SEARCH: {
+    TITLE: '進階搜索與篩選',
+    CLEAR_FILTERS: '清除所有篩選',
+    SEARCH: '搜尋',
+    KEYWORD_SEARCH: '關鍵字搜尋',
+    KEYWORD_PLACEHOLDER: '依關鍵字搜尋...',
+    ALL_STATUSES: '所有狀態',
+    ALL_SEVERITIES: '所有嚴重性',
+    ALL_TYPES: '所有類型',
+    ALL_PROVIDERS: '所有提供商',
+    ALL_REGIONS: '所有區域',
+    INCIDENTS: {
+      STATUS: '狀態',
+      SEVERITY: '嚴重性',
+      ASSIGNEE: '處理人',
+      TRIGGER_TIME_RANGE: '觸發時間範圍',
+    },
+    ALERT_RULES: {
+      SEVERITY: '嚴重性',
+    },
+    RESOURCES: {
+      PROVIDER: '提供商',
+      REGION: '區域',
+    },
+    TAG_MANAGEMENT: {
+      CATEGORY: '分類',
+      ALL_CATEGORIES: '所有分類',
+    },
+    AUDIT_LOGS: {
+      USER: '使用者',
+      ACTION: '操作類型',
+      TIME_RANGE: '時間範圍',
+      ALL_USERS: '所有使用者',
+      ALL_ACTIONS: '所有操作',
+    },
+    DASHBOARDS: {
+      CATEGORY: '類別',
+      ALL_CATEGORIES: '所有類別',
+    },
+    AUTOMATION_HISTORY: {
+      PLAYBOOK: '腳本',
+      ALL_PLAYBOOKS: '所有腳本',
+      STATUS: '狀態',
+      TIME_RANGE: '時間範圍',
+    },
+    NOTIFICATION_HISTORY: {
+      STATUS: '狀態',
+      CHANNEL_TYPE: '管道類型',
+      ALL_CHANNEL_TYPES: '所有類型',
+      TIME_RANGE: '時間範圍',
+    },
+  },
+  ROLE_EDIT_MODAL: {
+    ADD_TITLE: '新增角色',
+    EDIT_TITLE: '編輯角色',
+    ROLE_NAME: '角色名稱',
+    PERMISSION_SETTINGS: '權限設定',
+    SELECT_ALL: '全選',
+  },
+  AUTOMATION_PLAYBOOK_EDIT_MODAL: {
+    ADD_TITLE: '新增腳本',
+    EDIT_TITLE: '編輯腳本',
+    NAME_LABEL: '腳本名稱 *',
+    TYPE_LABEL: '類型',
+    DESCRIPTION_LABEL: '描述',
+    CONTENT_LABEL: '腳本內容',
+    CONTENT_PLACEHOLDER: '#!/bin/bash\n# Your script here...\necho "Hello, $1!"',
+    GENERATE_WITH_AI_BUTTON: '使用 AI 生成',
+    UPLOAD_SCRIPT_BUTTON: '上傳腳本',
+    PARAMETERS_TITLE: '參數定義',
+    ADD_PARAMETER_BUTTON: '新增參數',
+    PARAM_NAME_PLACEHOLDER: 'Name (e.g., pod_name)',
+    PARAM_LABEL_PLACEHOLDER: 'Label (e.g., Pod Name)',
+    PARAM_REQUIRED_LABEL: 'Required',
+    PARAM_DEFAULT_VALUE_LABEL: 'Default Value',
+    PARAM_PLACEHOLDER_LABEL: 'Placeholder',
+    PARAM_OPTIONS_LABEL: 'Options',
+    PARAM_ADD_OPTION_BUTTON: '+ Add Option',
+    PARAM_OPTION_VALUE_PLACEHOLDER: 'Value',
+    PARAM_OPTION_LABEL_PLACEHOLDER: 'Label',
+    BOOLEAN_ENABLED: 'Enabled',
+    BOOLEAN_DISABLED: 'Disabled',
+  },
+  GENERATE_PLAYBOOK_WITH_AI_MODAL: {
+    TITLE: '使用 AI 生成腳本',
+    APPLY_BUTTON: '套用',
+    PROMPT_LABEL: '描述您的自動化需求',
+    PROMPT_PLACEHOLDER: '例如: 建立一個 shell 腳本來重啟 Kubernetes pod，需要傳入 namespace 和 pod 名稱...',
+    GENERATE_BUTTON: '生成腳本',
+    GENERATING_BUTTON: '生成中...',
+    LOADING_MESSAGE: '正在生成 AI 分析報告，請稍候...',
+    ERROR_MESSAGE: '無法生成腳本。請檢查您的提示或 API 金鑰並再試一次。',
+    RESULTS_TITLE: '生成結果',
+    SCRIPT_TYPE_LABEL: '腳本類型',
+    CONTENT_LABEL: '腳本內容',
+    PARAMETERS_LABEL: '偵測到的參數',
+    NO_PARAMETERS_DETECTED: '未偵測到參數。',
+  },
+  EXECUTION_LOG_DETAIL: {
+      STATUS: '狀態',
+      SCRIPT_NAME: '腳本名稱',
+      TRIGGER_SOURCE: '觸發來源',
+      DURATION: '耗時',
+      PARAMETERS: '執行參數',
+      STDOUT: 'Standard Output (stdout)',
+      STDERR: 'Standard Error (stderr)',
+      TRIGGER_BY_TEMPLATE: '{source} by {by}',
+      NO_STDOUT: 'No standard output.',
+  },
+  IMPORT_MODAL: {
+    TITLE_TEMPLATE: '從 CSV 匯入{itemName}',
+    INSTRUCTIONS_TITLE: '操作說明',
+    DOWNLOAD_LINK: '下載 CSV 範本檔案',
+    DRAG_TEXT: '拖曳 CSV 檔案至此',
+    OR: '或',
+    CLICK_TO_UPLOAD: '點擊此處上傳',
+    INVALID_FILE_ERROR: '請上傳有效的 CSV 檔案。',
+    IMPORT_SUCCESS_TEMPLATE: '{itemName} 已成功匯入。',
+    IMPORT_ERROR_TEMPLATE: '無法匯入 {itemName}。請檢查檔案格式並再試一次。',
+    INSTRUCTIONS_STEPS: [
+      '下載 CSV 範本檔案',
+      '根據範本格式填寫您的資料。',
+      '將填寫好的 CSV 檔案拖曳至下方區域或點擊上傳。',
+    ],
+  },
+
+  // Pages & Modals
+  PAGE_LAYOUTS: {
+    incidents: {
+        title: '事件',
+        description: '監控和處理系統異常事件',
+        kpiPageName: '事件'
+    },
+    resources: {
+        title: '資源',
+        description: '探索、組織與管理您的所有基礎設施資源',
+        kpiPageName: '資源'
+    },
+    dashboards: {
+        title: '儀表板',
+        description: '統一的系統監控與業務洞察儀表板入口',
+        kpiPageName: '儀表板'
+    },
+    analysis: {
+        title: '智慧排查',
+        description: '深入了解系統趨勢、效能瓶頸和運營數據',
+        kpiPageName: '智慧排查'
+    },
+    automation: {
+        title: '自動化',
+        description: '提供自動化腳本管理、排程配置和執行追蹤功能',
+        kpiPageName: '自動化'
+    },
+    iam: {
+        title: '身份與存取管理',
+        description: '統一管理身份認證、存取權限和組織架構配置',
+        kpiPageName: '身份與存取管理'
+    },
+    notification: {
+        title: '通知',
+        description: '提供統一的通知策略配置、管道管理和歷史記錄查詢功能',
+        kpiPageName: '通知'
+    },
+    platformSettings: {
+        title: '平台',
+        description: '提供系統全域配置管理，包含標籤、郵件、身份驗證等功能',
+        kpiPageName: '平台'
+    },
+    profile: {
+        title: '個人設定',
+        description: '提供用戶個人資訊管理、偏好設定和安全配置功能',
+        kpiPageName: '個人設定'
+    },
+  },
+  SRE_WAR_ROOM: {
+    PAGE_KPI_NAME: "SREWarRoom",
+    AI_BRIEFING_TITLE: 'AI 每日簡報',
+    STABILITY_SUMMARY: '穩定性摘要',
+    KEY_ANOMALY: '關鍵異常',
+    RECOMMENDED_ACTION: '建議操作',
+    SERVICE_HEALTH_TITLE: '服務健康度總覽',
+    RESOURCE_GROUP_STATUS_TITLE: '資源群組狀態',
+    GENERATE_BRIEFING_ERROR: '無法生成 AI 簡報。請檢查 API 金鑰或稍後再試。',
+  },
+  INFRA_INSIGHTS: {
+    TITLE: '基礎設施洞察',
+    TIME_RANGE: '時間範圍',
+    REFRESH: '刷新',
+    EXPORT: '匯出',
+    AI_RISK_PREDICTION_TITLE: 'AI 風險預測',
+    RISK_DISTRIBUTION_TITLE: '風險等級分佈',
+    KEY_RISK_RESOURCES_TITLE: '重點風險資源',
+    RISK_LEVELS: {
+      HIGH: '高風險',
+      MEDIUM: '中風險',
+      LOW: '低風險',
+    },
+    RISK_PREDICTION_ERROR: '無法生成 AI 風險預測。API 連線可能發生問題。',
+    LOADING_TOPOLOGY: '載入拓撲資料中...',
+  },
+  CAPACITY_PLANNING: {
+    TIME_RANGE_LABEL: '時間範圍',
+    TRIGGER_AI_ANALYSIS: '觸發 AI 分析',
+    TRENDS_CHART_TITLE: '資源使用趨勢 (含預測)',
+    FORECAST_CHART_TITLE: 'CPU 容量預測模型',
+    AI_SUGGESTIONS_TITLE: 'AI 優化建議',
+    DETAILED_ANALYSIS_TITLE: '詳細分析',
+    TABLE_HEADERS: {
+      RESOURCE_NAME: '資源名稱',
+      CURRENT_USAGE: '目前用量',
+      FORECAST_30D: '30 天預測',
+      RECOMMENDATION: '建議',
+      COST_ESTIMATE: '成本估算',
+    },
+    IMPACT: '影響',
+    EFFORT: '投入',
+    FETCH_ERROR: '無法獲取容量規劃資料。',
+  },
+  DASHBOARD_LIST: {
+    SEARCH_PLACEHOLDER: '搜尋儀表板...',
+    ADD_DASHBOARD: '新增儀表板',
+    DELETE_MODAL_TITLE: '確認刪除',
+    DELETE_MODAL_MESSAGE: '您確定要刪除儀表板 {name} 嗎？',
+    TABLE_HEADERS: {
+      NAME: '名稱',
+      TYPE: '類型',
+      CATEGORY: '類別',
+      OWNER: '擁有者',
+      UPDATED_AT: '最後更新',
+    },
+    ACTIONS: {
+      SET_AS_HOME: '設為首頁',
+      SETTINGS: '設定',
+    },
+    HOME_BADGE: '首頁',
+    BUILT_IN_TOOLTIP: '內建儀表板',
+    GRAFANA_TOOLTIP: 'Grafana 儀表板',
+    ALL_CATEGORIES: '全部',
+    FETCH_ERROR: '無法獲取儀表板列表。',
+    SAVE_ERROR: 'Failed to save dashboard.',
+    DELETE_ERROR: 'Failed to delete dashboard.',
+    UPDATE_ERROR: 'Failed to update dashboard.',
+    BATCH_DELETE_ERROR: 'Failed to delete selected dashboards.',
+  },
+  ADD_DASHBOARD_MODAL: {
+    STEP1_TITLE: '選擇儀表板類型',
+    STEP2_TITLE: '連結 Grafana 儀表板',
+    BUILT_IN_TITLE: '建立內建儀表板',
+    BUILT_IN_DESC: '使用平台提供的小工具，拖拽組合出新的儀表板。',
+    GRAFANA_TITLE: '連結外部 Grafana 儀表板',
+    GRAFANA_DESC: '貼上 Grafana URL 或 UID，統一在平台內管理。',
+    SELECT_GRAFANA_DASHBOARD: '從 Grafana 選擇儀表板 *',
+    DASHBOARD_NAME: '儀表板名稱 *',
+    BACK: '返回',
+    SAVE_DASHBOARD: '儲存',
+    PLACEHOLDER_NAME: 'e.g., Production API Metrics',
+    SELECT_PLACEHOLDER: '請選擇一個儀表板...',
+  },
+  DASHBOARD_EDITOR: {
+    EDIT_TITLE: '編輯儀表板:',
+    CREATE_TITLE: '建立儀表板:',
+    DEFAULT_NAME: '未命名儀表板',
+    DEFAULT_DESCRIPTION: '使用者建立的內建儀表板。',
+    ADD_WIDGET: '新增小工具',
+    SAVE_DASHBOARD: '儲存儀表板',
+    EMPTY_STATE_TITLE: '空儀表板',
+    EMPTY_STATE_MESSAGE: '點擊「新增小工具」開始建立您的儀表板。',
+    ADD_WIDGET_MODAL_TITLE: '新增小工具至儀表板',
+    ADD_WIDGET_TITLE: '新增',
+    REMOVE_WIDGET_TITLE: '移除小工具',
+    NAME_REQUIRED_ERROR: '儀表板名稱為必填。',
+    SAVE_SUCCESS: '儀表板 "{name}" 已成功儲存。',
+    UPDATE_SUCCESS: '儀表板 "{name}" 已成功更新。',
+    SAVE_ERROR: '儲存儀表板失敗。',
+    UPDATE_ERROR: '更新儀表板失敗。',
+    LOAD_ERROR: '無法載入儀表板資料。',
+    EDITOR_LOAD_ERROR: '無法載入編輯器所需資料。',
+    CANCEL_BUTTON: '取消',
+  },
+  DASHBOARD_TEMPLATES: {
+    USE_TEMPLATE: '使用此範本',
+  },
+  INCIDENT_LIST: {
+    SEARCH_PLACEHOLDER: '搜索和篩選',
+    AI_ANALYSIS: 'AI 分析',
+    ACKNOWLEDGE: '認領',
+    RESOLVE: '解決',
+    SILENCE: '靜音',
+    TABLE_HEADERS: {
+        SUMMARY: '摘要',
+        STATUS: '狀態',
+        SEVERITY: '嚴重程度',
+        PRIORITY: '優先級',
+        SERVICE_IMPACT: '服務影響',
+        RESOURCE: '資源',
+        ASSIGNEE: '處理人',
+        TRIGGERED_AT: '觸發時間',
+    },
+    FETCH_ERROR: '無法獲取事故列表。',
+    NO_EXPORT_DATA: '沒有可匯出的資料。',
+    ACKNOWLEDGE_ACTION: '認領',
+    COLUMN_CONFIG_SAVE_SUCCESS: '欄位設定已儲存。',
+    COLUMN_CONFIG_SAVE_ERROR: '無法儲存欄位設定。',
+    COLUMN_CONFIG_MISSING_ERROR: '無法儲存欄位設定：頁面設定遺失。',
+    SILENCE_RULE_CREATE_ERROR: 'Failed to create silence rule.',
+  },
+  INCIDENT_DETAIL: {
+    TITLE: '事故詳情: {id}',
+    LOAD_ERROR_TITLE: '事故載入失敗',
+    LOAD_ERROR_MESSAGE: '找不到 ID 為 "{id}" 的事故。',
+    DETAILS_TITLE: '詳細資訊',
+    AI_ANALYSIS_TITLE: 'AI 自動分析',
+    TIMELINE_TITLE: '時間軸',
+    NO_AI_ANALYSIS: '此事故尚無 AI 分析報告。',
+    NO_AI_ANALYSIS_HINT: '您可以在頂部操作列點擊「AI 分析」來產生報告。',
+    STATUS: '狀態',
+    SEVERITY: '嚴重性',
+    PRIORITY: '優先級',
+    ASSIGNEE: '指派給',
+    RESOURCE: '資源',
+    SERVICE_IMPACT: '服務影響',
+    RULE: '規則',
+    TRIGGER_TIME: '觸發時間',
+  },
+  ALERT_RULE_LIST: {
+    ADD_RULE: '新增規則',
+    TABLE_HEADERS: {
+        ENABLED: '',
+        NAME: '規則名稱',
+        TARGET: '監控對象',
+        CONDITIONS: '觸發條件',
+        SEVERITY: '嚴重程度',
+        AUTOMATION: '自動化',
+        CREATOR: '創建者',
+        UPDATED_AT: '最後更新',
+    },
+    ACTIONS: {
+        EDIT: '編輯',
+        TEST: '測試',
+        COPY: '複製',
+        DELETE: '刪除',
+    },
+    DELETE_MODAL_MESSAGE: '您確定要刪除告警規則 {name} 嗎？',
+    FETCH_ERROR: '無法獲取告警規則。',
+    SAVE_ERROR: 'Failed to save rule.',
+    DELETE_ERROR: 'Failed to delete rule.',
+    TOGGLE_ERROR: 'Failed to toggle rule status.',
+    BATCH_ACTION_ERROR: 'Failed to {action} selected rules.',
+  },
+  ALERT_RULE_EDIT_MODAL: {
+    ADD_TITLE: '新增告警規則',
+    EDIT_TITLE: '編輯告警規則',
+    APPLY_TEMPLATE: '快速套用範本',
+    STEP_TITLES: ["基本資訊", "觸發條件", "事件內容", "自動化"],
+    BASIC_INFO: {
+      NAME: '規則名稱 *',
+      DESCRIPTION: '描述',
+    },
+    CONDITIONS: {
+      GROUP_TITLE: (index: number) => `條件群組 #${index + 1} (OR)`,
+      EVENT_SEVERITY: '事件等級:',
+      ADD_AND: '新增 AND 條件',
+      ADD_OR: '新增 OR 條件群組',
+      METRIC_PLACEHOLDER: 'Metric (e.g., cpu.usage)',
+      THRESHOLD_PLACEHOLDER: 'Threshold',
+      DURATION_PLACEHOLDER: 'Duration',
+    },
+    CONTENT: {
+      TITLE: '事件標題 *',
+      CONTENT: '事件內容 *',
+      VARIABLES: '可用的變數',
+    },
+    AUTOMATION: {
+      ENABLE: '啟用自動化響應',
+      SELECT_SCRIPT: '選擇腳本',
+      SELECT_SCRIPT_PLACEHOLDER: '選擇一個腳本...',
+      SCRIPT_PARAMS: '腳本參數',
+      NO_PARAMS: '此腳本無需額外參數。',
+      BOOLEAN_ENABLED: 'Enabled',
+      BOOLEAN_DISABLED: 'Disabled',
+    },
+  },
+  SILENCE_RULE_LIST: {
+    ADD_RULE: '新增規則',
+    TABLE_HEADERS: {
+      ENABLED: '',
+      NAME: '規則名稱',
+      TYPE: '類型',
+      MATCHERS: '靜音條件',
+      SCHEDULE: '排程',
+      CREATOR: '創建者',
+      CREATED_AT: '創建時間',
+    },
+    DELETE_MODAL_MESSAGE: '您確定要刪除靜音規則 {name} 嗎？',
+    FETCH_ERROR: '無法獲取靜音規則。',
+    SAVE_ERROR: 'Failed to save rule.',
+    DELETE_ERROR: 'Failed to delete rule.',
+    TOGGLE_ERROR: 'Failed to toggle rule status.',
+    BATCH_ACTION_ERROR: 'Failed to {action} selected rules.',
+  },
+  SILENCE_RULE_EDIT_MODAL: {
+    ADD_TITLE: '新增靜音規則',
+    EDIT_TITLE: '編輯靜音規則',
+    STEP_TITLES: ["基本資訊", "設定排程", "設定範圍"],
+    BASIC_INFO: {
+      APPLY_TEMPLATE: '快速套用範本',
+      NAME: '規則名稱 *',
+      DESCRIPTION: '描述',
+    },
+    SCHEDULE: {
+      TYPE: '排程類型',
+      SINGLE: '單次靜音',
+      RECURRING: '週期性靜音',
+      START_TIME: '開始時間',
+      END_TIME: '結束時間',
+      FREQUENCY: '重複頻率',
+      EXECUTION_TIME: '執行時間',
+      SELECT_WEEKDAYS: '選擇星期',
+      WEEKDAYS: ['日', '一', '二', '三', '四', '五', '六'],
+      CRON_EXPRESSION: 'Cron 表達式',
+      CRON_EXAMPLE: "範例: '0 2 * * *' 表示每天凌晨 2 點。",
+      RECURRENCE_TYPES: {
+          DAILY: '每日',
+          WEEKLY: '每週',
+          MONTHLY: '每月',
+          CUSTOM: '自訂 Cron',
+      },
+    },
+    SCOPE: {
+      TITLE: '静音條件',
+      DESCRIPTION: '定義符合哪些條件的事件將會被靜音。',
+      ADD_MATCHER: '新增匹配條件',
+      ENABLE_RULE: '立即啟用此静音規則',
+      SELECT_KEY: '選擇標籤鍵...',
+      SELECT_VALUE: '選擇值...',
+      VALUE_PLACEHOLDER: '標籤值 (e.g., api-service)',
+    },
+  },
+  RESOURCE_LIST: {
+    SEARCH_PLACEHOLDER: '搜索和篩選',
+    ADD_RESOURCE: '新增資源',
+    TABLE_HEADERS: {
+      STATUS: '狀態',
+      NAME: '名稱',
+      TYPE: '類型',
+      PROVIDER: 'PROVIDER',
+      REGION: 'REGION',
+      OWNER: '擁有者',
+      LAST_CHECK_IN: '最後簽入',
+    },
+    ACTIONS: {
+      VIEW_DETAILS: '查看詳情',
+    },
+    DELETE_MODAL_MESSAGE: '您確定要刪除資源 {name} 嗎？',
+    FETCH_ERROR: '無法獲取資源列表。',
+    SAVE_ERROR: 'Failed to save resource.',
+    DELETE_ERROR: 'Failed to delete resource.',
+    BATCH_DELETE_ERROR: 'Failed to delete selected resources.',
+  },
+  RESOURCE_DETAIL: {
+    LOAD_ERROR_TITLE: '資源載入失敗',
+    LOAD_ERROR_MESSAGE: '找不到 ID 為 "{id}" 的資源。',
+    CPU_CHART_TITLE: 'CPU Usage (last 30min)',
+    MEMORY_CHART_TITLE: 'Memory Usage (last 30min)',
+    RELATED_INCIDENTS_TITLE: '相關事件 (最近 3 筆)',
+    NO_RELATED_INCIDENTS: '沒有相關的事件。',
+    STATUS: '狀態',
+    TYPE: '類型',
+    PROVIDER_REGION: '提供商 / 區域',
+    OWNER: '擁有者',
+  },
+  AUTOMATION_PLAYBOOKS: {
+    ADD_SCRIPT: '新增腳本',
+    DELETE_MODAL_MESSAGE: '您確定要刪除腳本 {name} 嗎？',
+    FETCH_ERROR: '無法獲取自動化腳本。',
+    SAVE_ERROR: 'Failed to save playbook.',
+    DELETE_ERROR: 'Failed to delete playbook.',
+    BATCH_DELETE_ERROR: 'Failed to delete selected playbooks.',
+    RUN_ERROR: 'Failed to run playbook.',
+    TABLE_HEADERS: {
+        NAME: '腳本名稱',
+        TRIGGER: '觸發器',
+        LAST_RUN_STATUS: '上次運行狀態',
+        LAST_RUN_TIME: '上次運行時間',
+        RUN_COUNT: '運行次數',
+    },
+    ACTIONS: {
+        RUN: '運行',
+        EDIT: '編輯',
+        DELETE: '刪除',
+    }
+  },
+  PERSONNEL_MANAGEMENT: {
+      SEARCH_PLACEHOLDER: '依名稱、Email、角色搜尋...',
+      INVITE: '邀請人員',
+      TABLE_HEADERS: {
+          NAME: '名稱',
+          ROLE: '角色',
+          TEAM: '團隊',
+          STATUS: '狀態',
+          LAST_LOGIN: '上次登入',
+      },
+      DELETE_MODAL_MESSAGE: '您確定要刪除使用者 {name} 嗎？',
+      FETCH_ERROR: '無法獲取人員列表。',
+      INVITE_ERROR: 'Failed to invite user.',
+      SAVE_ERROR: 'Failed to save user.',
+      DELETE_ERROR: 'Failed to delete user.',
+      BATCH_ACTION_ERROR: 'Failed to {action} selected users.',
+  },
+  TAG_MANAGEMENT: {
+    ALL_CATEGORIES_VALUE: 'All',
+    ALL_CATEGORIES_LABEL: '所有分類',
+  },
+  LAYOUT_SETTINGS: {
+      INFO_TEXT: 'Adjust the KPI cards and their order for each hub page. Changes take effect immediately after saving.',
+      AVAILABLE_WIDGETS: 'Available Columns',
+      DISPLAYED_WIDGETS: 'Displayed Columns',
+      CURRENTLY_DISPLAYED: 'Currently Displayed Cards:',
+      NO_CARDS_DISPLAYED: 'No cards are displayed on this page.',
+      LAST_UPDATED: 'Last updated: {date} by {by}',
+      EDIT_MODAL_TITLE: 'Edit "{pageName}" KPI Cards',
+      FETCH_ERROR: '無法獲取版面配置資料。',
+      SAVE_ERROR: 'Failed to save layout configuration.',
+      EDIT_BUTTON: 'Edit',
+  },
+  LICENSE_PAGE: {
+    TITLE: '社群版',
+    DESCRIPTION: '您目前正在使用 SRE Platform 的社群版。升級至商業版以解鎖更多進階功能，並獲得完整的技術支援。',
+    COMMERCIAL_FEATURES_TITLE: '商業版功能包含：',
+    FEATURES_LIST: [
+      '進階 AI 洞察與根因分析',
+      '跨團隊協作與權限管理 (SSO/LDAP)',
+      '無限制的數據保留時間',
+      '客製化報表與儀表板',
+      '7x24 小時企業級技術支援',
+    ],
+    CONTACT_LINK: '聯絡我們以升級',
+    CONTACT_EMAIL: 'sales@sre-platform.dev',
+  },
+};
+
+const MOCK_METRIC_METADATA: MetricMetadata[] = [
+    { id: 'cpu_usage_percent', name: 'CPU Usage', unit: '%' },
+    { id: 'memory_usage_percent', name: 'Memory Usage', unit: '%' },
+    { id: 'disk_free_percent', name: 'Disk Free Space', unit: '%' },
+    { id: 'db_connection_error_rate', name: 'DB Connection Error Rate', unit: '%' },
+    { id: 'api_latency_p99_ms', name: 'API p99 Latency', unit: 'ms' },
+    { id: 'http_5xx_error_rate', name: 'HTTP 5xx Error Rate', unit: '%' },
+    { id: 'queue_depth', name: 'Queue Depth', unit: null },
+];
+
+const MOCK_RESOURCE_TYPES: ResourceType[] = [
+    { id: 'host', name: 'Host/VM', icon: 'server' },
+    { id: 'kubernetes', name: 'Kubernetes Pod', icon: 'box' },
+    { id: 'database', name: 'Database', icon: 'database' },
+    { id: 'application', name: 'Application', icon: 'app-window' },
+    { id: 'network', name: 'Network Device', icon: 'network' },
+];
 
 const MOCK_COMMANDS = [
   { id: 'cmd_new_incident', name: '> New Incident', description: 'Create a new incident report', icon: 'plus-circle', actionKey: 'new_incident' },
@@ -92,15 +795,146 @@ const MOCK_IMPORT_MODAL_CONTENT = {
     INVALID_FILE_ERROR: '請上傳有效的 CSV 檔案。',
     IMPORT_SUCCESS_TEMPLATE: '{itemName} 已成功匯入。',
     IMPORT_ERROR_TEMPLATE: '無法匯入 {itemName}。請檢查檔案格式並再試一次。',
-    START_IMPORT: '開始匯入',
-    IMPORTING: '匯入中...',
     INSTRUCTIONS_STEPS: [
       '下載 CSV 範本檔案',
       '根據範本格式填寫您的資料。',
       '將填寫好的 CSV 檔案拖曳至下方區域或點擊上傳。',
     ],
-};
+  };
 
+const MOCK_ALL_COLUMNS: Record<string, TableColumn[]> = {
+    dashboards: [
+        { key: 'name', label: '名稱' },
+        { key: 'type', label: '類型' },
+        { key: 'category', label: '類別' },
+        { key: 'owner', label: '擁有者' },
+        { key: 'updatedAt', label: '最後更新' },
+    ],
+    incidents: [
+        { key: 'summary', label: '摘要' },
+        { key: 'status', label: '狀態' },
+        { key: 'severity', label: '嚴重程度' },
+        { key: 'priority', label: '優先級' },
+        { key: 'serviceImpact', label: '服務影響' },
+        { key: 'resource', label: '資源' },
+        { key: 'assignee', label: '處理人' },
+        { key: 'triggeredAt', label: '觸發時間' },
+    ],
+    resources: [
+        { key: 'status', label: '狀態' },
+        { key: 'name', label: '名稱' },
+        { key: 'type', label: '類型' },
+        { key: 'provider', label: 'PROVIDER' },
+        { key: 'region', label: 'REGION' },
+        { key: 'owner', label: '擁有者' },
+        { key: 'lastCheckIn', label: '最後簽入' },
+    ],
+    personnel: [
+        { key: 'name', label: '名稱' },
+        { key: 'role', label: '角色' },
+        { key: 'team', label: '團隊' },
+        { key: 'status', label: '狀態' },
+        { key: 'lastLogin', label: '上次登入' },
+    ],
+    alert_rules: [
+        { key: 'enabled', label: '' },
+        { key: 'name', label: '規則名稱' },
+        { key: 'target', label: '監控對象' },
+        { key: 'conditionsSummary', label: '觸發條件' },
+        { key: 'severity', label: '嚴重程度' },
+        { key: 'automationEnabled', label: '自動化' },
+        { key: 'creator', label: '創建者' },
+        { key: 'lastUpdated', label: '最後更新' },
+    ],
+    silence_rules: [
+        { key: 'enabled', label: '' },
+        { key: 'name', label: '規則名稱' },
+        { key: 'type', label: '類型' },
+        { key: 'matchers', label: '靜音條件' },
+        { key: 'schedule', label: '排程' },
+        { key: 'creator', label: '創建者' },
+        { key: 'createdAt', label: '創建時間' },
+    ],
+    resource_groups: [
+        { key: 'name', label: '群組名稱' },
+        { key: 'ownerTeam', label: '擁有團隊' },
+        { key: 'memberIds', label: '成員數量' },
+        { key: 'statusSummary', label: '狀態' },
+    ],
+    automation_playbooks: [
+        { key: 'name', label: '腳本名稱' },
+        { key: 'trigger', label: '觸發器' },
+        { key: 'lastRunStatus', label: '上次運行狀態' },
+        { key: 'lastRun', label: '上次運行時間' },
+        { key: 'runCount', label: '運行次數' },
+    ],
+    automation_history: [
+        { key: 'scriptName', label: '腳本名稱' },
+        { key: 'status', label: '狀態' },
+        { key: 'triggerSource', label: '觸發來源' },
+        { key: 'triggeredBy', label: '觸發者' },
+        { key: 'startTime', label: '開始時間' },
+        { key: 'durationMs', label: '耗時 (ms)' },
+    ],
+    automation_triggers: [
+        { key: 'enabled', label: '' },
+        { key: 'name', label: '名稱' },
+        { key: 'type', label: '類型' },
+        { key: 'targetPlaybookId', label: '目標腳本' },
+        { key: 'lastTriggered', label: '上次觸發' },
+    ],
+    teams: [
+        { key: 'name', label: '團隊名稱' },
+        { key: 'ownerId', label: '擁有者' },
+        { key: 'memberIds', label: '成員數' },
+        { key: 'createdAt', label: '創建時間' },
+    ],
+    roles: [
+        { key: 'name', label: '角色名稱' },
+        { key: 'userCount', label: '使用者數量' },
+        { key: 'status', label: '狀態' },
+        { key: 'createdAt', label: '創建時間' },
+    ],
+    audit_logs: [
+        { key: 'timestamp', label: '時間' },
+        { key: 'user', label: '使用者' },
+        { key: 'action', label: '操作' },
+        { key: 'target', label: '目標' },
+        { key: 'result', label: '結果' },
+        { key: 'ip', label: 'IP 位址' },
+    ],
+    tag_management: [
+        { key: 'key', label: '標籤鍵' },
+        { key: 'category', label: '分類' },
+        { key: 'required', label: '必填' },
+        { key: 'usageCount', label: '使用次數' },
+        { key: 'allowedValues', label: '標籤值 (預覽)' },
+    ],
+    notification_strategies: [
+        { key: 'enabled', label: '' },
+        { key: 'name', label: '策略名稱' },
+        { key: 'triggerCondition', label: '觸發條件' },
+        { key: 'channelCount', label: '管道數' },
+        { key: 'priority', label: '優先級' },
+        { key: 'creator', label: '創建者' },
+        { key: 'lastUpdated', label: '最後更新' },
+    ],
+    notification_channels: [
+        { key: 'enabled', label: '' },
+        { key: 'name', label: '管道名稱' },
+        { key: 'type', label: '類型' },
+        { key: 'lastTestResult', label: '最新發送結果' },
+        { key: 'lastTestedAt', label: '最新發送時間' },
+    ],
+    notification_history: [
+        { key: 'timestamp', label: '時間' },
+        { key: 'strategy', label: '策略' },
+        { key: 'channel', label: '管道' },
+        { key: 'recipient', label: '接收者' },
+        { key: 'status', label: '狀態' },
+        { key: 'content', label: '內容' },
+    ],
+};
 
 const MOCK_PAGE_METADATA: Record<string, { columnConfigKey: string }> = {
   'dashboards': { columnConfigKey: 'dashboards' },
@@ -120,6 +954,7 @@ const MOCK_PAGE_METADATA: Record<string, { columnConfigKey: string }> = {
   'notification_strategies': { columnConfigKey: 'notification_strategies' },
   'notification_channels': { columnConfigKey: 'notification_channels' },
   'notification_history': { columnConfigKey: 'notification_history' },
+  'ResourceOverview': { columnConfigKey: '' },
 };
 
 const MOCK_ICON_MAP: Record<string, string> = {
@@ -144,25 +979,35 @@ const MOCK_CHART_COLORS: string[] = ['#38bdf8', '#a78bfa', '#34d399', '#f87171',
 
 const MOCK_NAV_ITEMS: NavItem[] = [
     { key: 'home', label: '首頁', icon: 'home' },
-    { key: 'incidents', label: '事件管理', icon: 'shield-alert' },
-    { key: 'resources', label: '資源管理', icon: 'database-zap' },
-    { key: 'dashboards', label: '儀表板管理', icon: 'layout-dashboard' },
-    { key: 'analyzing', label: '分析中心', icon: 'activity' },
-    { key: 'automation', label: '自動化中心', icon: 'bot' },
+    { key: 'incidents', label: '事件', icon: 'shield-alert' },
+    { key: 'resources', label: '資源', icon: 'database-zap' },
+    { key: 'dashboards', label: '儀表板', icon: 'layout-dashboard' },
+    { key: 'analyzing', label: '智慧排查', icon: 'activity' },
+    { key: 'automation', label: '自動化', icon: 'bot' },
     {
       key: 'settings',
       label: '設定',
       icon: 'settings',
       children: [
          { key: 'settings/identity-access-management', label: '身份與存取', icon: 'users' },
-         { key: 'settings/notification-management', label: '通知管理', icon: 'bell' },
-         { key: 'settings/platform-settings', label: '平台設定', icon: 'sliders-horizontal' },
+         { key: 'settings/notification-management', label: '通知', icon: 'bell' },
+         { key: 'settings/platform-settings', label: '平台', icon: 'sliders-horizontal' },
       ],
     },
 ];
 const MOCK_DASHBOARDS: Dashboard[] = [
     { id: 'sre-war-room', name: 'SRE 戰情室', type: 'built-in', category: '業務與 SLA', description: '跨團隊即時戰情看板，聚焦重大事件與 SLA 指標。', owner: '事件指揮中心', updatedAt: '2025/09/18 17:15', path: '/sre-war-room' },
     { id: 'infrastructure-insights', name: '基礎設施洞察', type: 'built-in', category: '基礎設施', description: '整合多雲與多中心資源健康狀態。', owner: 'SRE 平台團隊', updatedAt: '2025/09/18 16:30', path: '/dashboard/infrastructure-insights' },
+    {
+        id: 'resource-overview',
+        name: '資源總覽儀表板',
+        type: 'built-in',
+        category: '基礎設施',
+        description: '提供所有已納管資源的宏觀視圖，包含類型分佈、提供商分佈等關鍵指標。',
+        owner: 'SRE 平台團隊',
+        updatedAt: '2025/09/27 10:00',
+        path: '/dashboard/resource-overview'
+    },
     { id: 'api-service-status', name: 'API 服務狀態', type: 'grafana', category: '業務與 SLA', description: 'API 響應時間、錯誤率、吞吐量等服務指標。', owner: 'SRE 平台團隊', updatedAt: '2025/09/18 16:45', path: '/dashboard/api-service-status', grafanaUrl: 'http://localhost:3000/d/aead3d54-423b-4a91-b91c-dbdf40d7fff5', grafana_dashboard_uid: 'aead3d54-423b-4a91-b91c-dbdf40d7fff5', grafana_folder_uid: 'biz-folder' },
     { id: 'user-experience-monitoring', name: '用戶體驗監控', type: 'grafana', category: '營運與容量', description: '頁面載入時間、用戶行為分析、錯誤追蹤。', owner: '前端團隊', updatedAt: '2025/09/18 17:00', path: '/dashboard/user-experience-monitoring', grafanaUrl: 'http://localhost:3000/d/another-dashboard-id-for-ux', grafana_dashboard_uid: 'another-dashboard-id-for-ux', grafana_folder_uid: 'ux-folder' },
     {
@@ -197,12 +1042,66 @@ const MOCK_INCIDENTS: Incident[] = [
 ];
 const MOCK_QUICK_SILENCE_DURATIONS = [1, 2, 4, 8, 12, 24]; // hours
 const MOCK_ALERT_RULES: AlertRule[] = [
-    { id: 'rule-001', name: 'CPU 使用率過高', description: '當任何伺服器的 CPU 使用率連續 5 分鐘超過 90% 時觸發。', enabled: true, target: '所有伺服器', conditionsSummary: 'CPU > 90% for 5m', severity: 'critical', automationEnabled: true, creator: 'Admin User', lastUpdated: '2025-09-22 10:00:00', automation: { enabled: true, scriptId: 'play-002' } },
-    { id: 'rule-002', name: 'API 延遲規則', description: 'API Gateway 的 p95 延遲超過 500ms。', enabled: true, target: 'api-gateway-prod', conditionsSummary: 'Latency > 500ms', severity: 'warning', automationEnabled: false, creator: 'Emily White', lastUpdated: '2025-09-21 15:30:00' },
+    { id: 'rule-001', name: 'CPU 使用率過高', description: '當任何伺服器的 CPU 使用率連續 5 分鐘超過 90% 時觸發。', enabled: true, target: '所有伺服器', conditionsSummary: 'CPU > 90% for 5m', severity: 'critical', automationEnabled: true, creator: 'Admin User', lastUpdated: '2025-09-22 10:00:00', automation: { enabled: true, scriptId: 'play-002', parameters: { namespace: 'production' } } },
+    { id: 'rule-002', name: 'API 延遲規則', description: 'API Gateway 的 p95 延遲超過 500ms。', enabled: true, target: 'api-gateway-prod', conditionsSummary: 'Latency > 500ms', severity: 'warning', automationEnabled: false, creator: 'Emily White', lastUpdated: '2025-09-21 15:30:00', automation: { enabled: false } },
 ];
 const MOCK_ALERT_RULE_TEMPLATES: AlertRuleTemplate[] = [
-    { id: 'art-001', name: 'High CPU Usage', emoji: '🔥', data: { description: 'Monitors CPU usage and alerts when it exceeds a threshold.', conditionGroups: [{ logic: 'OR', severity: 'warning', conditions: [{ metric: 'cpu_usage_percent', operator: '>', threshold: 80, durationMinutes: 5 }] }] } },
-    { id: 'art-002', name: 'Low Disk Space', emoji: '💾', data: { description: 'Alerts when disk space is critically low.', conditionGroups: [{ logic: 'OR', severity: 'critical', conditions: [{ metric: 'disk_free_percent', operator: '<', threshold: 10, durationMinutes: 15 }] }] } },
+    { 
+      id: 'art-001', 
+      name: 'High CPU Usage', 
+      emoji: '🔥', 
+      description: 'Monitors CPU usage and alerts when it exceeds a threshold for a specified duration.',
+      resourceType: 'host',
+      data: { 
+          name: 'High CPU Usage on Prod Hosts',
+          description: 'Monitors CPU usage on production hosts and alerts when it exceeds 90% for 5 minutes.', 
+          conditionGroups: [{ logic: 'OR', severity: 'warning', conditions: [{ metric: 'cpu_usage_percent', operator: '>', threshold: 90, durationMinutes: 5 }] }],
+          titleTemplate: '🔥 [{{severity}}] High CPU on {{resource.name}}',
+          contentTemplate: 'CPU usage is at {{value}}%, exceeding the threshold of {{threshold}}% for {{duration}} minutes.',
+          automation: { enabled: true, scriptId: 'play-002' }
+      },
+      preview: {
+          conditions: ['cpu_usage_percent > 90% for 5m'],
+          notification: '🔥 [warning] High CPU on {{resource.name}}',
+          automation: 'Run Playbook: 擴展 Web 層'
+      }
+    },
+    { 
+      id: 'art-002', 
+      name: 'Low Disk Space', 
+      emoji: '💾', 
+      description: 'Alerts when available disk space is critically low.',
+      resourceType: 'host',
+      data: {
+          name: 'Low Disk Space',
+          description: 'Alerts when disk space is critically low.', 
+          conditionGroups: [{ logic: 'OR', severity: 'critical', conditions: [{ metric: 'disk_free_percent', operator: '<', threshold: 10, durationMinutes: 15 }] }],
+          titleTemplate: '💾 [{{severity}}] Low Disk Space on {{resource.name}}',
+          contentTemplate: 'Disk space is at {{value}}%, which is below the threshold of {{threshold}}%.'
+      },
+      preview: {
+          conditions: ['disk_free_percent < 10% for 15m'],
+          notification: '💾 [critical] Low Disk Space on {{resource.name}}',
+      }
+    },
+    {
+      id: 'art-003',
+      name: 'DB Connection Error',
+      emoji: '🔌',
+      description: 'Alerts when database connection attempts are failing.',
+      resourceType: 'database',
+      data: {
+          name: 'Database Connection Failures',
+          description: 'Triggers when the rate of DB connection failures exceeds 5%.',
+          conditionGroups: [{ logic: 'OR', severity: 'critical', conditions: [{ metric: 'db_connection_error_rate', operator: '>', threshold: 5, durationMinutes: 2 }] }],
+          titleTemplate: '🔌 [{{severity}}] DB Connection Errors on {{resource.name}}',
+          contentTemplate: 'Database connection error rate is at {{value}}%, exceeding the threshold of {{threshold}}%.'
+      },
+      preview: {
+          conditions: ['db_connection_error_rate > 5% for 2m'],
+          notification: '🔌 [critical] DB Connection Errors on {{resource.name}}'
+      }
+    }
 ];
 const MOCK_SILENCE_RULES: SilenceRule[] = [
     { id: 'sil-001', name: '週末維護窗口', description: '週末例行維護期間静音所有 staging 環境的告警。', enabled: true, type: 'repeat', matchers: [{ key: 'env', operator: '=', value: 'staging' }], schedule: { type: 'recurring', cron: '0 22 * * 5', timezone: 'Asia/Taipei' }, creator: 'Admin User', createdAt: '2025-09-20 18:00:00' },
@@ -249,9 +1148,35 @@ const MOCK_RESOURCES: Resource[] = [
 ];
 const MOCK_RESOURCE_GROUPS: ResourceGroup[] = [
     { id: 'rg-001', name: 'Production Web Servers', description: 'All production-facing web servers', ownerTeam: 'Web Team', memberIds: ['res-004'], statusSummary: { healthy: 12, warning: 1, critical: 0 } },
+    { id: 'rg-002', name: 'Core Databases', description: 'Primary and replica databases for core services', ownerTeam: 'DBA Team', memberIds: ['res-002'], statusSummary: { healthy: 8, warning: 0, critical: 1 } },
+    { id: 'rg-003', name: 'API Services', description: 'All microservices for the main API', ownerTeam: 'API Team', memberIds: ['res-007'], statusSummary: { healthy: 25, warning: 3, critical: 2 } },
 ];
+const MOCK_RESOURCE_OVERVIEW_DATA: ResourceOverviewData = {
+    distributionByType: [
+        { value: 150, name: 'EC2 Instance' },
+        { value: 80, name: 'Kubernetes Pod' },
+        { value: 50, name: 'RDS Database' },
+        { value: 40, name: 'API Gateway' },
+        { value: 25, name: 'Other' },
+    ],
+    distributionByProvider: [
+        { provider: 'AWS', count: 250 },
+        { provider: 'GCP', count: 80 },
+        { provider: 'Azure', count: 15 },
+    ],
+    recentlyDiscovered: [
+        { id: 'disc-001', name: '10.1.5.23', type: 'VM', discoveredAt: '5m ago', jobId: 'dj-003' },
+        { id: 'disc-002', name: 'redis-cache-xyz', type: 'Kubernetes Pod', discoveredAt: '1h ago', jobId: 'dj-001' },
+    ],
+    groupsWithMostAlerts: [
+        { id: 'rg-003', name: 'API Services', criticals: 2, warnings: 3 },
+        { id: 'rg-002', name: 'Core Databases', criticals: 1, warnings: 0 },
+        { id: 'rg-001', name: 'Production Web Servers', criticals: 0, warnings: 1 },
+    ]
+};
 const MOCK_PLAYBOOKS: AutomationPlaybook[] = [
     { id: 'play-001', name: '重啟故障 Pod', description: '自動重啟處於 CrashLoopBackOff 狀態的 Pod。', trigger: 'K8s 告警', lastRun: '5分鐘前', lastRunStatus: 'success', runCount: 12, type: 'shell', content: '#!/bin/bash...', parameters: [{ name: 'namespace', label: '命名空間', type: 'string', required: true }] },
+    { id: 'play-002', name: '擴展 Web 層', description: '向 Web 伺服器自動擴展組增加更多 EC2 實例。', trigger: '高 CPU', lastRun: '1小時前', lastRunStatus: 'success', runCount: 3, type: 'python', content: 'import boto3...', parameters: [{ name: 'instance_count', label: '實例數量', type: 'number', required: true, defaultValue: 2 }] },
 ];
 const MOCK_AUTOMATION_EXECUTIONS: AutomationExecution[] = [
     { id: 'exec-001', scriptId: 'play-001', scriptName: '重啟故障 Pod', status: 'success', triggerSource: 'event', triggeredBy: 'Event Rule: K8s 告警', startTime: '2025-09-23 14:05:10', endTime: '2025-09-23 14:05:15', durationMs: 5000, parameters: { namespace: 'production' }, logs: { stdout: 'Successfully restarted pod.', stderr: '' } },
@@ -289,7 +1214,7 @@ const MOCK_ROLES: Role[] = [
         { module: 'Resources', actions: ['read'] },
     ] },
 ];
-const AVAILABLE_PERMISSIONS = [
+const AVAILABLE_PERMISSIONS: { module: string; description: string; actions: { key: RolePermission['actions'][0], label: string }[] }[] = [
     { module: 'Incidents', description: '管理事件和警報', actions: [{key: 'read', label: '讀取'}, {key: 'create', label: '建立'}, {key: 'update', label: '更新'}, {key: 'delete', label: '刪除'}] },
     { module: 'Resources', description: '管理基礎設施資源', actions: [{key: 'read', label: '讀取'}, {key: 'create', label: '建立'}, {key: 'update', label: '更新'}, {key: 'delete', label: '刪除'}] },
     { module: 'Automation', description: '管理和執行自動化腳本', actions: [{key: 'read', label: '讀取'}, {key: 'create', label: '建立'}, {key: 'update', label: '更新'}, {key: 'delete', label: '刪除'}, {key: 'execute', label: '執行'}] },
@@ -325,12 +1250,26 @@ const MOCK_NOTIFICATION_STRATEGY_OPTIONS: NotificationStrategyOptions = {
     stepTitles: ["基本資訊", "通知管道", "匹配條件"],
 };
 const MOCK_NOTIFICATION_CHANNELS: NotificationChannel[] = [
-    { id: 'chan-1', name: 'SRE On-call Email', type: 'Email', enabled: true, config: { smtpServer: 'smtp.example.com' }, lastTestResult: 'success', lastTestedAt: '2025-09-22 11:00:00' },
+    { 
+      id: 'chan-1', 
+      name: 'SRE On-call Email', 
+      type: 'Email', 
+      enabled: true, 
+      config: { 
+        to: 'sre-oncall@example.com',
+        cc: 'sre-manager@example.com,dev-lead@example.com',
+        bcc: 'audit@example.com'
+      }, 
+      lastTestResult: 'success', 
+      lastTestedAt: '2025-09-22 11:00:00' 
+    },
 ];
 const MOCK_NOTIFICATION_CHANNEL_ICONS = {
     'Email': { icon: 'mail', color: 'text-red-400' },
     'Slack': { icon: 'slack', color: 'text-purple-400' },
-    'Webhook': { icon: 'globe', color: 'text-sky-400' },
+    'Webhook (通用)': { icon: 'globe', color: 'text-sky-400' },
+    'LINE Notify': { icon: 'message-circle', color: 'text-green-400' },
+    'SMS': { icon: 'smartphone', color: 'text-blue-400' },
     'Default': { icon: 'bell', color: 'text-slate-400' }
 };
 const MOCK_NOTIFICATION_HISTORY: NotificationHistoryRecord[] = [
@@ -348,48 +1287,25 @@ const MOCK_LOG_TIME_OPTIONS: { label: string, value: string }[] = [
     { label: '最近 4 小時', value: '4h' },
     { label: '最近 1 天', value: '1d' },
 ];
-const trace1StartTime = Date.now() - 100000;
-const MOCK_TRACES: Trace[] = [
-    { 
-        traceId: 'trace-1', 
-        spans: [
-            { traceId: 'trace-1', spanId: 'span-1a', operationName: 'POST /checkout', serviceName: 'api-gateway', startTime: trace1StartTime, duration: 1250, status: 'error', tags: { 'http.status_code': 500 }, logs: [] },
-            { traceId: 'trace-1', spanId: 'span-1b', parentId: 'span-1a', operationName: 'authorize', serviceName: 'auth-service', startTime: trace1StartTime + 50, duration: 200, status: 'ok', tags: {}, logs: [] },
-            { traceId: 'trace-1', spanId: 'span-1c', parentId: 'span-1a', operationName: 'processPayment', serviceName: 'payment-service', startTime: trace1StartTime + 250, duration: 1000, status: 'error', tags: { 'error': true, 'db.statement': 'SELECT * FROM users' }, logs: [] },
-            { traceId: 'trace-1', spanId: 'span-1d', parentId: 'span-1c', operationName: 'DB Query', serviceName: 'payment-db', startTime: trace1StartTime + 300, duration: 800, status: 'error', tags: { 'db.statement': 'SELECT * FROM credit_cards WHERE user_id = ?' }, logs: [] }
-        ], 
-        root: { serviceName: 'api-gateway', operationName: 'POST /checkout' }, 
-        duration: 1250.5, 
-        services: ['api-gateway', 'auth-service', 'payment-service', 'payment-db'], 
-        errorCount: 3, 
-        startTime: trace1StartTime
-    },
-    {
-        traceId: 'trace-2',
-        spans: [
-             { traceId: 'trace-2', spanId: 'span-2a', operationName: 'GET /products', serviceName: 'product-service', startTime: trace1StartTime + 2000, duration: 350, status: 'ok', tags: { 'http.status_code': 200 }, logs: [] }
-        ],
-        root: { serviceName: 'product-service', operationName: 'GET /products' },
-        duration: 350,
-        services: ['product-service'],
-        errorCount: 0,
-        startTime: trace1StartTime + 2000
-    }
-];
 const MOCK_MAIL_SETTINGS: MailSettings = { smtpServer: 'smtp.example.com', port: 587, username: 'noreply@sre.platform', senderName: 'SRE Platform', senderEmail: 'noreply@sre.platform', encryption: 'tls' };
 const MOCK_GRAFANA_SETTINGS: GrafanaSettings = { enabled: true, url: 'http://localhost:3000', apiKey: 'glsa_xxxxxxxxxxxxxxxxxxxxxxxx', orgId: 1 };
+// FIX: Add missing properties to MOCK_GRAFANA_OPTIONS to conform to GrafanaOptions type.
 const MOCK_GRAFANA_OPTIONS: GrafanaOptions = {
     timeOptions: [{label: 'Last 6 hours', value: 'from=now-6h&to=now'}, {label: 'Last 24 hours', value: 'from=now-24h&to=now'}],
     refreshOptions: [{label: '1m', value: '1m'}, {label: '5m', value: '5m'}],
     tvModeOptions: [{label: 'Off', value: 'off'}, {label: 'On', value: 'on'}],
-    themeOptions: [{label: '深色', value: 'dark'}, {label: '淺色', value: 'light'}]
+    themeOptions: [{label: '深色', value: 'dark'}, {label: '淺色', value: 'light'}],
+    themeLabel: '主題',
+    tvModeLabel: 'TV 模式',
+    refreshLabel: '刷新',
+    timeLabel: '時間',
 };
 const MOCK_AUTH_SETTINGS: AuthSettings = { provider: 'Keycloak', enabled: true, clientId: 'sre-platform-client', clientSecret: '...', realm: 'sre', authUrl: '...', tokenUrl: '...', userInfoUrl: '...', idpAdminUrl: 'http://localhost:8080/admin/master/console/' };
 const LAYOUT_WIDGETS: LayoutWidget[] = [
     // Incident Management
-    { id: 'incident_pending_count', name: '待處理事件', description: '顯示目前狀態為「新」的事件總數。', supportedPages: ['事件管理'] },
-    { id: 'incident_in_progress', name: '處理中事件', description: '顯示目前狀態為「已認領」的事件總數。', supportedPages: ['事件管理'] },
-    { id: 'incident_resolved_today', name: '今日已解決', description: '顯示今天已解決的事件總數。', supportedPages: ['事件管理'] },
+    { id: 'incident_pending_count', name: '待處理事件', description: '顯示目前狀態為「新」的事件總數。', supportedPages: ['事件'] },
+    { id: 'incident_in_progress', name: '處理中事件', description: '顯示目前狀態為「已認領」的事件總數。', supportedPages: ['事件'] },
+    { id: 'incident_resolved_today', name: '今日已解決', description: '顯示今天已解決的事件總數。', supportedPages: ['事件'] },
     // SREWarRoom
     { id: 'sre_pending_incidents', name: '待處理事件', description: '顯示待處理的事件總數。', supportedPages: ['SREWarRoom'] },
     { id: 'sre_in_progress', name: '處理中', description: '顯示正在處理中的事件。', supportedPages: ['SREWarRoom'] },
@@ -403,24 +1319,25 @@ const LAYOUT_WIDGETS: LayoutWidget[] = [
     
     // NEW WIDGETS START HERE
     // Resource Management
-    { id: 'resource_total_count', name: '資源總數', description: '顯示所有已註冊的資源總數。', supportedPages: ['資源管理'] },
-    { id: 'resource_health_rate', name: '資源健康率', description: '處於健康狀態的資源百分比。', supportedPages: ['資源管理'] },
-    { id: 'resource_alerting', name: '告警中資源', description: '目前處於警告或嚴重狀態的資源數。', supportedPages: ['資源管理'] },
+    { id: 'resource_total_count', name: '資源總數', description: '顯示所有已註冊的資源總數。', supportedPages: ['資源', 'ResourceOverview'] },
+    { id: 'resource_health_rate', name: '資源健康率', description: '處於健康狀態的資源百分比。', supportedPages: ['資源', 'ResourceOverview'] },
+    { id: 'resource_alerting', name: '告警中資源', description: '目前處於警告或嚴重狀態的資源數。', supportedPages: ['資源', 'ResourceOverview'] },
+    { id: 'resource_group_count', name: '資源群組總數', description: '平台中所有資源群組的數量。', supportedPages: ['ResourceOverview'] },
 
     // Dashboard Management
-    { id: 'dashboard_total_count', name: '儀表板總數', description: '平台中所有儀表板的數量。', supportedPages: ['儀表板管理'] },
-    { id: 'dashboard_custom_count', name: '自訂儀表板', description: '使用者自訂的內建儀表板數量。', supportedPages: ['儀表板管理'] },
-    { id: 'dashboard_grafana_count', name: 'Grafana 儀表板', description: '從 Grafana 連結的儀表板數量。', supportedPages: ['儀表板管理'] },
+    { id: 'dashboard_total_count', name: '儀表板總數', description: '平台中所有儀表板的數量。', supportedPages: ['儀表板'] },
+    { id: 'dashboard_custom_count', name: '自訂儀表板', description: '使用者自訂的內建儀表板數量。', supportedPages: ['儀表板'] },
+    { id: 'dashboard_grafana_count', name: 'Grafana 儀表板', description: '從 Grafana 連結的儀表板數量。', supportedPages: ['儀表板'] },
 
     // Analysis Center
-    { id: 'analysis_critical_anomalies', name: '嚴重異常 (24H)', description: '過去 24 小時内偵測到的嚴重異常事件。', supportedPages: ['分析中心'] },
-    { id: 'analysis_log_volume', name: '日誌量 (24H)', description: '過去 24 小時的總日誌量。', supportedPages: ['分析中心'] },
-    { id: 'analysis_trace_errors', name: '追蹤錯誤率', description: '包含錯誤的追蹤佔比。', supportedPages: ['分析中心'] },
+    { id: 'analysis_critical_anomalies', name: '嚴重異常 (24H)', description: '過去 24 小時内偵測到的嚴重異常事件。', supportedPages: ['智慧排查'] },
+    { id: 'analysis_log_volume', name: '日誌量 (24H)', description: '過去 24 小時的總日誌量。', supportedPages: ['智慧排查'] },
+    { id: 'analysis_trace_errors', name: '追蹤錯誤率', description: '包含錯誤的追蹤佔比。', supportedPages: ['智慧排查'] },
     
     // Automation Center
-    { id: 'automation_runs_today', name: '今日運行次數', description: '所有自動化腳本今日的總運行次數。', supportedPages: ['自動化中心'] },
-    { id: 'automation_success_rate', name: '成功率', description: '自動化腳本的整體執行成功率。', supportedPages: ['自動化中心'] },
-    { id: 'automation_suppressed_alerts', name: '已抑制告警', description: '因自動化成功執行而抑制的告警數。', supportedPages: ['自動化中心'] },
+    { id: 'automation_runs_today', name: '今日運行次數', description: '所有自動化腳本今日的總運行次數。', supportedPages: ['自動化'] },
+    { id: 'automation_success_rate', name: '成功率', description: '自動化腳本的整體執行成功率。', supportedPages: ['自動化'] },
+    { id: 'automation_suppressed_alerts', name: '已抑制告警', description: '因自動化成功執行而抑制的告警數。', supportedPages: ['自動化'] },
 
     // IAM
     { id: 'iam_total_users', name: '使用者總數', description: '平台中的總使用者帳號數。', supportedPages: ['身份與存取管理'] },
@@ -428,14 +1345,14 @@ const LAYOUT_WIDGETS: LayoutWidget[] = [
     { id: 'iam_login_failures', name: '登入失敗 (24H)', description: '過去 24 小時內的登入失敗次數。', supportedPages: ['身份與存取管理'] },
 
     // Notification Management
-    { id: 'notification_sent_today', name: '今日已發送', description: '今日透過所有管道發送的通知總數。', supportedPages: ['通知管理'] },
-    { id: 'notification_failure_rate', name: '發送失敗率', description: '通知發送的整體失敗率。', supportedPages: ['通知管理'] },
-    { id: 'notification_channels', name: '啟用中管道', description: '目前已啟用並可用的通知管道數。', supportedPages: ['通知管理'] },
+    { id: 'notification_sent_today', name: '今日已發送', description: '今日透過所有管道發送的通知總數。', supportedPages: ['通知'] },
+    { id: 'notification_failure_rate', name: '發送失敗率', description: '通知發送的整體失敗率。', supportedPages: ['通知'] },
+    { id: 'notification_channels', name: '啟用中管道', description: '目前已啟用並可用的通知管道數。', supportedPages: ['通知'] },
 
     // Platform Settings
-    { id: 'platform_tags_defined', name: '標籤總數', description: '平台中定義的標籤鍵總數。', supportedPages: ['平台設定'] },
-    { id: 'platform_auth_provider', name: '認證提供商', description: '目前使用的身份驗證提供商。', supportedPages: ['平台設定'] },
-    { id: 'platform_mail_status', name: '郵件服務狀態', description: '郵件發送服務的健康狀態。', supportedPages: ['平台設定'] },
+    { id: 'platform_tags_defined', name: '標籤總數', description: '平台中定義的標籤鍵總數。', supportedPages: ['平台'] },
+    { id: 'platform_auth_provider', name: '認證提供商', description: '目前使用的身份驗證提供商。', supportedPages: ['平台'] },
+    { id: 'platform_mail_status', name: '郵件服務狀態', description: '郵件發送服務的健康狀態。', supportedPages: ['平台'] },
 
     // Personal Settings
     { id: 'profile_login_count_7d', name: '最近 7 日登入次數', description: '過去 7 天內的成功登入次數。', supportedPages: ['個人設定'] },
@@ -445,14 +1362,15 @@ const LAYOUT_WIDGETS: LayoutWidget[] = [
 const DEFAULT_LAYOUTS: Record<string, { widgetIds: string[]; updatedAt: string; updatedBy: string; }> = {
     "SREWarRoom": { widgetIds: ['sre_pending_incidents', 'sre_in_progress', 'sre_resolved_today', 'sre_automation_rate'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
     "InfrastructureInsights": { widgetIds: ['infra_total_resources', 'infra_running', 'infra_anomalies', 'infra_offline'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
-    "事件管理": { widgetIds: ['incident_pending_count', 'incident_in_progress', 'incident_resolved_today'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
-    "資源管理": { widgetIds: ['resource_total_count', 'resource_health_rate', 'resource_alerting'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
-    "儀表板管理": { widgetIds: ['dashboard_total_count', 'dashboard_custom_count', 'dashboard_grafana_count'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
-    "分析中心": { widgetIds: ['analysis_critical_anomalies', 'analysis_log_volume', 'analysis_trace_errors'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
-    "自動化中心": { widgetIds: ['automation_runs_today', 'automation_success_rate', 'automation_suppressed_alerts'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
+    "事件": { widgetIds: ['incident_pending_count', 'incident_in_progress', 'incident_resolved_today'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
+    "資源": { widgetIds: ['resource_total_count', 'resource_health_rate', 'resource_alerting'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
+    "ResourceOverview": { widgetIds: ['resource_total_count', 'resource_health_rate', 'resource_alerting', 'resource_group_count'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
+    "儀表板": { widgetIds: ['dashboard_total_count', 'dashboard_custom_count', 'dashboard_grafana_count'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
+    "智慧排查": { widgetIds: ['analysis_critical_anomalies', 'analysis_log_volume', 'analysis_trace_errors'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
+    "自動化": { widgetIds: ['automation_runs_today', 'automation_success_rate', 'automation_suppressed_alerts'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
     "身份與存取管理": { widgetIds: ['iam_total_users', 'iam_active_users', 'iam_login_failures'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
-    "通知管理": { widgetIds: ['notification_sent_today', 'notification_failure_rate', 'notification_channels'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
-    "平台設定": { widgetIds: ['platform_tags_defined', 'platform_auth_provider', 'platform_mail_status'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
+    "通知": { widgetIds: ['notification_sent_today', 'notification_failure_rate', 'notification_channels'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
+    "平台": { widgetIds: ['platform_tags_defined', 'platform_auth_provider', 'platform_mail_status'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
     "個人設定": { widgetIds: ['profile_login_count_7d', 'profile_last_password_change', 'profile_mfa_status'], updatedAt: '2025-09-24 10:30:00', updatedBy: 'Admin User' },
 };
 const KPI_DATA: Record<string, any> = {
@@ -472,10 +1390,11 @@ const KPI_DATA: Record<string, any> = {
     'resource_total_count': { value: '345', description: '↑2% vs last week', icon: 'database', iconBgColor: 'bg-blue-500' },
     'resource_health_rate': { value: '98.5%', description: '340 健康', icon: 'heart-pulse', iconBgColor: 'bg-green-500' },
     'resource_alerting': { value: '5', description: '3 critical, 2 warning', icon: 'siren', iconBgColor: 'bg-orange-500' },
+    'resource_group_count': { value: '15', description: '↑2 vs last month', icon: 'layout-grid', iconBgColor: 'bg-purple-500' },
 
     'dashboard_total_count': { value: '28', description: '↑3 vs last month', icon: 'layout-dashboard', iconBgColor: 'bg-indigo-500' },
-    'dashboard_custom_count': { value: '12', description: 'Built-in dashboards', icon: 'layout', iconBgColor: 'bg-sky-500' },
-    'dashboard_grafana_count': { value: '16', description: 'Linked from Grafana', icon: 'area-chart', iconBgColor: 'bg-green-500' },
+    'dashboard_custom_count': { value: '12', description: '使用者自訂的內建儀表板數量。', icon: 'layout-template', iconBgColor: 'bg-cyan-500' },
+    'dashboard_grafana_count': { value: '16', description: '從 Grafana 連結的儀表板數量。', icon: 'area-chart', iconBgColor: 'bg-green-500' },
 
     'analysis_critical_anomalies': { value: '3', description: '↑1 vs yesterday', icon: 'zap', iconBgColor: 'bg-red-500' },
     'analysis_log_volume': { value: '25.1 GB', description: '↓5% vs yesterday', icon: 'file-text', iconBgColor: 'bg-teal-500' },
@@ -521,18 +1440,6 @@ const MOCK_AI_RISK_PREDICTION = {
     ]
 };
 
-const MOCK_AI_HEALTH_SCORE = { score: 75, summary: "系統因 API 延遲與錯誤率上升而處於警告狀態，但關鍵基礎設施尚屬穩定。" };
-
-const MOCK_AI_ANOMALIES = [
-    { severity: 'critical', description: 'API Latency p99 has spiked to 1200ms.', timestamp: '5 minutes ago' },
-    { severity: 'warning', description: 'Error rate increased to 5.2% after `api-service` deployment.', timestamp: '2 hours ago' },
-    { severity: 'warning', description: 'Database connection pool is at 95% capacity.', timestamp: '15 minutes ago' },
-];
-
-const MOCK_AI_SUGGESTIONS = [
-    { title: '擴展 Kubernetes API 服務', impact: '高' as '高', effort: '中' as '中', details: '`api-service` 的 CPU 使用率持續偏高，建議增加副本數以應對流量。', action_button_text: '查看資源', action_link: '/resources/res-007' },
-];
-
 const MOCK_SINGLE_INCIDENT_ANALYSIS: IncidentAnalysis = {
     summary: '此事件由 API 延遲規則觸發，根本原因可能與最近的 `api-server-01` 部署有關。',
     root_causes: ['`api-server-01` 最近的程式碼變更引入了效能迴歸。', '下游 `user-service` 回應緩慢。'],
@@ -568,26 +1475,31 @@ const MOCK_LOG_ANALYSIS: LogAnalysis = {
     ]
 };
 
-const MOCK_TRACE_ANALYSIS: TraceAnalysis = {
-    summary: '此追蹤的主要延遲來自 `payment-service` 中的 `processPayment` 操作，佔總時長的 85%。瓶頸在於對 `payment-db` 的一次慢查詢，耗時超過 1 秒。',
-    bottlenecks: [
+const MOCK_RESOURCE_ANALYSIS: ResourceAnalysis = {
+    summary: '對選定的 5 個資源進行分析後，發現 2 個高風險資源，主要與潛在的容量瓶頸和過時的配置有關。此外，有 1 個資源存在成本優化機會。',
+    riskAnalysis: [
         {
-            span_name: 'SELECT user_balance',
-            service_name: 'payment-db',
-            duration_percent: 60,
-            description: '資料庫查詢耗時 1050ms，缺少索引。'
+            resourceId: 'res-002',
+            resourceName: 'rds-prod-main',
+            riskLevel: 'High',
+            reason: '記憶體使用率連續 3 天超過 90%，且慢查詢日誌數量增加。',
+            recommendation: '建議立即升級資料庫實例類型，並分析慢查詢。'
         },
         {
-            span_name: 'HTTP POST /api/v1/receipts',
-            service_name: 'receipt-service',
-            duration_percent: 20,
-            description: '下游收據服務回應緩慢，耗時 350ms。'
+            resourceId: 'res-007',
+            resourceName: 'api-service',
+            riskLevel: 'Medium',
+            reason: '副本數 (3) 在流量高峰期可能不足，CPU Throttling 指標上升。',
+            recommendation: '建議將 HPA 的最小副本數調整為 5。'
         }
     ],
-    recommendations: [
-        '為 `user_transactions` 表的 `user_id` 和 `timestamp` 欄位新增複合索引。',
-        '為對 `receipt-service` 的呼叫增加非同步處理或快取機制。',
-        '檢視 `processPayment` 操作中的業務 logique，確認是否有可優化的部分。'
+    optimizationSuggestions: [
+        {
+            resourceId: 'res-004',
+            resourceName: 'web-prod-12',
+            suggestion: '此 EC2 實例的平均 CPU 使用率低於 10%。建議將實例類型從 `t3.large` 降級為 `t3.medium` 以節省成本。',
+            type: 'Cost'
+        }
     ]
 };
 
@@ -648,12 +1560,16 @@ const MOCK_RESOURCE_GROUP_STATUS_DATA = {
     ],
 };
 
-const now = Date.now();
 const MOCK_ANALYSIS_OVERVIEW_DATA = {
-    health_score_data: Array.from({ length: 60 }, (_, i) => ({
-        name: new Date(now - (59 - i) * 60000).toString(),
-        value: [new Date(now - (59 - i) * 60000), Math.floor(80 + Math.random() * 20 - i * 0.1)] as [Date, number],
-    })),
+    health_score: { score: 75, summary: "系統因 API 延遲與錯誤率上升而處於警告狀態，但關鍵基礎設施尚屬穩定。" },
+    anomalies: [
+        { severity: 'critical', description: 'API Latency p99 has spiked to 1200ms.', timestamp: '5 minutes ago' },
+        { severity: 'warning', description: 'Error rate increased to 5.2% after `api-service` deployment.', timestamp: '2 hours ago' },
+        { severity: 'warning', description: 'Database connection pool is at 95% capacity.', timestamp: '15 minutes ago' },
+    ],
+    suggestions: [
+        { title: '擴展 Kubernetes API 服務', impact: '高' as '高', effort: '中' as '中', details: '`api-service` 的 CPU 使用率持續偏高，建議增加副本數以應對流量。', action_button_text: '查看資源', action_link: '/resources/res-007' },
+    ],
     event_correlation_data: MOCK_EVENT_CORRELATION_DATA,
     recent_logs: MOCK_LOGS.slice(0, 10),
 };
@@ -681,8 +1597,10 @@ const MOCK_TAB_CONFIGS: TabConfigMap = {
         { label: '靜音規則', path: '/incidents/silence', icon: 'bell-off' },
     ],
     resources: [
-        { label: '資源列表', path: '/resources', icon: 'database' },
+        { label: '資源列表', path: '/resources/list', icon: 'database' },
         { label: '資源群組', path: '/resources/groups', icon: 'layout-grid' },
+        { label: 'Datasource 管理', path: '/resources/datasources', icon: 'database-zap' },
+        { label: '自動掃描', path: '/resources/discovery', icon: 'scan-search' },
         { label: '拓撲視圖', path: '/resources/topology', icon: 'share-2' },
     ],
     dashboards: [
@@ -692,9 +1610,7 @@ const MOCK_TAB_CONFIGS: TabConfigMap = {
     analysis: [
         { label: '分析總覽', path: '/analyzing', icon: 'bar-chart-2' },
         { label: '日誌探索', path: '/analyzing/logs', icon: 'search' },
-        { label: '鏈路追蹤', path: '/analyzing/traces', icon: 'git-fork' },
         { label: '容量規劃', path: '/analyzing/capacity', icon: 'bar-chart-big' },
-        { label: 'AI 洞察', path: '/analyzing/insights', icon: 'brain-circuit' },
     ],
     automation: [
         { label: '腳本庫', path: '/automation', icon: 'notebook-tabs' },
@@ -718,6 +1634,7 @@ const MOCK_TAB_CONFIGS: TabConfigMap = {
         { label: '身份驗證', path: '/settings/platform-settings/auth', icon: 'key' },
         { label: '版面管理', path: '/settings/platform-settings/layout', icon: 'layout' },
         { label: 'Grafana 設定', path: '/settings/platform-settings/grafana', icon: 'area-chart' },
+        { label: 'License', path: '/settings/platform-settings/license', icon: 'award' },
     ],
     profile: [
         { label: '個人資訊', path: '/profile', icon: 'user' },
@@ -765,8 +1682,16 @@ const MOCK_ALERT_RULE_OPTIONS: AlertRuleOptions = {
     ],
     statuses: [
         { value: true, label: 'Enabled' },
-        { value: false, label: 'Disabled' },
-    ]
+        { value: false, label: 'Disabled' }
+    ],
+    // FIX: Add missing properties operators, scopeModes, and variables to conform to AlertRuleOptions type.
+    operators: ['>', '<', '>=', '<='],
+    scopeModes: [
+        { value: 'all', label: 'All Resources (by type)' },
+        { value: 'group', label: 'By Resource Group' },
+        { value: 'specific', label: 'Specific Resources' },
+    ],
+    variables: ['{{severity}}', '{{resource.name}}', '{{metric}}', '{{value}}', '{{threshold}}', '{{duration}}'],
 };
 
 // FIX: Explicitly typed the mock object with `ResourceOptions` to ensure its properties conform to the interface, resolving type inference errors.
@@ -816,8 +1741,10 @@ const MOCK_AUTOMATION_EXECUTION_OPTIONS: AutomationExecutionOptions = {
 const MOCK_NOTIFICATION_CHANNEL_OPTIONS: NotificationChannelOptions = {
     channelTypes: [
         { value: 'Email', label: 'Email' },
+        { value: 'Webhook (通用)', label: 'Webhook (通用)' },
         { value: 'Slack', label: 'Slack' },
-        { value: 'Webhook', label: 'Webhook' }
+        { value: 'LINE Notify', label: 'LINE Notify' },
+        { value: 'SMS', label: 'SMS' }
     ],
     httpMethods: ['POST', 'PUT', 'GET']
 };
@@ -863,7 +1790,10 @@ const MOCK_INFRA_INSIGHTS_OPTIONS: InfraInsightsOptions = {
         { value: 'high', label: 'High', color: '#dc2626' },
         { value: 'medium', label: 'Medium', color: '#f97316' },
         { value: 'low', label: 'Low', color: '#10b981' },
-    ]
+    ],
+    refreshOptions: MOCK_GRAFANA_OPTIONS.refreshOptions,
+    tvModeOptions: MOCK_GRAFANA_OPTIONS.tvModeOptions,
+    themeOptions: MOCK_GRAFANA_OPTIONS.themeOptions,
 };
 
 const MOCK_TAG_MANAGEMENT_OPTIONS: TagManagementOptions = {
@@ -884,9 +1814,21 @@ const MOCK_NOTIFICATION_HISTORY_OPTIONS: NotificationHistoryOptions = {
     ],
     channelTypes: [
         { value: 'Email', label: 'Email' },
+        { value: 'Webhook (通用)', label: 'Webhook (通用)' },
         { value: 'Slack', label: 'Slack' },
-        { value: 'Webhook', label: 'Webhook' },
+        { value: 'LINE Notify', label: 'LINE Notify' },
+        { value: 'SMS', label: 'SMS' },
     ],
+};
+
+const MOCK_DATASOURCE_OPTIONS: DatasourceOptions = {
+    types: ['VictoriaMetrics', 'Grafana', 'Elasticsearch', 'Prometheus', 'Custom'],
+    authMethods: ['Token', 'Basic Auth', 'Keycloak Integration', 'None'],
+};
+
+const MOCK_AUTO_DISCOVERY_OPTIONS: AutoDiscoveryOptions = {
+    jobTypes: ['K8s', 'SNMP', 'Cloud Provider', 'Static Range', 'Custom Script'],
+    exporterTypes: ['none', 'node_exporter', 'snmp_exporter', 'modbus_exporter', 'ipmi_exporter'],
 };
 
 const MOCK_ALL_OPTIONS: AllOptions = {
@@ -908,12 +1850,90 @@ const MOCK_ALL_OPTIONS: AllOptions = {
     topology: MOCK_TOPOLOGY_OPTIONS,
     automationExecutions: MOCK_AUTOMATION_EXECUTION_OPTIONS,
     notificationHistory: MOCK_NOTIFICATION_HISTORY_OPTIONS,
+    // FIX: Add missing properties datasources and autoDiscovery to conform to AllOptions type.
+    datasources: MOCK_DATASOURCE_OPTIONS,
+    autoDiscovery: MOCK_AUTO_DISCOVERY_OPTIONS,
 };
+
+const MOCK_DATASOURCES: Datasource[] = [
+    {
+        id: 'ds-001',
+        name: 'Prometheus-A',
+        type: 'Prometheus',
+        status: 'ok',
+        createdAt: '2025-09-01 12:30:00',
+        url: 'http://prometheus-a.internal:9090',
+        authMethod: 'None',
+        tags: [{ id: 'tag-1', key: 'env', value: 'production' }]
+    },
+    {
+        id: 'ds-002',
+        name: 'VM-Cluster-1',
+        type: 'VictoriaMetrics',
+        status: 'error',
+        createdAt: '2025-09-10 09:22:00',
+        url: 'http://vm-cluster-1.internal:8428',
+        authMethod: 'Token',
+        tags: [{ id: 'tag-2', key: 'env', value: 'production' }, { id: 'tag-3', key: 'cluster', value: '1' }]
+    },
+    {
+        id: 'ds-003',
+        name: 'Main Grafana',
+        type: 'Grafana',
+        status: 'pending',
+        createdAt: '2025-09-11 15:00:00',
+        url: 'http://grafana.internal',
+        authMethod: 'Keycloak Integration',
+        tags: []
+    }
+];
+
+const MOCK_DISCOVERY_JOBS: DiscoveryJob[] = [
+    {
+        id: 'dj-001',
+        name: 'K8s Cluster A',
+        type: 'K8s',
+        schedule: '0 9 * * *', // 每天 09:00
+        lastRun: '2025-09-23 09:00:15',
+        status: 'success',
+        config: { kubeconfig: '...' },
+        tags: [{ id: 'tag-4', key: 'cluster', value: 'A' }]
+    },
+    {
+        id: 'dj-002',
+        name: 'IDC-SNMP-Scan',
+        type: 'SNMP',
+        schedule: '30 * * * *', // 每小時 30 分
+        lastRun: '2025-09-23 10:30:05',
+        status: 'partial_failure',
+        config: { community: 'public', ipRange: '10.1.1.1/24' },
+        tags: [{ id: 'tag-5', key: 'datacenter', value: 'IDC-1' }]
+    },
+    {
+        id: 'dj-003',
+        name: 'Cloud Provider Sync',
+        type: 'Cloud Provider',
+        schedule: '0 0 * * *', // 每天
+        lastRun: '2025-09-23 00:00:10',
+        status: 'running',
+        config: {},
+        tags: []
+    }
+];
+
+const MOCK_DISCOVERED_RESOURCES: DiscoveredResource[] = [
+    { id: 'd-res-1', name: 'web-server-new-01', ip: '10.1.2.10', type: 'VM', tags: [{id: 't1', key: 'os', value: 'linux'}], status: 'new' },
+    { id: 'd-res-2', name: 'redis-cache-xyz', ip: '10.1.3.15', type: 'Kubernetes Pod', tags: [{id: 't2', key: 'app', value: 'redis'}], status: 'new' },
+    { id: 'd-res-3', name: 'prod-db-replica-2', ip: '10.1.2.11', type: 'VM', tags: [{id: 't3', key: 'role', value: 'database'}], status: 'imported' },
+    { id: 'd-res-4', name: 'old-test-server', ip: '10.1.2.12', type: 'VM', tags: [], status: 'ignored' },
+];
 
 
 function createInitialDB() {
     // Deep clone to make it mutable
     return {
+        metricMetadata: JSON.parse(JSON.stringify(MOCK_METRIC_METADATA)),
+        resourceTypes: JSON.parse(JSON.stringify(MOCK_RESOURCE_TYPES)),
         commands: JSON.parse(JSON.stringify(MOCK_COMMANDS)),
         pageMetadata: JSON.parse(JSON.stringify(MOCK_PAGE_METADATA)),
         iconMap: JSON.parse(JSON.stringify(MOCK_ICON_MAP)),
@@ -932,6 +1952,7 @@ function createInitialDB() {
         resources: JSON.parse(JSON.stringify(MOCK_RESOURCES)),
         resourceGroups: JSON.parse(JSON.stringify(MOCK_RESOURCE_GROUPS)),
         resourceLinks: JSON.parse(JSON.stringify(MOCK_LINKS)),
+        resourceOverviewData: JSON.parse(JSON.stringify(MOCK_RESOURCE_OVERVIEW_DATA)),
         playbooks: JSON.parse(JSON.stringify(MOCK_PLAYBOOKS)),
         automationExecutions: JSON.parse(JSON.stringify(MOCK_AUTOMATION_EXECUTIONS)),
         automationTriggers: JSON.parse(JSON.stringify(MOCK_AUTOMATION_TRIGGERS)),
@@ -952,7 +1973,6 @@ function createInitialDB() {
         loginHistory: JSON.parse(JSON.stringify(MOCK_LOGIN_HISTORY)),
         logs: JSON.parse(JSON.stringify(MOCK_LOGS)),
         logTimeOptions: JSON.parse(JSON.stringify(MOCK_LOG_TIME_OPTIONS)),
-        traces: JSON.parse(JSON.stringify(MOCK_TRACES)),
         mailSettings: JSON.parse(JSON.stringify(MOCK_MAIL_SETTINGS)),
         grafanaSettings: JSON.parse(JSON.stringify(MOCK_GRAFANA_SETTINGS)),
         grafanaOptions: JSON.parse(JSON.stringify(MOCK_GRAFANA_OPTIONS)),
@@ -961,6 +1981,7 @@ function createInitialDB() {
         layouts: JSON.parse(JSON.stringify(DEFAULT_LAYOUTS)),
         layoutWidgets: JSON.parse(JSON.stringify(LAYOUT_WIDGETS)),
         kpiData: JSON.parse(JSON.stringify(KPI_DATA)),
+        allColumns: JSON.parse(JSON.stringify(MOCK_ALL_COLUMNS)),
         columnConfigs: {
             dashboards: ['name', 'type', 'category', 'owner', 'updatedAt'],
             incidents: ['summary', 'status', 'severity', 'priority', 'assignee', 'triggeredAt'],
@@ -984,21 +2005,18 @@ function createInitialDB() {
         tabConfigs: JSON.parse(JSON.stringify(MOCK_TAB_CONFIGS)),
         platformSettings: JSON.parse(JSON.stringify(MOCK_PLATFORM_SETTINGS)),
         preferenceOptions: JSON.parse(JSON.stringify(MOCK_PREFERENCE_OPTIONS)),
+        pageContent: JSON.parse(JSON.stringify(PAGE_CONTENT)),
         commandPaletteContent: JSON.parse(JSON.stringify(MOCK_COMMAND_PALETTE_CONTENT)),
         executionLogDetailContent: JSON.parse(JSON.stringify(MOCK_EXECUTION_LOG_DETAIL_CONTENT)),
         importModalContent: JSON.parse(JSON.stringify(MOCK_IMPORT_MODAL_CONTENT)),
         // AI DATA
         aiBriefing: JSON.parse(JSON.stringify(MOCK_AI_BRIEFING)),
         aiRiskPrediction: JSON.parse(JSON.stringify(MOCK_AI_RISK_PREDICTION)),
-        aiHealthScore: JSON.parse(JSON.stringify(MOCK_AI_HEALTH_SCORE)),
-        aiAnomalies: JSON.parse(JSON.stringify(MOCK_AI_ANOMALIES)),
-        aiSuggestions: JSON.parse(JSON.stringify(MOCK_AI_SUGGESTIONS)),
         singleIncidentAnalysis: JSON.parse(JSON.stringify(MOCK_SINGLE_INCIDENT_ANALYSIS)),
         multiIncidentAnalysis: JSON.parse(JSON.stringify(MOCK_MULTI_INCIDENT_ANALYSIS)),
         generatedPlaybook: JSON.parse(JSON.stringify(MOCK_GENERATED_PLAYBOOK)),
         logAnalysis: JSON.parse(JSON.stringify(MOCK_LOG_ANALYSIS)),
-        traceAnalysis: JSON.parse(JSON.stringify(MOCK_TRACE_ANALYSIS)),
-        eventCorrelationData: JSON.parse(JSON.stringify(MOCK_EVENT_CORRELATION_DATA)),
+        resourceAnalysis: JSON.parse(JSON.stringify(MOCK_RESOURCE_ANALYSIS)),
         capacitySuggestions: JSON.parse(JSON.stringify(MOCK_CAPACITY_SUGGESTIONS)),
         capacityResourceAnalysis: JSON.parse(JSON.stringify(MOCK_CAPACITY_RESOURCE_ANALYSIS)),
         capacityTimeOptions: JSON.parse(JSON.stringify(MOCK_CAPACITY_TIME_OPTIONS)),
@@ -1007,6 +2025,10 @@ function createInitialDB() {
         analysisOverviewData: JSON.parse(JSON.stringify(MOCK_ANALYSIS_OVERVIEW_DATA)),
         // Consolidated UI Options
         allOptions: JSON.parse(JSON.stringify(MOCK_ALL_OPTIONS)),
+        // New Datasource/Discovery data
+        datasources: JSON.parse(JSON.stringify(MOCK_DATASOURCES)),
+        discoveryJobs: JSON.parse(JSON.stringify(MOCK_DISCOVERY_JOBS)),
+        discoveredResources: JSON.parse(JSON.stringify(MOCK_DISCOVERED_RESOURCES)),
     };
 }
 

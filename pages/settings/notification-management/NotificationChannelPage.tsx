@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { NotificationChannel, NotificationChannelType, NotificationChannelFilters } from '../../../types';
+// FIX: Import TableColumn from types.ts
+import { NotificationChannel, NotificationChannelType, NotificationChannelFilters, TableColumn } from '../../../types';
 import Icon from '../../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../../components/Toolbar';
 import TableContainer from '../../../components/TableContainer';
@@ -9,7 +10,8 @@ import api from '../../../services/api';
 import TableLoader from '../../../components/TableLoader';
 import TableError from '../../../components/TableError';
 import UnifiedSearchModal from '../../../components/UnifiedSearchModal';
-import ColumnSettingsModal, { TableColumn } from '../../../components/ColumnSettingsModal';
+// FIX: Import TableColumn from types.ts, not from ColumnSettingsModal
+import ColumnSettingsModal from '../../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 import { showToast } from '../../../services/toast';
 
@@ -19,8 +21,8 @@ const ALL_COLUMNS: TableColumn[] = [
     { key: 'enabled', label: '' },
     { key: 'name', label: '管道名稱' },
     { key: 'type', label: '類型' },
-    { key: 'lastTestResult', label: '上次測試結果' },
-    { key: 'lastTestedAt', label: '上次測試時間' },
+    { key: 'lastTestResult', label: '最新發送結果' },
+    { key: 'lastTestedAt', label: '最新發送時間' },
 ];
 const PAGE_IDENTIFIER = 'notification_channels';
 
@@ -271,8 +273,7 @@ const NotificationChannelPage: React.FC = () => {
                                     {visibleColumns.map(key => (
                                         <td key={key} className="px-6 py-4">{renderCellContent(channel, key)}</td>
                                     ))}
-                                    <td className="px-6 py-4 text-center">
-                                        <button onClick={() => handleTestChannel(channel.id)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="測試"><Icon name="flask-conical" className="w-4 h-4" /></button>
+                                    <td className="px-6 py-4 text-center space-x-1">
                                         <button onClick={() => handleEditChannel(channel)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯"><Icon name="edit-3" className="w-4 h-4" /></button>
                                         <button onClick={() => handleDeleteClick(channel)} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除"><Icon name="trash-2" className="w-4 h-4" /></button>
                                     </td>

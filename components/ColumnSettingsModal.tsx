@@ -1,16 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import Icon from './Icon';
-import { PAGE_CONTENT } from '../constants/pages';
-
-const { GLOBAL: globalContent, LAYOUT_SETTINGS: layoutContent } = PAGE_CONTENT;
-
-
-export interface TableColumn {
-  key: string;
-  label: string;
-}
+import { useContent } from '../contexts/ContentContext';
+import { TableColumn } from '../types';
 
 interface ColumnSettingsModalProps {
   isOpen: boolean;
@@ -45,6 +37,9 @@ const ListItem: React.FC<{
 
 const ColumnSettingsModal: React.FC<ColumnSettingsModalProps> = ({ isOpen, onClose, onSave, allColumns, visibleColumnKeys }) => {
     const [displayedColumns, setDisplayedColumns] = useState<TableColumn[]>([]);
+    const { content: pageContent } = useContent();
+    const globalContent = pageContent?.GLOBAL;
+    const layoutContent = pageContent?.LAYOUT_SETTINGS;
 
     useEffect(() => {
         if (isOpen) {
@@ -81,6 +76,10 @@ const ColumnSettingsModal: React.FC<ColumnSettingsModalProps> = ({ isOpen, onClo
     const handleConfirmSave = () => {
         onSave(displayedColumns.map(col => col.key));
     };
+
+    if (!globalContent || !layoutContent) {
+        return null;
+    }
 
     return (
         <Modal

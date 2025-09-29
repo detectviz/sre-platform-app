@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { AuditLog, User, AuditLogOptions, AuditLogFilters } from '../../../types';
+// FIX: Import TableColumn from types.ts
+import { AuditLog, User, AuditLogOptions, AuditLogFilters, TableColumn } from '../../../types';
 import Icon from '../../../components/Icon';
 import TableContainer from '../../../components/TableContainer';
 import Drawer from '../../../components/Drawer';
@@ -11,9 +12,11 @@ import TableError from '../../../components/TableError';
 import PlaceholderModal from '../../../components/PlaceholderModal';
 import { exportToCsv } from '../../../services/export';
 import UnifiedSearchModal from '../../../components/UnifiedSearchModal';
-import ColumnSettingsModal, { TableColumn } from '../../../components/ColumnSettingsModal';
+// FIX: Import TableColumn from types.ts, not from ColumnSettingsModal
+import ColumnSettingsModal from '../../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 import { showToast } from '../../../services/toast';
+import SortableHeader from '../../../components/SortableHeader';
 
 const ALL_COLUMNS: TableColumn[] = [
     { key: 'timestamp', label: '時間' },
@@ -38,6 +41,7 @@ const AuditLogsPage: React.FC = () => {
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'timestamp', direction: 'desc' });
     
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
@@ -47,11 +51,15 @@ const AuditLogsPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const params = {
+            const params: any = {
                 page: currentPage,
                 page_size: pageSize,
                 ...filters
             };
+             if (sortConfig) {
+                params.sort_by = sortConfig.key;
+                params.sort_order = sortConfig.direction;
+            }
             const [logsRes, columnsRes] = await Promise.all([
                 api.get<{ items: AuditLog[], total: number }>('/iam/audit-logs', { params }),
                 api.get<string[]>(`/settings/column-config/${pageKey}`)
@@ -64,7 +72,7 @@ const AuditLogsPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, filters, pageKey]);
+    }, [currentPage, pageSize, filters, pageKey, sortConfig]);
 
     useEffect(() => {
         if (pageKey) {
@@ -72,6 +80,14 @@ const AuditLogsPage: React.FC = () => {
         }
     }, [fetchAuditLogs, pageKey]);
     
+    const handleSort = (key: string) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
         if (!pageKey) {
             showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
@@ -143,9 +159,11 @@ const AuditLogsPage: React.FC = () => {
                     <table className="w-full text-sm text-left text-slate-300">
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
-                                {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
-                                ))}
+                                {visibleColumns.map(key => {
+                                    const col = ALL_COLUMNS.find(c => c.key === key);
+                                    if (!col) return null;
+                                    return <SortableHeader key={key} label={col.label} sortKey={col.key} sortConfig={sortConfig} onSort={handleSort} />;
+                                })}
                             </tr>
                         </thead>
                         <tbody>

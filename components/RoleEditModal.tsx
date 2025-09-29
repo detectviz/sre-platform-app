@@ -4,9 +4,7 @@ import FormRow from './FormRow';
 import Icon from './Icon';
 import { Role, RolePermission } from '../types';
 import api from '../services/api';
-import { PAGE_CONTENT } from '../constants/pages';
-
-const { GLOBAL: globalContent, ROLE_EDIT_MODAL: content } = PAGE_CONTENT;
+import { useContent } from '../contexts/ContentContext';
 
 interface AvailablePermission {
     module: string;
@@ -27,6 +25,9 @@ const RoleEditModal: React.FC<RoleEditModalProps> = ({ isOpen, onClose, onSave, 
     const [permissions, setPermissions] = useState<RolePermission[]>([]);
     const [availablePermissions, setAvailablePermissions] = useState<AvailablePermission[]>([]);
     const [openModules, setOpenModules] = useState<string[]>([]);
+    const { content: pageContent } = useContent();
+    const globalContent = pageContent?.GLOBAL;
+    const content = pageContent?.ROLE_EDIT_MODAL;
     
     useEffect(() => {
         if(isOpen) {
@@ -82,6 +83,10 @@ const RoleEditModal: React.FC<RoleEditModalProps> = ({ isOpen, onClose, onSave, 
             return p;
         }));
     };
+
+    if (!content || !globalContent) {
+        return null;
+    }
 
     return (
         <Modal

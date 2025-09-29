@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { TagDefinition, TagValue, TagManagementFilters } from '../../../types';
+// FIX: Import TableColumn from types.ts
+import { TagDefinition, TagValue, TagManagementFilters, TableColumn } from '../../../types';
 import Icon from '../../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../../components/Toolbar';
 import TableContainer from '../../../components/TableContainer';
@@ -9,15 +10,13 @@ import TagDefinitionEditModal from '../../../components/TagDefinitionEditModal';
 import api from '../../../services/api';
 import TableLoader from '../../../components/TableLoader';
 import TableError from '../../../components/TableError';
-import { PAGE_CONTENT } from '../../../constants/pages';
 import UnifiedSearchModal from '../../../components/UnifiedSearchModal';
 import { exportToCsv } from '../../../services/export';
 import { showToast } from '../../../services/toast';
 import ImportFromCsvModal from '../../../components/ImportFromCsvModal';
-import ColumnSettingsModal, { TableColumn } from '../../../components/ColumnSettingsModal';
+// FIX: Import TableColumn from types.ts, not from ColumnSettingsModal
+import ColumnSettingsModal from '../../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../../contexts/PageMetadataContext';
-
-const { TAG_MANAGEMENT: content } = PAGE_CONTENT;
 
 const ALL_COLUMNS: TableColumn[] = [
     { key: 'key', label: '標籤鍵' },

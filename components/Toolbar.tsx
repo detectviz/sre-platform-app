@@ -1,8 +1,6 @@
 import React from 'react';
 import Icon from './Icon';
-import { PAGE_CONTENT } from '../constants/pages';
-
-const { GLOBAL: globalContent } = PAGE_CONTENT;
+import { useContent } from '../contexts/ContentContext';
 
 interface BatchActionToolbarProps {
     count: number;
@@ -11,13 +9,20 @@ interface BatchActionToolbarProps {
 }
 
 const BatchActionToolbar: React.FC<BatchActionToolbarProps> = ({ count, onClear, children }) => {
+    const { content } = useContent();
+    const globalContent = content?.GLOBAL;
+
+    const selectedText = globalContent?.ITEMS_SELECTED
+        ? globalContent.ITEMS_SELECTED.replace('{count}', String(count))
+        : `Selected ${count} items`;
+
     return (
         <div className="flex justify-between items-center bg-sky-900/50 border border-sky-700/80 rounded-lg px-4 py-2 mb-4 animate-fade-in-down">
             <div className="flex items-center space-x-4">
-                <button onClick={onClear} className="p-1.5 rounded-full text-slate-300 hover:bg-slate-700/50 hover:text-white" title={globalContent.CLEAR_SELECTION}>
+                <button onClick={onClear} className="p-1.5 rounded-full text-slate-300 hover:bg-slate-700/50 hover:text-white" title={globalContent?.CLEAR_SELECTION}>
                     <Icon name="x" className="w-5 h-5" />
                 </button>
-                <span className="font-semibold text-white">{globalContent.ITEMS_SELECTED(count)}</span>
+                <span className="font-semibold text-white">{selectedText}</span>
             </div>
             <div className="flex items-center space-x-2">
                 {children}

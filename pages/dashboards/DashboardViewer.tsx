@@ -1,17 +1,18 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Dashboard, GrafanaOptions } from '../../types';
+import { Dashboard, InfraInsightsOptions } from '../../types';
 import Dropdown from '../../components/Dropdown';
 import Icon from '../../components/Icon';
 import PlaceholderModal from '../../components/PlaceholderModal';
-import { useOptions } from '../../contexts/OptionsContext';
+import api from '../../services/api';
 
 interface DashboardViewerProps {
   dashboard: Dashboard;
 }
 
 const DashboardViewer: React.FC<DashboardViewerProps> = ({ dashboard }) => {
-    const { options, isLoading: isLoadingOptions } = useOptions();
-    const grafanaOptions = options?.grafana;
+    const [options, setOptions] = useState<InfraInsightsOptions | null>(null);
+    const [isLoadingOptions, setIsLoadingOptions] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     const [theme, setTheme] = useState('dark');
     const [tvMode, setTvMode] = useState('off');
@@ -22,19 +23,33 @@ const DashboardViewer: React.FC<DashboardViewerProps> = ({ dashboard }) => {
     const [modalFeatureName, setModalFeatureName] = useState('');
 
     useEffect(() => {
-        if (grafanaOptions) {
-            if (grafanaOptions.refreshOptions.length > 0) {
-                const defaultRefresh = grafanaOptions.refreshOptions.find(opt => opt.value === '1m');
-                setRefresh(defaultRefresh ? defaultRefresh.value : grafanaOptions.refreshOptions[0].value);
+        const fetchOptions = async () => {
+            setIsLoadingOptions(true);
+            setError(null);
+            try {
+                const { data } = await api.get<InfraInsightsOptions>('/dashboards/infrastructure-insights/options');
+                setOptions(data);
+                if (data) {
+                    if (data.refreshOptions.length > 0) {
+                        const defaultRefresh = data.refreshOptions.find(opt => opt.value === '1m');
+                        setRefresh(defaultRefresh ? defaultRefresh.value : data.refreshOptions[0].value);
+                    }
+                    const defaultTime = data.timeOptions.find(opt => opt.value.includes('6h'));
+                    if (defaultTime) {
+                        setTimeRange(defaultTime.value);
+                    } else if (data.timeOptions.length > 0) {
+                        setTimeRange(data.timeOptions[0].value);
+                    }
+                }
+            } catch (err) {
+                setError('無法載入儀表板選項。');
+                console.error("Failed to load dashboard options", err);
+            } finally {
+                setIsLoadingOptions(false);
             }
-            const defaultTime = grafanaOptions.timeOptions.find(opt => opt.value.includes('6h'));
-            if (defaultTime) {
-                setTimeRange(defaultTime.value);
-            } else if (grafanaOptions.timeOptions.length > 0) {
-                setTimeRange(grafanaOptions.timeOptions[0].value);
-            }
-        }
-    }, [grafanaOptions]);
+        };
+        fetchOptions();
+    }, []);
 
     const showPlaceholderModal = (featureName: string) => {
         setModalFeatureName(featureName);
@@ -76,15 +91,17 @@ const DashboardViewer: React.FC<DashboardViewerProps> = ({ dashboard }) => {
             <div className="relative z-10 flex flex-wrap items-center justify-between gap-4 mb-4 glass-card p-3 rounded-lg">
                 {isLoadingOptions ? (
                     <div className="w-full h-10 animate-pulse bg-slate-700/50 rounded-md" />
-                ) : grafanaOptions && (
+                ) : error ? (
+                    <div className="w-full text-center text-red-400 p-2">{error}</div>
+                ) : options && (
                     <>
                         <div className="flex items-center space-x-4">
-                            <Dropdown label="主題" options={grafanaOptions.themeOptions || []} value={theme} onChange={setTheme} minWidth="w-24" />
-                            <Dropdown label="TV 模式" options={grafanaOptions.tvModeOptions || []} value={tvMode} onChange={setTvMode} minWidth="w-24" />
-                            <Dropdown label="刷新" options={grafanaOptions.refreshOptions || []} value={refresh} onChange={setRefresh} minWidth="w-24" />
+                            <Dropdown label="主題" options={options.themeOptions || []} value={theme} onChange={setTheme} minWidth="w-24" />
+                            <Dropdown label="TV 模式" options={options.tvModeOptions || []} value={tvMode} onChange={setTvMode} minWidth="w-24" />
+                            <Dropdown label="刷新" options={options.refreshOptions || []} value={refresh} onChange={setRefresh} minWidth="w-24" />
                         </div>
                         <div className="flex items-center space-x-4">
-                            <Dropdown label="時間" options={grafanaOptions.timeOptions || []} value={timeRange} onChange={setTimeRange} minWidth="w-40" />
+                            <Dropdown label="時間" options={options.timeOptions || []} value={timeRange} onChange={setTimeRange} minWidth="w-40" />
                             <div className="flex items-center space-x-1">
                                 <button onClick={() => showPlaceholderModal('Zoom In')} className="p-2 rounded-md hover:bg-slate-700/50"><Icon name="zoom-in" className="w-5 h-5" /></button>
                                 <button onClick={() => showPlaceholderModal('Share Dashboard')} className="p-2 rounded-md hover:bg-slate-700/50"><Icon name="share-2" className="w-5 h-5" /></button>

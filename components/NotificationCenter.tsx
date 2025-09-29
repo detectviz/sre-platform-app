@@ -4,25 +4,7 @@ import { NotificationItem, NotificationOptions, StyleDescriptor } from '../types
 import Icon from './Icon';
 import api from '../services/api';
 import { showToast } from '../services/toast';
-import { PAGE_CONTENT } from '../constants/pages';
-
-const { NOTIFICATION_CENTER: content } = PAGE_CONTENT;
-
-const timeSince = (dateString: string) => {
-    const date = new Date(dateString);
-    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
-    let interval = seconds / 31536000;
-    if (interval > 1) return content.TIME_UNITS.YEAR(Math.floor(interval));
-    interval = seconds / 2592000;
-    if (interval > 1) return content.TIME_UNITS.MONTH(Math.floor(interval));
-    interval = seconds / 86400;
-    if (interval > 1) return content.TIME_UNITS.DAY(Math.floor(interval));
-    interval = seconds / 3600;
-    if (interval > 1) return content.TIME_UNITS.HOUR(Math.floor(interval));
-    interval = seconds / 60;
-    if (interval > 1) return content.TIME_UNITS.MINUTE(Math.floor(interval));
-    return content.TIME_UNITS.JUST_NOW;
-};
+import { useContent } from '../contexts/ContentContext';
 
 const NotificationCenter: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -30,11 +12,31 @@ const NotificationCenter: React.FC = () => {
     const [options, setOptions] = useState<NotificationOptions | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const [isLoading, setIsLoading] = useState(false); // Only for dropdown content
+    const { content: pageContent } = useContent();
+    const content = pageContent?.NOTIFICATION_CENTER;
+
+    const timeSince = useCallback((dateString: string) => {
+        if (!content) return '';
+        const date = new Date(dateString);
+        const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+        let interval = seconds / 31536000;
+        if (interval > 1) return content.TIME_UNITS.YEAR.replace('{n}', String(Math.floor(interval)));
+        interval = seconds / 2592000;
+        if (interval > 1) return content.TIME_UNITS.MONTH.replace('{n}', String(Math.floor(interval)));
+        interval = seconds / 86400;
+        if (interval > 1) return content.TIME_UNITS.DAY.replace('{n}', String(Math.floor(interval)));
+        interval = seconds / 3600;
+        if (interval > 1) return content.TIME_UNITS.HOUR.replace('{n}', String(Math.floor(interval)));
+        interval = seconds / 60;
+        if (interval > 1) return content.TIME_UNITS.MINUTE.replace('{n}', String(Math.floor(interval)));
+        return content.TIME_UNITS.JUST_NOW;
+    }, [content]);
 
     const unreadCount = notifications.filter(n => n.status === 'unread').length;
 
     // Fetch notifications function
     const fetchNotifications = useCallback((setLoading: boolean) => {
+        if (!content) return;
         if (setLoading) {
             setIsLoading(true);
         }
@@ -44,7 +46,6 @@ const NotificationCenter: React.FC = () => {
         ]).then(([notificationsRes, optionsRes]) => {
             setNotifications(notificationsRes.data);
             setOptions(optionsRes.data);
-        // FIX: Correctly handle promise rejection and complete the catch block syntax.
         }).catch(err => {
             console.error("Failed to fetch notifications", err);
             showToast(content.TOAST.LOAD_ERROR, 'error');
@@ -53,14 +54,18 @@ const NotificationCenter: React.FC = () => {
                 setIsLoading(false);
             }
         });
-    }, []);
+    }, [content]);
 
     // Initial fetch and polling
     useEffect(() => {
-        fetchNotifications(false);
-        const interval = setInterval(() => fetchNotifications(false), 30000);
-        return () => clearInterval(interval);
-    }, [fetchNotifications]);
+        // The parent component (AppLayout) already waits for content to load,
+        // so we can be reasonably sure `content` is available here.
+        if (content) {
+            fetchNotifications(false);
+            const interval = setInterval(() => fetchNotifications(false), 30000);
+            return () => clearInterval(interval);
+        }
+    }, [fetchNotifications, content]);
 
     // Click outside handler
     useEffect(() => {
@@ -81,6 +86,7 @@ const NotificationCenter: React.FC = () => {
     };
 
     const handleMarkAsRead = (id: string) => {
+        if (!content) return;
         api.post(`/notifications/${id}/read`)
             .then(() => {
                 setNotifications(prev => prev.map(n => n.id === id ? { ...n, status: 'read' } : n));
@@ -89,6 +95,7 @@ const NotificationCenter: React.FC = () => {
     };
 
     const handleMarkAllAsRead = () => {
+        if (!content) return;
         api.post('/notifications/read-all')
             .then(() => {
                 setNotifications(prev => prev.map(n => ({ ...n, status: 'read' })));
@@ -99,6 +106,16 @@ const NotificationCenter: React.FC = () => {
     const getSeverityStyle = (severity: NotificationItem['severity']): StyleDescriptor | undefined => {
         return options?.severities?.find(s => s.value === severity);
     };
+
+    if (!content) {
+        return (
+             <div className="relative">
+                <button className="relative p-2 rounded-full hover:bg-slate-700/50">
+                    <Icon name="bell" className="w-5 h-5" />
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="relative" ref={dropdownRef}>
@@ -154,5 +171,4 @@ const NotificationCenter: React.FC = () => {
     );
 };
 
-// FIX: Add default export to make the component available for import in other modules.
 export default NotificationCenter;

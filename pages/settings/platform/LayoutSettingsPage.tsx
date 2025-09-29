@@ -1,10 +1,11 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { LayoutWidget } from '../../../types';
+// FIX: Import TableColumn from types.ts
+import { LayoutWidget, TableColumn } from '../../../types';
 import Icon from '../../../components/Icon';
 import Modal from '../../../components/Modal';
 import api from '../../../services/api';
 import { showToast } from '../../../services/toast';
+import { useContent } from '../../../contexts/ContentContext';
 
 // FIX: Moved ListItem component outside of DualListSelector to prevent re-creation on every render and fix type errors.
 interface ListItemProps {
@@ -42,6 +43,9 @@ interface DualListSelectorProps {
 }
 
 const DualListSelector: React.FC<DualListSelectorProps> = ({ available, selected, onChange }) => {
+    const { content } = useContent();
+    const pageContent = content?.LAYOUT_SETTINGS;
+
     const handleAdd = (widget: LayoutWidget) => {
         onChange([...selected, widget]);
     };
@@ -61,16 +65,18 @@ const DualListSelector: React.FC<DualListSelectorProps> = ({ available, selected
         onChange(newSelected);
     };
 
+    if (!pageContent) return null;
+
     return (
         <div className="grid grid-cols-2 gap-4">
             <div className="border border-slate-700 rounded-lg p-3">
-                <h3 className="font-semibold mb-2">Available Widgets</h3>
+                <h3 className="font-semibold mb-2">{pageContent.AVAILABLE_WIDGETS}</h3>
                 <div className="space-y-2 h-64 overflow-y-auto">
                     {available.map(w => <ListItem key={w.id} widget={w} onAction={() => handleAdd(w)} actionIcon="chevron-right" />)}
                 </div>
             </div>
             <div className="border border-slate-700 rounded-lg p-3">
-                <h3 className="font-semibold mb-2">Displayed Widgets</h3>
+                <h3 className="font-semibold mb-2">{pageContent.DISPLAYED_WIDGETS}</h3>
                 <div className="space-y-2 h-64 overflow-y-auto">
                     {selected.map((w, i) => <ListItem key={w.id} widget={w} onAction={() => handleRemove(w)} actionIcon="chevron-left" onMoveUp={i > 0 ? () => move(i, 'up') : undefined} onMoveDown={i < selected.length - 1 ? () => move(i, 'down') : undefined} isSelectedList={true} />)}
                 </div>
@@ -95,9 +101,13 @@ interface AccordionItemProps {
 }
 const AccordionItem: React.FC<AccordionItemProps> = ({ pageName, layouts, handleEditClick, allWidgets }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const { content } = useContent();
+    const pageContent = content?.LAYOUT_SETTINGS;
     const pageLayout = layouts[pageName];
     const widgetIds = pageLayout?.widgetIds || [];
     const getWidgetById = (id: string) => allWidgets.find(w => w.id === id);
+
+    if (!pageContent) return null;
 
     return (
         <div className="border-b border-slate-800">
@@ -109,7 +119,7 @@ const AccordionItem: React.FC<AccordionItemProps> = ({ pageName, layouts, handle
                 <div className="p-4 bg-slate-900/50">
                     <div className="flex justify-between items-start">
                         <div>
-                            <h4 className="font-semibold mb-2">Currently Displayed Cards:</h4>
+                            <h4 className="font-semibold mb-2">{pageContent.CURRENTLY_DISPLAYED}</h4>
                             {widgetIds.length > 0 ? (
                                 <ol className="list-decimal list-inside text-slate-300 space-y-1">
                                     {widgetIds.map(id => {
@@ -118,14 +128,14 @@ const AccordionItem: React.FC<AccordionItemProps> = ({ pageName, layouts, handle
                                     })}
                                 </ol>
                             ) : (
-                                <p className="text-slate-400">No cards are displayed on this page.</p>
+                                <p className="text-slate-400">{pageContent.NO_CARDS_DISPLAYED}</p>
                             )}
                         </div>
                         <button onClick={() => handleEditClick(pageName)} className="flex items-center text-sm text-sky-400 hover:text-sky-300 px-3 py-1 rounded-md hover:bg-sky-500/20">
-                            <Icon name="edit-3" className="w-4 h-4 mr-1"/> Edit
+                            <Icon name="edit-3" className="w-4 h-4 mr-1"/>{pageContent.EDIT_BUTTON}
                         </button>
                     </div>
-                     <p className="text-xs text-slate-500 mt-4">Last updated: {pageLayout?.updatedAt || 'N/A'} by {pageLayout?.updatedBy || 'N/A'}</p>
+                     <p className="text-xs text-slate-500 mt-4">{pageContent.LAST_UPDATED?.replace('{date}', pageLayout?.updatedAt || 'N/A').replace('{by}', pageLayout?.updatedBy || 'N/A')}</p>
                 </div>
             )}
         </div>
@@ -142,6 +152,9 @@ const LayoutSettingsPage: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPage, setEditingPage] = useState<string | null>(null);
     const [modalWidgets, setModalWidgets] = useState<LayoutWidget[]>([]);
+    const { content } = useContent();
+    const pageContent = content?.LAYOUT_SETTINGS;
+    const globalContent = content?.GLOBAL;
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -154,15 +167,17 @@ const LayoutSettingsPage: React.FC = () => {
             setLayouts(layoutsRes.data);
             setAllWidgets(widgetsRes.data);
         } catch (err) {
-            setError('無法獲取版面配置資料。');
+            setError(pageContent?.FETCH_ERROR || '無法獲取版面配置資料。');
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [pageContent]);
 
     useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+        if (pageContent) {
+            fetchData();
+        }
+    }, [fetchData, pageContent]);
 
     const getWidgetById = (id: string) => allWidgets.find(w => w.id === id);
 
@@ -191,7 +206,7 @@ const LayoutSettingsPage: React.FC = () => {
                 setIsModalOpen(false);
                 setEditingPage(null);
             } catch (err) {
-                showToast('儲存版面配置失敗。', 'error');
+                showToast(pageContent?.SAVE_ERROR || '儲存版面配置失敗。', 'error');
             }
         }
     };
@@ -201,7 +216,7 @@ const LayoutSettingsPage: React.FC = () => {
         w.supportedPages.includes(editingPage || '')
     );
 
-    if (isLoading) {
+    if (isLoading || !pageContent || !globalContent) {
         return (
             <div className="flex items-center justify-center h-full">
                 <Icon name="loader-circle" className="w-8 h-8 animate-spin text-slate-400" />
@@ -215,7 +230,7 @@ const LayoutSettingsPage: React.FC = () => {
                 <Icon name="alert-circle" className="w-12 h-12 mb-4" />
                 <h2 className="text-xl font-bold">{error}</h2>
                 <button onClick={fetchData} className="mt-4 px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md">
-                    重試
+                    {globalContent.RETRY}
                 </button>
             </div>
         );
@@ -225,7 +240,7 @@ const LayoutSettingsPage: React.FC = () => {
         <div className="space-y-6">
             <div className="p-4 rounded-lg bg-sky-900/30 border border-sky-700/50 text-sky-300 flex items-center">
                 <Icon name="info" className="w-5 h-5 mr-3 text-sky-400 shrink-0" />
-                <p>Adjust the KPI cards and their order for each hub page. Changes take effect immediately after saving.</p>
+                <p>{pageContent.INFO_TEXT}</p>
             </div>
 
             <div className="glass-card rounded-xl">
@@ -233,14 +248,14 @@ const LayoutSettingsPage: React.FC = () => {
             </div>
 
             <Modal
-                title={`Edit "${editingPage}" KPI Cards`}
+                title={pageContent.EDIT_MODAL_TITLE?.replace('{pageName}', editingPage || '') || `Edit KPI Cards`}
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 width="w-2/3"
                 footer={
                     <div className="flex justify-end space-x-2">
-                        <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md transition-colors">Cancel</button>
-                        <button onClick={handleSaveLayout} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md transition-colors">Save</button>
+                        <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md transition-colors">{globalContent.CANCEL}</button>
+                        <button onClick={handleSaveLayout} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md transition-colors">{globalContent.SAVE}</button>
                     </div>
                 }
             >

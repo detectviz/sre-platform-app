@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Incident, StyleDescriptor, User, IncidentEvent } from '../../types';
+import { Incident, StyleDescriptor, User, IncidentEvent, IncidentAnalysis } from '../../types';
 import Icon from '../../components/Icon';
 import AIAnalysisDisplay from '../../components/AIAnalysisDisplay';
 import api from '../../services/api';
@@ -30,10 +31,10 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onU
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [assigningIncident, setAssigningIncident] = useState<Incident | null>(null);
-  const [refreshCounter, setRefreshCounter] = useState(0);
   const [newNote, setNewNote] = useState('');
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [deletingNote, setDeletingNote] = useState<IncidentEvent | null>(null);
+  const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
 
   const fetchIncident = useCallback(async () => {
     if (!incidentId) return;
@@ -51,13 +52,13 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onU
 
   useEffect(() => {
     fetchIncident();
-  }, [fetchIncident, refreshCounter]);
+  }, [fetchIncident]);
 
   const handleAcknowledge = async () => {
     if (!incident) return;
     await api.post(`/incidents/${incident.id}/actions`, { action: 'acknowledge' });
     showToast('事件已成功認領。', 'success');
-    setRefreshCounter(c => c + 1);
+    fetchIncident();
     onUpdate(); // Notify list page to refresh as well
   };
   
@@ -68,7 +69,7 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onU
         await api.post(`/incidents/${incident.id}/actions`, { action: 'add_note', details: newNote.trim() });
         showToast('備註已成功新增。', 'success');
         setNewNote('');
-        setRefreshCounter(c => c + 1);
+        fetchIncident();
         onUpdate();
     } catch (err) {
         showToast('新增備註失敗。', 'error');
@@ -83,7 +84,7 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onU
         await api.post(`/incidents/${incident.id}/actions`, { action: 'delete_note', details: deletingNote.timestamp });
         showToast('備註已成功刪除。', 'success');
         setDeletingNote(null);
-        setRefreshCounter(c => c + 1);
+        fetchIncident();
         onUpdate();
     } catch (err) {
         showToast('刪除備註失敗。', 'error');
@@ -96,8 +97,23 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onU
       await api.post(`/incidents/${assigningIncident.id}/actions`, { action: 'assign', assigneeName });
       showToast('事件已成功指派。', 'success');
       setAssigningIncident(null);
-      setRefreshCounter(c => c + 1);
+      fetchIncident();
       onUpdate();
+  };
+
+  const handleRunAnalysis = async () => {
+    if (!incident) return;
+    setIsAnalysisLoading(true);
+    try {
+        const { data } = await api.post<IncidentAnalysis>('/ai/incidents/analyze', {
+            incident_ids: [incident.id],
+        });
+        setIncident(prev => prev ? { ...prev, aiAnalysis: data } : null);
+    } catch (err) {
+        showToast('無法生成 AI 分析報告。', 'error');
+    } finally {
+        setIsAnalysisLoading(false);
+    }
   };
 
   const getStyle = (descriptors: StyleDescriptor[] | undefined, value: string | undefined): string => {
@@ -210,18 +226,33 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onU
           {/* Right Column: AI Analysis & Timeline */}
           <div className="lg:col-span-2">
               <div className="glass-card rounded-xl p-6 mb-6">
-                  <h2 className="text-xl font-bold mb-4 flex items-center">
-                      <Icon name="brain-circuit" className="w-6 h-6 mr-2 text-purple-400" />
-                      AI 自動分析
-                  </h2>
-                  {incident.aiAnalysis ? (
-                      <AIAnalysisDisplay report={incident.aiAnalysis} isLoading={false} />
-                  ) : (
-                      <div className="text-center text-slate-400 py-4">
-                          <p>此事故尚無 AI 分析報告。</p>
-                          <p className="text-sm mt-1">您可以在頂部操作列點擊「AI 分析」來產生報告。</p>
-                      </div>
-                  )}
+                  <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-bold flex items-center">
+                            <Icon name="brain-circuit" className="w-6 h-6 mr-2 text-purple-400" />
+                            AI 自動分析
+                        </h2>
+                        {incident.aiAnalysis && !isAnalysisLoading && (
+                            <button onClick={handleRunAnalysis} className="p-2 rounded-full hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center text-slate-300">
+                                <Icon name="refresh-cw" className="w-4 h-4 mr-2" />
+                                重新分析
+                            </button>
+                        )}
+                    </div>
+                    {isAnalysisLoading ? (
+                        <AIAnalysisDisplay report={null} isLoading={true} />
+                    ) : incident.aiAnalysis ? (
+                        <AIAnalysisDisplay report={incident.aiAnalysis} isLoading={false} />
+                    ) : (
+                        <div className="text-center text-slate-400 py-4">
+                            <Icon name="brain-circuit" className="w-12 h-12 mx-auto mb-4 text-slate-500" />
+                            <p className="font-semibold text-slate-300">此事件尚無 AI 分析報告</p>
+                            <p className="text-sm mt-2 mb-4">點擊下方按鈕以生成根本原因與建議步驟。</p>
+                            <button onClick={handleRunAnalysis} className="px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md flex items-center justify-center mx-auto">
+                                <Icon name="sparkles" className="w-4 h-4 mr-2" />
+                                生成 AI 分析
+                            </button>
+                        </div>
+                    )}
               </div>
 
             <div>

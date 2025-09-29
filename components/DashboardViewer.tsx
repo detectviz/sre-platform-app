@@ -1,17 +1,20 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Dashboard, GrafanaOptions } from '../types';
+import { Dashboard } from '../types';
 import Dropdown from './Dropdown';
 import Icon from './Icon';
 import PlaceholderModal from './PlaceholderModal';
 import { useOptions } from '../contexts/OptionsContext';
+import { useContent } from '../contexts/ContentContext';
 
 interface DashboardViewerProps {
   dashboard: Dashboard;
 }
 
 const DashboardViewer: React.FC<DashboardViewerProps> = ({ dashboard }) => {
-    const { options, isLoading: isLoadingOptions } = useOptions();
+    const { options, isLoading: isLoadingOptions, error } = useOptions();
+    const { content } = useContent();
     const grafanaOptions = options?.grafana;
+    const pageContent = content?.DASHBOARD_VIEWER;
 
     const [theme, setTheme] = useState('dark');
     const [tvMode, setTvMode] = useState('off');
@@ -74,20 +77,22 @@ const DashboardViewer: React.FC<DashboardViewerProps> = ({ dashboard }) => {
     return (
         <div className="h-full flex flex-col">
             <div className="relative z-10 flex flex-wrap items-center justify-between gap-4 mb-4 glass-card p-3 rounded-lg">
-                {isLoadingOptions ? (
+                {isLoadingOptions || !pageContent ? (
                     <div className="w-full h-10 animate-pulse bg-slate-700/50 rounded-md" />
+                ) : error ? (
+                    <div className="w-full text-center text-red-400 p-2">{error}</div>
                 ) : grafanaOptions && (
                     <>
                         <div className="flex items-center space-x-4">
-                            <Dropdown label="主題" options={grafanaOptions.themeOptions || []} value={theme} onChange={setTheme} minWidth="w-24" />
-                            <Dropdown label="TV 模式" options={grafanaOptions.tvModeOptions} value={tvMode} onChange={setTvMode} minWidth="w-24" />
-                            <Dropdown label="刷新" options={grafanaOptions.refreshOptions} value={refresh} onChange={setRefresh} minWidth="w-24" />
+                            <Dropdown label={grafanaOptions.themeLabel} options={grafanaOptions.themeOptions || []} value={theme} onChange={setTheme} minWidth="w-24" />
+                            <Dropdown label={grafanaOptions.tvModeLabel} options={grafanaOptions.tvModeOptions || []} value={tvMode} onChange={setTvMode} minWidth="w-24" />
+                            <Dropdown label={grafanaOptions.refreshLabel} options={grafanaOptions.refreshOptions || []} value={refresh} onChange={setRefresh} minWidth="w-24" />
                         </div>
                         <div className="flex items-center space-x-4">
-                            <Dropdown label="時間" options={grafanaOptions.timeOptions} value={timeRange} onChange={setTimeRange} minWidth="w-40" />
+                            <Dropdown label={grafanaOptions.timeLabel} options={grafanaOptions.timeOptions || []} value={timeRange} onChange={setTimeRange} minWidth="w-40" />
                             <div className="flex items-center space-x-1">
-                                <button onClick={() => showPlaceholderModal('Zoom In')} className="p-2 rounded-md hover:bg-slate-700/50"><Icon name="zoom-in" className="w-5 h-5" /></button>
-                                <button onClick={() => showPlaceholderModal('Share Dashboard')} className="p-2 rounded-md hover:bg-slate-700/50"><Icon name="share-2" className="w-5 h-5" /></button>
+                                <button onClick={() => showPlaceholderModal(pageContent.ZOOM_IN)} className="p-2 rounded-md hover:bg-slate-700/50"><Icon name="zoom-in" className="w-5 h-5" /></button>
+                                <button onClick={() => showPlaceholderModal(pageContent.SHARE_DASHBOARD)} className="p-2 rounded-md hover:bg-slate-700/50"><Icon name="share-2" className="w-5 h-5" /></button>
                             </div>
                         </div>
                     </>
@@ -97,7 +102,7 @@ const DashboardViewer: React.FC<DashboardViewerProps> = ({ dashboard }) => {
                 {embedUrl ? (
                     <iframe src={embedUrl} className="w-full h-full border-0 rounded-lg" title={dashboard.name}></iframe>
                 ) : (
-                    <div className="flex items-center justify-center h-full"><p className="text-slate-400">Grafana URL not configured.</p></div>
+                    <div className="flex items-center justify-center h-full"><p className="text-slate-400">{pageContent.GRAFANA_URL_NOT_CONFIGURED}</p></div>
                 )}
             </div>
              <PlaceholderModal

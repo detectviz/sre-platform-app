@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
 import { NavItem, User, PlatformSettings } from '../types';
@@ -9,14 +10,15 @@ import { showToast } from '../services/toast';
 import api from '../services/api';
 import { useUIConfig } from '../contexts/UIConfigContext';
 import { useUser } from '../contexts/UserContext';
-import { PAGE_CONTENT } from '../constants/pages';
+import { useContent } from '../contexts/ContentContext';
 import UserAvatar from '../components/UserAvatar';
-
-const { APP_LAYOUT: content } = PAGE_CONTENT;
 
 const AppLayout: React.FC = () => {
   const { navItems, tabConfigs, isLoading: isNavLoading } = useUIConfig();
   const { currentUser } = useUser();
+  const { content, isLoading: isContentLoading } = useContent();
+  const appLayoutContent = content?.APP_LAYOUT;
+  
   const [collapsed, setCollapsed] = useState(false);
   const [openKeys, setOpenKeys] = useState<string[]>([]);
   const location = useLocation();
@@ -34,11 +36,13 @@ const AppLayout: React.FC = () => {
             setPlatformSettings(data);
         } catch (error) {
             console.error("Failed to fetch platform data", error);
-            showToast('無法載入平台設定。', 'error');
+            if (appLayoutContent) {
+                showToast(appLayoutContent.TOAST.LOAD_SETTINGS_ERROR, 'error');
+            }
         }
     };
     fetchPlatformData();
-  }, []);
+  }, [appLayoutContent]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -137,7 +141,9 @@ const AppLayout: React.FC = () => {
       e.preventDefault();
       setIsProfileMenuOpen(false); 
       console.log('Logout action triggered.');
-      showToast('您已成功登出。', 'success');
+      if (appLayoutContent) {
+        showToast(appLayoutContent.TOAST.LOGOUT_SUCCESS, 'success');
+      }
       setTimeout(() => {
         window.location.hash = '/';
         window.location.reload();
@@ -150,7 +156,9 @@ const AppLayout: React.FC = () => {
       if (platformSettings?.helpUrl) {
           window.open(platformSettings.helpUrl, '_blank');
       } else {
-          showToast('幫助中心 URL 尚未設定。', 'error');
+        if (appLayoutContent) {
+          showToast(appLayoutContent.TOAST.HELP_CENTER_NOT_CONFIGURED, 'error');
+        }
       }
   };
 
@@ -202,7 +210,8 @@ const AppLayout: React.FC = () => {
     const { pathname } = useLocation();
 
     const crumbs = useMemo(() => {
-        const result: { label: string; path: string }[] = [{ label: content.HOME_BREADCRUMB, path: '/home' }];
+        if (!appLayoutContent) return [];
+        const result: { label: string; path: string }[] = [{ label: appLayoutContent.HOME_BREADCRUMB, path: '/home' }];
         if (pathname === '/home' || pathname === '/') return result;
         
         const tempCrumbs: { label: string; path: string }[] = [];
@@ -252,7 +261,7 @@ const AppLayout: React.FC = () => {
 
         return [...result, ...tempCrumbs];
 
-    }, [pathname, navItems, tabConfigs]);
+    }, [pathname, navItems, tabConfigs, appLayoutContent]);
 
     return (
         <div className="flex items-center text-sm text-slate-400">
@@ -266,13 +275,20 @@ const AppLayout: React.FC = () => {
     );
   };
   
+  if (isContentLoading || !appLayoutContent) {
+    return (
+        <div className="flex items-center justify-center h-screen">
+            <Icon name="loader-circle" className="w-12 h-12 animate-spin text-slate-500" />
+        </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-slate-950 text-slate-50">
       <aside className={`flex flex-col bg-slate-900 transition-all duration-300 flex-shrink-0 ${collapsed ? 'w-20' : 'w-64'}`}>
         <div className="flex items-center h-12 px-4 border-b border-slate-800 shrink-0">
           <Icon name="deployment-unit" className="h-8 w-8 text-sky-400" />
-          {!collapsed && <span className="ml-3 text-xl font-bold">{content.SIDEBAR_TITLE}</span>}
+          {!collapsed && <span className="ml-3 text-xl font-bold">{appLayoutContent.SIDEBAR_TITLE}</span>}
         </div>
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {isNavLoading ? (
@@ -297,7 +313,7 @@ const AppLayout: React.FC = () => {
                 <Icon name="search" className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400 w-4 h-4" />
                 <input 
                     type="text" 
-                    placeholder={content.SEARCH_PLACEHOLDER} 
+                    placeholder={appLayoutContent.SEARCH_PLACEHOLDER} 
                     className="w-64 bg-slate-800/80 border border-slate-700 rounded-md pl-9 pr-4 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" 
                     readOnly 
                     onClick={() => setIsSearchModalOpen(true)}
@@ -322,15 +338,15 @@ const AppLayout: React.FC = () => {
                         <div className="p-2">
                             <Link to="/profile" onClick={() => setIsProfileMenuOpen(false)} className="flex items-center w-full px-3 py-2 text-sm rounded-md text-slate-300 hover:bg-slate-700 hover:text-white">
                                 <Icon name="user-cog" className="w-4 h-4 mr-3" />
-                                {content.PROFILE_MENU.SETTINGS}
+                                {appLayoutContent.PROFILE_MENU.SETTINGS}
                             </Link>
                              <a href="#" onClick={handleHelp} className="flex items-center w-full px-3 py-2 text-sm rounded-md text-slate-300 hover:bg-slate-700 hover:text-white">
                                 <Icon name="help-circle" className="w-4 h-4 mr-3" />
-                                {content.PROFILE_MENU.HELP_CENTER}
+                                {appLayoutContent.PROFILE_MENU.HELP_CENTER}
                             </a>
                             <button onClick={handleLogout} className="flex items-center w-full px-3 py-2 text-sm rounded-md text-slate-300 hover:bg-slate-700 hover:text-white">
                                 <Icon name="log-out" className="w-4 h-4 mr-3" />
-                                {content.PROFILE_MENU.LOGOUT}
+                                {appLayoutContent.PROFILE_MENU.LOGOUT}
                             </button>
                         </div>
                     </div>

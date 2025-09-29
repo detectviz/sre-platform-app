@@ -76,18 +76,21 @@ const PageKPIs: React.FC<PageKPIsProps> = ({ pageName, widgetIds: explicitWidget
   const getWidgetById = (id: string): LayoutWidget | undefined => widgets.find(w => w.id === id);
 
   const renderDescription = (descriptionText: string): React.ReactNode => {
-      if (!descriptionText) return null;
+      if (typeof descriptionText !== 'string' || !descriptionText) {
+        return descriptionText; // Return original value if not a processable string
+      }
       
-      const parts = descriptionText.split(/(↑\d+(\.\d+)?%|↓\d+(\.\d+)?%|\d+ 嚴重)/g);
+      // The regex captures groups, which can result in `undefined` or empty strings in the parts array. Filter them out.
+      const parts = descriptionText.split(/(↑\d+(\.\d+)?%|↓\d+(\.\d+)?%|\d+ 嚴重)/g).filter(Boolean);
       
       return parts.map((part, index) => {
-          if (part?.startsWith('↑')) {
+          if (part.startsWith('↑')) {
               return <span key={index} className="text-green-400">{part}</span>;
           }
-          if (part?.startsWith('↓')) {
+          if (part.startsWith('↓')) {
               return <span key={index} className="text-red-400">{part}</span>;
           }
-          if (part?.endsWith('嚴重')) {
+          if (part.endsWith('嚴重')) {
               return <span key={index} className="text-red-400 font-semibold">{part}</span>;
           }
           return part;

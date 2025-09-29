@@ -1,12 +1,16 @@
-import React, { useState, useEffect, useMemo } from 'react';
+
+
+
+
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Modal from './Modal';
 import Icon from './Icon';
 import Wizard from './Wizard';
 import FormRow from './FormRow';
-// FIX: Import `NotificationStrategyOptions` to resolve type errors.
-import { NotificationStrategy, Team, NotificationChannel, NotificationStrategyOptions } from '../types';
+import { NotificationStrategy, Team, NotificationChannel, NotificationStrategyOptions, ResourceGroup, TagDefinition } from '../types';
 import api from '../services/api';
 import { useOptions } from '../contexts/OptionsContext';
+import { showToast } from '../services/toast';
 
 interface StrategyCondition {
   key: string;
@@ -21,12 +25,18 @@ interface NotificationStrategyEditModalProps {
   strategy: NotificationStrategy | null;
 }
 
+// FIX: Corrected the return type of `parseConditions` to `StrategyCondition[]` and added a type assertion for the operator. This resolves the type mismatch when setting the `additionalConditions` state.
 const parseConditions = (conditionStr: string | undefined): StrategyCondition[] => {
     if (!conditionStr || conditionStr.trim() === '') return [{ key: '', operator: '=', value: '' }];
     return conditionStr.split(' AND ').map(part => {
-        const match = part.match(/(.+?)\s*(!=|~=|=)\s*(.+)/);
+        const match = part.match(/([a-zA-Z0-9_.-]+)\s*(!=|~=|=)\s*(.*)/);
         if (match) {
-            return { key: match[1].trim(), operator: match[2].trim() as StrategyCondition['operator'], value: match[3].trim() };
+            let value = match[3].trim();
+            // remove quotes
+            if ((value.startsWith("'") && value.endsWith("'")) || (value.startsWith('"') && value.endsWith('"'))) {
+                value = value.substring(1, value.length - 1);
+            }
+            return { key: match[1].trim(), operator: match[2].trim() as StrategyCondition['operator'], value: value };
         }
         return { key: '', operator: '=', value: '' };
     });
@@ -35,7 +45,7 @@ const parseConditions = (conditionStr: string | undefined): StrategyCondition[] 
 const serializeConditions = (conditions: StrategyCondition[]): string => {
     return conditions
         .filter(c => c.key && c.value)
-        .map(c => `${c.key} ${c.operator} ${c.value}`)
+        .map(c => `${c.key} ${c.operator} "${c.value}"`)
         .join(' AND ');
 };
 
@@ -45,14 +55,15 @@ const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps
     const [formData, setFormData] = useState<Partial<NotificationStrategy>>({});
     const { options, isLoading: isLoadingOptions } = useOptions();
     const strategyOptions = options?.notificationStrategies;
-    const [stepTitles, setStepTitles] = useState(["基本資訊", "通知管道", "匹配條件"]);
+    
+    const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
+    const [additionalConditions, setAdditionalConditions] = useState<StrategyCondition[]>([]);
+
+    const stepTitles = ["基本資訊與範圍", "通知管道", "附加條件"];
     
     useEffect(() => {
         if (isOpen) {
             if (!isLoadingOptions && strategyOptions) {
-                 if (strategyOptions.stepTitles) {
-                    setStepTitles(strategyOptions.stepTitles);
-                }
                 const initialData = strategy || {
                     name: '',
                     enabled: true,
@@ -60,17 +71,43 @@ const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps
                     channelCount: 1,
                     priority: strategyOptions.priorities[1] || 'Medium',
                 };
-                if(strategy && !strategy.id) { // This is a duplicated strategy
+                if(strategy && !strategy.id) {
                     initialData.name = `Copy of ${strategy.name}`;
                 }
                 setFormData(initialData);
+
+                // De-serialize triggerCondition into parts for the wizard
+                if (strategy?.triggerCondition) {
+                    const parts = strategy.triggerCondition.split(' AND ');
+                    const groupPart = parts.find(p => p.startsWith('resource.group IN'));
+                    if (groupPart) {
+                        const groupNames = groupPart.match(/"([^"]+)"/g)?.map(g => g.replace(/"/g, '')) || [];
+                        setSelectedGroups(groupNames);
+                    } else {
+                        setSelectedGroups([]);
+                    }
+                    const otherConditionsStr = parts.filter(p => !p.startsWith('resource.group IN')).join(' AND ');
+                    setAdditionalConditions(parseConditions(otherConditionsStr));
+                } else {
+                    setSelectedGroups([]);
+                    setAdditionalConditions([]);
+                }
                 setCurrentStep(1);
             }
         }
     }, [isOpen, strategy, isLoadingOptions, strategyOptions]);
 
     const handleSave = () => {
-        onSave(formData as NotificationStrategy);
+        const groupCondition = selectedGroups.length > 0 
+            ? `resource.group IN (${selectedGroups.map(g => `"${g}"`).join(', ')})` 
+            : '';
+        const additionalCondition = serializeConditions(additionalConditions);
+        const finalCondition = [groupCondition, additionalCondition].filter(Boolean).join(' AND ');
+
+        onSave({ 
+            ...formData, 
+            triggerCondition: finalCondition 
+        } as NotificationStrategy);
     };
 
     const nextStep = () => setCurrentStep(s => Math.min(s + 1, 3));
@@ -78,9 +115,9 @@ const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps
     
     const renderStepContent = () => {
         switch (currentStep) {
-            case 1: return <Step1 formData={formData} setFormData={setFormData} options={strategyOptions} />;
-            case 2: return <Step2 formData={formData} setFormData={setFormData} />;
-            case 3: return <Step3 formData={formData} setFormData={setFormData} options={strategyOptions} />;
+            case 1: return <Step1 formData={formData} setFormData={setFormData} options={strategyOptions} selectedGroups={selectedGroups} setSelectedGroups={setSelectedGroups} />;
+            case 2: return <Step2 formData={formData} setFormData={setFormData} selectedGroups={selectedGroups} />;
+            case 3: return <Step3 additionalConditions={additionalConditions} setAdditionalConditions={setAdditionalConditions} options={strategyOptions} />;
             default: return null;
         }
     };
@@ -116,30 +153,81 @@ const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps
     );
 };
 
-const Step1: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Function, options: NotificationStrategyOptions | null }> = ({ formData, setFormData, options }) => (
-    <div className="space-y-4 px-4">
-        <FormRow label="策略名稱 *">
-            <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
-        </FormRow>
-        <FormRow label="優先級">
-            <select value={formData.priority} onChange={e => setFormData({ ...formData, priority: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={!options}>
-                {options?.priorities.map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
-        </FormRow>
-    </div>
-);
-
-const Step2: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Function }> = ({ formData, setFormData }) => {
-    const [teams, setTeams] = useState<Team[]>([]);
-    const [channels, setChannels] = useState<NotificationChannel[]>([]);
+const Step1: React.FC<{ 
+    formData: Partial<NotificationStrategy>, 
+    setFormData: Function, 
+    options: NotificationStrategyOptions | null,
+    selectedGroups: string[],
+    setSelectedGroups: (groups: string[]) => void
+}> = ({ formData, setFormData, options, selectedGroups, setSelectedGroups }) => {
+    const [resourceGroups, setResourceGroups] = useState<ResourceGroup[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        api.get<Team[]>('/iam/teams').then(res => setTeams(res.data));
-        api.get<NotificationChannel[]>('/settings/notification-channels').then(res => setChannels(res.data));
+        api.get<ResourceGroup[]>('/resource-groups')
+            .then(res => setResourceGroups(res.data))
+            .catch(err => showToast('無法載入資源群組。', 'error'))
+            .finally(() => setIsLoading(false));
     }, []);
 
     return (
         <div className="space-y-4 px-4">
+            <FormRow label="策略名稱 *">
+                <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+            </FormRow>
+            <FormRow label="優先級">
+                <select value={formData.priority} onChange={e => setFormData({ ...formData, priority: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={!options}>
+                    {options?.priorities.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+            </FormRow>
+            <FormRow label="資源群組 *">
+                <MultiSelectDropdown 
+                    items={resourceGroups.map(g => ({ value: g.name, label: g.name }))}
+                    selected={selectedGroups}
+                    onSelectedChange={setSelectedGroups}
+                    placeholder={isLoading ? "載入中..." : "選擇一個或多個資源群組..."}
+                />
+            </FormRow>
+        </div>
+    );
+};
+
+const Step2: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Function, selectedGroups: string[] }> = ({ formData, setFormData, selectedGroups }) => {
+    const [teams, setTeams] = useState<Team[]>([]);
+    const [channels, setChannels] = useState<NotificationChannel[]>([]);
+    const [allGroups, setAllGroups] = useState<ResourceGroup[]>([]);
+    const [suggestedTeam, setSuggestedTeam] = useState<string | null>(null);
+
+    useEffect(() => {
+        api.get<Team[]>('/iam/teams').then(res => setTeams(res.data));
+        api.get<NotificationChannel[]>('/settings/notification-channels').then(res => setChannels(res.data));
+        api.get<ResourceGroup[]>('/resource-groups').then(res => setAllGroups(res.data));
+    }, []);
+
+    useEffect(() => {
+        if (selectedGroups.length > 0 && allGroups.length > 0) {
+            const ownerTeams = selectedGroups
+                .map(groupName => allGroups.find(g => g.name === groupName)?.ownerTeam)
+                .filter((team): team is string => !!team);
+
+            if (ownerTeams.length === selectedGroups.length && new Set(ownerTeams).size === 1) {
+                setSuggestedTeam(ownerTeams[0]);
+            } else {
+                setSuggestedTeam(null);
+            }
+        } else {
+            setSuggestedTeam(null);
+        }
+    }, [selectedGroups, allGroups]);
+
+    return (
+        <div className="space-y-4 px-4">
+            {suggestedTeam && (
+                <div className="p-3 bg-sky-900/50 rounded-md text-sky-300 text-sm flex items-center">
+                    <Icon name="info" className="w-4 h-4 mr-2" />
+                    系統建議: 根據您選擇的資源群組，推薦通知團隊 "{suggestedTeam}"。
+                </div>
+            )}
             <FormRow label="接收團隊">
                 <select className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
                     {teams.map(team => <option key={team.id} value={team.id}>{team.name}</option>)}
@@ -159,37 +247,45 @@ const Step2: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Fu
     );
 };
 
-const Step3: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Function, options: NotificationStrategyOptions | null }> = ({ formData, setFormData, options }) => {
-    const [conditions, setConditions] = useState<StrategyCondition[]>([]);
+const Step3: React.FC<{ 
+    additionalConditions: StrategyCondition[], 
+    setAdditionalConditions: (conditions: StrategyCondition[]) => void,
+    options: NotificationStrategyOptions | null 
+}> = ({ additionalConditions, setAdditionalConditions, options }) => {
     
-    useEffect(() => {
-        setConditions(parseConditions(formData.triggerCondition));
-    }, [formData.triggerCondition]);
-
     const allConditionKeys = useMemo(() => {
         if (!options) return [];
         return [...Object.keys(options.conditionKeys), ...options.tagKeys];
     }, [options]);
-
-    const updateTriggerCondition = (newConditions: StrategyCondition[]) => {
-        setConditions(newConditions);
-        setFormData({ ...formData, triggerCondition: serializeConditions(newConditions) });
-    };
     
-    const handleConditionChange = (index: number, field: keyof StrategyCondition, value: any) => {
-        const newConditions = [...conditions];
-        newConditions[index] = { ...newConditions[index], [field]: value };
-        if (field === 'key') newConditions[index].value = ''; // Reset value when key changes
-        updateTriggerCondition(newConditions);
+    // FIX: Replaced dynamic property assignment with a type-safe switch statement to handle different fields of StrategyCondition, resolving the TypeScript error.
+    const handleConditionChange = (index: number, field: keyof StrategyCondition, value: string) => {
+        const newConditions = [...additionalConditions];
+        const updatedCondition = { ...newConditions[index] };
+    
+        switch (field) {
+            case 'key':
+                updatedCondition.key = value;
+                updatedCondition.value = '';
+                break;
+            case 'operator':
+                updatedCondition.operator = value as StrategyCondition['operator'];
+                break;
+            case 'value':
+                updatedCondition.value = value;
+                break;
+        }
+        
+        newConditions[index] = updatedCondition;
+        setAdditionalConditions(newConditions);
     };
     
     const addCondition = () => {
-        updateTriggerCondition([...conditions, { key: '', operator: '=', value: '' }]);
+        setAdditionalConditions([...additionalConditions, { key: '', operator: '=', value: '' }]);
     };
 
     const removeCondition = (index: number) => {
-        const newConditions = conditions.filter((_, i) => i !== index);
-        updateTriggerCondition(newConditions);
+        setAdditionalConditions(additionalConditions.filter((_, i) => i !== index));
     };
     
     const renderValueInput = (condition: StrategyCondition, index: number) => {
@@ -217,10 +313,10 @@ const Step3: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Fu
 
     return (
         <div className="space-y-4 px-4">
-            <h3 className="text-lg font-semibold text-white">觸發條件</h3>
-            <p className="text-sm text-slate-400 -mt-2">定義符合所有以下條件的事件將會觸發此策略。</p>
+            <h3 className="text-lg font-semibold text-white">附加條件 (可選)</h3>
+            <p className="text-sm text-slate-400 -mt-2">定義符合所有以下條件的事件才會觸發此策略。</p>
             <div className="p-4 border border-slate-700 rounded-lg space-y-3 bg-slate-800/20">
-                {conditions.map((cond, index) => (
+                {additionalConditions.map((cond, index) => (
                     <div key={index} className="flex items-center space-x-2">
                         <select value={cond.key} onChange={e => handleConditionChange(index, 'key', e.target.value)} className="w-1/3 bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={!options}>
                             <option value="">選擇標籤鍵...</option>
@@ -237,6 +333,51 @@ const Step3: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Fu
                 ))}
                  <button onClick={addCondition} className="text-sm text-sky-400 hover:text-sky-300 flex items-center"><Icon name="plus" className="w-4 h-4 mr-1" /> 新增 AND 條件</button>
             </div>
+        </div>
+    );
+};
+
+const MultiSelectDropdown: React.FC<{
+    items: { value: string; label: string }[];
+    selected: string[];
+    onSelectedChange: (selected: string[]) => void;
+    placeholder: string;
+}> = ({ items, selected, onSelectedChange, placeholder }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleToggle = (value: string, checked: boolean) => {
+        onSelectedChange(checked ? [...selected, value] : selected.filter(v => v !== value));
+    };
+    
+    const selectedLabels = items.filter(i => selected.includes(i.value)).map(i => i.label);
+
+    return (
+        <div className="relative" ref={dropdownRef}>
+            <button type="button" onClick={() => setIsOpen(!isOpen)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-left flex justify-between items-center">
+                <span className="truncate">{selectedLabels.length > 0 ? selectedLabels.join(', ') : placeholder}</span>
+                <Icon name="chevron-down" className="w-4 h-4" />
+            </button>
+            {isOpen && (
+                <div className="absolute z-10 w-full mt-1 bg-slate-700 border border-slate-600 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                    {items.map(item => (
+                        <label key={item.value} className="flex items-center space-x-3 px-3 py-2 hover:bg-slate-600 cursor-pointer">
+                            <input type="checkbox" checked={selected.includes(item.value)} onChange={e => handleToggle(item.value, e.target.checked)} className="form-checkbox h-4 w-4 rounded bg-slate-800 border-slate-500 text-sky-500" />
+                            <span>{item.label}</span>
+                        </label>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };

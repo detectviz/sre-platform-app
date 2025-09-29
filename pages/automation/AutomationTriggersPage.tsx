@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { AutomationTrigger, TriggerType, AutomationPlaybook, AutomationTriggerFilters } from '../../types';
+// FIX: Import TableColumn from types.ts
+import { AutomationTrigger, TriggerType, AutomationPlaybook, AutomationTriggerFilters, TableColumn } from '../../types';
 import Icon from '../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
@@ -7,12 +8,14 @@ import AutomationTriggerEditModal from '../../components/AutomationTriggerEditMo
 import Modal from '../../components/Modal';
 import api from '../../services/api';
 import UnifiedSearchModal from '../../components/UnifiedSearchModal';
-import ColumnSettingsModal, { TableColumn } from '../../components/ColumnSettingsModal';
+// FIX: Import TableColumn from types.ts, not from ColumnSettingsModal
+import ColumnSettingsModal from '../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
 import { showToast } from '../../services/toast';
 // FIX: Add missing imports for TableLoader and TableError to resolve 'Cannot find name' errors.
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
+import Pagination from '../../components/Pagination';
 
 const ALL_COLUMNS: TableColumn[] = [
     { key: 'enabled', label: '' },
@@ -28,6 +31,9 @@ const AutomationTriggersPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [playbooks, setPlaybooks] = useState<AutomationPlaybook[]>([]);
+    const [total, setTotal] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTrigger, setEditingTrigger] = useState<AutomationTrigger | null>(null);
@@ -47,12 +53,18 @@ const AutomationTriggersPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
+            const params = {
+                page: currentPage,
+                page_size: pageSize,
+                ...filters,
+            };
             const [triggersRes, playbooksRes, columnsRes] = await Promise.all([
-                api.get<AutomationTrigger[]>('/automation/triggers', { params: filters }),
+                api.get<{ items: AutomationTrigger[], total: number }>('/automation/triggers', { params }),
                 api.get<AutomationPlaybook[]>('/automation/scripts'),
                 api.get<string[]>(`/settings/column-config/${pageKey}`)
             ]);
-            setTriggers(triggersRes.data);
+            setTriggers(triggersRes.data.items);
+            setTotal(triggersRes.data.total);
             setPlaybooks(playbooksRes.data);
             setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
         } catch (err) {
@@ -60,7 +72,7 @@ const AutomationTriggersPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [filters, pageKey]);
+    }, [filters, pageKey, currentPage, pageSize]);
 
     useEffect(() => {
         if (pageKey) {
@@ -259,6 +271,13 @@ const AutomationTriggersPage: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
+                <Pagination 
+                    total={total}
+                    page={currentPage}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={setPageSize}
+                />
             </TableContainer>
             {isModalOpen && (
                 <AutomationTriggerEditModal
@@ -290,6 +309,7 @@ const AutomationTriggersPage: React.FC = () => {
                 onSearch={(newFilters) => {
                     setFilters(newFilters as AutomationTriggerFilters);
                     setIsSearchModalOpen(false);
+                    setCurrentPage(1);
                 }}
                 initialFilters={filters}
             />

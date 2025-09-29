@@ -1,19 +1,88 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Modal from './Modal';
 import Icon from './Icon';
 import Wizard from './Wizard';
 import FormRow from './FormRow';
-import { SilenceRule, SilenceMatcher, SilenceSchedule, SilenceRuleTemplate, SilenceRuleOptions } from '../types';
+import { SilenceRule, SilenceMatcher, SilenceSchedule, SilenceRuleTemplate, SilenceRuleOptions, AlertRule } from '../types';
 import api from '../services/api';
 import { useUser } from '../contexts/UserContext';
 import { useOptions } from '../contexts/OptionsContext';
+import { useContent } from '../contexts/ContentContext';
 
 interface SilenceRuleEditModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (rule: SilenceRule) => void;
+  onSave: (rule: Partial<SilenceRule>) => void;
   rule: SilenceRule | null;
 }
+
+const MultiSelectDropdown: React.FC<{
+    options: { id: string; value: string; }[];
+    selectedValues: string[];
+    onChange: (newValues: string[]) => void;
+    placeholder: string;
+}> = ({ options, selectedValues, onChange, placeholder }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleToggleOption = (valueToToggle: string) => {
+        const newSelected = selectedValues.includes(valueToToggle)
+            ? selectedValues.filter(v => v !== valueToToggle)
+            : [...selectedValues, valueToToggle];
+        onChange(newSelected);
+    };
+
+    return (
+        <div ref={dropdownRef} className="relative w-full">
+            <div 
+                onClick={() => setIsOpen(!isOpen)} 
+                className="w-full bg-slate-700 rounded-md px-3 py-1 text-sm flex items-center flex-wrap gap-1 cursor-pointer min-h-[40px]"
+            >
+                {selectedValues.length === 0 && <span className="text-slate-400">{placeholder}</span>}
+                {selectedValues.map(val => (
+                    <span key={val} className="bg-sky-600 text-white text-xs font-semibold px-2 py-1 rounded-full flex items-center">
+                        {val}
+                        <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); handleToggleOption(val); }}
+                            className="ml-1.5 text-sky-200 hover:text-white"
+                            aria-label={`Remove ${val}`}
+                        >
+                            <Icon name="x" className="w-3 h-3" />
+                        </button>
+                    </span>
+                ))}
+                <Icon name="chevron-down" className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2" />
+            </div>
+            {isOpen && (
+                <div className="absolute z-10 w-full mt-1 bg-slate-800 border border-slate-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                    {options.map(opt => (
+                        <label key={opt.id} className="flex items-center space-x-3 px-3 py-2 hover:bg-slate-700 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={selectedValues.includes(opt.value)}
+                                onChange={() => handleToggleOption(opt.value)}
+                                className="form-checkbox h-4 w-4 rounded bg-slate-900 border-slate-600 text-sky-500 focus:ring-sky-500"
+                            />
+                            <span className="text-slate-200">{opt.value}</span>
+                        </label>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
 
 const SilenceRuleEditModal: React.FC<SilenceRuleEditModalProps> = ({ isOpen, onClose, onSave, rule }) => {
     const [currentStep, setCurrentStep] = useState(1);
@@ -21,6 +90,8 @@ const SilenceRuleEditModal: React.FC<SilenceRuleEditModalProps> = ({ isOpen, onC
     const { currentUser } = useUser();
     const { options, isLoading: isLoadingOptions } = useOptions();
     const silenceRuleOptions = options?.silenceRules;
+    const { content } = useContent();
+    const stepTitles = content?.SILENCE_RULE_EDIT_MODAL?.STEP_TITLES || ["Basic Info", "Schedule", "Scope"];
     
     useEffect(() => {
         if (isOpen) {
@@ -40,18 +111,17 @@ const SilenceRuleEditModal: React.FC<SilenceRuleEditModalProps> = ({ isOpen, onC
     }, [isOpen, rule, silenceRuleOptions]);
 
     const handleSave = () => {
-        const finalRule: SilenceRule = {
-            id: rule?.id || `new-sil-${Date.now()}`,
-            name: formData.name || 'Untitled Silence Rule',
-            description: formData.description || '',
-            enabled: formData.enabled !== false,
+        const payload: Partial<SilenceRule> = {
+            ...formData,
+            id: rule?.id,
             type: formData.schedule?.type === 'single' ? 'single' : 'repeat',
-            matchers: formData.matchers || [],
-            schedule: formData.schedule || { type: 'single' },
-            creator: rule?.creator || currentUser?.name || 'System',
-            createdAt: rule?.createdAt || new Date().toISOString(),
         };
-        onSave(finalRule);
+
+        if (!rule) {
+            delete payload.id;
+        }
+
+        onSave(payload);
     };
 
     const nextStep = () => setCurrentStep(s => Math.min(s + 1, 3));
@@ -65,8 +135,6 @@ const SilenceRuleEditModal: React.FC<SilenceRuleEditModalProps> = ({ isOpen, onC
             default: return null;
         }
     };
-    
-    const stepTitles = ["基本資訊", "設定排程", "設定範圍"];
     
     return (
         <Modal
@@ -209,13 +277,18 @@ const Step2 = ({ formData, setFormData, options }: { formData: Partial<SilenceRu
 };
 
 const Step3 = ({ formData, setFormData, options }: { formData: Partial<SilenceRule>, setFormData: Function, options: SilenceRuleOptions | null }) => {
+    const [previewCount, setPreviewCount] = useState<number | null>(null);
+    const [isPreviewLoading, setIsPreviewLoading] = useState(false);
 
     const handleMatcherChange = (index: number, field: keyof SilenceMatcher, value: string) => {
         const newMatchers = JSON.parse(JSON.stringify(formData.matchers || []));
-        newMatchers[index][field] = value;
-        // If the key is changed, reset the value to ensure it's valid for the new key.
+        const currentMatcher = newMatchers[index];
+        currentMatcher[field] = value;
         if (field === 'key') {
-            newMatchers[index].value = '';
+            currentMatcher.value = '';
+        }
+        if (field === 'operator' && value !== '~=' && currentMatcher.value.includes('|')) {
+            currentMatcher.value = currentMatcher.value.split('|')[0] || '';
         }
         setFormData({ ...formData, matchers: newMatchers });
     };
@@ -230,26 +303,56 @@ const Step3 = ({ formData, setFormData, options }: { formData: Partial<SilenceRu
         newMatchers.splice(index, 1);
         setFormData({ ...formData, matchers: newMatchers });
     };
+
+    useEffect(() => {
+        const validMatchers = formData.matchers?.filter(m => m.key && m.value);
+        if (!validMatchers || validMatchers.length === 0) {
+            setPreviewCount(null);
+            return;
+        }
+
+        setIsPreviewLoading(true);
+        const handler = setTimeout(() => {
+            api.get<{ count: number }>('/alert-rules/count', { params: { matchers: JSON.stringify(validMatchers) } })
+                .then(res => setPreviewCount(res.data.count))
+                .catch(() => setPreviewCount(null))
+                .finally(() => setIsPreviewLoading(false));
+        }, 500);
+
+        return () => clearTimeout(handler);
+    }, [formData.matchers]);
     
     const renderMatcherValueInput = (matcher: SilenceMatcher, index: number) => {
-        const commonProps = {
-            value: matcher.value,
-            onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => handleMatcherChange(index, 'value', e.target.value),
-            className: "flex-grow bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500",
-        };
-        
-        const allowedValues = options?.values[matcher.key];
-        
-        if (allowedValues && allowedValues.length > 0) {
+        const allowedValues = options?.values[matcher.key] || [];
+
+        if (allowedValues.length > 0) {
             return (
-                 <select {...commonProps}>
-                    <option value="">選擇值...</option>
-                    {allowedValues.map(v => <option key={v} value={v}>{v}</option>)}
-                </select>
+                <MultiSelectDropdown
+                    options={allowedValues.map(v => ({ id: v, value: v }))}
+                    selectedValues={matcher.value ? matcher.value.split('|') : []}
+                    onChange={(newValues) => {
+                        const newMatchers = JSON.parse(JSON.stringify(formData.matchers || []));
+                        const currentMatcher = newMatchers[index];
+                        currentMatcher.value = newValues.join('|');
+                        if (newValues.length > 1) {
+                            currentMatcher.operator = '~=';
+                        }
+                        setFormData({ ...formData, matchers: newMatchers });
+                    }}
+                    placeholder="選擇或輸入值..."
+                />
             );
         }
 
-        return <input type="text" {...commonProps} placeholder="標籤值 (e.g., api-service)" />;
+        return (
+            <input
+                type="text"
+                value={matcher.value}
+                onChange={(e) => handleMatcherChange(index, 'value', e.target.value)}
+                className="flex-grow bg-slate-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                placeholder="標籤值 (e.g., api-service)"
+            />
+        );
     };
 
 
@@ -260,11 +363,11 @@ const Step3 = ({ formData, setFormData, options }: { formData: Partial<SilenceRu
             <div className="p-4 border border-slate-700 rounded-lg space-y-3 bg-slate-800/20">
                 {formData.matchers?.map((matcher, index) => (
                     <div key={index} className="flex items-center space-x-2">
-                         <select value={matcher.key} onChange={e => handleMatcherChange(index, 'key', e.target.value)} className="w-1/3 bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
+                         <select value={matcher.key} onChange={e => handleMatcherChange(index, 'key', e.target.value)} className="w-1/3 bg-slate-700 rounded-md px-3 py-2 text-sm">
                             <option value="">選擇標籤鍵...</option>
                             {options?.keys.map(k => <option key={k} value={k}>{k}</option>)}
                         </select>
-                        <select value={matcher.operator} onChange={e => handleMatcherChange(index, 'operator', e.target.value)} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
+                        <select value={matcher.operator} onChange={e => handleMatcherChange(index, 'operator', e.target.value as SilenceMatcher['operator'])} className="bg-slate-700 rounded-md px-3 py-2 text-sm">
                             <option value="=">=</option>
                             <option value="!=">!=</option>
                             <option value="~=">~= (regex)</option>
@@ -275,6 +378,15 @@ const Step3 = ({ formData, setFormData, options }: { formData: Partial<SilenceRu
                 ))}
                  <button onClick={addMatcher} className="text-sm text-sky-400 hover:text-sky-300 flex items-center"><Icon name="plus" className="w-4 h-4 mr-1" /> 新增匹配條件</button>
             </div>
+
+            <div className="p-4 border border-slate-700 rounded-lg bg-slate-800/20">
+                <h3 className="text-lg font-semibold text-white">匹配告警規則預覽</h3>
+                <div className="flex items-center mt-2">
+                    <p className="text-slate-300">此條件預計將靜音：</p>
+                    {isPreviewLoading ? <Icon name="loader-circle" className="w-5 h-5 animate-spin ml-2 text-slate-400" /> : <span className="font-bold text-sky-400 text-lg ml-2">{previewCount ?? 'N/A'} 條告警規則</span>}
+                </div>
+            </div>
+
              <label className="flex items-center space-x-3 cursor-pointer p-3 bg-slate-800/30 rounded-lg hover:bg-slate-800/50">
                 <input type="checkbox" checked={formData.enabled} onChange={e => setFormData({...formData, enabled: e.target.checked })} className="form-checkbox h-5 w-5 rounded bg-slate-800 border-slate-600 text-sky-500 focus:ring-sky-500" />
                 <span className="text-slate-300 font-semibold">立即啟用此靜音規則</span>

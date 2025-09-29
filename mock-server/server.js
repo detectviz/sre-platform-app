@@ -258,7 +258,43 @@ router.post('/automation/scripts/:script_id/execute', (req, res) => {
 });
 
 
-router.get('/automation/triggers', (req, res) => res.json(DB.MOCK_AUTOMATION_TRIGGERS));
+router.get('/automation/triggers', (req, res) => {
+    const { page, page_size, keyword } = req.query;
+    let triggers = getActive(DB.MOCK_AUTOMATION_TRIGGERS);
+    if (keyword) {
+        triggers = triggers.filter(t => t.name.toLowerCase().includes(keyword.toLowerCase()));
+    }
+    res.json(paginate(triggers, page, page_size));
+});
+router.post('/automation/triggers', (req, res) => {
+    const newTrigger = { ...req.body, id: `trig-${uuidv4()}` };
+    DB.MOCK_AUTOMATION_TRIGGERS.unshift(newTrigger);
+    res.status(201).json(newTrigger);
+});
+router.patch('/automation/triggers/:id', (req, res) => {
+    const index = DB.MOCK_AUTOMATION_TRIGGERS.findIndex(t => t.id === req.params.id);
+    if (index === -1) return res.status(404).send();
+    DB.MOCK_AUTOMATION_TRIGGERS[index] = { ...DB.MOCK_AUTOMATION_TRIGGERS[index], ...req.body };
+    res.json(DB.MOCK_AUTOMATION_TRIGGERS[index]);
+});
+router.delete('/automation/triggers/:id', (req, res) => {
+    const index = DB.MOCK_AUTOMATION_TRIGGERS.findIndex(t => t.id === req.params.id);
+    if (index > -1) DB.MOCK_AUTOMATION_TRIGGERS[index].deleted_at = new Date().toISOString();
+    res.status(204).send();
+});
+router.post('/automation/triggers/batch-actions', (req, res) => {
+    const { action, ids } = req.body;
+    if (action === 'delete') {
+        DB.MOCK_AUTOMATION_TRIGGERS.forEach(trigger => {
+            if (ids.includes(trigger.id)) trigger.deleted_at = new Date().toISOString();
+        });
+    } else if (action === 'enable' || action === 'disable') {
+        DB.MOCK_AUTOMATION_TRIGGERS.forEach(trigger => {
+            if (ids.includes(trigger.id)) trigger.enabled = (action === 'enable');
+        });
+    }
+    res.json({ success: true });
+});
 router.get('/automation/executions', (req, res) => res.json(paginate(DB.MOCK_AUTOMATION_EXECUTIONS, req.query.page, req.query.page_size)));
 
 // ===========================================================================
@@ -305,11 +341,30 @@ router.post('/iam/users/batch-actions', (req, res) => {
     res.json({ success: true });
 });
 
-router.get('/iam/teams', (req, res) => res.json(getActive(DB.MOCK_TEAMS)));
+router.get('/iam/teams', (req, res) => {
+    const { page, page_size, keyword } = req.query;
+    let teams = getActive(DB.MOCK_TEAMS);
+    if (keyword) {
+        teams = teams.filter(team =>
+            team.name.toLowerCase().includes(keyword.toLowerCase()) ||
+            team.description.toLowerCase().includes(keyword.toLowerCase())
+        );
+    }
+    res.json(paginate(teams, page, page_size));
+});
 router.post('/iam/teams', (req, res) => {
     const newTeam = { ...req.body, id: `team-${uuidv4()}`, createdAt: new Date().toISOString() };
     DB.MOCK_TEAMS.unshift(newTeam);
     res.status(201).json(newTeam);
+});
+router.post('/iam/teams/batch-actions', (req, res) => {
+    const { action, ids } = req.body;
+    if (action === 'delete') {
+        DB.MOCK_TEAMS.forEach(team => {
+            if (ids.includes(team.id)) team.deleted_at = new Date().toISOString();
+        });
+    }
+    res.json({ success: true });
 });
 router.patch('/iam/teams/:id', (req, res) => {
     const index = DB.MOCK_TEAMS.findIndex(t => t.id === req.params.id);
@@ -323,7 +378,26 @@ router.delete('/iam/teams/:id', (req, res) => {
     res.status(204).send();
 });
 
-router.get('/iam/roles', (req, res) => res.json(getActive(DB.MOCK_ROLES)));
+router.get('/iam/roles', (req, res) => {
+    const { page, page_size, keyword } = req.query;
+    let roles = getActive(DB.MOCK_ROLES);
+    if (keyword) {
+        roles = roles.filter(role =>
+            role.name.toLowerCase().includes(keyword.toLowerCase()) ||
+            role.description.toLowerCase().includes(keyword.toLowerCase())
+        );
+    }
+    res.json(paginate(roles, page, page_size));
+});
+router.post('/iam/roles/batch-actions', (req, res) => {
+    const { action, ids } = req.body;
+    if (action === 'delete') {
+        DB.MOCK_ROLES.forEach(role => {
+            if (ids.includes(role.id)) role.deleted_at = new Date().toISOString();
+        });
+    }
+    res.json({ success: true });
+});
 router.get('/iam/audit-logs', (req, res) => res.json(paginate(DB.MOCK_AUDIT_LOGS, req.query.page, req.query.page_size)));
 
 // ===========================================================================

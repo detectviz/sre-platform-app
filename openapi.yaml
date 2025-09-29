@@ -1,8 +1,14 @@
 openapi: 3.1.0
 info:
   title: SRE 平台 API 契約
-  version: 2.25.0
+  version: 2.28.0
   description: |
+    # 版本 2.28.0
+    - **UI/UX 重大優化**: 在告警規則建立精靈中，將「選擇監控目標類型」與「選擇範本」兩個動作，整合成一個單一、直觀的整合式範本市集介面，大幅簡化了規則建立的初始流程。
+
+    # 版本 2.27.0
+    - **UI/UX 優化**: 在告警規則建立精靈中，將範本選擇從卡片網格改為可搜尋的下拉式選單，以提升在大量範本中的選擇效率。
+
     # 版本 2.25.0
     - **新增**: 在 `POST /incidents/{incident_id}/actions` 端點中增加了 `add_note` 和 `delete_note` 操作，以支援在事件時間軸上新增和刪除備註的功能。
 
@@ -42,9 +48,9 @@ tags:
     description: 日誌、追蹤與容量規劃。
   - name: 身份與存取 (IAM)
     description: 人員、團隊、角色與審計日誌。
-  - name: 通知管理
+  - name: 通知
     description: 通知策略、管道與歷史。
-  - name: 平台設定
+  - name: 平台
     description: 標籤、版面與系統級配置。
   - name: 全局功能
     description: 全局搜尋與系統健康檢查。
@@ -186,4 +192,599 @@ paths:
           description: 回傳新生成的 AI 簡報內容。
           content:
             application/json:
-              schema
+              schema:
+                $ref: '#/components/schemas/BriefingData'
+  
+  # ... (other endpoints)
+  
+  # ===========================================================================
+  # ALERT RULES
+  # ===========================================================================
+  /alert-rules/metrics:
+    get:
+      tags:
+        - 告警規則 (Grafana 代理)
+      summary: 取得所有可用的指標元數據
+      operationId: getAlertRuleMetrics
+      responses:
+        "200":
+          description: 成功回傳指標元數據列表。
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MetricMetadata'
+
+# ... (other components)
+
+components:
+  schemas:
+    # ... (other schemas)
+    MetricMetadata:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 指標的唯一識別碼 (e.g., 'cpu_usage_percent')。
+        name:
+          type: string
+          description: 指標的顯示名稱 (e.g., 'CPU Usage')。
+        unit:
+          type: string
+          nullable: true
+          description: 指標的單位 (e.g., '%', 'ms', null)。
+    # ... (rest of the file)
+---
+## ... (Rest of the file) ...
+      responses:
+        "200":
+          description: 回傳最新的 AI 簡報內容。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BriefingData'
+  
+  /ai/briefing/generate:
+    post:
+      tags: [AI Copilot]
+      summary: 觸發生成新的 SRE 戰情室 AI 每日簡報
+      operationId: generateAIBriefing
+      responses:
+        "200":
+          description: 回傳新生成的 AI 簡報內容。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BriefingData'
+  
+  # ... (rest of the yaml) ...
+  /alert-rules/resource-types:
+    get:
+      tags:
+        - 告警規則 (Grafana 代理)
+      summary: 取得所有可用於告警的資源類型
+      operationId: getAlertRuleResourceTypes
+      responses:
+        "200":
+          description: 成功回傳資源類型列表。
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ResourceType'
+  /alert-rules/metrics:
+    get:
+      tags:
+        - 告警規則 (Grafana 代理)
+      summary: 取得所有可用的指標元數據
+      operationId: getAlertRuleMetrics
+      responses:
+        "200":
+          description: 成功回傳指標元數據列表。
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MetricMetadata'
+  /alert-rules/{rule_id}/test:
+    post:
+      tags: [告警規則 (Grafana 代理)]
+      summary: 測試一條告警規則
+      operationId: testAlertRule
+  # ... (rest of the yaml) ...
+  /automation/triggers:
+    get:
+      tags: [自動化]
+      summary: 取得觸發器分頁列表
+      operationId: getTriggers
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - $ref: "#/components/parameters/KeywordParam"
+      responses:
+        "200":
+          description: 成功回傳觸發器分頁列表。
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PaginatedResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/AutomationTrigger"
+    post:
+      tags: [自動化]
+      summary: 建立新的觸發器
+      operationId: createTrigger
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutomationTrigger'
+      responses:
+        "201":
+          description: 成功建立觸發器。
+  /automation/triggers/{trigger_id}:
+    patch:
+      tags: [自動化]
+      summary: 更新觸發器
+      operationId: updateTrigger
+      parameters:
+        - name: trigger_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutomationTrigger'
+      responses:
+        "200":
+          description: 成功回傳更新後的觸發器。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutomationTrigger'
+    delete:
+      tags: [自動化]
+      summary: 刪除觸發器
+      operationId: deleteTrigger
+      parameters:
+        - name: trigger_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: 觸發器已成功刪除。
+  /automation/triggers/batch-actions:
+    post:
+      tags: [自動化]
+      summary: 批次操作觸發器
+      operationId: batchUpdateTriggers
+      requestBody:
+        $ref: "#/components/requestBodies/BatchAction"
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+components:
+  schemas:
+    # ... (other schemas) ...
+    AlertRule:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        # ... (other properties) ...
+    MetricMetadata:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 指標的唯一識別碼 (e.g., 'cpu_usage_percent')。
+        name:
+          type: string
+          description: 指標的顯示名稱 (e.g., 'CPU Usage')。
+        unit:
+          type: string
+          nullable: true
+          description: 指標的單位 (e.g., '%', 'ms', null)。
+    ResourceType:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The unique identifier for the resource type (e.g., 'host').
+        name:
+          type: string
+          description: The display name for the resource type (e.g., '主機 (Host/VM)').
+        icon:
+          type: string
+          description: The Lucide icon name for the resource type (e.g., 'server').
+
+    # ... (rest of the file) ...
+  
+  # ... (rest of the file) ...
+  /ai/briefing/generate:
+    post:
+      tags: [AI Copilot]
+      summary: 觸發生成新的 SRE 戰情室 AI 每日簡報
+      operationId: generateAIBriefing
+      responses:
+        "200":
+          description: 回傳新生成的 AI 簡報內容。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BriefingData'
+  
+  # ... (rest of the yaml) ...
+  /alert-rules/resource-types:
+    get:
+      tags:
+        - 告警規則 (Grafana 代理)
+      summary: 取得所有可用於告警的資源類型
+      operationId: getAlertRuleResourceTypes
+      responses:
+        "200":
+          description: 成功回傳資源類型列表。
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ResourceType'
+  /alert-rules/metrics:
+    get:
+      tags:
+        - 告警規則 (Grafana 代理)
+      summary: 取得所有可用的指標元數據
+      operationId: getAlertRuleMetrics
+      responses:
+        "200":
+          description: 成功回傳指標元數據列表。
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MetricMetadata'
+  /alert-rules/{rule_id}/test:
+    post:
+      tags: [告警規則 (Grafana 代理)]
+      summary: 測試一條告警規則
+      operationId: testAlertRule
+  # ... (rest of the yaml) ...
+components:
+  schemas:
+    # ... (other schemas) ...
+    AlertRule:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        # ... (other properties) ...
+    MetricMetadata:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 指標的唯一識別碼 (e.g., 'cpu_usage_percent')。
+        name:
+          type: string
+          description: 指標的顯示名稱 (e.g., 'CPU Usage')。
+        unit:
+          type: string
+          nullable: true
+          description: 指標的單位 (e.g., '%', 'ms', null)。
+    ResourceType:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The unique identifier for the resource type (e.g., 'host').
+        name:
+          type: string
+          description: The display name for the resource type (e.g., '主機 (Host/VM)').
+        icon:
+          type: string
+          description: The Lucide icon name for the resource type (e.g., 'server').
+
+    # ... (rest of the file) ...
+  
+  # ... (rest of the file) ...
+  /ai/briefing/generate:
+    post:
+      tags: [AI Copilot]
+      summary: 觸發生成新的 SRE 戰情室 AI 每日簡報
+      operationId: generateAIBriefing
+      responses:
+        "200":
+          description: 回傳新生成的 AI 簡報內容。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BriefingData'
+  
+  # ... (rest of the yaml) ...
+  /alert-rules/resource-types:
+    get:
+      tags:
+        - 告警規則 (Grafana 代理)
+      summary: 取得所有可用於告警的資源類型
+      operationId: getAlertRuleResourceTypes
+      responses:
+        "200":
+          description: 成功回傳資源類型列表。
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ResourceType'
+  /alert-rules/metrics:
+    get:
+      tags:
+        - 告警規則 (Grafana 代理)
+      summary: 取得所有可用的指標元數據
+      operationId: getAlertRuleMetrics
+      responses:
+        "200":
+          description: 成功回傳指標元數據列表。
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MetricMetadata'
+  /alert-rules/{rule_id}/test:
+    post:
+      tags: [告警規則 (Grafana 代理)]
+      summary: 測試一條告警規則
+      operationId: testAlertRule
+  # ... (rest of the yaml) ...
+components:
+  schemas:
+    # ... (other schemas) ...
+    AlertRule:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        # ... (other properties) ...
+    MetricMetadata:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 指標的唯一識別碼 (e.g., 'cpu_usage_percent')。
+        name:
+          type: string
+          description: 指標的顯示名稱 (e.g., 'CPU Usage')。
+        unit:
+          type: string
+          nullable: true
+          description: 指標的單位 (e.g., '%', 'ms', null)。
+    ResourceType:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The unique identifier for the resource type (e.g., 'host').
+        name:
+          type: string
+          description: The display name for the resource type (e.g., '主機 (Host/VM)').
+        icon:
+          type: string
+          description: The Lucide icon name for the resource type (e.g., 'server').
+
+    # ... (rest of the file) ...
+  
+  # ... (rest of the file) ...
+  /ai/briefing/generate:
+    post:
+      tags: [AI Copilot]
+      summary: 觸發生成新的 SRE 戰情室 AI 每日簡報
+      operationId: generateAIBriefing
+      responses:
+        "200":
+          description: 回傳新生成的 AI 簡報內容。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BriefingData'
+  
+  # ... (rest of the yaml) ...
+  /alert-rules/resource-types:
+    get:
+      tags:
+        - 告警規則 (Grafana 代理)
+      summary: 取得所有可用於告警的資源類型
+      operationId: getAlertRuleResourceTypes
+      responses:
+        "200":
+          description: 成功回傳資源類型列表。
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ResourceType'
+  /alert-rules/metrics:
+    get:
+      tags:
+        - 告警規則 (Grafana 代理)
+      summary: 取得所有可用的指標元數據
+      operationId: getAlertRuleMetrics
+      responses:
+        "200":
+          description: 成功回傳指標元數據列表。
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MetricMetadata'
+  /alert-rules/{rule_id}/test:
+    post:
+      tags: [告警規則 (Grafana 代理)]
+      summary: 測試一條告警規則
+      operationId: testAlertRule
+  # ... (rest of the yaml) ...
+components:
+  schemas:
+    # ... (other schemas) ...
+    AlertRule:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        # ... (other properties) ...
+    MetricMetadata:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 指標的唯一識別碼 (e.g., 'cpu_usage_percent')。
+        name:
+          type: string
+          description: 指標的顯示名稱 (e.g., 'CPU Usage')。
+        unit:
+          type: string
+          nullable: true
+          description: 指標的單位 (e.g., '%', 'ms', null)。
+    ResourceType:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The unique identifier for the resource type (e.g., 'host').
+        name:
+          type: string
+          description: The display name for the resource type (e.g., '主機 (Host/VM)').
+        icon:
+          type: string
+          description: The Lucide icon name for the resource type (e.g., 'server').
+
+    # ... (rest of the file) ...
+  
+  # ... (rest of the file) ...
+  /iam/teams:
+    get:
+      tags: [身份與存取 (IAM)]
+      summary: 取得團隊的分頁列表
+      operationId: getTeams
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - $ref: "#/components/parameters/KeywordParam"
+      responses:
+        "200":
+          description: 成功回傳團隊分頁列表。
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PaginatedResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Team"
+  /iam/teams/batch-actions:
+    post:
+      tags: [身份與存取 (IAM)]
+      summary: 批次操作團隊
+      operationId: batchUpdateTeams
+      requestBody:
+        $ref: "#/components/requestBodies/BatchAction"
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+  /iam/roles:
+    get:
+      tags: [身份與存取 (IAM)]
+      summary: 取得角色的分頁列表
+      operationId: getRoles
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - $ref: "#/components/parameters/KeywordParam"
+      responses:
+        "200":
+          description: 成功回傳角色分頁列表。
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PaginatedResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Role"
+  /iam/roles/batch-actions:
+    post:
+      tags: [身份與存取 (IAM)]
+      summary: 批次操作角色
+      operationId: batchUpdateRoles
+      requestBody:
+        $ref: "#/components/requestBodies/BatchAction"
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+  # ... (rest of file)
+components:
+  # ... (rest of file)
+  parameters:
+    KeywordParam:
+      name: keyword
+      in: query
+      description: 用於模糊搜尋的關鍵字。
+      schema:
+        type: string
+  requestBodies:
+    BatchAction:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              action:
+                type: string
+                enum: [delete, enable, disable]
+              ids:
+                type: array
+                items:
+                  type: string
+  responses:
+    Success:
+      description: 操作成功。
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: true
+  # ... (rest of file)

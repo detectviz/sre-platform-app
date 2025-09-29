@@ -1,6 +1,8 @@
 
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { SilenceRule } from '../../types';
+// FIX: Import TableColumn from types.ts
+import { SilenceRule, TableColumn } from '../../types';
 import Icon from '../../components/Icon';
 import SilenceRuleEditModal from '../../components/SilenceRuleEditModal';
 import UnifiedSearchModal, { SilenceRuleFilters } from '../../components/UnifiedSearchModal';
@@ -12,7 +14,8 @@ import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
 import { exportToCsv } from '../../services/export';
 import ImportFromCsvModal from '../../components/ImportFromCsvModal';
-import ColumnSettingsModal, { TableColumn } from '../../components/ColumnSettingsModal';
+// FIX: Import TableColumn from types.ts, not from ColumnSettingsModal
+import ColumnSettingsModal from '../../components/ColumnSettingsModal';
 import { showToast } from '../../services/toast';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
 import PlaceholderModal from '../../components/PlaceholderModal';
@@ -103,16 +106,18 @@ const SilenceRulePage: React.FC = () => {
         setIsModalOpen(true);
     };
 
-    const handleSaveRule = async (savedRule: SilenceRule) => {
+    const handleSaveRule = async (savedRule: Partial<SilenceRule>) => {
         try {
-            if (editingRule) {
+            if (savedRule.id) {
                 await api.patch(`/silence-rules/${savedRule.id}`, savedRule);
+                showToast(`規則 "${savedRule.name}" 已成功更新。`, 'success');
             } else {
-                await api.post('/silence-rules', savedRule);
+                const { data: createdRule } = await api.post<SilenceRule>('/silence-rules', savedRule);
+                showToast(`規則 "${createdRule.name}" 已成功新增。`, 'success');
             }
             fetchRules();
         } catch (err) {
-            alert('Failed to save rule.');
+            showToast('儲存規則失敗。', 'error');
         } finally {
             setIsModalOpen(false);
             setEditingRule(null);
@@ -128,9 +133,10 @@ const SilenceRulePage: React.FC = () => {
         if (deletingRule) {
             try {
                 await api.del(`/silence-rules/${deletingRule.id}`);
+                showToast(`規則 "${deletingRule.name}" 已成功刪除。`, 'success');
                 fetchRules();
             } catch (err) {
-                alert('Failed to delete rule.');
+                showToast('刪除規則失敗。', 'error');
             } finally {
                 setIsDeleteModalOpen(false);
                 setDeletingRule(null);

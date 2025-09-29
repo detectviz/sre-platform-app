@@ -1,17 +1,15 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import Modal from './Modal';
 import Icon from './Icon';
 import { 
     Resource, ResourceFilters, AlertRule, Incident, SilenceRule, TagManagementFilters, User, AuditLogFilters,
     DashboardFilters, AutomationHistoryFilters, PersonnelFilters, ResourceGroupFilters, AutomationTriggerFilters,
-    NotificationStrategyFilters, NotificationChannelFilters, NotificationHistoryFilters, AutomationPlaybook
+    NotificationStrategyFilters, NotificationChannelFilters, NotificationHistoryFilters, AutomationPlaybook,
+    LogExplorerFilters
 } from '../types';
 import api from '../services/api';
-import { PAGE_CONTENT } from '../constants/pages';
 import { useOptions } from '../contexts/OptionsContext';
-
-const { GLOBAL: globalContent, UNIFIED_SEARCH: content } = PAGE_CONTENT;
+import { useContent } from '../contexts/ContentContext';
 
 export interface IncidentFilters {
   keyword?: string;
@@ -34,10 +32,10 @@ export interface SilenceRuleFilters {
     enabled?: boolean;
 }
 
-type Filters = IncidentFilters | AlertRuleFilters | SilenceRuleFilters | ResourceFilters | TagManagementFilters | AuditLogFilters | DashboardFilters | AutomationHistoryFilters | PersonnelFilters | ResourceGroupFilters | AutomationTriggerFilters | NotificationStrategyFilters | NotificationChannelFilters | NotificationHistoryFilters;
+type Filters = IncidentFilters | AlertRuleFilters | SilenceRuleFilters | ResourceFilters | TagManagementFilters | AuditLogFilters | DashboardFilters | AutomationHistoryFilters | PersonnelFilters | ResourceGroupFilters | AutomationTriggerFilters | NotificationStrategyFilters | NotificationChannelFilters | NotificationHistoryFilters | LogExplorerFilters;
 
 interface UnifiedSearchModalProps {
-  page: 'incidents' | 'alert-rules' | 'silence-rules' | 'resources' | 'tag-management' | 'audit-logs' | 'dashboards' | 'automation-history' | 'personnel' | 'resource-groups' | 'automation-triggers' | 'notification-strategies' | 'notification-channels' | 'notification-history' | 'teams' | 'roles';
+  page: 'incidents' | 'alert-rules' | 'silence-rules' | 'resources' | 'tag-management' | 'audit-logs' | 'dashboards' | 'automation-history' | 'personnel' | 'resource-groups' | 'automation-triggers' | 'notification-strategies' | 'notification-channels' | 'notification-history' | 'teams' | 'roles' | 'logs';
   isOpen: boolean;
   onClose: () => void;
   onSearch: (filters: Filters) => void;
@@ -56,6 +54,9 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
   const { options, isLoading: isLoadingOptions } = useOptions();
   const [users, setUsers] = useState<User[]>([]);
   const [playbooks, setPlaybooks] = useState<AutomationPlaybook[]>([]);
+  const { content: pageContent } = useContent();
+  const globalContent = pageContent?.GLOBAL;
+  const content = pageContent?.UNIFIED_SEARCH;
 
   useEffect(() => {
     if (isOpen) {
@@ -79,6 +80,10 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
   
   const handleClear = () => {
       setFilters({});
+  }
+
+  if (!content || !globalContent) {
+    return null;
   }
 
   const renderIncidentFilters = () => (
@@ -273,6 +278,20 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
     </>
   );
 
+  const renderLogExplorerFilters = () => (
+    <>
+      <FormRow label="時間範圍">
+        <select 
+          value={(filters as LogExplorerFilters).timeRange || ''} 
+          onChange={e => setFilters(prev => ({ ...prev, timeRange: e.target.value }))} 
+          className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
+        >
+          {options?.logs.timeRangeOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+        </select>
+      </FormRow>
+    </>
+  );
+
 
   return (
     <Modal
@@ -311,6 +330,7 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
                 {page === 'dashboards' && renderDashboardFilters()}
                 {page === 'automation-history' && renderAutomationHistoryFilters()}
                 {page === 'notification-history' && renderNotificationHistoryFilters()}
+                {page === 'logs' && renderLogExplorerFilters()}
                 {/* No specific filters for personnel, resource-groups, teams, roles, triggers, strategies, channels yet besides keyword */}
             </>
         )}
