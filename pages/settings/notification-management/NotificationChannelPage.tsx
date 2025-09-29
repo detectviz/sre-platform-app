@@ -17,18 +17,12 @@ import { showToast } from '../../../services/toast';
 
 type IconConfig = Record<NotificationChannelType | 'Default', { icon: string; color: string; }>;
 
-const ALL_COLUMNS: TableColumn[] = [
-    { key: 'enabled', label: '' },
-    { key: 'name', label: '管道名稱' },
-    { key: 'type', label: '類型' },
-    { key: 'lastTestResult', label: '最新發送結果' },
-    { key: 'lastTestedAt', label: '最新發送時間' },
-];
 const PAGE_IDENTIFIER = 'notification_channels';
 
 
 const NotificationChannelPage: React.FC = () => {
     const [channels, setChannels] = useState<NotificationChannel[]>([]);
+    const [allColumns, setAllColumns] = useState<TableColumn[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [iconConfig, setIconConfig] = useState<IconConfig | null>(null);
@@ -51,14 +45,22 @@ const NotificationChannelPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const [channelsRes, iconsRes, columnsRes] = await Promise.all([
+            const [channelsRes, iconsRes, columnConfigRes, allColumnsRes] = await Promise.all([
                 api.get<NotificationChannel[]>('/settings/notification-channels', { params: filters }),
                 api.get<IconConfig>('/ui/icons-config'),
-                api.get<string[]>(`/settings/column-config/${pageKey}`)
+                api.get<string[]>(`/settings/column-config/${pageKey}`),
+                api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
             setChannels(channelsRes.data);
             setIconConfig(iconsRes.data);
-            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
+            if (allColumnsRes.data.length === 0) {
+                throw new Error('欄位定義缺失');
+            }
+            setAllColumns(allColumnsRes.data);
+            const resolvedVisibleColumns = columnConfigRes.data.length > 0
+                ? columnConfigRes.data
+                : allColumnsRes.data.map(c => c.key);
+            setVisibleColumns(resolvedVisibleColumns);
         } catch(err) {
             setError('無法獲取通知管道。');
         } finally {
@@ -254,7 +256,7 @@ const NotificationChannelPage: React.FC = () => {
                                            checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
                                 {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                    <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
                                 ))}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
@@ -320,7 +322,7 @@ const NotificationChannelPage: React.FC = () => {
                 isOpen={isColumnSettingsModalOpen}
                 onClose={() => setIsColumnSettingsModalOpen(false)}
                 onSave={handleSaveColumnConfig}
-                allColumns={ALL_COLUMNS}
+                allColumns={allColumns}
                 visibleColumnKeys={visibleColumns}
             />
         </div>

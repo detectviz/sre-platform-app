@@ -17,17 +17,11 @@ import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
 import Pagination from '../../components/Pagination';
 
-const ALL_COLUMNS: TableColumn[] = [
-    { key: 'enabled', label: '' },
-    { key: 'name', label: '名稱' },
-    { key: 'type', label: '類型' },
-    { key: 'targetPlaybookId', label: '目標腳本' },
-    { key: 'lastTriggered', label: '上次觸發' },
-];
 const PAGE_IDENTIFIER = 'automation_triggers';
 
 const AutomationTriggersPage: React.FC = () => {
     const [triggers, setTriggers] = useState<AutomationTrigger[]>([]);
+    const [allColumns, setAllColumns] = useState<TableColumn[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [playbooks, setPlaybooks] = useState<AutomationPlaybook[]>([]);
@@ -58,16 +52,25 @@ const AutomationTriggersPage: React.FC = () => {
                 page_size: pageSize,
                 ...filters,
             };
-            const [triggersRes, playbooksRes, columnsRes] = await Promise.all([
+            const [triggersRes, playbooksRes, columnConfigRes, allColumnsRes] = await Promise.all([
                 api.get<{ items: AutomationTrigger[], total: number }>('/automation/triggers', { params }),
                 api.get<AutomationPlaybook[]>('/automation/scripts'),
-                api.get<string[]>(`/settings/column-config/${pageKey}`)
+                api.get<string[]>(`/settings/column-config/${pageKey}`),
+                api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
             setTriggers(triggersRes.data.items);
             setTotal(triggersRes.data.total);
             setPlaybooks(playbooksRes.data);
-            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
+            if (allColumnsRes.data.length === 0) {
+                throw new Error('欄位定義缺失');
+            }
+            setAllColumns(allColumnsRes.data);
+            const resolvedVisibleColumns = columnConfigRes.data.length > 0
+                ? columnConfigRes.data
+                : allColumnsRes.data.map(c => c.key);
+            setVisibleColumns(resolvedVisibleColumns);
         } catch (err) {
+            console.error(err);
             setError('Failed to fetch triggers or playbooks.');
         } finally {
             setIsLoading(false);
@@ -243,7 +246,7 @@ const AutomationTriggersPage: React.FC = () => {
                                            checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
                                 {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                    <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
                                 ))}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
@@ -317,7 +320,7 @@ const AutomationTriggersPage: React.FC = () => {
                 isOpen={isColumnSettingsModalOpen}
                 onClose={() => setIsColumnSettingsModalOpen(false)}
                 onSave={handleSaveColumnConfig}
-                allColumns={ALL_COLUMNS}
+                allColumns={allColumns}
                 visibleColumnKeys={visibleColumns}
             />
         </div>

@@ -18,18 +18,12 @@ import ImportFromCsvModal from '../../../components/ImportFromCsvModal';
 import ColumnSettingsModal from '../../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 
-const ALL_COLUMNS: TableColumn[] = [
-    { key: 'key', label: '標籤鍵' },
-    { key: 'category', label: '分類' },
-    { key: 'required', label: '必填' },
-    { key: 'usageCount', label: '使用次數' },
-    { key: 'allowedValues', label: '標籤值 (預覽)' },
-];
 const PAGE_IDENTIFIER = 'tag_management';
 
 
 const TagManagementPage: React.FC = () => {
     const [tags, setTags] = useState<TagDefinition[]>([]);
+    const [allColumns, setAllColumns] = useState<TableColumn[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -55,12 +49,20 @@ const TagManagementPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const [tagsRes, columnsRes] = await Promise.all([
+            const [tagsRes, columnConfigRes, allColumnsRes] = await Promise.all([
                 api.get<TagDefinition[]>('/settings/tags'),
-                api.get<string[]>(`/settings/column-config/${pageKey}`)
+                api.get<string[]>(`/settings/column-config/${pageKey}`),
+                api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
             setTags(tagsRes.data);
-            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
+            if (allColumnsRes.data.length === 0) {
+                throw new Error('欄位定義缺失');
+            }
+            setAllColumns(allColumnsRes.data);
+            const resolvedVisibleColumns = columnConfigRes.data.length > 0
+                ? columnConfigRes.data
+                : allColumnsRes.data.map(c => c.key);
+            setVisibleColumns(resolvedVisibleColumns);
         } catch (err) {
             setError('無法獲取標籤定義。');
         } finally {
@@ -233,7 +235,7 @@ const TagManagementPage: React.FC = () => {
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
                                 {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                    <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
                                 ))}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
@@ -320,7 +322,7 @@ const TagManagementPage: React.FC = () => {
                 isOpen={isColumnSettingsModalOpen}
                 onClose={() => setIsColumnSettingsModalOpen(false)}
                 onSave={handleSaveColumnConfig}
-                allColumns={ALL_COLUMNS}
+                allColumns={allColumns}
                 visibleColumnKeys={visibleColumns}
             />
         </div>

@@ -18,18 +18,11 @@ import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 import { showToast } from '../../../services/toast';
 import SortableHeader from '../../../components/SortableHeader';
 
-const ALL_COLUMNS: TableColumn[] = [
-    { key: 'timestamp', label: '時間' },
-    { key: 'user', label: '使用者' },
-    { key: 'action', label: '操作' },
-    { key: 'target', label: '目標' },
-    { key: 'result', label: '結果' },
-    { key: 'ip', label: 'IP 位址' },
-];
 const PAGE_IDENTIFIER = 'audit_logs';
 
 const AuditLogsPage: React.FC = () => {
     const [logs, setLogs] = useState<AuditLog[]>([]);
+    const [allColumns, setAllColumns] = useState<TableColumn[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [totalLogs, setTotalLogs] = useState(0);
@@ -60,13 +53,21 @@ const AuditLogsPage: React.FC = () => {
                 params.sort_by = sortConfig.key;
                 params.sort_order = sortConfig.direction;
             }
-            const [logsRes, columnsRes] = await Promise.all([
+            const [logsRes, columnConfigRes, allColumnsRes] = await Promise.all([
                 api.get<{ items: AuditLog[], total: number }>('/iam/audit-logs', { params }),
-                api.get<string[]>(`/settings/column-config/${pageKey}`)
+                api.get<string[]>(`/settings/column-config/${pageKey}`),
+                api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
             setLogs(logsRes.data.items);
             setTotalLogs(logsRes.data.total);
-            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
+            if (allColumnsRes.data.length === 0) {
+                throw new Error('欄位定義缺失');
+            }
+            setAllColumns(allColumnsRes.data);
+            const resolvedVisibleColumns = columnConfigRes.data.length > 0
+                ? columnConfigRes.data
+                : allColumnsRes.data.map(c => c.key);
+            setVisibleColumns(resolvedVisibleColumns);
         } catch (err) {
             setError('無法獲取審計日誌。');
         } finally {
@@ -160,7 +161,7 @@ const AuditLogsPage: React.FC = () => {
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
                                 {visibleColumns.map(key => {
-                                    const col = ALL_COLUMNS.find(c => c.key === key);
+                                    const col = allColumns.find(c => c.key === key);
                                     if (!col) return null;
                                     return <SortableHeader key={key} label={col.label} sortKey={col.key} sortConfig={sortConfig} onSort={handleSort} />;
                                 })}
@@ -217,7 +218,7 @@ const AuditLogsPage: React.FC = () => {
                 isOpen={isColumnSettingsModalOpen}
                 onClose={() => setIsColumnSettingsModalOpen(false)}
                 onSave={handleSaveColumnConfig}
-                allColumns={ALL_COLUMNS}
+                allColumns={allColumns}
                 visibleColumnKeys={visibleColumns}
             />
         </div>

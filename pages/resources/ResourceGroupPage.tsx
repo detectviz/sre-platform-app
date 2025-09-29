@@ -16,16 +16,11 @@ import ColumnSettingsModal from '../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
 import { showToast } from '../../services/toast';
 
-const ALL_COLUMNS: TableColumn[] = [
-    { key: 'name', label: '群組名稱' },
-    { key: 'ownerTeam', label: '擁有團隊' },
-    { key: 'memberIds', label: '成員數量' },
-    { key: 'statusSummary', label: '狀態' },
-];
 const PAGE_IDENTIFIER = 'resource_groups';
 
 const ResourceGroupPage: React.FC = () => {
     const [groups, setGroups] = useState<ResourceGroup[]>([]);
+    const [allColumns, setAllColumns] = useState<TableColumn[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -57,13 +52,24 @@ const ResourceGroupPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const [groupsRes, columnsRes] = await Promise.all([
+            const [groupsRes, columnConfigRes, allColumnsRes] = await Promise.all([
                  api.get<ResourceGroup[]>('/resource-groups', { params: filters }),
-                 api.get<string[]>(`/settings/column-config/${pageKey}`)
+                 api.get<string[]>(`/settings/column-config/${pageKey}`),
+                 api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
+
+            if (allColumnsRes.data.length === 0) {
+                throw new Error('欄位定義缺失');
+            }
+
             setGroups(groupsRes.data);
-            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
+            setAllColumns(allColumnsRes.data);
+            const resolvedVisibleColumns = columnConfigRes.data.length > 0
+                ? columnConfigRes.data
+                : allColumnsRes.data.map(c => c.key);
+            setVisibleColumns(resolvedVisibleColumns);
         } catch (err) {
+            console.error(err);
             setError('無法獲取資源群組。');
         } finally {
             setIsLoading(false);
@@ -190,7 +196,7 @@ const ResourceGroupPage: React.FC = () => {
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
                                 {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                    <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
                                 ))}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
@@ -257,7 +263,7 @@ const ResourceGroupPage: React.FC = () => {
                 isOpen={isColumnSettingsModalOpen}
                 onClose={() => setIsColumnSettingsModalOpen(false)}
                 onSave={handleSaveColumnConfig}
-                allColumns={ALL_COLUMNS}
+                allColumns={allColumns}
                 visibleColumnKeys={visibleColumns}
             />
         </div>

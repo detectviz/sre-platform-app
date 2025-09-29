@@ -21,17 +21,11 @@ import UserAvatar from '../../../components/UserAvatar';
 import UnifiedSearchModal from '../../../components/UnifiedSearchModal';
 import { useOptions } from '../../../contexts/OptionsContext';
 
-const ALL_COLUMNS: TableColumn[] = [
-    { key: 'name', label: '名稱' },
-    { key: 'role', label: '角色' },
-    { key: 'team', label: '團隊' },
-    { key: 'status', label: '狀態' },
-    { key: 'lastLogin', label: '上次登入' },
-];
 const PAGE_IDENTIFIER = 'personnel';
 
 const PersonnelManagementPage: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
+    const [allColumns, setAllColumns] = useState<TableColumn[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [totalUsers, setTotalUsers] = useState(0);
@@ -68,14 +62,23 @@ const PersonnelManagementPage: React.FC = () => {
                 ...filters,
             };
             
-            const [usersRes, columnsRes] = await Promise.all([
+            const [usersRes, columnConfigRes, allColumnsRes] = await Promise.all([
                 api.get<{ items: User[], total: number }>('/iam/users', { params }),
-                api.get<string[]>(`/settings/column-config/${pageKey}`)
+                api.get<string[]>(`/settings/column-config/${pageKey}`),
+                api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
+
+            if (allColumnsRes.data.length === 0) {
+                throw new Error('欄位定義缺失');
+            }
 
             setUsers(usersRes.data.items);
             setTotalUsers(usersRes.data.total);
-            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
+            setAllColumns(allColumnsRes.data);
+            const resolvedVisibleColumns = columnConfigRes.data.length > 0
+                ? columnConfigRes.data
+                : allColumnsRes.data.map(c => c.key);
+            setVisibleColumns(resolvedVisibleColumns);
         } catch (err) {
             setError('無法獲取人員列表。');
             console.error(err);
@@ -262,7 +265,7 @@ const PersonnelManagementPage: React.FC = () => {
                                     />
                                 </th>
                                 {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                    <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
                                 ))}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
@@ -337,7 +340,7 @@ const PersonnelManagementPage: React.FC = () => {
                 isOpen={isColumnSettingsModalOpen}
                 onClose={() => setIsColumnSettingsModalOpen(false)}
                 onSave={handleSaveColumnConfig}
-                allColumns={ALL_COLUMNS}
+                allColumns={allColumns}
                 visibleColumnKeys={visibleColumns}
             />
             <ImportFromCsvModal

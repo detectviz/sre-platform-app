@@ -16,16 +16,11 @@ import { showToast } from '../../../services/toast';
 import Pagination from '../../../components/Pagination';
 import UnifiedSearchModal from '../../../components/UnifiedSearchModal';
 
-const ALL_COLUMNS: TableColumn[] = [
-    { key: 'name', label: '團隊名稱' },
-    { key: 'ownerId', label: '擁有者' },
-    { key: 'memberIds', label: '成員數' },
-    { key: 'createdAt', label: '創建時間' },
-];
 const PAGE_IDENTIFIER = 'teams';
 
 const TeamManagementPage: React.FC = () => {
     const [teams, setTeams] = useState<Team[]>([]);
+    const [allColumns, setAllColumns] = useState<TableColumn[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -52,16 +47,24 @@ const TeamManagementPage: React.FC = () => {
         setError(null);
         try {
             const params = { page: currentPage, page_size: pageSize, ...filters };
-            const [teamsRes, usersRes, columnsRes] = await Promise.all([
+            const [teamsRes, usersRes, columnConfigRes, allColumnsRes] = await Promise.all([
                 api.get<{ items: Team[], total: number }>('/iam/teams', { params }),
                 api.get<{ items: User[] }>('/iam/users', { params: { page: 1, page_size: 1000 } }),
-                api.get<string[]>(`/settings/column-config/${pageKey}`)
+                api.get<string[]>(`/settings/column-config/${pageKey}`),
+                api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
-            
+
             setUsers(usersRes.data.items);
             setTeams(teamsRes.data.items);
             setTotalTeams(teamsRes.data.total);
-            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
+            if (allColumnsRes.data.length === 0) {
+                throw new Error('欄位定義缺失');
+            }
+            setAllColumns(allColumnsRes.data);
+            const resolvedVisibleColumns = columnConfigRes.data.length > 0
+                ? columnConfigRes.data
+                : allColumnsRes.data.map(c => c.key);
+            setVisibleColumns(resolvedVisibleColumns);
 
         } catch (err) {
             setError('無法獲取團隊或使用者列表。');
@@ -213,7 +216,7 @@ const TeamManagementPage: React.FC = () => {
                                            checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
                                 {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                    <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
                                 ))}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
@@ -270,7 +273,7 @@ const TeamManagementPage: React.FC = () => {
                 isOpen={isColumnSettingsModalOpen}
                 onClose={() => setIsColumnSettingsModalOpen(false)}
                 onSave={handleSaveColumnConfig}
-                allColumns={ALL_COLUMNS}
+                allColumns={allColumns}
                 visibleColumnKeys={visibleColumns}
             />
             <UnifiedSearchModal

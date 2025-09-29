@@ -20,19 +20,11 @@ import { showToast } from '../../services/toast';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
 import PlaceholderModal from '../../components/PlaceholderModal';
 
-const ALL_COLUMNS: TableColumn[] = [
-    { key: 'enabled', label: '' },
-    { key: 'name', label: '規則名稱' },
-    { key: 'type', label: '類型' },
-    { key: 'matchers', label: '靜音條件' },
-    { key: 'schedule', label: '排程' },
-    { key: 'creator', label: '創建者' },
-    { key: 'createdAt', label: '創建時間' },
-];
 const PAGE_IDENTIFIER = 'silence_rules';
 
 const SilenceRulePage: React.FC = () => {
     const [rules, setRules] = useState<SilenceRule[]>([]);
+    const [allColumns, setAllColumns] = useState<TableColumn[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -57,13 +49,22 @@ const SilenceRulePage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const [rulesRes, columnsRes] = await Promise.all([
+            const [rulesRes, columnConfigRes, allColumnsRes] = await Promise.all([
                 api.get<SilenceRule[]>('/silence-rules', { params: filters }),
-                api.get<string[]>(`/settings/column-config/${pageKey}`)
+                api.get<string[]>(`/settings/column-config/${pageKey}`),
+                api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
+            if (allColumnsRes.data.length === 0) {
+                throw new Error('欄位定義缺失');
+            }
             setRules(rulesRes.data);
-            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
+            setAllColumns(allColumnsRes.data);
+            const resolvedVisibleColumns = columnConfigRes.data.length > 0
+                ? columnConfigRes.data
+                : allColumnsRes.data.map(c => c.key);
+            setVisibleColumns(resolvedVisibleColumns);
         } catch (err) {
+            console.error(err);
             setError('無法獲取靜音規則。');
         } finally {
             setIsLoading(false);
@@ -249,7 +250,7 @@ const SilenceRulePage: React.FC = () => {
                                            checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
                                 {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                    <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
                                 ))}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
@@ -308,7 +309,7 @@ const SilenceRulePage: React.FC = () => {
                 isOpen={isColumnSettingsModalOpen}
                 onClose={() => setIsColumnSettingsModalOpen(false)}
                 onSave={handleSaveColumnConfig}
-                allColumns={ALL_COLUMNS}
+                allColumns={allColumns}
                 visibleColumnKeys={visibleColumns}
             />
             <ImportFromCsvModal

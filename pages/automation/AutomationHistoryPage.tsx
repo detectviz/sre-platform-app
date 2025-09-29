@@ -19,18 +19,11 @@ import ColumnSettingsModal from '../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
 import SortableHeader from '../../components/SortableHeader';
 
-const ALL_COLUMNS: TableColumn[] = [
-    { key: 'scriptName', label: '腳本名稱' },
-    { key: 'status', label: '狀態' },
-    { key: 'triggerSource', label: '觸發來源' },
-    { key: 'triggeredBy', label: '觸發者' },
-    { key: 'startTime', label: '開始時間' },
-    { key: 'durationMs', label: '耗時 (ms)' },
-];
 const PAGE_IDENTIFIER = 'automation_history';
 
 const AutomationHistoryPage: React.FC = () => {
     const [executions, setExecutions] = useState<AutomationExecution[]>([]);
+    const [allColumns, setAllColumns] = useState<TableColumn[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [total, setTotal] = useState(0);
@@ -64,14 +57,23 @@ const AutomationHistoryPage: React.FC = () => {
                 params.sort_by = sortConfig.key;
                 params.sort_order = sortConfig.direction;
             }
-            const [executionsRes, columnsRes] = await Promise.all([
+            const [executionsRes, columnConfigRes, allColumnsRes] = await Promise.all([
                 api.get<{ items: AutomationExecution[], total: number }>('/automation/executions', { params }),
-                api.get<string[]>(`/settings/column-config/${pageKey}`)
+                api.get<string[]>(`/settings/column-config/${pageKey}`),
+                api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
             setExecutions(executionsRes.data.items);
             setTotal(executionsRes.data.total);
-            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
+            if (allColumnsRes.data.length === 0) {
+                throw new Error('欄位定義缺失');
+            }
+            setAllColumns(allColumnsRes.data);
+            const resolvedVisibleColumns = columnConfigRes.data.length > 0
+                ? columnConfigRes.data
+                : allColumnsRes.data.map(c => c.key);
+            setVisibleColumns(resolvedVisibleColumns);
         } catch (err) {
+            console.error(err);
             setError('無法獲取執行歷史。');
         } finally {
             setIsLoading(false);
@@ -192,7 +194,7 @@ const AutomationHistoryPage: React.FC = () => {
                                      <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded" checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
                                 {visibleColumns.map(key => {
-                                    const col = ALL_COLUMNS.find(c => c.key === key);
+                                    const col = allColumns.find(c => c.key === key);
                                     if (!col) return null;
                                     return <SortableHeader key={key} label={col.label} sortKey={col.key} sortConfig={sortConfig} onSort={handleSort} />;
                                 })}
@@ -248,7 +250,7 @@ const AutomationHistoryPage: React.FC = () => {
                 isOpen={isColumnSettingsModalOpen}
                 onClose={() => setIsColumnSettingsModalOpen(false)}
                 onSave={handleSaveColumnConfig}
-                allColumns={ALL_COLUMNS}
+                allColumns={allColumns}
                 visibleColumnKeys={visibleColumns}
             />
         </div>

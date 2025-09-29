@@ -429,6 +429,12 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 }
                 return rules;
             }
+            case 'GET /system': {
+                if (id === 'config') {
+                    return DB.systemConfig;
+                }
+                break;
+            }
             case 'POST /silence-rules':
                 if (id === 'batch-actions') {
                     const { action, ids = [] } = body || {};

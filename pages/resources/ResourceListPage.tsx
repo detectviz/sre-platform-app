@@ -24,19 +24,11 @@ import { showToast } from '../../services/toast';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
 import ResourceAnalysisModal from '../../components/ResourceAnalysisModal';
 
-const ALL_COLUMNS: TableColumn[] = [
-    { key: 'status', label: '狀態' },
-    { key: 'name', label: '名稱' },
-    { key: 'type', label: '類型' },
-    { key: 'provider', label: 'PROVIDER' },
-    { key: 'region', label: 'REGION' },
-    { key: 'owner', label: '擁有者' },
-    { key: 'lastCheckIn', label: '最後簽入' },
-];
 const PAGE_IDENTIFIER = 'resources';
 
 const ResourceListPage: React.FC = () => {
     const [resources, setResources] = useState<Resource[]>([]);
+    const [allColumns, setAllColumns] = useState<TableColumn[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [totalResources, setTotalResources] = useState(0);
@@ -81,15 +73,25 @@ const ResourceListPage: React.FC = () => {
                 page_size: pageSize,
                 ...filters,
             };
-            const [resourcesRes, columnsRes] = await Promise.all([
+            const [resourcesRes, columnConfigRes, allColumnsRes] = await Promise.all([
                 api.get<{ items: Resource[], total: number }>('/resources', { params }),
-                api.get<string[]>(`/settings/column-config/${pageKey}`)
+                api.get<string[]>(`/settings/column-config/${pageKey}`),
+                api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
-            
+
+            if (allColumnsRes.data.length === 0) {
+                throw new Error('欄位定義缺失');
+            }
+
             setResources(resourcesRes.data.items);
             setTotalResources(resourcesRes.data.total);
-            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
+            setAllColumns(allColumnsRes.data);
+            const resolvedVisibleColumns = columnConfigRes.data.length > 0
+                ? columnConfigRes.data
+                : allColumnsRes.data.map(c => c.key);
+            setVisibleColumns(resolvedVisibleColumns);
         } catch (err) {
+            console.error(err);
             setError('無法獲取資源列表。');
         } finally {
             setIsLoading(false);
@@ -291,7 +293,7 @@ const ResourceListPage: React.FC = () => {
                                            checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
                                 {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                    <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
                                 ))}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
@@ -379,7 +381,7 @@ const ResourceListPage: React.FC = () => {
                 isOpen={isColumnSettingsModalOpen}
                 onClose={() => setIsColumnSettingsModalOpen(false)}
                 onSave={handleSaveColumnConfig}
-                allColumns={ALL_COLUMNS}
+                allColumns={allColumns}
                 visibleColumnKeys={visibleColumns}
             />
             <ImportFromCsvModal
