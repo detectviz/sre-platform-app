@@ -1076,9 +1076,73 @@ const MOCK_INCIDENTS: Incident[] = [
     { id: 'INC-003', summary: 'CPU 使用率異常', resource: 'web-prod-12', resourceId: 'res-004', serviceImpact: 'Medium', rule: 'CPU 使用率規則', ruleId: 'rule-cpu', status: 'resolved', severity: 'warning', priority: 'P2', assignee: '王五', triggeredAt: '2024-01-15 09:45:00', history: [ { timestamp: '2024-01-15 09:45:00', user: 'System', action: 'Created', details: 'Incident created from rule "CPU 使用率規則".' } ] },
 ];
 const MOCK_QUICK_SILENCE_DURATIONS = [1, 2, 4, 8, 12, 24]; // hours
+const MOCK_ALERT_RULE_DEFAULT: Partial<AlertRule> = {
+    name: '',
+    description: '',
+    target: '',
+    enabled: true,
+    severity: 'warning',
+    automationEnabled: false,
+    labels: [],
+    conditionGroups: [
+        {
+            logic: 'OR',
+            severity: 'warning',
+            conditions: [
+                {
+                    metric: 'cpu_usage_percent',
+                    operator: '>',
+                    threshold: 80,
+                    durationMinutes: 5,
+                },
+            ],
+        },
+    ],
+    titleTemplate: '🚨 [{{severity}}] {{resource.name}} is in trouble',
+    contentTemplate: 'The metric {{metric}} reached {{value}} which is above the threshold of {{threshold}}.',
+    automation: {
+        enabled: false,
+        parameters: {},
+    },
+};
+
 const MOCK_ALERT_RULES: AlertRule[] = [
-    { id: 'rule-001', name: 'CPU 使用率過高', description: '當任何伺服器的 CPU 使用率連續 5 分鐘超過 90% 時觸發。', enabled: true, target: '所有伺服器', conditionsSummary: 'CPU > 90% for 5m', severity: 'critical', automationEnabled: true, creator: 'Admin User', lastUpdated: '2025-09-22 10:00:00', automation: { enabled: true, scriptId: 'play-002', parameters: { namespace: 'production' } } },
-    { id: 'rule-002', name: 'API 延遲規則', description: 'API Gateway 的 p95 延遲超過 500ms。', enabled: true, target: 'api-gateway-prod', conditionsSummary: 'Latency > 500ms', severity: 'warning', automationEnabled: false, creator: 'Emily White', lastUpdated: '2025-09-21 15:30:00', automation: { enabled: false } },
+    {
+        id: 'rule-001',
+        name: 'CPU 使用率過高',
+        description: '當任何伺服器的 CPU 使用率連續 5 分鐘超過 90% 時觸發。',
+        enabled: true,
+        target: '所有伺服器',
+        conditionsSummary: 'CPU > 90% for 5m',
+        severity: 'critical',
+        automationEnabled: true,
+        creator: 'Admin User',
+        lastUpdated: '2025-09-22 10:00:00',
+        automation: { enabled: true, scriptId: 'play-002', parameters: { namespace: 'production' } },
+        testPayload: {
+            metric: 'cpu_usage_percent',
+            value: 94,
+            resource: 'web-prod-12',
+        },
+    },
+    {
+        id: 'rule-002',
+        name: 'API 延遲規則',
+        description: 'API Gateway 的 p95 延遲超過 500ms。',
+        enabled: true,
+        target: 'api-gateway-prod',
+        conditionsSummary: 'Latency > 500ms',
+        severity: 'warning',
+        automationEnabled: false,
+        creator: 'Emily White',
+        lastUpdated: '2025-09-21 15:30:00',
+        automation: { enabled: false },
+        testPayload: {
+            metric: 'http_request_duration_seconds_p95',
+            value: 620,
+            resource: 'api-gateway-prod',
+        },
+    },
 ];
 const MOCK_ALERT_RULE_TEMPLATES: AlertRuleTemplate[] = [
     { 
@@ -1870,6 +1934,8 @@ const MOCK_NOTIFICATION_CHANNEL_OPTIONS: NotificationChannelOptions = {
     httpMethods: ['POST', 'PUT', 'GET']
 };
 
+const MOCK_AUTOMATION_TRIGGER_SEVERITY_OPTIONS = MOCK_ALERT_RULE_OPTIONS.severities.map(({ value, label }) => ({ value, label }));
+
 const MOCK_AUTOMATION_TRIGGER_OPTIONS: AutomationTriggerOptions = {
     triggerTypes: [
         { value: 'Schedule', label: '排程' },
@@ -1877,10 +1943,11 @@ const MOCK_AUTOMATION_TRIGGER_OPTIONS: AutomationTriggerOptions = {
         { value: 'Event', label: '事件' }
     ],
     conditionKeys: ['severity', 'resource.type', 'tag.env'],
+    severityOptions: MOCK_AUTOMATION_TRIGGER_SEVERITY_OPTIONS,
     defaultConfigs: {
         'Schedule': { cron: '0 * * * *' },
         'Webhook': { webhookUrl: 'https://sre.platform/api/v1/webhooks/hook-generated-id' },
-        'Event': { eventConditions: 'severity = critical' }
+        'Event': { eventConditions: `severity = ${MOCK_AUTOMATION_TRIGGER_SEVERITY_OPTIONS[0]?.value ?? 'critical'}` }
     }
 };
 
@@ -2067,6 +2134,7 @@ function createInitialDB() {
         dashboardTemplates: JSON.parse(JSON.stringify(MOCK_DASHBOARD_TEMPLATES)),
         incidents: JSON.parse(JSON.stringify(MOCK_INCIDENTS)),
         quickSilenceDurations: JSON.parse(JSON.stringify(MOCK_QUICK_SILENCE_DURATIONS)),
+        alertRuleDefault: JSON.parse(JSON.stringify(MOCK_ALERT_RULE_DEFAULT)),
         alertRules: JSON.parse(JSON.stringify(MOCK_ALERT_RULES)),
         alertRuleTemplates: JSON.parse(JSON.stringify(MOCK_ALERT_RULE_TEMPLATES)),
         silenceRules: JSON.parse(JSON.stringify(MOCK_SILENCE_RULES)),
