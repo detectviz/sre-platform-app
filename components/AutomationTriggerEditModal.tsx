@@ -145,12 +145,13 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
         };
 
         if (condition.key === 'severity') {
+            const severityOptions = triggerOptions?.severityOptions || [];
             return (
                 <select {...commonProps}>
                     <option value="">選擇嚴重性...</option>
-                    <option value="critical">Critical</option>
-                    <option value="warning">Warning</option>
-                    <option value="info">Info</option>
+                    {severityOptions.map(option => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
                 </select>
             );
         }

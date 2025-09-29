@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import Icon from './Icon';
@@ -12,26 +10,90 @@ interface TestRuleModalProps {
   rule: AlertRule | null;
 }
 
+const buildFallbackPayload = (targetRule: AlertRule): Record<string, unknown> | null => {
+    const firstCondition = targetRule.conditionGroups?.[0]?.conditions?.[0];
+    if (!firstCondition) {
+        return null;
+    }
+
+    const threshold = typeof firstCondition.threshold === 'number' ? firstCondition.threshold : 0;
+    const operator = firstCondition.operator?.trim() ?? '>';
+    const adjustment = operator.startsWith('<') ? -1 : 1;
+    const resourceCandidate =
+        (typeof targetRule.target === 'string' && targetRule.target.trim().length > 0 && targetRule.target) ||
+        targetRule.labels?.[0] ||
+        targetRule.name ||
+        targetRule.id;
+
+    return {
+        metric: firstCondition.metric || `metric_${targetRule.id}`,
+        value: threshold + adjustment,
+        resource: resourceCandidate,
+    };
+};
+
 const TestRuleModal: React.FC<TestRuleModalProps> = ({ isOpen, onClose, rule }) => {
     const [payload, setPayload] = useState('');
     const [result, setResult] = useState<{ matches: boolean; preview: string } | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [isFetchingPayload, setIsFetchingPayload] = useState(false);
+    const [payloadError, setPayloadError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (isOpen && rule) {
-            const firstCondition = rule.conditionGroups?.[0]?.conditions?.[0];
-            if (firstCondition) {
-                const examplePayload = {
-                    metric: firstCondition.metric,
-                    value: firstCondition.threshold + (firstCondition.operator.startsWith('<') ? -1 : 1),
-                    resource: "example-resource-01",
-                };
-                setPayload(JSON.stringify(examplePayload, null, 2));
-            } else {
-                setPayload('{\n  "metric": "cpu_usage_percent",\n  "value": 95,\n  "resource": "web-server-01"\n}');
-            }
-            setResult(null);
+        if (!isOpen || !rule) {
+            return;
         }
+
+        let isMounted = true;
+
+        const loadSamplePayload = async () => {
+            setIsFetchingPayload(true);
+            setPayload('');
+            setResult(null);
+            setPayloadError(null);
+
+            try {
+                const { data } = await api.get<AlertRule>(`/alert-rules/${rule.id}`);
+                if (!isMounted) {
+                    return;
+                }
+                if (data.testPayload) {
+                    setPayload(JSON.stringify(data.testPayload, null, 2));
+                    return;
+                }
+
+                const fallbackPayload = buildFallbackPayload(data);
+                if (fallbackPayload) {
+                    setPayload(JSON.stringify(fallbackPayload, null, 2));
+                    setPayloadError('此規則尚未提供範例資料，已依條件自動帶入建議值。');
+                } else {
+                    setPayload('');
+                    setPayloadError('此規則尚未提供範例資料，請手動輸入測試 Payload。');
+                }
+            } catch (error) {
+                if (!isMounted) {
+                    return;
+                }
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                const fallbackPayload = buildFallbackPayload(rule);
+                if (fallbackPayload) {
+                    setPayload(JSON.stringify(fallbackPayload, null, 2));
+                } else {
+                    setPayload('');
+                }
+                setPayloadError(`無法從伺服器載入範例資料：${errorMessage}`);
+            } finally {
+                if (isMounted) {
+                    setIsFetchingPayload(false);
+                }
+            }
+        };
+
+        loadSamplePayload();
+
+        return () => {
+            isMounted = false;
+        };
     }, [isOpen, rule]);
 
     const handleTest = async () => {
@@ -48,9 +110,9 @@ const TestRuleModal: React.FC<TestRuleModalProps> = ({ isOpen, onClose, rule }) 
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             if (error instanceof SyntaxError) {
-                 setResult({ matches: false, preview: `JSON 格式錯誤: ${errorMessage}` });
+                setResult({ matches: false, preview: `JSON 格式錯誤: ${errorMessage}` });
             } else {
-                 setResult({ matches: false, preview: `測試執行失敗: ${errorMessage}` });
+                setResult({ matches: false, preview: `測試執行失敗: ${errorMessage}` });
             }
         } finally {
             setIsLoading(false);
@@ -83,7 +145,14 @@ const TestRuleModal: React.FC<TestRuleModalProps> = ({ isOpen, onClose, rule }) 
                     onChange={(e) => setPayload(e.target.value)}
                     rows={8}
                     className="w-full bg-slate-900 border border-slate-700 rounded-md p-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    disabled={isFetchingPayload}
                 />
+                {isFetchingPayload && (
+                    <p className="mt-1 text-xs text-slate-400">正在載入範例資料...</p>
+                )}
+                {payloadError && (
+                    <p className="mt-1 text-xs text-red-400">{payloadError}</p>
+                )}
             </div>
             {result && (
                  <div className={`p-4 rounded-md ${result.matches ? 'bg-green-500/20 border-green-500/50' : 'bg-red-500/20 border-red-500/50'} border`}>

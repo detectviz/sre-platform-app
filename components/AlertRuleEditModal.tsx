@@ -657,20 +657,7 @@ const AlertRuleEditModal: React.FC<AlertRuleEditModalProps> = ({ isOpen, onClose
     const { options: uiOptions } = useOptions();
     const [selectedTemplate, setSelectedTemplate] = useState<AlertRuleTemplate | null>(null);
     const [isTestModalOpen, setIsTestModalOpen] = useState(false);
-    
-    const getInitialFormData = (): Partial<AlertRule> => ({
-        name: '',
-        description: '',
-        target: '',
-        enabled: true,
-        severity: 'warning',
-        automationEnabled: false,
-        labels: [],
-        conditionGroups: [{ logic: 'OR', severity: 'warning', conditions: [{ metric: 'cpu_usage_percent', operator: '>', threshold: 80, durationMinutes: 5 }] }],
-        titleTemplate: '🚨 [{{severity}}] {{resource.name}} is in trouble',
-        contentTemplate: 'The metric {{metric}} reached {{value}} which is above the threshold of {{threshold}}.',
-        automation: { enabled: false, parameters: {} }
-    });
+    const [defaultRuleData, setDefaultRuleData] = useState<Partial<AlertRule> | null>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -685,12 +672,51 @@ const AlertRuleEditModal: React.FC<AlertRuleEditModalProps> = ({ isOpen, onClose
                 setFormData(initialData);
                 setCurrentStep(1);
             } else {
-                setFormData(getInitialFormData());
+                setFormData({});
                 setCurrentStep(0);
             }
             setSelectedTemplate(null);
         }
     }, [isOpen, rule, isEditMode]);
+
+    useEffect(() => {
+        if (!isOpen || isEditMode) {
+            return;
+        }
+
+        let isCancelled = false;
+        setDefaultRuleData(null);
+
+        api
+            .get<Partial<AlertRule>>('/alert-rules/templates/default')
+            .then(({ data }) => {
+                if (isCancelled) {
+                    return;
+                }
+                const normalizedData: Partial<AlertRule> = {
+                    ...data,
+                    automation: data.automation ?? { enabled: false, parameters: {} },
+                };
+                setDefaultRuleData(normalizedData);
+                setFormData((prev: Partial<AlertRule>) => {
+                    if (Object.keys(prev).length > 0) {
+                        return prev;
+                    }
+                    return normalizedData;
+                });
+            })
+            .catch((error) => {
+                if (isCancelled) {
+                    return;
+                }
+                console.error('Failed to load default alert rule template.', error);
+                showToast('無法載入預設告警規則。', 'error');
+            });
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [isOpen, isEditMode]);
 
     const handleSave = () => {
         const firstCondition = formData.conditionGroups?.[0]?.conditions?.[0];
@@ -725,8 +751,15 @@ const AlertRuleEditModal: React.FC<AlertRuleEditModalProps> = ({ isOpen, onClose
             const firstGroupSeverity = selectedTemplate.data.conditionGroups?.[0]?.severity;
             const defaultTarget = `resource.type = "${selectedTemplate.resourceType}"`;
             
-            const newFormData = { 
-                ...getInitialFormData(),
+            if (!defaultRuleData) {
+                showToast('預設告警規則尚未載入，請稍候。', 'error');
+                return;
+            }
+
+            const baseFormData = JSON.parse(JSON.stringify(defaultRuleData));
+
+            const newFormData = {
+                ...baseFormData,
                 ...selectedTemplate.data,
                 name: selectedTemplate.name,
                 description: selectedTemplate.description,
@@ -759,7 +792,7 @@ const AlertRuleEditModal: React.FC<AlertRuleEditModalProps> = ({ isOpen, onClose
     const finalStep = 4;
     const wizardSteps = isEditMode ? stepTitles.slice(1) : stepTitles;
     const wizardCurrentStep = isEditMode ? currentStep : currentStep + 1;
-    const isNextDisabled = !isEditMode && currentStep === 0 && !selectedTemplate;
+    const isNextDisabled = !isEditMode && currentStep === 0 && (!selectedTemplate || !defaultRuleData);
 
     return (
         <>

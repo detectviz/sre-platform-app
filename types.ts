@@ -341,6 +341,7 @@ export interface AlertRule {
   titleTemplate?: string;
   contentTemplate?: string;
   automation?: AutomationSetting;
+  testPayload?: Record<string, unknown>;
   deleted_at?: string;
 }
 
@@ -809,6 +810,7 @@ export interface NotificationStrategyOptions {
 export interface AutomationTriggerOptions {
     triggerTypes: { value: TriggerType, label: string }[];
     conditionKeys: string[];
+    severityOptions: { value: AlertRule['severity'], label: string }[];
     defaultConfigs: Record<TriggerType, Partial<AutomationTrigger['config']>>;
 }
 

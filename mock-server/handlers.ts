@@ -441,9 +441,22 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 }
                 break;
             }
-            
+
             case 'GET /alert-rules': {
-                if (id === 'templates') return DB.alertRuleTemplates;
+                const specialIds = new Set(['templates', 'resource-types', 'exporter-types', 'metrics', 'count']);
+                if (id && !specialIds.has(id)) {
+                    const rule = DB.alertRules.find((r: any) => r.id === id);
+                    if (!rule) {
+                        throw { status: 404, message: '找不到告警規則。' };
+                    }
+                    return rule;
+                }
+                if (id === 'templates') {
+                    if (subId === 'default') {
+                        return DB.alertRuleDefault;
+                    }
+                    return DB.alertRuleTemplates;
+                }
                 if (id === 'resource-types') return DB.resourceTypes;
                 if (id === 'exporter-types') return DB.exporterTypes;
                 if (id === 'metrics') return DB.metricMetadata;
