@@ -8,34 +8,59 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
     <style>
+      :root {
+        --background-color: #020617;
+        --text-color: #f8fafc;
+        --glass-card-bg: rgba(30, 41, 59, 0.5);
+        --glass-card-border: rgba(51, 65, 85, 0.5);
+        --glass-header-bg: rgba(15, 23, 42, 0.6);
+        --glass-header-border: rgba(51, 65, 85, 0.5);
+        --scrollbar-track: rgba(30, 41, 59, 0.5);
+        --scrollbar-thumb: #475569;
+        --scrollbar-thumb-hover: #64748b;
+      }
+      :root[data-theme='light'] {
+        --background-color: #f8fafc;
+        --text-color: #0f172a;
+        --glass-card-bg: rgba(255, 255, 255, 0.8);
+        --glass-card-border: rgba(148, 163, 184, 0.45);
+        --glass-header-bg: rgba(241, 245, 249, 0.85);
+        --glass-header-border: rgba(148, 163, 184, 0.6);
+        --scrollbar-track: rgba(241, 245, 249, 0.8);
+        --scrollbar-thumb: #94a3b8;
+        --scrollbar-thumb-hover: #64748b;
+      }
       body {
-        background-color: #020617; /* slate-950 */
-        color: #f8fafc; /* slate-50 */
+        background-color: var(--background-color);
+        color: var(--text-color);
         overflow: hidden;
+        transition: background-color 0.3s ease, color 0.3s ease;
       }
       .glass-card {
-        background-color: rgba(30, 41, 59, 0.5); /* slate-800/50 */
+        background-color: var(--glass-card-bg);
         backdrop-filter: blur(12px);
-        border: 1px solid rgba(51, 65, 85, 0.5); /* slate-700/50 */
+        border: 1px solid var(--glass-card-border);
+        transition: background-color 0.3s ease, border-color 0.3s ease;
       }
       .glass-header {
-        background-color: rgba(15, 23, 42, 0.6); /* slate-900/60 */
+        background-color: var(--glass-header-bg);
         backdrop-filter: blur(12px);
-        border-bottom: 1px solid rgba(51, 65, 85, 0.5); /* slate-700/50 */
+        border-bottom: 1px solid var(--glass-header-border);
+        transition: background-color 0.3s ease, border-color 0.3s ease;
       }
       ::-webkit-scrollbar {
         width: 6px;
         height: 6px;
       }
       ::-webkit-scrollbar-track {
-        background: rgba(30, 41, 59, 0.5);
+        background: var(--scrollbar-track);
       }
       ::-webkit-scrollbar-thumb {
-        background: #475569; /* slate-600 */
+        background: var(--scrollbar-thumb);
         border-radius: 3px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #64748b; /* slate-500 */
+        background: var(--scrollbar-thumb-hover);
       }
       /* Syntax Highlighting for Code Editor */
       .token-keyword { color: #c678dd; } /* purple */

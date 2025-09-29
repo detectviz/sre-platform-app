@@ -6,6 +6,7 @@ import {
     UserPreferences,
     IncidentAnalysis,
     MultiIncidentAnalysis,
+    RuleAnalysisReport,
     LogAnalysis,
     LogLevel,
     NavItem,
@@ -1486,6 +1487,91 @@ const MOCK_MULTI_INCIDENT_ANALYSIS: MultiIncidentAnalysis = {
     group_actions: [{ description: '建議對 `db-primary` 進行緊急擴容。', action_text: '執行資料庫擴容', playbook_id: 'play-004' }]
 };
 
+const MOCK_ALERT_RULE_ANALYSIS: RuleAnalysisReport = {
+    reportType: 'alert',
+    summary: '所選告警規則涵蓋關鍵 API 與基礎設施資源，其中 1 項規則被標記為高風險，建議調整閾值並加入額外指標交叉驗證。',
+    evaluatedRules: [
+        { id: 'rule-001', name: 'CPU 使用率過高', status: '已啟用', severity: 'high' },
+        { id: 'rule-002', name: 'API 延遲規則', status: '已啟用', severity: 'medium' },
+    ],
+    metrics: [
+        { label: '高風險規則', value: '1', description: '閾值過於敏感，導致誤報可能性增加。' },
+        { label: '平均誤報率', value: '7%', description: '最近 30 天內共產生 9 次誤報事件。' },
+        { label: '自動化覆蓋率', value: '50%', description: '僅半數規則啟用自動化處理流程。' },
+    ],
+    insights: [
+        {
+            title: 'CPU 規則誤報偏高',
+            detail: '近 7 天內有 5 次因短暫尖峰而觸發的告警，建議改用 p95 指標或延長觀察窗口。',
+            severity: 'medium',
+        },
+        {
+            title: '缺少關聯指標',
+            detail: 'API 延遲規則僅監控延遲，未同時檢查錯誤率，可能無法篩出真正故障。',
+            severity: 'low',
+        },
+    ],
+    recommendations: [
+        {
+            action: '調整 CPU 閾值與條件',
+            description: '將觸發條件改為 p95 > 90% 且持續 10 分鐘，並加入 CPU steal time 指標佐證。',
+            priority: 'high',
+        },
+        {
+            action: '補強 API 告警條件',
+            description: '為 API 延遲規則增加 5xx 錯誤率條件，並設定階梯式告警通知以減少噪音。',
+            priority: 'medium',
+        },
+        {
+            action: '擴充自動化腳本',
+            description: '為尚未啟用自動化的規則建立 runbook，提升修復效率。',
+            priority: 'medium',
+        },
+    ],
+};
+
+const MOCK_SILENCE_RULE_ANALYSIS: RuleAnalysisReport = {
+    reportType: 'silence',
+    summary: '靜音規則涵蓋週末維護窗口，但缺少針對緊急維護與例外條件的防護，建議補強覆蓋範圍並加入自動過期檢查。',
+    evaluatedRules: [
+        { id: 'sil-001', name: '週末維護窗口', status: '已啟用', type: 'recurring' },
+    ],
+    metrics: [
+        { label: '覆蓋時間', value: '48 小時', description: '每週五 22:00 至週日 22:00 對 staging 環境靜音。' },
+        { label: '受影響服務', value: '12', description: '含 API、批次與資料處理等服務。' },
+        { label: '例外事件', value: '2', description: '過去一季有 2 次靜音期間發生未預期的重大告警。' },
+    ],
+    insights: [
+        {
+            title: '缺少緊急維護例外',
+            detail: '靜音規則無法針對突發維護或重大事件做即時調整，可能延遲關鍵告警曝光。',
+            severity: 'high',
+        },
+        {
+            title: '條件過於寬鬆',
+            detail: '目前僅依照 env=staging 篩選，建議加入服務標籤避免影響生產影像。',
+            severity: 'medium',
+        },
+    ],
+    recommendations: [
+        {
+            action: '新增臨時靜音審核流程',
+            description: '建立額外 API 以建立緊急靜音並強制設定過期時間，避免長期沉默。',
+            priority: 'high',
+        },
+        {
+            action: '細化靜音條件',
+            description: '增加 service 或 team 標籤條件，只針對維護中的服務靜音。',
+            priority: 'medium',
+        },
+        {
+            action: '加入自動化巡檢',
+            description: '排程檢查靜音規則是否符合最新維護計畫，過期自動通知負責人。',
+            priority: 'low',
+        },
+    ],
+};
+
 const MOCK_GENERATED_PLAYBOOK = {
     type: 'shell',
     content: '#!/bin/bash\n\nNAMESPACE=$1\nPOD_NAME=$2\n\nif [ -z "$NAMESPACE" ] || [ -z "$POD_NAME" ]; then\n  echo "Error: Both namespace and pod_name are required."\n  exit 1\nfi\n\necho "Attempting to restart pod $POD_NAME in namespace $NAMESPACE..."\nkubectl delete pod $POD_NAME -n $NAMESPACE\n\nif [ $? -eq 0 ]; then\n  echo "Pod $POD_NAME successfully deleted. It will be restarted by its controller."\nelse\n  echo "Error: Failed to delete pod $POD_NAME."\n  exit 1\nfi',
@@ -2051,6 +2137,8 @@ function createInitialDB() {
         aiRiskPrediction: JSON.parse(JSON.stringify(MOCK_AI_RISK_PREDICTION)),
         singleIncidentAnalysis: JSON.parse(JSON.stringify(MOCK_SINGLE_INCIDENT_ANALYSIS)),
         multiIncidentAnalysis: JSON.parse(JSON.stringify(MOCK_MULTI_INCIDENT_ANALYSIS)),
+        alertRuleAnalysis: JSON.parse(JSON.stringify(MOCK_ALERT_RULE_ANALYSIS)),
+        silenceRuleAnalysis: JSON.parse(JSON.stringify(MOCK_SILENCE_RULE_ANALYSIS)),
         generatedPlaybook: JSON.parse(JSON.stringify(MOCK_GENERATED_PLAYBOOK)),
         logAnalysis: JSON.parse(JSON.stringify(MOCK_LOG_ANALYSIS)),
         resourceAnalysis: JSON.parse(JSON.stringify(MOCK_RESOURCE_ANALYSIS)),

@@ -1,5 +1,5 @@
 import { DB, uuidv4 } from './db';
-import type { TabConfigMap } from '../types';
+import type { Incident, TabConfigMap } from '../types';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -184,6 +184,53 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const { incident_ids } = body;
                     return incident_ids.length > 1 ? DB.multiIncidentAnalysis : DB.singleIncidentAnalysis;
                 }
+                if (id === 'alert-rules' && subId === 'analyze') {
+                    const ruleIds = Array.isArray(body?.rule_ids) ? body.rule_ids : [];
+                    if (ruleIds.length === 0) {
+                        throw { status: 400, message: '請至少選擇一項告警規則進行分析。' };
+                    }
+                    const selectedRules = DB.alertRules.filter((rule: any) => ruleIds.includes(rule.id));
+                    if (selectedRules.length === 0) {
+                        throw { status: 404, message: '找不到對應的告警規則。' };
+                    }
+                    const severityMap: Record<string, 'low' | 'medium' | 'high'> = {
+                        critical: 'high',
+                        warning: 'medium',
+                        info: 'low',
+                    };
+                    const analysis = JSON.parse(JSON.stringify(DB.alertRuleAnalysis));
+                    analysis.evaluatedRules = selectedRules.map((rule: any) => ({
+                        id: rule.id,
+                        name: rule.name,
+                        status: rule.enabled ? '已啟用' : '已停用',
+                        severity: severityMap[rule.severity] ?? 'medium',
+                    }));
+                    if (typeof analysis.summary === 'string') {
+                        analysis.summary = analysis.summary.replace('所選告警規則', `所選 ${selectedRules.length} 項告警規則`);
+                    }
+                    return analysis;
+                }
+                if (id === 'silence-rules' && subId === 'analyze') {
+                    const ruleIds = Array.isArray(body?.rule_ids) ? body.rule_ids : [];
+                    if (ruleIds.length === 0) {
+                        throw { status: 400, message: '請至少選擇一項靜音規則進行分析。' };
+                    }
+                    const selectedRules = DB.silenceRules.filter((rule: any) => ruleIds.includes(rule.id));
+                    if (selectedRules.length === 0) {
+                        throw { status: 404, message: '找不到對應的靜音規則。' };
+                    }
+                    const analysis = JSON.parse(JSON.stringify(DB.silenceRuleAnalysis));
+                    analysis.evaluatedRules = selectedRules.map((rule: any) => ({
+                        id: rule.id,
+                        name: rule.name,
+                        status: rule.enabled ? '已啟用' : '已停用',
+                        type: rule.type,
+                    }));
+                    if (typeof analysis.summary === 'string') {
+                        analysis.summary = analysis.summary.replace('靜音規則', `靜音規則（共 ${selectedRules.length} 項）`);
+                    }
+                    return analysis;
+                }
                 if (id === 'automation' && subId === 'generate-script') return DB.generatedPlaybook;
                 if (id === 'logs' && subId === 'summarize') {
                     return DB.logAnalysis;
@@ -305,6 +352,50 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 return paginate(incidents, params?.page, params?.page_size);
             }
             case 'POST /incidents': {
+                if (!id) {
+                    const { summary, resourceId, ruleId, severity, serviceImpact, priority, assignee } = body || {};
+                    if (!summary || !resourceId || !ruleId || !severity || !serviceImpact) {
+                        throw { status: 400, message: 'Missing required fields for creating an incident.' };
+                    }
+
+                    const resource = DB.resources.find((r: any) => r.id === resourceId);
+                    if (!resource) {
+                        throw { status: 404, message: 'Resource not found.' };
+                    }
+
+                    const rule = DB.alertRules.find((r: any) => r.id === ruleId);
+                    if (!rule) {
+                        throw { status: 404, message: 'Alert rule not found.' };
+                    }
+
+                    const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+                    const newIncidentId = `INC-${uuidv4().slice(0, 8).toUpperCase()}`;
+                    const newIncident: Incident = {
+                        id: newIncidentId,
+                        summary,
+                        resource: resource.name,
+                        resourceId,
+                        serviceImpact,
+                        rule: rule.name,
+                        ruleId,
+                        status: 'new',
+                        severity,
+                        priority: priority || undefined,
+                        assignee: assignee || undefined,
+                        triggeredAt: timestamp,
+                        history: [
+                            {
+                                timestamp,
+                                user: 'System',
+                                action: 'Created',
+                                details: `Incident created from rule "${rule.name}".`,
+                            },
+                        ],
+                    };
+
+                    DB.incidents.unshift(newIncident);
+                    return newIncident;
+                }
                 if (id === 'import') {
                     return { message: '成功匯入 12 筆事件。' };
                 }

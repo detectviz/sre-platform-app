@@ -71,6 +71,43 @@ export interface MultiIncidentAnalysis {
   group_actions: GroupActionRecommendation[];
 }
 
+export type RuleAnalysisSeverity = 'low' | 'medium' | 'high';
+
+export interface RuleAnalysisEvaluatedRule {
+  id: string;
+  name: string;
+  status: string;
+  severity?: RuleAnalysisSeverity;
+  type?: string;
+}
+
+export interface RuleAnalysisMetric {
+  label: string;
+  value: string;
+  description?: string;
+}
+
+export interface RuleAnalysisInsight {
+  title: string;
+  detail: string;
+  severity: RuleAnalysisSeverity;
+}
+
+export interface RuleAnalysisRecommendation {
+  action: string;
+  description: string;
+  priority: RuleAnalysisSeverity;
+}
+
+export interface RuleAnalysisReport {
+  reportType: 'alert' | 'silence';
+  summary: string;
+  evaluatedRules: RuleAnalysisEvaluatedRule[];
+  metrics: RuleAnalysisMetric[];
+  insights: RuleAnalysisInsight[];
+  recommendations: RuleAnalysisRecommendation[];
+}
+
 export interface Incident {
   id: string;
   summary: string;
@@ -86,6 +123,16 @@ export interface Incident {
   triggeredAt: string;
   history: IncidentEvent[];
   aiAnalysis?: IncidentAnalysis;
+}
+
+export interface IncidentCreateRequest {
+  summary: string;
+  resourceId: string;
+  ruleId: string;
+  severity: Incident['severity'];
+  serviceImpact: Incident['serviceImpact'];
+  priority?: Incident['priority'];
+  assignee?: string;
 }
 
 export interface LayoutWidget {

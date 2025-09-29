@@ -1,8 +1,5 @@
-
-
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
-// FIX: Import TableColumn from types.ts
-import { SilenceRule, TableColumn } from '../../types';
+import React, { useState, useEffect, useCallback } from 'react';
+import { SilenceRule, TableColumn, RuleAnalysisReport } from '../../types';
 import Icon from '../../components/Icon';
 import SilenceRuleEditModal from '../../components/SilenceRuleEditModal';
 import UnifiedSearchModal, { SilenceRuleFilters } from '../../components/UnifiedSearchModal';
@@ -18,7 +15,7 @@ import ImportFromCsvModal from '../../components/ImportFromCsvModal';
 import ColumnSettingsModal from '../../components/ColumnSettingsModal';
 import { showToast } from '../../services/toast';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
-import PlaceholderModal from '../../components/PlaceholderModal';
+import RuleAnalysisModal from '../../components/RuleAnalysisModal';
 
 const PAGE_IDENTIFIER = 'silence_rules';
 
@@ -38,8 +35,10 @@ const SilenceRulePage: React.FC = () => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
-    const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
-    const [modalFeatureName, setModalFeatureName] = useState('');
+    const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
+    const [analysisReport, setAnalysisReport] = useState<RuleAnalysisReport | null>(null);
+    const [analysisError, setAnalysisError] = useState<string | null>(null);
+    const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
 
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
@@ -176,9 +175,24 @@ const SilenceRulePage: React.FC = () => {
         }
     };
     
-    const handleAIAnalysis = () => {
-        setModalFeatureName('分析靜音規則');
-        setIsPlaceholderModalOpen(true);
+    const handleAIAnalysis = async () => {
+        if (selectedIds.length === 0) {
+            showToast('請先選擇至少一條靜音規則。', 'warning');
+            return;
+        }
+        setIsAnalysisModalOpen(true);
+        setAnalysisReport(null);
+        setAnalysisError(null);
+        setIsAnalysisLoading(true);
+        try {
+            const { data } = await api.post<RuleAnalysisReport>('/ai/silence-rules/analyze', { rule_ids: selectedIds });
+            setAnalysisReport(data);
+        } catch (err: any) {
+            const message = err?.response?.data?.message || '無法取得 AI 分析結果。';
+            setAnalysisError(message);
+        } finally {
+            setIsAnalysisLoading(false);
+        }
     };
 
     const batchActions = (
@@ -321,10 +335,13 @@ const SilenceRulePage: React.FC = () => {
                 templateHeaders={['id', 'name', 'enabled', 'type', 'creator']}
                 templateFilename="silence-rules-template.csv"
             />
-             <PlaceholderModal
-                isOpen={isPlaceholderModalOpen}
-                onClose={() => setIsPlaceholderModalOpen(false)}
-                featureName={modalFeatureName}
+            <RuleAnalysisModal
+                isOpen={isAnalysisModalOpen}
+                onClose={() => setIsAnalysisModalOpen(false)}
+                title="AI 靜音規則分析"
+                report={analysisReport}
+                isLoading={isAnalysisLoading}
+                error={analysisError}
             />
         </div>
     );

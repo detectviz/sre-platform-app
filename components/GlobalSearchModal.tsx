@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import Modal from './Modal';
 import Icon from './Icon';
 import api from '../services/api';
-import { Dashboard, Resource, User, AutomationPlaybook } from '../types';
+import { Dashboard, Resource, User, AutomationPlaybook, Incident } from '../types';
 import { showToast } from '../services/toast';
 import { useContent } from '../contexts/ContentContext';
+import NewIncidentModal from './NewIncidentModal';
+import { useTheme } from '../contexts/ThemeContext';
 
 // Interfaces
 interface Command {
@@ -38,9 +40,11 @@ const GlobalSearchModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
     const inputRef = useRef<HTMLInputElement>(null);
     const navigate = useNavigate();
     const { content } = useContent();
+    const { theme, setTheme } = useTheme();
     const modalContent = content?.COMMAND_PALETTE;
 
     const [commands, setCommands] = useState<Command[]>([]);
+    const [isNewIncidentModalOpen, setIsNewIncidentModalOpen] = useState(false);
 
     // Fetch commands
     useEffect(() => {
@@ -50,12 +54,29 @@ const GlobalSearchModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
     }, [isOpen]);
 
     // Action mapping
+    const handleOpenNewIncident = useCallback(() => {
+        setIsNewIncidentModalOpen(true);
+        onClose();
+    }, [onClose]);
+
+    const handleThemeChange = useCallback(() => {
+        const nextTheme = theme === 'dark' ? 'light' : 'dark';
+        setTheme(nextTheme);
+        showToast(nextTheme === 'dark' ? '已切換至深色主題。' : '已切換至淺色主題。', 'success');
+        onClose();
+    }, [theme, setTheme, onClose]);
+
     const commandActions: Record<string, (payload?: any) => void> = useMemo(() => ({
-        'new_incident': () => { showToast('This would open a new incident form.', 'success'); onClose(); },
+        'new_incident': handleOpenNewIncident,
         'silence_resource': () => setStep('silence_resource_search'),
         'run_playbook': () => setStep('run_playbook_search'),
-        'change_theme': () => { showToast('This would toggle the theme.', 'success'); onClose(); },
-    }), [onClose]);
+        'change_theme': handleThemeChange,
+    }), [handleOpenNewIncident, handleThemeChange]);
+
+    const handleIncidentCreated = useCallback((incident: Incident) => {
+        setIsNewIncidentModalOpen(false);
+        navigate(`/incidents/${incident.id}`);
+    }, [navigate]);
 
 
     // Reset state on open/close
@@ -266,6 +287,7 @@ const GlobalSearchModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
     const silencePrefix = modalContent?.SILENCE_PREFIX_TEMPLATE?.replace('{name}', payload.resource?.name || '') || '';
 
     return (
+        <>
         <Modal title="" isOpen={isOpen} onClose={onClose} width="w-1/2 max-w-3xl" className="glass-card rounded-xl border border-slate-700/50 shadow-2xl flex flex-col max-w-4xl max-h-[60vh] animate-fade-in-down">
             <div className="p-3 border-b border-slate-700/50">
                  <div className="relative flex items-center">
@@ -319,6 +341,12 @@ const GlobalSearchModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                 ))}
             </div>
         </Modal>
+        <NewIncidentModal
+            isOpen={isNewIncidentModalOpen}
+            onClose={() => setIsNewIncidentModalOpen(false)}
+            onSuccess={handleIncidentCreated}
+        />
+        </>
     );
 };
 
