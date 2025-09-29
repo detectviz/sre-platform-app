@@ -4,9 +4,7 @@ import type { Incident, TabConfigMap } from '../types';
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 const getActive = (collection: any[] | undefined) => {
-    // Safety check to prevent crashes if a collection is unexpectedly undefined.
     if (!collection) {
-        console.error("API handler tried to access a non-existent data collection.");
         return [];
     }
     return collection.filter(item => !item.deleted_at);
@@ -41,11 +39,8 @@ const sortData = (data: any[], sortBy: string, sortOrder: 'asc' | 'desc') => {
         }
 
         if (typeof valA === 'boolean' && typeof valB === 'boolean') {
-            // FIX: Explicitly convert boolean to number to avoid type errors during arithmetic sort operation.
             const valueA = Number(valA);
             const valueB = Number(valB);
-            // FIX: Use the converted number variables for subtraction.
-            // FIX: Corrected the arithmetic operation to use the numeric representations of booleans (`valueA`, `valueB`) instead of the boolean values themselves, resolving the type error.
             return sortOrder === 'asc' ? valueA - valueB : valueB - valueA;
         }
         
@@ -59,8 +54,7 @@ const sortData = (data: any[], sortBy: string, sortOrder: 'asc' | 'desc') => {
 
 const handleRequest = async (method: HttpMethod, url: string, params: any, body: any) => {
     try {
-        console.log(`[Mock API] ${method} ${url}`, { params, body });
-        await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200)); // Simulate latency
+        await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
 
         const urlParts = url.split('?')[0].split('/').filter(Boolean);
         const resource = urlParts[0];
@@ -100,9 +94,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     return DB.pageMetadata;
                 }
                 if (id === 'columns' && subId) {
-                    // FIX: Property 'allColumns' does not exist on type '{ ... }'.
                     const pageKey = subId as keyof typeof DB.allColumns;
-                    // FIX: Property 'allColumns' does not exist on type '{ ... }'.
                     return DB.allColumns[pageKey] || [];
                 }
                 break;
@@ -1207,11 +1199,6 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
             }
         }
     } catch (e: any) {
-        const errorMessage = e?.message ?? e?.toString() ?? 'Unknown error';
-        console.error(`[Mock ${method} Error] ${url.split('?')[0]}`, errorMessage);
-        if (e?.status === 403 && (e?.message?.toLowerCase?.().includes('license') || e?.code === 'LICENSE_INVALID')) {
-            console.warn('License invalid or expired');
-        }
         throw e;
     }
 

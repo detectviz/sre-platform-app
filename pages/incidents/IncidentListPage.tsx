@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-// FIX: Import TableColumn from types.ts
 import { Incident, IncidentAnalysis, MultiIncidentAnalysis, IncidentOptions, StyleDescriptor, User, TableColumn } from '../../types';
 import Icon from '../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
@@ -15,7 +14,6 @@ import QuickSilenceModal from '../../components/QuickSilenceModal';
 import api from '../../services/api';
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
-// FIX: Import TableColumn from types.ts, not from ColumnSettingsModal
 import ColumnSettingsModal from '../../components/ColumnSettingsModal';
 import { showToast } from '../../services/toast';
 import { exportToCsv } from '../../services/export';
@@ -92,7 +90,6 @@ const IncidentListPage: React.FC = () => {
             setVisibleColumns(resolvedVisibleColumns);
             setUsers(usersRes.data.items);
         } catch (err) {
-            console.error(err);
             setError('無法獲取事故列表。');
         } finally {
             setIsLoading(false);
@@ -210,7 +207,6 @@ const IncidentListPage: React.FC = () => {
             });
             setAnalysisReport(data);
         } catch (err) {
-            console.error(err);
             setAnalysisReport("無法生成 AI 分析報告。");
         } finally {
             setIsAnalysisLoading(false);

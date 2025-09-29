@@ -19,7 +19,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const { data } = await api.get<User>('/me');
         setCurrentUser(data);
       } catch (error) {
-        console.error("Failed to fetch current user", error);
+        // Silent fail for user context
       } finally {
         setIsLoading(false);
       }

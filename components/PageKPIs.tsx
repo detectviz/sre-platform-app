@@ -42,7 +42,7 @@ const PageKPIs: React.FC<PageKPIsProps> = ({ pageName, widgetIds: explicitWidget
             setWidgets(widgetsRes.data);
             setLayouts(layoutsRes.data);
         } catch (error) {
-            console.error("Failed to fetch page KPI data", error);
+            // Failed to fetch page KPI data
             // Use defaults on error
             setLayouts({});
         } finally {
@@ -60,7 +60,7 @@ const PageKPIs: React.FC<PageKPIsProps> = ({ pageName, widgetIds: explicitWidget
                 setLayouts(JSON.parse(storedLayouts));
             }
         } catch (e) {
-            console.error("Failed to parse layouts from localStorage on change", e);
+            // Failed to parse layouts from localStorage
         }
     };
     window.addEventListener('storage', handleStorageChange);

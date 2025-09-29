@@ -69,7 +69,7 @@ const NewIncidentModal: React.FC<NewIncidentModalProps> = ({ isOpen, onClose, on
           ruleId: prev.ruleId || rulesRes.data[0]?.id || '',
         }));
       } catch (err) {
-        console.error('Failed to load incident creation data', err);
+        // Failed to load incident creation data
         setError('無法載入事件建立所需資料。');
       } finally {
         setIsLoading(false);
@@ -117,7 +117,7 @@ const NewIncidentModal: React.FC<NewIncidentModalProps> = ({ isOpen, onClose, on
       onSuccess?.(data);
       onClose();
     } catch (err) {
-      console.error('Failed to create incident', err);
+      // Failed to create incident
       showToast('無法建立事件，請稍後再試。', 'error');
     } finally {
       setIsSubmitting(false);

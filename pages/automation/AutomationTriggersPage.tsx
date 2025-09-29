@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-// FIX: Import TableColumn from types.ts
 import { AutomationTrigger, TriggerType, AutomationPlaybook, AutomationTriggerFilters, TableColumn } from '../../types';
 import Icon from '../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
@@ -8,11 +7,9 @@ import AutomationTriggerEditModal from '../../components/AutomationTriggerEditMo
 import Modal from '../../components/Modal';
 import api from '../../services/api';
 import UnifiedSearchModal from '../../components/UnifiedSearchModal';
-// FIX: Import TableColumn from types.ts, not from ColumnSettingsModal
 import ColumnSettingsModal from '../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
 import { showToast } from '../../services/toast';
-// FIX: Add missing imports for TableLoader and TableError to resolve 'Cannot find name' errors.
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
 import Pagination from '../../components/Pagination';
@@ -70,7 +67,6 @@ const AutomationTriggersPage: React.FC = () => {
                 : allColumnsRes.data.map(c => c.key);
             setVisibleColumns(resolvedVisibleColumns);
         } catch (err) {
-            console.error(err);
             setError('Failed to fetch triggers or playbooks.');
         } finally {
             setIsLoading(false);

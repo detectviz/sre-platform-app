@@ -20,7 +20,7 @@ const fetchAndCacheIconMap = (): Promise<Record<string, string>> => {
             return iconMapCache;
         })
         .catch(err => {
-            console.error("Fatal: Failed to fetch icon map. Icons may not render correctly.", err);
+            // Failed to fetch icon map - icons may not render correctly
             // On failure, set an empty cache to prevent retries
             iconMapCache = {};
             return iconMapCache;

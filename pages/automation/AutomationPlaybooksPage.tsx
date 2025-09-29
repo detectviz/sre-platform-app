@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-// FIX: Import TableColumn from types.ts
 import { AutomationPlaybook, TableColumn } from '../../types';
 import Icon from '../../components/Icon';
 import TableContainer from '../../components/TableContainer';
@@ -10,7 +9,6 @@ import Modal from '../../components/Modal';
 import api from '../../services/api';
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
-// FIX: Import TableColumn from types.ts, not from ColumnSettingsModal
 import ColumnSettingsModal from '../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
 import { showToast } from '../../services/toast';
@@ -56,9 +54,7 @@ const AutomationPlaybooksPage: React.FC = () => {
                 : allColumnsRes.data.map(c => c.key);
             setVisibleColumns(resolvedVisibleColumns);
         } catch (err) {
-            console.error(err);
             setError('無法獲取自動化腳本。');
-            console.error(err);
         } finally {
             setIsLoading(false);
         }

@@ -33,7 +33,7 @@ const Step0 = ({ selectedTemplate, setSelectedTemplate }: { selectedTemplate: Al
         ]).then(([typesRes, templatesRes]) => {
             setResourceTypes(typesRes.data);
             setTemplates(templatesRes.data);
-        }).catch(err => console.error(err))
+        }).catch(err => { /* Silent error */ })
         .finally(() => setIsLoading(false));
     }, []);
 
@@ -275,7 +275,7 @@ const Step2 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
         api.get<MetricMetadata[]>('/alert-rules/metrics')
             .then(res => setMetricMetadata(res.data))
             .catch(err => {
-                console.error("Failed to fetch metric metadata", err);
+                // Failed to fetch metric metadata
                 showToast("無法載入指標選項。", "error");
             })
             .finally(() => setIsMetricLoading(false));
@@ -481,7 +481,7 @@ const Step4 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
         api.get<AutomationPlaybook[]>('/automation/scripts')
             .then(res => setPlaybooks(res.data))
             .catch(err => {
-                console.error("Failed to fetch playbooks", err);
+                // Failed to fetch playbooks
                 showToast("無法載入自動化腳本列表。", "error");
             })
             .finally(() => setIsLoading(false));
@@ -709,7 +709,7 @@ const AlertRuleEditModal: React.FC<AlertRuleEditModalProps> = ({ isOpen, onClose
                 if (isCancelled) {
                     return;
                 }
-                console.error('Failed to load default alert rule template.', error);
+                // Failed to load default alert rule template
                 showToast('無法載入預設告警規則。', 'error');
             });
 

@@ -21,7 +21,6 @@ export const ContentProvider: React.FC<{ children: ReactNode }> = ({ children })
         setContent(data);
       } catch (err) {
         setError('Failed to load UI content.');
-        console.error(err);
       } finally {
         setIsLoading(false);
       }

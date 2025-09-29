@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-// FIX: Import TableColumn from types.ts
 import { LayoutWidget, TableColumn } from '../../../types';
 import Icon from '../../../components/Icon';
 import Modal from '../../../components/Modal';
@@ -7,7 +6,6 @@ import api from '../../../services/api';
 import { showToast } from '../../../services/toast';
 import { useContent } from '../../../contexts/ContentContext';
 
-// FIX: Moved ListItem component outside of DualListSelector to prevent re-creation on every render and fix type errors.
 interface ListItemProps {
     widget: LayoutWidget;
     onAction: () => void;
@@ -92,7 +90,6 @@ interface LayoutConfig {
 }
 type LayoutsData = Record<string, LayoutConfig>;
 
-// FIX: Moved AccordionItem outside of LayoutSettingsPage to prevent re-creation on every render and fix type errors.
 interface AccordionItemProps {
     pageName: string;
     layouts: LayoutsData;
@@ -196,7 +193,6 @@ const LayoutSettingsPage: React.FC = () => {
             const updatedLayouts = { ...layouts, [editingPage]: { ...currentLayoutConfig, widgetIds: newSelectedIds } };
             
             try {
-                // FIX: Specify the generic type `LayoutsData` for the `api.put` call to resolve the TypeScript error where `savedLayouts` was inferred as `unknown`.
                 const { data: savedLayouts } = await api.put<LayoutsData>('/settings/layouts', updatedLayouts);
                 setLayouts(savedLayouts);
                 // Also update localStorage for immediate UI feedback on other pages via PageKPIs

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { MailSettings } from '../../../types';
 import Icon from '../../../components/Icon';
 import FormRow from '../../../components/FormRow';
-import PlaceholderModal from '../../../components/PlaceholderModal';
 import api from '../../../services/api';
 
 const MailSettingsPage: React.FC = () => {

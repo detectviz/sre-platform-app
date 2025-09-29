@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-// FIX: Import TableColumn from types.ts
 import { AutomationExecution, AutomationPlaybook, AutomationHistoryFilters, TableColumn } from '../../types';
 import Icon from '../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
@@ -14,7 +13,6 @@ import { useOptions } from '../../contexts/OptionsContext';
 import { exportToCsv } from '../../services/export';
 import { showToast } from '../../services/toast';
 import UnifiedSearchModal from '../../components/UnifiedSearchModal';
-// FIX: Import TableColumn from types.ts, not from ColumnSettingsModal
 import ColumnSettingsModal from '../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
 import SortableHeader from '../../components/SortableHeader';
@@ -73,7 +71,6 @@ const AutomationHistoryPage: React.FC = () => {
                 : allColumnsRes.data.map(c => c.key);
             setVisibleColumns(resolvedVisibleColumns);
         } catch (err) {
-            console.error(err);
             setError('無法獲取執行歷史。');
         } finally {
             setIsLoading(false);

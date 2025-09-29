@@ -5,7 +5,6 @@ import EChartsReact from '../../components/EChartsReact';
 import LogLevelPill from '../../components/LogLevelPill';
 import JsonViewer from '../../components/JsonViewer';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
-import PlaceholderModal from '../../components/PlaceholderModal';
 import { LogEntry, LogLevel, LogAnalysis, LogExplorerFilters } from '../../types';
 import api from '../../services/api';
 import { exportToCsv } from '../../services/export';
@@ -32,18 +31,12 @@ const LogExplorerPage: React.FC = () => {
     const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
     const liveIntervalRef = useRef<number | null>(null);
     const logContainerRef = useRef<HTMLDivElement>(null);
-    const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
-    const [modalFeatureName, setModalFeatureName] = useState('');
     
     // New state for AI Log Analysis
     const [isLogAnalysisModalOpen, setIsLogAnalysisModalOpen] = useState(false);
     const [logAnalysisReport, setLogAnalysisReport] = useState<LogAnalysis | null>(null);
     const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
 
-    const showPlaceholderModal = (featureName: string) => {
-        setModalFeatureName(featureName);
-        setIsPlaceholderModalOpen(true);
-    };
 
     const fetchData = useCallback((isLiveUpdate = false) => {
         if (!isLiveUpdate) setIsLoading(true);
@@ -229,11 +222,6 @@ const LogExplorerPage: React.FC = () => {
                     )}
                 </div>
             </div>
-            <PlaceholderModal
-                isOpen={isPlaceholderModalOpen}
-                onClose={() => setIsPlaceholderModalOpen(false)}
-                featureName={modalFeatureName}
-            />
             <LogAnalysisModal
                 isOpen={isLogAnalysisModalOpen}
                 onClose={() => setIsLogAnalysisModalOpen(false)}

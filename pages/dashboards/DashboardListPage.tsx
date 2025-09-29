@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-// FIX: Import TableColumn from types.ts
 import { Dashboard, DashboardFilters, TableColumn } from '../../types';
 import Icon from '../../components/Icon';
 import TableContainer from '../../components/TableContainer';
@@ -12,12 +11,10 @@ import api from '../../services/api';
 import Pagination from '../../components/Pagination';
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
-// FIX: Import TableColumn from types.ts, not from ColumnSettingsModal
 import ColumnSettingsModal from '../../components/ColumnSettingsModal';
 import { showToast } from '../../services/toast';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
 import { useOptions } from '../../contexts/OptionsContext';
-// FIX: UnifiedSearchModal is a default export, DashboardFilters is not exported from here.
 import UnifiedSearchModal from '../../components/UnifiedSearchModal';
 import { exportToCsv } from '../../services/export';
 import ImportFromCsvModal from '../../components/ImportFromCsvModal';

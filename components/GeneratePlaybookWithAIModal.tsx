@@ -26,7 +26,6 @@ const GeneratePlaybookWithAIModal: React.FC<GeneratePlaybookWithAIModalProps> = 
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState<GeneratedPlaybook | null>(null);
     const [error, setError] = useState<string | null>(null);
-    // FIX: Use content from context instead of deprecated constant file.
     const { content: pageContent } = useContent();
     const content = pageContent?.GENERATE_PLAYBOOK_WITH_AI_MODAL;
     const globalContent = pageContent?.GLOBAL;

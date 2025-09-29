@@ -44,7 +44,7 @@ const InviteUserModal: React.FC<InviteUserModalProps> = ({ isOpen, onClose, onIn
                 if (teamItems.length > 0) {
                     setTeam(teamItems[0].name);
                 }
-            }).catch(err => console.error("Failed to load roles/teams for invite modal", err))
+            }).catch(err => { /* Failed to load roles/teams */ })
             .finally(() => setIsLoading(false));
         }
     }, [isOpen]);

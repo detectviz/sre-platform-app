@@ -43,7 +43,7 @@ const SREWarRoomPage: React.FC = () => {
             const { data } = await api.get<BriefingData>('/ai/briefing');
             setAiBriefing(data);
         } catch (error) {
-            console.error("Fetch Briefing Error:", error);
+            // Fetch briefing error
             setAiBriefing(null);
         } finally {
             setIsBriefingLoading(false);
@@ -62,7 +62,7 @@ const SREWarRoomPage: React.FC = () => {
             setServiceHealthData(healthRes.data);
             setResourceGroupData(groupRes.data);
         } catch (error) {
-             console.error("Fetch Chart Data Error:", error);
+             // Fetch chart data error
              setServiceHealthError('無法載入服務健康度資料。');
              setResourceGroupError('無法載入資源群組狀態資料。');
         } finally {
@@ -82,7 +82,7 @@ const SREWarRoomPage: React.FC = () => {
             const { data } = await api.post<BriefingData>('/ai/briefing/generate');
             setAiBriefing(data);
         } catch (error) {
-            console.error("AI Briefing Generation Error:", error);
+            // AI briefing generation error
             setAiBriefing(null);
         } finally {
             setIsBriefingLoading(false);

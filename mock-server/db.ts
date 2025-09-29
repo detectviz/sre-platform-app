@@ -177,14 +177,6 @@ const PAGE_CONTENT = {
     SHARE_DASHBOARD: 'Share Dashboard',
     GRAFANA_URL_NOT_CONFIGURED: 'Grafana URL not configured.',
   },
-  PLACEHOLDER_PAGE: {
-    UNDER_CONSTRUCTION: '此頁面正在施工中。',
-  },
-  PLACEHOLDER_MODAL: {
-    TITLE: '功能開發中',
-    OK_BUTTON: '了解',
-    MESSAGE: '「{featureName}」功能目前正在開發中，敬請期待！',
-  },
   COMMAND_PALETTE: {
     TITLE: 'Command Palette',
     SEARCH_PLACEHOLDER: 'Search...',
@@ -1209,7 +1201,6 @@ const MOCK_SILENCE_RULE_TEMPLATES: SilenceRuleTemplate[] = [
     { id: 'srt-001', name: 'Staging Maintenance', emoji: '🚧', data: { description: 'Silence all alerts from the staging environment.', matchers: [{ key: 'env', operator: '=', value: 'staging' }] } },
     { id: 'srt-002', name: 'Weekend Silence', emoji: '😴', data: { description: 'Silence non-critical alerts over the weekend.', matchers: [{ key: 'severity', operator: '!=', value: 'critical' }], schedule: { type: 'recurring', cron: '0 0 * * 6' } } },
 ];
-// FIX: Explicitly typed the mock object with `SilenceRuleOptions` to ensure its properties conform to the interface, resolving type inference errors.
 const MOCK_SILENCE_RULE_OPTIONS: SilenceRuleOptions = {
     keys: ['severity', 'env', 'service', 'resource_type'],
     values: {
@@ -1333,7 +1324,6 @@ const MOCK_NOTIFICATIONS: NotificationItem[] = [
 const MOCK_NOTIFICATION_STRATEGIES: NotificationStrategy[] = [
     { id: 'strat-1', name: 'Critical Database Alerts', enabled: true, triggerCondition: 'severity = critical AND resource_type = RDS', channelCount: 2, priority: 'High', creator: 'Admin', lastUpdated: '2025-09-20 10:00:00' }
 ];
-// FIX: Completed the `MOCK_NOTIFICATION_STRATEGY_OPTIONS` object by adding the required `tagKeys` and `tagValues` properties, resolving a TypeScript error.
 const MOCK_NOTIFICATION_STRATEGY_OPTIONS: NotificationStrategyOptions = {
     priorities: ['High', 'Medium', 'Low'],
     defaultCondition: 'severity = critical',
@@ -1388,7 +1378,6 @@ const MOCK_LOG_TIME_OPTIONS: { label: string, value: string }[] = [
 ];
 const MOCK_MAIL_SETTINGS: MailSettings = { smtpServer: 'smtp.example.com', port: 587, username: 'noreply@sre.platform', senderName: 'SRE Platform', senderEmail: 'noreply@sre.platform', encryption: 'tls' };
 const MOCK_GRAFANA_SETTINGS: GrafanaSettings = { enabled: true, url: 'http://localhost:3000', apiKey: 'glsa_xxxxxxxxxxxxxxxxxxxxxxxx', orgId: 1 };
-// FIX: Add missing properties to MOCK_GRAFANA_OPTIONS to conform to GrafanaOptions type.
 const MOCK_GRAFANA_OPTIONS: GrafanaOptions = {
     timeOptions: [{label: 'Last 6 hours', value: 'from=now-6h&to=now'}, {label: 'Last 24 hours', value: 'from=now-24h&to=now'}],
     refreshOptions: [{label: '1m', value: '1m'}, {label: '5m', value: '5m'}],
@@ -1857,7 +1846,6 @@ const MOCK_INCIDENT_OPTIONS: IncidentOptions = {
     ],
 };
 
-// FIX: Explicitly typed the mock object with `AlertRuleOptions` to ensure its properties conform to the interface, resolving type inference errors.
 const MOCK_ALERT_RULE_OPTIONS: AlertRuleOptions = {
     severities: [
         { value: 'critical', label: 'Critical', className: 'bg-red-900/50 border-red-500 text-red-300' },
@@ -1868,7 +1856,6 @@ const MOCK_ALERT_RULE_OPTIONS: AlertRuleOptions = {
         { value: true, label: 'Enabled' },
         { value: false, label: 'Disabled' }
     ],
-    // FIX: Add missing properties operators, scopeModes, and variables to conform to AlertRuleOptions type.
     operators: ['>', '<', '>=', '<='],
     scopeModes: [
         { value: 'all', label: 'All Resources (by type)' },
@@ -1879,7 +1866,6 @@ const MOCK_ALERT_RULE_OPTIONS: AlertRuleOptions = {
     stepTitles: ["選擇監控目標", "設定基本資訊", "定義觸發條件", "事件定義與通知", "設定自動化響應"],
 };
 
-// FIX: Explicitly typed the mock object with `ResourceOptions` to ensure its properties conform to the interface, resolving type inference errors.
 const MOCK_RESOURCE_OPTIONS: ResourceOptions = {
     statuses: [
         { value: 'healthy', label: 'Healthy', className: 'bg-green-500/20 text-green-400' },
@@ -2038,7 +2024,6 @@ const MOCK_ALL_OPTIONS: AllOptions = {
     topology: MOCK_TOPOLOGY_OPTIONS,
     automationExecutions: MOCK_AUTOMATION_EXECUTION_OPTIONS,
     notificationHistory: MOCK_NOTIFICATION_HISTORY_OPTIONS,
-    // FIX: Add missing properties datasources and autoDiscovery to conform to AllOptions type.
     datasources: MOCK_DATASOURCE_OPTIONS,
     autoDiscovery: MOCK_AUTO_DISCOVERY_OPTIONS,
 };

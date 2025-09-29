@@ -12,7 +12,6 @@ interface ResourceGroupEditModalProps {
   group: ResourceGroup | null;
 }
 
-// FIX: Moved ResourceListItem outside of the main component to prevent re-creation on render and fix type errors.
 interface ResourceListItemProps {
     resource: Resource;
     onAction: (id: string) => void;

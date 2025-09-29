@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-// FIX: Import TableColumn from types.ts
 import { NotificationHistoryRecord, NotificationChannelType, NotificationHistoryFilters, TableColumn } from '../../../types';
 import Icon from '../../../components/Icon';
 import TableContainer from '../../../components/TableContainer';
@@ -12,7 +11,6 @@ import TableError from '../../../components/TableError';
 import { exportToCsv } from '../../../services/export';
 import UnifiedSearchModal from '../../../components/UnifiedSearchModal';
 import { showToast } from '../../../services/toast';
-// FIX: Import TableColumn from types.ts, not from ColumnSettingsModal
 import ColumnSettingsModal from '../../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 

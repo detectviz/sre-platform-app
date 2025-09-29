@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-// FIX: Import TableColumn from types.ts
 import { TagDefinition, TagValue, TagManagementFilters, TableColumn } from '../../../types';
 import Icon from '../../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../../components/Toolbar';
@@ -14,7 +13,6 @@ import UnifiedSearchModal from '../../../components/UnifiedSearchModal';
 import { exportToCsv } from '../../../services/export';
 import { showToast } from '../../../services/toast';
 import ImportFromCsvModal from '../../../components/ImportFromCsvModal';
-// FIX: Import TableColumn from types.ts, not from ColumnSettingsModal
 import ColumnSettingsModal from '../../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 

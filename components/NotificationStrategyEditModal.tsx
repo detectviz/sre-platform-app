@@ -25,7 +25,6 @@ interface NotificationStrategyEditModalProps {
   strategy: NotificationStrategy | null;
 }
 
-// FIX: Corrected the return type of `parseConditions` to `StrategyCondition[]` and added a type assertion for the operator. This resolves the type mismatch when setting the `additionalConditions` state.
 const parseConditions = (conditionStr: string | undefined): StrategyCondition[] => {
     if (!conditionStr || conditionStr.trim() === '') return [{ key: '', operator: '=', value: '' }];
     return conditionStr.split(' AND ').map(part => {
@@ -202,13 +201,13 @@ const Step2: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Fu
     useEffect(() => {
         api.get<{ items: Team[] }>('/iam/teams', { params: { page: 1, page_size: 1000 } })
             .then(res => setTeams(res.data.items || []))
-            .catch(err => console.error('Failed to load teams for notification strategy modal', err));
+            .catch(err => { /* Failed to load teams */ });
         api.get<NotificationChannel[]>('/settings/notification-channels')
             .then(res => setChannels(res.data))
-            .catch(err => console.error('Failed to load notification channels for strategy modal', err));
+            .catch(err => { /* Failed to load notification channels */ });
         api.get<ResourceGroup[]>('/resource-groups')
             .then(res => setAllGroups(res.data))
-            .catch(err => console.error('Failed to load resource groups for strategy modal', err));
+            .catch(err => { /* Failed to load resource groups */ });
     }, []);
 
     useEffect(() => {
@@ -265,7 +264,6 @@ const Step3: React.FC<{
         return [...Object.keys(options.conditionKeys), ...options.tagKeys];
     }, [options]);
     
-    // FIX: Replaced dynamic property assignment with a type-safe switch statement to handle different fields of StrategyCondition, resolving the TypeScript error.
     const handleConditionChange = (index: number, field: keyof StrategyCondition, value: string) => {
         const newConditions = [...additionalConditions];
         const updatedCondition = { ...newConditions[index] };

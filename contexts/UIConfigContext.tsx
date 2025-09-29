@@ -30,7 +30,6 @@ export const UIConfigProvider: React.FC<{ children: ReactNode }> = ({ children }
         setNavItems(navRes.data);
         setTabConfigs(tabsRes.data);
       } catch (error) {
-        console.error("Failed to fetch UI configurations", error);
         setError('無法載入應用程式配置。請刷新頁面重試。');
       } finally {
         setIsLoading(false);

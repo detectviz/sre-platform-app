@@ -22,7 +22,6 @@ export const PageMetadataProvider: React.FC<{ children: ReactNode }> = ({ childr
         setMetadata(data);
       } catch (err) {
         setError('Failed to load page metadata.');
-        console.error(err);
       } finally {
         setIsLoading(false);
       }

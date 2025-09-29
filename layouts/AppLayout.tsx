@@ -35,7 +35,6 @@ const AppLayout: React.FC = () => {
             const { data } = await api.get<PlatformSettings>('/settings/platform');
             setPlatformSettings(data);
         } catch (error) {
-            console.error("Failed to fetch platform data", error);
             if (appLayoutContent) {
                 showToast(appLayoutContent.TOAST.LOAD_SETTINGS_ERROR, 'error');
             }
@@ -140,7 +139,7 @@ const AppLayout: React.FC = () => {
   const handleLogout = (e: React.MouseEvent) => { 
       e.preventDefault();
       setIsProfileMenuOpen(false); 
-      console.log('Logout action triggered.');
+      // Logout action triggered
       if (appLayoutContent) {
         showToast(appLayoutContent.TOAST.LOGOUT_SUCCESS, 'success');
       }

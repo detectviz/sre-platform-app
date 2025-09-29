@@ -11,7 +11,6 @@ import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
 import { exportToCsv } from '../../services/export';
 import ImportFromCsvModal from '../../components/ImportFromCsvModal';
-// FIX: Import TableColumn from types.ts, not from ColumnSettingsModal
 import ColumnSettingsModal from '../../components/ColumnSettingsModal';
 import { showToast } from '../../services/toast';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
@@ -63,7 +62,6 @@ const AlertRulePage: React.FC = () => {
                 : allColumnsRes.data.map(c => c.key);
             setVisibleColumns(resolvedVisibleColumns);
         } catch (err) {
-            console.error(err);
             setError('無法獲取告警規則。');
         } finally {
             setIsLoading(false);

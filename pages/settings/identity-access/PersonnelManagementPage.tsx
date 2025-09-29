@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-// FIX: Import TableColumn from types.ts
 import { User, PersonnelFilters, TableColumn } from '../../../types';
 import Icon from '../../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../../components/Toolbar';
@@ -14,7 +13,6 @@ import TableError from '../../../components/TableError';
 import { exportToCsv } from '../../../services/export';
 import ImportFromCsvModal from '../../../components/ImportFromCsvModal';
 import { showToast } from '../../../services/toast';
-// FIX: Import TableColumn from types.ts, not from ColumnSettingsModal
 import ColumnSettingsModal from '../../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 import UserAvatar from '../../../components/UserAvatar';

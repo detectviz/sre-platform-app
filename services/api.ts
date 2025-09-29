@@ -7,7 +7,6 @@ const rawBaseURL = envBaseURL?.trim();
 if (!rawBaseURL) {
   const message =
     'VITE_API_BASE_URL is not defined. Please set this environment variable in your Vite configuration (e.g., .env file).';
-  console.error(message);
   throw new Error(message);
 }
 

@@ -12,7 +12,6 @@ import DashboardViewPage from './pages/DashboardViewPage';
 import IncidentListPage from './pages/incidents/IncidentListPage';
 import AlertRulePage from './pages/incidents/AlertRulePage';
 import SilenceRulePage from './pages/incidents/SilenceRulePage';
-import PlaceholderPage from './pages/PlaceholderPage';
 import ResourceListPage from './pages/resources/ResourceListPage';
 import ResourceGroupPage from './pages/resources/ResourceGroupPage';
 import ResourceTopologyPage from './pages/resources/ResourceTopologyPage';
@@ -23,7 +22,6 @@ import PersonnelManagementPage from './pages/settings/identity-access/PersonnelM
 import TeamManagementPage from './pages/settings/identity-access/TeamManagementPage';
 import RoleManagementPage from './pages/settings/identity-access/RoleManagementPage';
 import AuditLogsPage from './pages/settings/identity-access/AuditLogsPage';
-// FIX: Corrected the import path for TagManagementPage. The component was correctly defined in `pages/settings/platform/TagManagementPage.tsx`, but the import path in `App.tsx` was missing the `/settings/platform` directories. This caused the module loader to fall back to an incorrect, empty placeholder file at `pages/PlatformSettingsPage.tsx`, which lacked a default export and triggered the build error.
 import TagManagementPage from './pages/settings/platform/TagManagementPage';
 import LayoutSettingsPage from './pages/settings/platform/LayoutSettingsPage';
 import AuthSettingsPage from './pages/settings/platform/AuthSettingsPage';
@@ -70,7 +68,6 @@ const RenderIcons = () => {
   return null;
 };
 
-// FIX: Added DashboardRedirector component to handle redirection from the `/home` path to the user's default dashboard. This resolves the `Cannot find name 'DashboardRedirector'` error.
 interface SystemConfig {
   defaultDashboard?: string;
 }
@@ -90,7 +87,6 @@ const DashboardRedirector: React.FC = () => {
         const { data } = await api.get<SystemConfig>('/system/config');
         setDefaultDashboardId(data.defaultDashboard || 'sre-war-room');
       } catch (error) {
-        console.error('Error loading system config:', error);
         setDefaultDashboardId('sre-war-room');
       }
     };
@@ -205,7 +201,6 @@ const AppRoutes: React.FC = () => {
                   <Route path="license" element={<LicensePage />} />
               </Route>
             </Route>
-{/* FIX: The App.tsx file was truncated. This section completes the routing table by adding the '/profile' route and closing all open tags. */}
             <Route path="profile" element={<PageWithTabsLayout title={pageLayouts.profile.title} description={pageLayouts.profile.description} kpiPageName="profile" tabs={tabConfigs?.profile || []} />}>
                 <Route index element={<PersonalInfoPage />} />
                 <Route path="security" element={<SecuritySettingsPage />} />
@@ -218,7 +213,6 @@ const AppRoutes: React.FC = () => {
   );
 };
 
-{/* FIX: The App component wrapper and default export were missing, causing a build failure. This adds the necessary structure to provide context to the application and make it a valid module. */}
 const App: React.FC = () => {
   return (
       <UIConfigProvider>

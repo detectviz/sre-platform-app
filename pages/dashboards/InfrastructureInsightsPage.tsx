@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import EChartsReact from '../../components/EChartsReact';
 import Icon from '../../components/Icon';
 import Dropdown from '../../components/Dropdown';
-import PlaceholderModal from '../../components/PlaceholderModal';
 import api from '../../services/api';
 import { Resource } from '../../types';
 import PageKPIs from '../../components/PageKPIs';
@@ -29,8 +28,6 @@ const InfrastructureInsightsPage: React.FC = () => {
     const [riskError, setRiskError] = useState<string | null>(null);
     const [bookmarkedResources, setBookmarkedResources] = useState<Resource[]>([]);
     const [isBookmarkLoading, setIsBookmarkLoading] = useState(true);
-    const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
-    const [modalFeatureName, setModalFeatureName] = useState('');
     
     const { options } = useOptions();
     const infraInsightsOptions = options?.infraInsights;
@@ -44,10 +41,6 @@ const InfrastructureInsightsPage: React.FC = () => {
     }, [infraInsightsOptions]);
 
 
-    const showPlaceholderModal = (featureName: string) => {
-        setModalFeatureName(featureName);
-        setIsPlaceholderModalOpen(true);
-    };
 
     const fetchRiskPrediction = useCallback(async () => {
         setIsRiskLoading(true);
@@ -224,11 +217,6 @@ const InfrastructureInsightsPage: React.FC = () => {
                     </div>
                 </div>
             </div>
-            <PlaceholderModal
-                isOpen={isPlaceholderModalOpen}
-                onClose={() => setIsPlaceholderModalOpen(false)}
-                featureName={modalFeatureName}
-            />
         </div>
     );
 };

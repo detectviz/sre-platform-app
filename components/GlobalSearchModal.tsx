@@ -109,7 +109,7 @@ const GlobalSearchModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
             ];
             setResults(combinedResults);
         } catch (error) {
-            console.error("Global search failed:", error);
+            // Global search failed
             setResults([]);
         } finally {
             setIsLoading(false);

@@ -11,7 +11,6 @@ interface EChartsReactProps {
   option: any;
   style?: React.CSSProperties;
   className?: string;
-  // FIX: Add onEvents prop to handle chart events.
   onEvents?: Record<string, (params: any) => void>;
 }
 

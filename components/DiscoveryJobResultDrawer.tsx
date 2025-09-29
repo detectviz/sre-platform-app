@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-// FIX: Added DiscoveredResource and DiscoveredResourceStatus to the import from types.ts.
 import { DiscoveryJob, DiscoveredResource, KeyValueTag, DiscoveredResourceStatus } from '../types';
 import Icon from './Icon';
 import Toolbar, { ToolbarButton } from './Toolbar';
@@ -97,7 +96,7 @@ const DiscoveryJobResultDrawer: React.FC<DiscoveryJobResultDrawerProps> = ({ job
             setSelectedIds([]);
             fetchResults();
         } catch (error) {
-            console.error('Failed to batch add tags', error);
+            // Failed to batch add tags
             showToast('批次新增標籤失敗。', 'error');
         } finally {
             setIsProcessing(false);
@@ -116,7 +115,7 @@ const DiscoveryJobResultDrawer: React.FC<DiscoveryJobResultDrawerProps> = ({ job
             setSelectedIds([]);
             fetchResults();
         } catch (error) {
-            console.error('Failed to ignore discovered resources', error);
+            // Failed to ignore discovered resources
             showToast('忽略資源失敗。', 'error');
         } finally {
             setIsProcessing(false);

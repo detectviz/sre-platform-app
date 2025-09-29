@@ -890,7 +890,6 @@ export interface DiscoveryJobFilters {
     status?: DiscoveryJobStatus;
 }
 
-// FIX: Add missing DiscoveredResource type and its status enum. This type is used by the auto-discovery results page and import modal.
 export type DiscoveredResourceStatus = 'new' | 'imported' | 'ignored';
 
 export interface DiscoveredResource {

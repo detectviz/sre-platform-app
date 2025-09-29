@@ -70,7 +70,7 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
                 };
                 setFormData(initialFormData);
 
-            }).catch(err => console.error("Failed to fetch data for modal", err))
+            }).catch(err => { /* Failed to fetch data for modal */ })
             .finally(() => setIsLoading(false));
         }
     }, [isOpen, trigger, isLoadingOptions, triggerOptions]);

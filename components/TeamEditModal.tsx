@@ -13,7 +13,6 @@ interface TeamEditModalProps {
   team: Team | null;
 }
 
-// FIX: Moved UserListItem outside of the main component to prevent re-creation on render and fix type errors.
 interface UserListItemProps {
     user: User;
     onAction: (id: string) => void;
