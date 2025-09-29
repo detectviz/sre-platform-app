@@ -15,14 +15,13 @@
 ## incidents-alert-rules-list.png
 
 ![incidents-alert-rules-list.png](images/incidents-alert-rules-list.png)
-表格標題「ENABLED」「TRIGGER CONDITION」等使用全大寫英文且文字對齊偏左；建議改為中文或中英並列，並使用 Ant Design Table 的 align 調整對齊與字級。
+- [ ] 表格標題「ENABLED」改為「啟用」
 - [ ] 改為中文或中英並列，並使用 Ant Design Table 的 align 調整對齊與字級。
 
 ## incidents-silence-rules-list.png
 
 ![incidents-silence-rules-list.png](images/incidents-silence-rules-list.png)
-「類型」欄位顯示 Repeat、env="staging" 等英文字串，且 Cron 語法缺乏易讀格式；建議提供中文標籤與格式化顯示，例如「重複規則」「環境=staging」。
-- [ ] 提供中文標籤與格式化顯示，例如「重複規則」「環境=staging」。
+- [ ] Cron 語法缺乏易讀格式；建議提供格式化顯示。
 
 ## resources-list-overview.png
 
@@ -39,8 +38,6 @@
 ## resources-datasource-list.png
 
 ![resources-datasource-list.png](images/resources-datasource-list.png)
-「Main Grafana」列的狀態文字被截斷成「測試中...」，顯示空間不足；建議調整欄寬或使用 Tooltip 顯示完整狀態。
-- [ ] 調整欄寬或使用 Tooltip 顯示完整狀態。
 
 ## resources-autodiscovery-list.png
 
@@ -63,8 +60,7 @@
 ## dashboards-templates-market.png
 
 ![dashboards-templates-market.png](images/dashboards-templates-market.png)
-範本卡片全為英文文案，使在地化不一致；建議提供中英對照或改為中文描述並標示適用場景。
-- [ ] 提供中英對照或改為中文描述並標示適用場景。
+- [ ] 範本卡片全為英文文案，使在地化不一致；建議改為中文描述並標示適用場景。
 
 ## warroom-analytics-overview.png
 
@@ -75,8 +71,6 @@
 ## analysis-logs-explorer.png
 
 ![analysis-logs-explorer.png](images/analysis-logs-explorer.png)
-圖表圖例與表格欄位(Error、Warning、Info)為英文；建議轉換為「錯誤/警告/資訊」，並調整搜尋框 placeholder 為中文。
-- [ ] 轉換為「錯誤/警告/資訊」，並調整搜尋框 placeholder 為中文。
 
 ## analysis-capacity-planning.png
 
@@ -118,7 +112,8 @@
 
 ![identity-roles-list.png](images/identity-roles-list.png)
 角色名稱與描述使用英文，狀態欄僅顯示 Active；建議本地化名稱並補充「已啟用/停用」切換功能。
-- [ ] 本地化名稱並補充「已啟用/停用」切換功能。
+- [ ] 本地化名稱。
+- [ ] 移除「狀態」欄位，比照通知策略列表，第一欄添加「啟用」Switch 切換功能。
 
 ## identity-audit-log.png
 
@@ -129,8 +124,8 @@
 ## notifications-policies-list.png
 
 ![notifications-policies-list.png](images/notifications-policies-list.png)
-策略名稱與條件文字為英文，`severity = critical` 可讀性差；建議改為「嚴重等級=重大」並提供條件標籤化顯示。
-- [ ] 改為「嚴重等級=重大」並提供條件標籤化顯示。
+策略名稱與條件文字可讀性差；建議提供條件標籤化顯示。
+- [ ] 提供條件標籤化顯示。
 
 ## notifications-channels-list.png
 
@@ -189,8 +184,6 @@
 ## profile-preferences.png
 
 ![profile-preferences.png](images/profile-preferences.png)
-時區選項為英文字串 Asia/Taipei；建議提供中文顯示並支援搜尋。
-- [ ] 提供中文顯示並支援搜尋。
 
 ## header-notification-dropdown.png
 
@@ -225,8 +218,6 @@
 ## incidents-alert-wizard-step1.png
 
 ![incidents-alert-wizard-step1.png](images/incidents-alert-wizard-step1.png)
-篩選分類(Host/VM、Application)與範本說明皆英文；建議提供中文翻譯與使用說明 Tooltip。
-- [ ] 提供中文翻譯與使用說明 Tooltip。
 
 ## incidents-alert-wizard-step2.png
 
@@ -237,8 +228,7 @@
 ## incidents-alert-wizard-step2-filters.png
 
 ![incidents-alert-wizard-step2-filters.png](images/incidents-alert-wizard-step2-filters.png)
-篩選條件 env=production 為英文；建議改為「環境=正式環境」並提供 Token 標籤色彩。
-- [ ] 改為「環境=正式環境」並提供 Token 標籤色彩。
+- [ ] 提供條件標籤化顯示。
 
 ## incidents-alert-wizard-step3.png
 
@@ -285,8 +275,7 @@ Cron 文字顯示英文說明；建議加入中文解釋與常用範例選擇。
 ## resources-edit-resource-modal.png
 
 ![resources-edit-resource-modal.png](images/resources-edit-resource-modal.png)
-提供商/區域選項為英文 AWS、us-east-1；建議提供對應中文或友善名稱。
-- [ ] 提供對應中文或友善名稱。
+
 
 ## resources-edit-group-modal.png
 
@@ -345,8 +334,7 @@ Cron 表達式僅英文說明「範例: '0 3 * * *'」；建議提供中文範�
 ## automation-edit-trigger-event.png
 
 ![automation-edit-trigger-event.png](images/automation-edit-trigger-event.png)
-條件欄位使用 severity=Critical 英文；建議改為「嚴重等級=重大」並允許多條件組合視覺化標籤。
-- [ ] 改為「嚴重等級=重大」並允許多條件組合視覺化標籤。
+- [ ] 提供條件標籤化顯示。
 
 ## automation-run-log-modal.png
 
@@ -399,8 +387,7 @@ JSON 內容未格式化翻譯，使用者不易解讀；建議提供 key 的中�
 ## notifications-create-policy-step3.png
 
 ![notifications-create-policy-step3.png](images/notifications-create-policy-step3.png)
-條件欄位 severity=warning 英文；建議提供下拉選單中文值與條件說明。
-- [ ] 提供下拉選單中文值與條件說明。
+- [ ] 提供條件標籤化顯示。
 
 ## notifications-edit-channel-modal.png
 
@@ -417,8 +404,7 @@ JSON 內容為英文 key，缺乏格式化；建議以表格顯示並附上中�
 ## platform-manage-tag-values-modal.png
 
 ![platform-manage-tag-values-modal.png](images/platform-manage-tag-values-modal.png)
-值列表僅顯示英文 production；建議加入中文顯示與使用次數說明。
-- [ ] 加入中文顯示與使用次數說明。
+- [ ] 提供條件標籤化顯示。
 
 ## platform-edit-tag-modal.png
 
