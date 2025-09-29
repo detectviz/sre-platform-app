@@ -55,6 +55,7 @@ import DatasourceManagementPage from './pages/resources/DatasourceManagementPage
 import AutoDiscoveryPage from './pages/resources/AutoDiscoveryPage';
 import ResourceOverviewPage from './pages/resources/ResourceOverviewPage';
 import LicensePage from './pages/settings/platform/LicensePage';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 // Lucide icons renderer
 const RenderIcons = () => {
@@ -225,7 +226,9 @@ const App: React.FC = () => {
             <OptionsProvider>
                 <PageMetadataProvider>
                     <ContentProvider>
-                        <AppRoutes />
+                        <ThemeProvider>
+                            <AppRoutes />
+                        </ThemeProvider>
                     </ContentProvider>
                 </PageMetadataProvider>
             </OptionsProvider>
