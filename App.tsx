@@ -71,7 +71,34 @@ const RenderIcons = () => {
 
 // FIX: Added DashboardRedirector component to handle redirection from the `/home` path to the user's default dashboard. This resolves the `Cannot find name 'DashboardRedirector'` error.
 const DashboardRedirector: React.FC = () => {
-  const defaultDashboardId = localStorage.getItem('default-dashboard') || 'sre-war-room';
+  const [defaultDashboardId, setDefaultDashboardId] = useState<string>('sre-war-room');
+
+  useEffect(() => {
+    const loadSystemConfig = async () => {
+      try {
+        // First check localStorage for user preference
+        const userDefault = localStorage.getItem('default-dashboard');
+        if (userDefault) {
+          setDefaultDashboardId(userDefault);
+          return;
+        }
+
+        // Otherwise fetch from system config API
+        const response = await fetch('/api/v1/system/config');
+        if (response.ok) {
+          const config = await response.json();
+          setDefaultDashboardId(config.defaultDashboard || 'sre-war-room');
+        }
+      } catch (error) {
+        console.error('Error loading system config:', error);
+        // Fallback to hardcoded default
+        setDefaultDashboardId('sre-war-room');
+      }
+    };
+
+    loadSystemConfig();
+  }, []);
+
   return <Navigate to={`/dashboard/${defaultDashboardId}`} replace />;
 };
 

@@ -13,6 +13,7 @@ const AnalysisOverviewPage: React.FC = () => {
     const [overviewData, setOverviewData] = useState<AnalysisOverviewData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [chartTheme, setChartTheme] = useState<any>(null);
 
     const [logQuery, setLogQuery] = useState('');
     const navigate = useNavigate();
@@ -21,8 +22,12 @@ const AnalysisOverviewPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const { data } = await api.get<AnalysisOverviewData>('/analysis/overview');
-            setOverviewData(data);
+            const [overviewResponse, chartThemeResponse] = await Promise.all([
+                api.get<AnalysisOverviewData>('/analysis/overview'),
+                api.get('/ui/themes/charts')
+            ]);
+            setOverviewData(overviewResponse.data);
+            setChartTheme(chartThemeResponse.data);
         } catch (err) {
             setError('無法獲取分析總覽數據。');
         } finally {
@@ -44,12 +49,12 @@ const AnalysisOverviewPage: React.FC = () => {
         }
     };
     
-    const healthScoreGaugeOption = overviewData ? {
+    const healthScoreGaugeOption = overviewData && chartTheme ? {
         series: [{
             type: 'gauge',
             radius: '90%',
             center: ['50%', '55%'],
-            axisLine: { lineStyle: { width: 18, color: [[0.5, '#dc2626'],[0.8, '#f97316'],[1, '#10b981']]}},
+            axisLine: { lineStyle: { width: 18, color: [[0.5, chartTheme.healthGauge?.critical || '#dc2626'],[0.8, chartTheme.healthGauge?.warning || '#f97316'],[1, chartTheme.healthGauge?.healthy || '#10b981']]}},
             pointer: { itemStyle: { color: 'auto' }, length: '60%', width: 6 },
             axisTick: { distance: -18, length: 5, lineStyle: { color: '#FFF', width: 1 } },
             splitLine: { distance: -18, length: 12, lineStyle: { color: '#FFF', width: 2 } },
@@ -69,7 +74,7 @@ const AnalysisOverviewPage: React.FC = () => {
             links: overviewData?.event_correlation_data.links || [],
             categories: overviewData?.event_correlation_data.categories || [],
             roam: true, label: { show: true }, force: { repulsion: 200 },
-            color: ['#dc2626', '#f97316', '#10b981']
+            color: chartTheme?.eventCorrelation || ['#dc2626', '#f97316', '#10b981']
         }],
     };
 

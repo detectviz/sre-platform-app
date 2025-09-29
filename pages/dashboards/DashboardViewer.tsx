@@ -2,8 +2,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Dashboard, InfraInsightsOptions } from '../../types';
 import Dropdown from '../../components/Dropdown';
 import Icon from '../../components/Icon';
-import PlaceholderModal from '../../components/PlaceholderModal';
 import api from '../../services/api';
+import PlaceholderModal from '../../components/PlaceholderModal';
 
 interface DashboardViewerProps {
   dashboard: Dashboard;
@@ -50,11 +50,6 @@ const DashboardViewer: React.FC<DashboardViewerProps> = ({ dashboard }) => {
         };
         fetchOptions();
     }, []);
-
-    const showPlaceholderModal = (featureName: string) => {
-        setModalFeatureName(featureName);
-        setIsPlaceholderModalOpen(true);
-    };
 
     const embedUrl = useMemo(() => {
         if (!dashboard.grafanaUrl) return '';
@@ -103,8 +98,8 @@ const DashboardViewer: React.FC<DashboardViewerProps> = ({ dashboard }) => {
                         <div className="flex items-center space-x-4">
                             <Dropdown label="時間" options={options.timeOptions || []} value={timeRange} onChange={setTimeRange} minWidth="w-40" />
                             <div className="flex items-center space-x-1">
-                                <button onClick={() => showPlaceholderModal('Zoom In')} className="p-2 rounded-md hover:bg-slate-700/50"><Icon name="zoom-in" className="w-5 h-5" /></button>
-                                <button onClick={() => showPlaceholderModal('Share Dashboard')} className="p-2 rounded-md hover:bg-slate-700/50"><Icon name="share-2" className="w-5 h-5" /></button>
+                                <button onClick={() => { setModalFeatureName('Zoom In'); setIsPlaceholderModalOpen(true); }} className="p-2 rounded-md hover:bg-slate-700/50"><Icon name="zoom-in" className="w-5 h-5" /></button>
+                                <button onClick={() => { setModalFeatureName('Share Dashboard'); setIsPlaceholderModalOpen(true); }} className="p-2 rounded-md hover:bg-slate-700/50"><Icon name="share-2" className="w-5 h-5" /></button>
                             </div>
                         </div>
                     </>
@@ -117,7 +112,7 @@ const DashboardViewer: React.FC<DashboardViewerProps> = ({ dashboard }) => {
                     <div className="flex items-center justify-center h-full"><p className="text-slate-400">Grafana URL not configured.</p></div>
                 )}
             </div>
-             <PlaceholderModal
+            <PlaceholderModal
                 isOpen={isPlaceholderModalOpen}
                 onClose={() => setIsPlaceholderModalOpen(false)}
                 featureName={modalFeatureName}

@@ -27,20 +27,11 @@ import UserAvatar from '../../components/UserAvatar';
 import ImportFromCsvModal from '../../components/ImportFromCsvModal';
 
 
-const ALL_COLUMNS: TableColumn[] = [
-    { key: 'summary', label: '摘要' },
-    { key: 'status', label: '狀態' },
-    { key: 'severity', label: '嚴重程度' },
-    { key: 'priority', label: '優先級' },
-    { key: 'serviceImpact', label: '服務影響' },
-    { key: 'resource', label: '資源' },
-    { key: 'assignee', label: '處理人' },
-    { key: 'triggeredAt', label: '觸發時間' },
-];
 const PAGE_IDENTIFIER = 'incidents';
 
 const IncidentListPage: React.FC = () => {
     const [incidents, setIncidents] = useState<Incident[]>([]);
+    const [allColumns, setAllColumns] = useState<TableColumn[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [totalIncidents, setTotalIncidents] = useState(0);
@@ -90,14 +81,55 @@ const IncidentListPage: React.FC = () => {
             
             setIncidents(incidentsRes.data.items);
             setTotalIncidents(incidentsRes.data.total);
-            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
+            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : allColumns.map(c => c.key));
             setUsers(usersRes.data.items);
         } catch (err) {
             setError('無法獲取事故列表。');
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, filters, pageKey]);
+    }, [currentPage, pageSize, filters, pageKey, allColumns]);
+
+    useEffect(() => {
+        // Load table columns configuration from API
+        const loadTableColumns = async () => {
+            try {
+                const response = await fetch(`/api/v1/pages/columns/${PAGE_IDENTIFIER}`);
+                if (response.ok) {
+                    const columns = await response.json();
+                    setAllColumns(columns);
+                } else {
+                    console.error('Failed to load table columns');
+                    // Fallback to hardcoded values
+                    setAllColumns([
+                        { key: 'summary', label: '摘要' },
+                        { key: 'status', label: '狀態' },
+                        { key: 'severity', label: '嚴重程度' },
+                        { key: 'priority', label: '優先級' },
+                        { key: 'serviceImpact', label: '服務影響' },
+                        { key: 'resource', label: '資源' },
+                        { key: 'assignee', label: '處理人' },
+                        { key: 'triggeredAt', label: '觸發時間' },
+                    ]);
+                }
+            } catch (error) {
+                console.error('Error loading table columns:', error);
+                // Fallback to hardcoded values
+                setAllColumns([
+                    { key: 'summary', label: '摘要' },
+                    { key: 'status', label: '狀態' },
+                    { key: 'severity', label: '嚴重程度' },
+                    { key: 'priority', label: '優先級' },
+                    { key: 'serviceImpact', label: '服務影響' },
+                    { key: 'resource', label: '資源' },
+                    { key: 'assignee', label: '處理人' },
+                    { key: 'triggeredAt', label: '觸發時間' },
+                ]);
+            }
+        };
+
+        loadTableColumns();
+    }, []);
 
     useEffect(() => {
         if (pageKey) {
@@ -325,7 +357,7 @@ const IncidentListPage: React.FC = () => {
                                      <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded" checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
                                 {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                    <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
                                 ))}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
@@ -370,7 +402,7 @@ const IncidentListPage: React.FC = () => {
                 isOpen={isColumnSettingsModalOpen}
                 onClose={() => setIsColumnSettingsModalOpen(false)}
                 onSave={handleSaveColumnConfig}
-                allColumns={ALL_COLUMNS}
+                allColumns={allColumns}
                 visibleColumnKeys={visibleColumns}
             />
             <AssignIncidentModal 

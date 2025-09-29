@@ -754,6 +754,23 @@ const MOCK_RESOURCE_TYPES: ResourceType[] = [
     { id: 'network', name: 'Network Device', icon: 'network' },
 ];
 
+const MOCK_EXPORTER_TYPES = [
+    { id: 'none', name: 'None', description: 'No monitoring agent' },
+    { id: 'node_exporter', name: 'Node Exporter', description: 'Prometheus node exporter for system metrics' },
+    { id: 'snmp_exporter', name: 'SNMP Exporter', description: 'SNMP protocol monitoring' },
+    { id: 'modbus_exporter', name: 'Modbus Exporter', description: 'Industrial Modbus protocol monitoring' },
+    { id: 'ipmi_exporter', name: 'IPMI Exporter', description: 'Hardware monitoring via IPMI' },
+];
+
+const MOCK_SYSTEM_CONFIG = {
+    defaultDashboard: 'sre-war-room',
+    apiBaseUrl: 'http://localhost:4000/api/v1',
+    theme: 'dark',
+    autoRefreshInterval: 30000,
+    maxLoginAttempts: 5,
+    sessionTimeout: 3600,
+};
+
 const MOCK_COMMANDS = [
   { id: 'cmd_new_incident', name: '> New Incident', description: 'Create a new incident report', icon: 'plus-circle', actionKey: 'new_incident' },
   { id: 'cmd_silence_resource', name: '> Silence Resource', description: 'Temporarily silence alerts for a specific resource', icon: 'bell-off', actionKey: 'silence_resource' },
@@ -803,39 +820,6 @@ const MOCK_IMPORT_MODAL_CONTENT = {
   };
 
 const MOCK_ALL_COLUMNS: Record<string, TableColumn[]> = {
-    dashboards: [
-        { key: 'name', label: '名稱' },
-        { key: 'type', label: '類型' },
-        { key: 'category', label: '類別' },
-        { key: 'owner', label: '擁有者' },
-        { key: 'updatedAt', label: '最後更新' },
-    ],
-    incidents: [
-        { key: 'summary', label: '摘要' },
-        { key: 'status', label: '狀態' },
-        { key: 'severity', label: '嚴重程度' },
-        { key: 'priority', label: '優先級' },
-        { key: 'serviceImpact', label: '服務影響' },
-        { key: 'resource', label: '資源' },
-        { key: 'assignee', label: '處理人' },
-        { key: 'triggeredAt', label: '觸發時間' },
-    ],
-    resources: [
-        { key: 'status', label: '狀態' },
-        { key: 'name', label: '名稱' },
-        { key: 'type', label: '類型' },
-        { key: 'provider', label: 'PROVIDER' },
-        { key: 'region', label: 'REGION' },
-        { key: 'owner', label: '擁有者' },
-        { key: 'lastCheckIn', label: '最後簽入' },
-    ],
-    personnel: [
-        { key: 'name', label: '名稱' },
-        { key: 'role', label: '角色' },
-        { key: 'team', label: '團隊' },
-        { key: 'status', label: '狀態' },
-        { key: 'lastLogin', label: '上次登入' },
-    ],
     alert_rules: [
         { key: 'enabled', label: '' },
         { key: 'name', label: '規則名稱' },
@@ -855,18 +839,13 @@ const MOCK_ALL_COLUMNS: Record<string, TableColumn[]> = {
         { key: 'creator', label: '創建者' },
         { key: 'createdAt', label: '創建時間' },
     ],
-    resource_groups: [
-        { key: 'name', label: '群組名稱' },
-        { key: 'ownerTeam', label: '擁有團隊' },
-        { key: 'memberIds', label: '成員數量' },
-        { key: 'statusSummary', label: '狀態' },
-    ],
-    automation_playbooks: [
-        { key: 'name', label: '腳本名稱' },
-        { key: 'trigger', label: '觸發器' },
-        { key: 'lastRunStatus', label: '上次運行狀態' },
-        { key: 'lastRun', label: '上次運行時間' },
-        { key: 'runCount', label: '運行次數' },
+    automation_triggers: [
+        { key: 'name', label: '名稱' },
+        { key: 'type', label: '類型' },
+        { key: 'enabled', label: '狀態' },
+        { key: 'associatedScript', label: '關聯腳本' },
+        { key: 'lastTriggered', label: '最後觸發' },
+        { key: 'creator', label: '創建者' },
     ],
     automation_history: [
         { key: 'scriptName', label: '腳本名稱' },
@@ -874,65 +853,95 @@ const MOCK_ALL_COLUMNS: Record<string, TableColumn[]> = {
         { key: 'triggerSource', label: '觸發來源' },
         { key: 'triggeredBy', label: '觸發者' },
         { key: 'startTime', label: '開始時間' },
-        { key: 'durationMs', label: '耗時 (ms)' },
+        { key: 'durationMs', label: '執行時間' },
     ],
-    automation_triggers: [
-        { key: 'enabled', label: '' },
+    automation_playbooks: [
         { key: 'name', label: '名稱' },
         { key: 'type', label: '類型' },
-        { key: 'targetPlaybookId', label: '目標腳本' },
-        { key: 'lastTriggered', label: '上次觸發' },
+        { key: 'trigger', label: '觸發條件' },
+        { key: 'lastRun', label: '最後執行' },
+        { key: 'lastRunStatus', label: '執行狀態' },
+        { key: 'runCount', label: '執行次數' },
+    ],
+    resource_groups: [
+        { key: 'name', label: '名稱' },
+        { key: 'description', label: '描述' },
+        { key: 'resourceCount', label: '資源數量' },
+        { key: 'healthStatus', label: '健康狀態' },
+        { key: 'creator', label: '創建者' },
+        { key: 'createdAt', label: '創建時間' },
+    ],
+    resources: [
+        { key: 'name', label: '名稱' },
+        { key: 'status', label: '狀態' },
+        { key: 'type', label: '類型' },
+        { key: 'provider', label: '供應商' },
+        { key: 'region', label: '區域' },
+        { key: 'owner', label: '擁有者' },
+        { key: 'lastCheckIn', label: '最後檢查' },
+    ],
+    users: [
+        { key: 'name', label: '姓名' },
+        { key: 'email', label: '電子郵件' },
+        { key: 'role', label: '角色' },
+        { key: 'teams', label: '團隊' },
+        { key: 'status', label: '狀態' },
+        { key: 'lastLogin', label: '最後登入' },
     ],
     teams: [
-        { key: 'name', label: '團隊名稱' },
-        { key: 'ownerId', label: '擁有者' },
-        { key: 'memberIds', label: '成員數' },
+        { key: 'name', label: '名稱' },
+        { key: 'description', label: '描述' },
+        { key: 'memberCount', label: '成員數量' },
+        { key: 'lead', label: '負責人' },
         { key: 'createdAt', label: '創建時間' },
     ],
     roles: [
-        { key: 'name', label: '角色名稱' },
-        { key: 'userCount', label: '使用者數量' },
+        { key: 'name', label: '名稱' },
+        { key: 'description', label: '描述' },
+        { key: 'userCount', label: '用戶數量' },
+        { key: 'permissions', label: '權限' },
         { key: 'status', label: '狀態' },
         { key: 'createdAt', label: '創建時間' },
     ],
     audit_logs: [
         { key: 'timestamp', label: '時間' },
-        { key: 'user', label: '使用者' },
+        { key: 'user', label: '用戶' },
         { key: 'action', label: '操作' },
-        { key: 'target', label: '目標' },
-        { key: 'result', label: '結果' },
-        { key: 'ip', label: 'IP 位址' },
-    ],
-    tag_management: [
-        { key: 'key', label: '標籤鍵' },
-        { key: 'category', label: '分類' },
-        { key: 'required', label: '必填' },
-        { key: 'usageCount', label: '使用次數' },
-        { key: 'allowedValues', label: '標籤值 (預覽)' },
-    ],
-    notification_strategies: [
-        { key: 'enabled', label: '' },
-        { key: 'name', label: '策略名稱' },
-        { key: 'triggerCondition', label: '觸發條件' },
-        { key: 'channelCount', label: '管道數' },
-        { key: 'priority', label: '優先級' },
-        { key: 'creator', label: '創建者' },
-        { key: 'lastUpdated', label: '最後更新' },
+        { key: 'resource', label: '資源' },
+        { key: 'status', label: '狀態' },
+        { key: 'ipAddress', label: 'IP 地址' },
     ],
     notification_channels: [
-        { key: 'enabled', label: '' },
-        { key: 'name', label: '管道名稱' },
+        { key: 'name', label: '名稱' },
         { key: 'type', label: '類型' },
-        { key: 'lastTestResult', label: '最新發送結果' },
-        { key: 'lastTestedAt', label: '最新發送時間' },
+        { key: 'enabled', label: '狀態' },
+        { key: 'lastTestResult', label: '測試結果' },
+        { key: 'lastTestedAt', label: '最後測試' },
+        { key: 'createdBy', label: '創建者' },
     ],
     notification_history: [
         { key: 'timestamp', label: '時間' },
-        { key: 'strategy', label: '策略' },
-        { key: 'channel', label: '管道' },
+        { key: 'channel', label: '通知通道' },
         { key: 'recipient', label: '接收者' },
-        { key: 'status', label: '狀態' },
         { key: 'content', label: '內容' },
+        { key: 'status', label: '狀態' },
+        { key: 'retryCount', label: '重試次數' },
+    ],
+    notification_strategies: [
+        { key: 'name', label: '名稱' },
+        { key: 'scope', label: '適用範圍' },
+        { key: 'channels', label: '通知通道' },
+        { key: 'conditions', label: '條件' },
+        { key: 'enabled', label: '狀態' },
+        { key: 'lastUpdated', label: '最後更新' },
+    ],
+    tag_definitions: [
+        { key: 'key', label: '標籤鍵' },
+        { key: 'category', label: '類別' },
+        { key: 'description', label: '描述' },
+        { key: 'required', label: '必填' },
+        { key: 'allowedValues', label: '允許值' },
+        { key: 'usageCount', label: '使用次數' },
     ],
 };
 
@@ -975,7 +984,24 @@ const MOCK_ICON_MAP: Record<string, string> = {
     'deployment-unit': 'box',
 };
 
-const MOCK_CHART_COLORS: string[] = ['#38bdf8', '#a78bfa', '#34d399', '#f87171', '#fbbf24', '#60a5fa'];
+const MOCK_CHART_COLORS = {
+    // Main color palette for charts
+    primary: ['#38bdf8', '#a78bfa', '#34d399', '#f87171', '#fbbf24', '#60a5fa'],
+    // Health score gauge colors (red, orange, green)
+    healthGauge: {
+        critical: '#dc2626',  // red-600
+        warning: '#f97316',   // orange-500
+        healthy: '#10b981'    // emerald-500
+    },
+    // Event correlation colors
+    eventCorrelation: ['#dc2626', '#f97316', '#10b981'],
+    // Severity-based colors
+    severity: {
+        critical: '#dc2626',
+        warning: '#f97316',
+        info: '#10b981'
+    }
+};
 
 const MOCK_NAV_ITEMS: NavItem[] = [
     { key: 'home', label: '首頁', icon: 'home' },
@@ -1179,7 +1205,7 @@ const MOCK_PLAYBOOKS: AutomationPlaybook[] = [
     { id: 'play-002', name: '擴展 Web 層', description: '向 Web 伺服器自動擴展組增加更多 EC2 實例。', trigger: '高 CPU', lastRun: '1小時前', lastRunStatus: 'success', runCount: 3, type: 'python', content: 'import boto3...', parameters: [{ name: 'instance_count', label: '實例數量', type: 'number', required: true, defaultValue: 2 }] },
 ];
 const MOCK_AUTOMATION_EXECUTIONS: AutomationExecution[] = [
-    { id: 'exec-001', scriptId: 'play-001', scriptName: '重啟故障 Pod', status: 'success', triggerSource: 'event', triggeredBy: 'Event Rule: K8s 告警', startTime: '2025-09-23 14:05:10', endTime: '2025-09-23 14:05:15', durationMs: 5000, parameters: { namespace: 'production' }, logs: { stdout: 'Successfully restarted pod.', stderr: '' } },
+    { id: 'exec-001', scriptId: 'play-001', scriptName: '重啟故障 Pod', status: 'success', triggerSource: 'event', triggeredBy: 'Alert Rule: K8s 告警', startTime: '2025-09-23 14:05:10', endTime: '2025-09-23 14:05:15', durationMs: 5000, parameters: { namespace: 'production' }, logs: { stdout: 'Successfully restarted pod.', stderr: '' } },
 ];
 const MOCK_AUTOMATION_TRIGGERS: AutomationTrigger[] = [
     { id: 'trig-001', name: '每日日誌歸檔', description: '在每天凌晨 3 點運行「歸檔舊日誌」腳本。', type: 'Schedule', enabled: true, targetPlaybookId: 'play-005', config: { cron: '0 3 * * *' }, lastTriggered: '18 小時前', creator: 'Admin User' },
@@ -1692,6 +1718,7 @@ const MOCK_ALERT_RULE_OPTIONS: AlertRuleOptions = {
         { value: 'specific', label: 'Specific Resources' },
     ],
     variables: ['{{severity}}', '{{resource.name}}', '{{metric}}', '{{value}}', '{{threshold}}', '{{duration}}'],
+    stepTitles: ["選擇監控目標", "設定基本資訊", "定義觸發條件", "事件定義與通知", "設定自動化響應"],
 };
 
 // FIX: Explicitly typed the mock object with `ResourceOptions` to ensure its properties conform to the interface, resolving type inference errors.
@@ -1777,7 +1804,7 @@ const MOCK_DASHBOARD_OPTIONS: DashboardOptions = {
 };
 
 const MOCK_AUDIT_LOG_OPTIONS: AuditLogOptions = {
-    actionTypes: ['LOGIN_SUCCESS', 'UPDATE_EVENT_RULE', 'CREATE_USER', 'DELETE_RESOURCE'],
+    actionTypes: ['LOGIN_SUCCESS', 'UPDATE_ALERT_RULE', 'CREATE_USER', 'DELETE_RESOURCE'],
 };
 
 const MOCK_LOG_OPTIONS: LogOptions = {
@@ -1934,6 +1961,8 @@ function createInitialDB() {
     return {
         metricMetadata: JSON.parse(JSON.stringify(MOCK_METRIC_METADATA)),
         resourceTypes: JSON.parse(JSON.stringify(MOCK_RESOURCE_TYPES)),
+        exporterTypes: JSON.parse(JSON.stringify(MOCK_EXPORTER_TYPES)),
+        systemConfig: JSON.parse(JSON.stringify(MOCK_SYSTEM_CONFIG)),
         commands: JSON.parse(JSON.stringify(MOCK_COMMANDS)),
         pageMetadata: JSON.parse(JSON.stringify(MOCK_PAGE_METADATA)),
         iconMap: JSON.parse(JSON.stringify(MOCK_ICON_MAP)),

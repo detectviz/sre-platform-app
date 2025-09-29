@@ -59,7 +59,8 @@ const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps
     const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
     const [additionalConditions, setAdditionalConditions] = useState<StrategyCondition[]>([]);
 
-    const stepTitles = ["基本資訊與範圍", "通知管道", "附加條件"];
+    // Use dynamic step titles from options or fallback
+    const stepTitles = strategyOptions?.stepTitles || ["基本資訊與範圍", "通知管道", "附加條件"];
     
     useEffect(() => {
         if (isOpen) {

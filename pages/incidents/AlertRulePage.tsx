@@ -18,20 +18,11 @@ import { showToast } from '../../services/toast';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
 import PlaceholderModal from '../../components/PlaceholderModal';
 
-const ALL_COLUMNS: TableColumn[] = [
-    { key: 'enabled', label: '' },
-    { key: 'name', label: '規則名稱' },
-    { key: 'target', label: '監控對象' },
-    { key: 'conditionsSummary', label: '觸發條件' },
-    { key: 'severity', label: '嚴重程度' },
-    { key: 'automationEnabled', label: '自動化' },
-    { key: 'creator', label: '創建者' },
-    { key: 'lastUpdated', label: '最後更新' },
-];
 const PAGE_IDENTIFIER = 'alert_rules';
 
 const AlertRulePage: React.FC = () => {
     const [rules, setRules] = useState<AlertRule[]>([]);
+    const [allColumns, setAllColumns] = useState<TableColumn[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -61,13 +52,38 @@ const AlertRulePage: React.FC = () => {
                 api.get<string[]>(`/settings/column-config/${pageKey}`)
             ]);
             setRules(rulesRes.data);
-            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
+            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : allColumns.map(c => c.key));
         } catch (err) {
             setError('無法獲取告警規則。');
         } finally {
             setIsLoading(false);
         }
-    }, [filters, pageKey]);
+    }, [filters, pageKey, allColumns]);
+
+    useEffect(() => {
+        // Load table columns configuration from API
+        const loadTableColumns = async () => {
+            try {
+                const response = await api.get<TableColumn[]>(`/pages/columns/alert_rules`);
+                setAllColumns(response.data);
+            } catch (error) {
+                console.error('Failed to load table columns:', error);
+                // Fallback to hardcoded values
+                setAllColumns([
+                    { key: 'enabled', label: '' },
+                    { key: 'name', label: '規則名稱' },
+                    { key: 'target', label: '監控對象' },
+                    { key: 'conditionsSummary', label: '觸發條件' },
+                    { key: 'severity', label: '嚴重程度' },
+                    { key: 'automationEnabled', label: '自動化' },
+                    { key: 'creator', label: '創建者' },
+                    { key: 'lastUpdated', label: '最後更新' },
+                ]);
+            }
+        };
+
+        loadTableColumns();
+    }, []);
 
     useEffect(() => {
         if (pageKey) {
@@ -280,7 +296,7 @@ const AlertRulePage: React.FC = () => {
                                     />
                                 </th>
                                 {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                    <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
                                 ))}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
@@ -343,7 +359,7 @@ const AlertRulePage: React.FC = () => {
                 isOpen={isColumnSettingsModalOpen}
                 onClose={() => setIsColumnSettingsModalOpen(false)}
                 onSave={handleSaveColumnConfig}
-                allColumns={ALL_COLUMNS}
+                allColumns={allColumns}
                 visibleColumnKeys={visibleColumns}
             />
             <ImportFromCsvModal

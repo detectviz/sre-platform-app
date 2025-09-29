@@ -703,6 +703,7 @@ export interface AlertRuleOptions {
     operators: string[];
     scopeModes: { value: string; label: string; }[];
     variables: string[];
+    stepTitles: string[];
 }
 
 export interface AutomationExecutionOptions {
@@ -850,6 +851,7 @@ export interface DiscoveredResource {
     type: string;
     tags: KeyValueTag[];
     status: DiscoveredResourceStatus;
+    ignoredAt?: string;
 }
 
 export interface ResourceOverviewData {

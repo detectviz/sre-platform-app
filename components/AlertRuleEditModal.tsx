@@ -393,11 +393,13 @@ const Step2 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
 
 
 const Step3 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFormData: Function }) => {
+    const { options: uiOptions } = useOptions();
     const titleRef = useRef<HTMLInputElement>(null);
     const contentRef = useRef<HTMLTextAreaElement>(null);
     const [focusedElement, setFocusedElement] = useState<'title' | 'content' | null>(null);
 
-    const variables = ['{{severity}}', '{{resource.name}}', '{{metric}}', '{{value}}', '{{threshold}}', '{{duration}}'];
+    // Use dynamic variables from options or fallback
+    const variables = uiOptions?.alertRules?.variables || ['{{severity}}', '{{resource.name}}', '{{metric}}', '{{value}}', '{{threshold}}', '{{duration}}'];
 
     const insertVariable = (variable: string) => {
         if (focusedElement === 'title' && titleRef.current) {
@@ -652,6 +654,7 @@ const AlertRuleEditModal: React.FC<AlertRuleEditModalProps> = ({ isOpen, onClose
     const [currentStep, setCurrentStep] = useState(isEditMode ? 1 : 0);
     const [formData, setFormData] = useState<Partial<AlertRule>>({});
     const { currentUser } = useUser();
+    const { options: uiOptions } = useOptions();
     const [selectedTemplate, setSelectedTemplate] = useState<AlertRuleTemplate | null>(null);
     const [isTestModalOpen, setIsTestModalOpen] = useState(false);
     
@@ -739,7 +742,8 @@ const AlertRuleEditModal: React.FC<AlertRuleEditModalProps> = ({ isOpen, onClose
     };
     const prevStep = () => setCurrentStep(s => Math.max(s - 1, isEditMode ? 1 : 0));
     
-    const stepTitles = ["選擇監控目標", "設定基本資訊", "定義觸發條件", "事件定義與通知", "設定自動化響應"];
+    // Use dynamic step titles from options or fallback
+    const stepTitles = uiOptions?.alertRules?.stepTitles || ["選擇監控目標", "設定基本資訊", "定義觸發條件", "事件定義與通知", "設定自動化響應"];
 
     const renderStepContent = () => {
         switch (currentStep) {

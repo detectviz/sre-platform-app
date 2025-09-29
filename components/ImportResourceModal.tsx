@@ -27,8 +27,7 @@ const ImportResourceModal: React.FC<ImportResourceModalProps> = ({ isOpen, onClo
     const [isImporting, setIsImporting] = useState(false);
     const [importProgress, setImportProgress] = useState<ImportItemStatus[]>([]);
     const [exporterConfig, setExporterConfig] = useState<ExporterConfig | undefined>(job.exporterConfig);
-    
-    const exporterTypes = ['none', 'node_exporter', 'snmp_exporter', 'modbus_exporter', 'ipmi_exporter'];
+    const [exporterTypes, setExporterTypes] = useState<Array<{ id: string; name: string; description: string }>>([]);
 
     useEffect(() => {
         if (isOpen) {
@@ -37,6 +36,41 @@ const ImportResourceModal: React.FC<ImportResourceModalProps> = ({ isOpen, onClo
             setIsImporting(false);
         }
     }, [isOpen, job]);
+
+    useEffect(() => {
+        // Load exporter types from API
+        const loadExporterTypes = async () => {
+            try {
+                const response = await fetch('/api/v1/alert-rules/exporter-types');
+                if (response.ok) {
+                    const types = await response.json();
+                    setExporterTypes(types);
+                } else {
+                    console.error('Failed to load exporter types');
+                    // Fallback to hardcoded values
+                    setExporterTypes([
+                        { id: 'none', name: 'None', description: 'No monitoring agent' },
+                        { id: 'node_exporter', name: 'Node Exporter', description: 'Prometheus node exporter' },
+                        { id: 'snmp_exporter', name: 'SNMP Exporter', description: 'SNMP protocol monitoring' },
+                        { id: 'modbus_exporter', name: 'Modbus Exporter', description: 'Industrial Modbus monitoring' },
+                        { id: 'ipmi_exporter', name: 'IPMI Exporter', description: 'Hardware monitoring via IPMI' },
+                    ]);
+                }
+            } catch (error) {
+                console.error('Error loading exporter types:', error);
+                // Fallback to hardcoded values
+                setExporterTypes([
+                    { id: 'none', name: 'None', description: 'No monitoring agent' },
+                    { id: 'node_exporter', name: 'Node Exporter', description: 'Prometheus node exporter' },
+                    { id: 'snmp_exporter', name: 'SNMP Exporter', description: 'SNMP protocol monitoring' },
+                    { id: 'modbus_exporter', name: 'Modbus Exporter', description: 'Industrial Modbus monitoring' },
+                    { id: 'ipmi_exporter', name: 'IPMI Exporter', description: 'Hardware monitoring via IPMI' },
+                ]);
+            }
+        };
+
+        loadExporterTypes();
+    }, []);
     
     const handleExporterConfigChange = (field: keyof ExporterConfig, value: any) => {
         const newConfig = { ...(exporterConfig || { type: 'none' }), [field]: value };
@@ -151,7 +185,7 @@ const ImportResourceModal: React.FC<ImportResourceModalProps> = ({ isOpen, onClo
                             className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
                             disabled={isImporting}
                         >
-                            {exporterTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                            {exporterTypes.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                         </select>
                     </FormRow>
 

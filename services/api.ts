@@ -2,10 +2,13 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { showToast } from './toast';
 
 const DEFAULT_BASE_URL = 'http://localhost:4000/api/v1';
-const baseURL = import.meta.env.VITE_API_BASE_URL?.trim() || DEFAULT_BASE_URL;
+const rawBaseURL = import.meta.env.VITE_API_BASE_URL?.trim() || DEFAULT_BASE_URL;
+const normalizedBaseURL = rawBaseURL.endsWith('/') ? rawBaseURL : `${rawBaseURL}/`;
+
+const stripLeadingSlash = (url: string) => url.replace(/^\/+/, '');
 
 const client: AxiosInstance = axios.create({
-  baseURL,
+  baseURL: normalizedBaseURL,
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
@@ -31,11 +34,11 @@ const wrap = <T>(promise: Promise<AxiosResponse<T>>): Promise<{ data: T }> =>
   promise.then((response) => ({ data: response.data }));
 
 const api = {
-  get: <T>(url: string, config?: AxiosRequestConfig) => wrap<T>(client.get(url, config)),
-  post: <T>(url: string, data?: any, config?: AxiosRequestConfig) => wrap<T>(client.post(url, data, config)),
-  put: <T>(url: string, data?: any, config?: AxiosRequestConfig) => wrap<T>(client.put(url, data, config)),
-  patch: <T>(url: string, data?: any, config?: AxiosRequestConfig) => wrap<T>(client.patch(url, data, config)),
-  del: <T>(url: string, config?: AxiosRequestConfig) => wrap<T>(client.delete(url, config))
+  get: <T>(url: string, config?: AxiosRequestConfig) => wrap<T>(client.get(stripLeadingSlash(url), config)),
+  post: <T>(url: string, data?: any, config?: AxiosRequestConfig) => wrap<T>(client.post(stripLeadingSlash(url), data, config)),
+  put: <T>(url: string, data?: any, config?: AxiosRequestConfig) => wrap<T>(client.put(stripLeadingSlash(url), data, config)),
+  patch: <T>(url: string, data?: any, config?: AxiosRequestConfig) => wrap<T>(client.patch(stripLeadingSlash(url), data, config)),
+  del: <T>(url: string, config?: AxiosRequestConfig) => wrap<T>(client.delete(stripLeadingSlash(url), config))
 };
 
 export default api;

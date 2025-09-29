@@ -73,6 +73,23 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
             case 'GET /navigation': {
                 return DB.navItems;
             }
+            case 'POST /discovery': {
+                if (id === 'batch-ignore') {
+                    const { resourceIds = [] } = body || {};
+                    if (!Array.isArray(resourceIds)) {
+                        throw { status: 400, message: 'Invalid payload for batch ignore.' };
+                    }
+                    resourceIds.forEach((resourceId: string) => {
+                        const index = DB.discoveredResources.findIndex((res: any) => res.id === resourceId);
+                        if (index > -1) {
+                            DB.discoveredResources[index].status = 'ignored';
+                            DB.discoveredResources[index].ignoredAt = new Date().toISOString();
+                        }
+                    });
+                    return { success: true, updated: resourceIds.length };
+                }
+                break;
+            }
             // Commands
             case 'GET /commands': {
                 return DB.commands;
@@ -99,7 +116,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     return DB.pageContent;
                 }
                 if (id === 'icons') return DB.iconMap;
-                if (id === 'themes' && action === 'charts') return DB.chartColors;
+                if (id === 'themes' && subId === 'charts') return DB.chartColors;
                 if (id === 'tabs') {
                     const VITE_EDITION = 'community'; // Simulate portfolio mode
                     let tabsConfig = JSON.parse(JSON.stringify(DB.tabConfigs)) as TabConfigMap;
@@ -235,6 +252,44 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
 
             // Incidents, Rules, Silences
             case 'GET /incidents': {
+                if (id === 'alert-rules') {
+                    // Redirect /incidents/alert-rules to the alert-rules handler
+                    if (subId === 'templates') return DB.alertRuleTemplates;
+                    if (subId === 'resource-types') return DB.resourceTypes;
+                    if (subId === 'exporter-types') return DB.exporterTypes;
+                    if (subId === 'metrics') return DB.metricMetadata;
+                    if (subId === 'count') {
+                        let rules = getActive(DB.alertRules);
+                        if (params?.matchers) {
+                            const matchers = JSON.parse(params.matchers);
+                            matchers.forEach((matcher: any) => {
+                               if (matcher.key === 'severity') {
+                                 rules = rules.filter((r: any) => r.severity === matcher.value);
+                               }
+                            });
+                        }
+                        return { count: rules.length };
+                    }
+                    let rules = getActive(DB.alertRules);
+                    if (params?.severity) {
+                        rules = rules.filter((r: any) => r.severity === params.severity);
+                    }
+                    if (params?.enabled !== undefined) {
+                        rules = rules.filter((r: any) => r.enabled === (params.enabled === 'true'));
+                    }
+                    if (params?.search) {
+                        const search = params.search.toLowerCase();
+                        rules = rules.filter((r: any) =>
+                            r.name.toLowerCase().includes(search) ||
+                            r.target.toLowerCase().includes(search) ||
+                            r.conditionsSummary.toLowerCase().includes(search)
+                        );
+                    }
+                    if (params?.sort_by && params?.sort_order) {
+                        rules = sortData(rules, params.sort_by, params.sort_order);
+                    }
+                    return rules;
+                }
                 if (id) {
                     const incident = DB.incidents.find((i: any) => i.id === id);
                     if (!incident) throw { status: 404 };
@@ -299,6 +354,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
             case 'GET /alert-rules': {
                 if (id === 'templates') return DB.alertRuleTemplates;
                 if (id === 'resource-types') return DB.resourceTypes;
+                if (id === 'exporter-types') return DB.exporterTypes;
                 if (id === 'metrics') return DB.metricMetadata;
                 if (id === 'count') {
                     let rules = getActive(DB.alertRules);
@@ -374,6 +430,24 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 return rules;
             }
             case 'POST /silence-rules':
+                if (id === 'batch-actions') {
+                    const { action, ids = [] } = body || {};
+                    if (!Array.isArray(ids)) {
+                        throw { status: 400, message: 'Invalid payload for batch actions.' };
+                    }
+                    ids.forEach((ruleId: string) => {
+                        const ruleIndex = DB.silenceRules.findIndex((rule: any) => rule.id === ruleId);
+                        if (ruleIndex === -1) return;
+                        if (action === 'delete') {
+                            DB.silenceRules.splice(ruleIndex, 1);
+                        } else if (action === 'enable') {
+                            DB.silenceRules[ruleIndex].enabled = true;
+                        } else if (action === 'disable') {
+                            DB.silenceRules[ruleIndex].enabled = false;
+                        }
+                    });
+                    return { success: true };
+                }
                 if (id === 'import') {
                     return { message: '成功匯入 3 條靜音規則。' };
                 }
@@ -438,6 +512,35 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 return paginate(resources, params?.page, params?.page_size);
             }
             case 'POST /resources': {
+                if (id === 'batch-tags') {
+                    const { resourceIds = [], tags = [] } = body || {};
+                    if (!Array.isArray(resourceIds) || !Array.isArray(tags)) {
+                        throw { status: 400, message: 'Invalid payload for batch tagging.' };
+                    }
+                    const cleanedTags = tags.filter((tag: any) => tag?.key && tag?.value);
+                    resourceIds.forEach((resourceId: string) => {
+                        const resourceIndex = DB.resources.findIndex((resource: any) => resource.id === resourceId);
+                        if (resourceIndex > -1) {
+                            cleanedTags.forEach((tag: any) => {
+                                const duplicate = DB.resources[resourceIndex].tags?.some((existing: any) => existing.key === tag.key && existing.value === tag.value);
+                                if (!duplicate) {
+                                    if (!DB.resources[resourceIndex].tags) DB.resources[resourceIndex].tags = [];
+                                    DB.resources[resourceIndex].tags.push({ id: `tag-${uuidv4()}`, key: tag.key, value: tag.value });
+                                }
+                            });
+                        }
+                        const discoveryIndex = DB.discoveredResources.findIndex((res: any) => res.id === resourceId);
+                        if (discoveryIndex > -1) {
+                            cleanedTags.forEach((tag: any) => {
+                                const duplicate = DB.discoveredResources[discoveryIndex].tags.some((existing: any) => existing.key === tag.key && existing.value === tag.value);
+                                if (!duplicate) {
+                                    DB.discoveredResources[discoveryIndex].tags.push({ id: `tag-${uuidv4()}`, key: tag.key, value: tag.value });
+                                }
+                            });
+                        }
+                    });
+                    return { success: true, updated: resourceIds.length };
+                }
                 if (id === 'datasources') {
                     if (subId && action === 'test') {
                         const dsId = subId;
@@ -962,6 +1065,12 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const index = DB.tagDefinitions.findIndex((t: any) => t.id === itemId);
                     if (index > -1) DB.tagDefinitions.splice(index, 1);
                     return {};
+                }
+                break;
+            }
+            case 'GET /system': {
+                if (id === 'config') {
+                    return DB.systemConfig;
                 }
                 break;
             }

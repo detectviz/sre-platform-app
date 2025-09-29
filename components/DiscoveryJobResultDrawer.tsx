@@ -8,8 +8,8 @@ import api from '../services/api';
 import TableLoader from './TableLoader';
 import TableError from './TableError';
 import { showToast } from '../services/toast';
-import PlaceholderModal from './PlaceholderModal';
 import ImportResourceModal from './ImportResourceModal';
+import BatchTagModal from './BatchTagModal';
 
 interface DiscoveryJobResultDrawerProps {
   job: DiscoveryJob | null;
@@ -20,8 +20,8 @@ const DiscoveryJobResultDrawer: React.FC<DiscoveryJobResultDrawerProps> = ({ job
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
-    const [isPlaceholderModalOpen, setIsPlaceholderModalOpen] = useState(false);
-    const [modalFeatureName, setModalFeatureName] = useState('');
+    const [isBatchTagModalOpen, setIsBatchTagModalOpen] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
     const fetchResults = useCallback(async () => {
@@ -45,11 +45,6 @@ const DiscoveryJobResultDrawer: React.FC<DiscoveryJobResultDrawerProps> = ({ job
     useEffect(() => {
         setSelectedIds([]);
     }, [results]);
-
-    const showPlaceholder = (featureName: string) => {
-        setModalFeatureName(featureName);
-        setIsPlaceholderModalOpen(true);
-    };
 
     const handleImportClick = () => {
         if (selectedIds.length > 0) {
@@ -84,11 +79,55 @@ const DiscoveryJobResultDrawer: React.FC<DiscoveryJobResultDrawerProps> = ({ job
         }
     };
     
+    const handleOpenBatchTag = () => {
+        if (selectedIds.length === 0) {
+            showToast('請先選擇至少一個資源。', 'error');
+            return;
+        }
+        setIsBatchTagModalOpen(true);
+    };
+
+    const handleBatchTagSubmit = async (tags: KeyValueTag[]) => {
+        if (tags.length === 0 || selectedIds.length === 0) return;
+        setIsProcessing(true);
+        try {
+            await api.post('/resources/batch-tags', { resourceIds: selectedIds, tags });
+            showToast('批次標籤已套用。', 'success');
+            setIsBatchTagModalOpen(false);
+            setSelectedIds([]);
+            fetchResults();
+        } catch (error) {
+            console.error('Failed to batch add tags', error);
+            showToast('批次新增標籤失敗。', 'error');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const handleBatchIgnore = async () => {
+        if (selectedIds.length === 0) {
+            showToast('請先選擇至少一個資源。', 'error');
+            return;
+        }
+        setIsProcessing(true);
+        try {
+            await api.post('/discovery/batch-ignore', { resourceIds: selectedIds });
+            showToast('已忽略選定的資源。', 'success');
+            setSelectedIds([]);
+            fetchResults();
+        } catch (error) {
+            console.error('Failed to ignore discovered resources', error);
+            showToast('忽略資源失敗。', 'error');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
     const batchActions = (
         <>
-            <ToolbarButton icon="file-plus-2" text="匯入到資源清單" onClick={handleImportClick} />
-            <ToolbarButton icon="tags" text="批次加標籤" onClick={() => showPlaceholder('Batch Add Tags')} />
-            <ToolbarButton icon="ban" text="忽略 (黑名單)" onClick={() => showPlaceholder('Ignore (Blacklist)')} danger />
+            <ToolbarButton icon="file-plus-2" text="匯入到資源清單" onClick={handleImportClick} disabled={selectedIds.length === 0 || isProcessing} />
+            <ToolbarButton icon="tags" text="批次加標籤" onClick={handleOpenBatchTag} disabled={selectedIds.length === 0 || isProcessing} />
+            <ToolbarButton icon="ban" text="忽略 (黑名單)" onClick={handleBatchIgnore} danger disabled={selectedIds.length === 0 || isProcessing} />
         </>
     );
 
@@ -149,11 +188,6 @@ const DiscoveryJobResultDrawer: React.FC<DiscoveryJobResultDrawerProps> = ({ job
                     </table>
                 </div>
             </TableContainer>
-            <PlaceholderModal
-                isOpen={isPlaceholderModalOpen}
-                onClose={() => setIsPlaceholderModalOpen(false)}
-                featureName={modalFeatureName}
-            />
             {isImportModalOpen && job && (
                 <ImportResourceModal
                     isOpen={isImportModalOpen}
@@ -163,6 +197,13 @@ const DiscoveryJobResultDrawer: React.FC<DiscoveryJobResultDrawerProps> = ({ job
                     job={job}
                 />
             )}
+            <BatchTagModal
+                isOpen={isBatchTagModalOpen}
+                onClose={() => setIsBatchTagModalOpen(false)}
+                onSubmit={handleBatchTagSubmit}
+                isSubmitting={isProcessing}
+                resourceCount={selectedIds.length}
+            />
         </div>
     );
 };
