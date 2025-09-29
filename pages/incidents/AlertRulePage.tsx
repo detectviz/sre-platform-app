@@ -47,43 +47,27 @@ const AlertRulePage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const [rulesRes, columnsRes] = await Promise.all([
+            const [rulesRes, columnConfigRes, allColumnsRes] = await Promise.all([
                 api.get<AlertRule[]>('/alert-rules', { params: filters }),
-                api.get<string[]>(`/settings/column-config/${pageKey}`)
+                api.get<string[]>(`/settings/column-config/${pageKey}`),
+                api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
+            if (allColumnsRes.data.length === 0) {
+                throw new Error('欄位定義缺失');
+            }
             setRules(rulesRes.data);
-            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : allColumns.map(c => c.key));
+            setAllColumns(allColumnsRes.data);
+            const resolvedVisibleColumns = columnConfigRes.data.length > 0
+                ? columnConfigRes.data
+                : allColumnsRes.data.map(c => c.key);
+            setVisibleColumns(resolvedVisibleColumns);
         } catch (err) {
+            console.error(err);
             setError('無法獲取告警規則。');
         } finally {
             setIsLoading(false);
         }
-    }, [filters, pageKey, allColumns]);
-
-    useEffect(() => {
-        // Load table columns configuration from API
-        const loadTableColumns = async () => {
-            try {
-                const response = await api.get<TableColumn[]>(`/pages/columns/alert_rules`);
-                setAllColumns(response.data);
-            } catch (error) {
-                console.error('Failed to load table columns:', error);
-                // Fallback to hardcoded values
-                setAllColumns([
-                    { key: 'enabled', label: '' },
-                    { key: 'name', label: '規則名稱' },
-                    { key: 'target', label: '監控對象' },
-                    { key: 'conditionsSummary', label: '觸發條件' },
-                    { key: 'severity', label: '嚴重程度' },
-                    { key: 'automationEnabled', label: '自動化' },
-                    { key: 'creator', label: '創建者' },
-                    { key: 'lastUpdated', label: '最後更新' },
-                ]);
-            }
-        };
-
-        loadTableColumns();
-    }, []);
+    }, [filters, pageKey]);
 
     useEffect(() => {
         if (pageKey) {

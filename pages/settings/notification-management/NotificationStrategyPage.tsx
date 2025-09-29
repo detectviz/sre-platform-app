@@ -15,20 +15,12 @@ import ColumnSettingsModal from '../../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 import { showToast } from '../../../services/toast';
 
-const ALL_COLUMNS: TableColumn[] = [
-    { key: 'enabled', label: '' },
-    { key: 'name', label: '策略名稱' },
-    { key: 'triggerCondition', label: '觸發條件' },
-    { key: 'channelCount', label: '管道數' },
-    { key: 'priority', label: '優先級' },
-    { key: 'creator', label: '創建者' },
-    { key: 'lastUpdated', label: '最後更新' },
-];
 const PAGE_IDENTIFIER = 'notification_strategies';
 
 
 const NotificationStrategyPage: React.FC = () => {
     const [strategies, setStrategies] = useState<NotificationStrategy[]>([]);
+    const [allColumns, setAllColumns] = useState<TableColumn[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     
@@ -50,12 +42,20 @@ const NotificationStrategyPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const [strategiesRes, columnsRes] = await Promise.all([
+            const [strategiesRes, columnConfigRes, allColumnsRes] = await Promise.all([
                 api.get<NotificationStrategy[]>('/settings/notification-strategies', { params: filters }),
-                api.get<string[]>(`/settings/column-config/${pageKey}`)
+                api.get<string[]>(`/settings/column-config/${pageKey}`),
+                api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
             setStrategies(strategiesRes.data);
-            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
+            if (allColumnsRes.data.length === 0) {
+                throw new Error('欄位定義缺失');
+            }
+            setAllColumns(allColumnsRes.data);
+            const resolvedVisibleColumns = columnConfigRes.data.length > 0
+                ? columnConfigRes.data
+                : allColumnsRes.data.map(c => c.key);
+            setVisibleColumns(resolvedVisibleColumns);
         } catch(err) {
             setError('無法獲取通知策略。');
         } finally {
@@ -226,7 +226,7 @@ const NotificationStrategyPage: React.FC = () => {
                                            checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
                                 {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                    <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
                                 ))}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
@@ -293,7 +293,7 @@ const NotificationStrategyPage: React.FC = () => {
                 isOpen={isColumnSettingsModalOpen}
                 onClose={() => setIsColumnSettingsModalOpen(false)}
                 onSave={handleSaveColumnConfig}
-                allColumns={ALL_COLUMNS}
+                allColumns={allColumns}
                 visibleColumnKeys={visibleColumns}
             />
         </div>

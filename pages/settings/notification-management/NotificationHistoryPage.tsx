@@ -18,19 +18,12 @@ import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 
 type IconConfig = Record<NotificationChannelType | 'Default', { icon: string; color: string; }>;
 
-const ALL_COLUMNS: TableColumn[] = [
-    { key: 'timestamp', label: '時間' },
-    { key: 'strategy', label: '策略' },
-    { key: 'channel', label: '管道' },
-    { key: 'recipient', label: '接收者' },
-    { key: 'status', label: '狀態' },
-    { key: 'content', label: '內容' },
-];
 const PAGE_IDENTIFIER = 'notification_history';
 
 
 const NotificationHistoryPage: React.FC = () => {
     const [history, setHistory] = useState<NotificationHistoryRecord[]>([]);
+    const [allColumns, setAllColumns] = useState<TableColumn[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [totalHistory, setTotalHistory] = useState(0);
@@ -64,13 +57,21 @@ const NotificationHistoryPage: React.FC = () => {
                 page_size: pageSize,
                 ...filters
             };
-            const [historyRes, columnsRes] = await Promise.all([
+            const [historyRes, columnConfigRes, allColumnsRes] = await Promise.all([
                 api.get<{ items: NotificationHistoryRecord[], total: number }>('/settings/notification-history', { params }),
-                api.get<string[]>(`/settings/column-config/${pageKey}`)
+                api.get<string[]>(`/settings/column-config/${pageKey}`),
+                api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
             setHistory(historyRes.data.items);
             setTotalHistory(historyRes.data.total);
-            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : ALL_COLUMNS.map(c => c.key));
+            if (allColumnsRes.data.length === 0) {
+                throw new Error('欄位定義缺失');
+            }
+            setAllColumns(allColumnsRes.data);
+            const resolvedVisibleColumns = columnConfigRes.data.length > 0
+                ? columnConfigRes.data
+                : allColumnsRes.data.map(c => c.key);
+            setVisibleColumns(resolvedVisibleColumns);
         } catch (err) {
             setError('無法獲取通知歷史。');
         } finally {
@@ -200,7 +201,7 @@ const NotificationHistoryPage: React.FC = () => {
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
                                 {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{ALL_COLUMNS.find(c => c.key === key)?.label || key}</th>
+                                    <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
                                 ))}
                             </tr>
                         </thead>
@@ -256,7 +257,7 @@ const NotificationHistoryPage: React.FC = () => {
                 isOpen={isColumnSettingsModalOpen}
                 onClose={() => setIsColumnSettingsModalOpen(false)}
                 onSave={handleSaveColumnConfig}
-                allColumns={ALL_COLUMNS}
+                allColumns={allColumns}
                 visibleColumnKeys={visibleColumns}
             />
         </div>

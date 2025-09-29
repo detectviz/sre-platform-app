@@ -1,8 +1,16 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { showToast } from './toast';
 
-const DEFAULT_BASE_URL = 'http://localhost:4000/api/v1';
-const rawBaseURL = import.meta.env.VITE_API_BASE_URL?.trim() || DEFAULT_BASE_URL;
+const envBaseURL = import.meta.env.VITE_API_BASE_URL;
+const rawBaseURL = envBaseURL?.trim();
+
+if (!rawBaseURL) {
+  const message =
+    'VITE_API_BASE_URL is not defined. Please set this environment variable in your Vite configuration (e.g., .env file).';
+  console.error(message);
+  throw new Error(message);
+}
+
 const normalizedBaseURL = rawBaseURL.endsWith('/') ? rawBaseURL : `${rawBaseURL}/`;
 
 const stripLeadingSlash = (url: string) => url.replace(/^\/+/, '');

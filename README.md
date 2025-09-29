@@ -33,14 +33,23 @@
    npm install
    ```
 
-3. **啟動 Mock Server**
+3. **設定環境變數**
+   ```bash
+   # 建議建立或更新 .env 檔案，讓前端知道 Mock API 的 Base URL
+   cat <<'EOF' > .env
+   VITE_API_BASE_URL=http://localhost:4000/api/v1
+   EOF
+   ```
+   若已存在其他環境設定檔，請確保 `VITE_API_BASE_URL` 變數的值正確指向目標 API。
+
+4. **啟動 Mock Server**
    ```bash
    # 在新終端視窗中執行
    node mock-server/server.js
    ```
    Mock Server 將在 `http://localhost:4000` 啟動
 
-4. **啟動前端應用**
+5. **啟動前端應用**
    ```bash
    npm run dev
    ```
@@ -82,7 +91,7 @@ sre-platform-app/
 
 專案包含完整的 Mock API Server，用於前端開發與測試：
 
-- **API 端點**: `http://localhost:4000/api/v1`
+- **API 端點**: 預設透過 `VITE_API_BASE_URL` 指定（例如 `http://localhost:4000/api/v1`）
 - **資料持久性**: 記憶體儲存，重啟後重置
 - **完整功能**: 支援所有核心功能 CRUD 操作
 - **跨域支援**: 允許前端應用程式跨域存取

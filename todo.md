@@ -7,6 +7,8 @@
   - [x] POST `/resources/batch-tags`
   - [x] POST `/discovery/batch-ignore`
   - [x] POST `/silence-rules/batch-actions`
+- [x] 將所有表格欄位定義改為由 mock API `/pages/columns/:pageKey` 提供並移除前端硬編碼
+- [x] 將系統設定與資源匯入模組的硬編碼資料改為透過 mock API 提供
 
 ## 🚧 Backlog
 ### AI & Automation

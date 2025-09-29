@@ -73,63 +73,31 @@ const IncidentListPage: React.FC = () => {
                 page_size: pageSize,
                 ...filters,
             };
-            const [incidentsRes, columnsRes, usersRes] = await Promise.all([
+            const [incidentsRes, columnConfigRes, allColumnsRes, usersRes] = await Promise.all([
                 api.get<{ items: Incident[], total: number }>('/incidents', { params }),
                 api.get<string[]>(`/settings/column-config/${pageKey}`),
+                api.get<TableColumn[]>(`/pages/columns/${pageKey}`),
                 api.get<{ items: User[] }>('/iam/users', { params: { page: 1, page_size: 1000 } })
             ]);
-            
+
             setIncidents(incidentsRes.data.items);
             setTotalIncidents(incidentsRes.data.total);
-            setVisibleColumns(columnsRes.data.length > 0 ? columnsRes.data : allColumns.map(c => c.key));
+            if (allColumnsRes.data.length === 0) {
+                throw new Error('欄位定義缺失');
+            }
+            setAllColumns(allColumnsRes.data);
+            const resolvedVisibleColumns = columnConfigRes.data.length > 0
+                ? columnConfigRes.data
+                : allColumnsRes.data.map(c => c.key);
+            setVisibleColumns(resolvedVisibleColumns);
             setUsers(usersRes.data.items);
         } catch (err) {
+            console.error(err);
             setError('無法獲取事故列表。');
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, filters, pageKey, allColumns]);
-
-    useEffect(() => {
-        // Load table columns configuration from API
-        const loadTableColumns = async () => {
-            try {
-                const response = await fetch(`/api/v1/pages/columns/${PAGE_IDENTIFIER}`);
-                if (response.ok) {
-                    const columns = await response.json();
-                    setAllColumns(columns);
-                } else {
-                    console.error('Failed to load table columns');
-                    // Fallback to hardcoded values
-                    setAllColumns([
-                        { key: 'summary', label: '摘要' },
-                        { key: 'status', label: '狀態' },
-                        { key: 'severity', label: '嚴重程度' },
-                        { key: 'priority', label: '優先級' },
-                        { key: 'serviceImpact', label: '服務影響' },
-                        { key: 'resource', label: '資源' },
-                        { key: 'assignee', label: '處理人' },
-                        { key: 'triggeredAt', label: '觸發時間' },
-                    ]);
-                }
-            } catch (error) {
-                console.error('Error loading table columns:', error);
-                // Fallback to hardcoded values
-                setAllColumns([
-                    { key: 'summary', label: '摘要' },
-                    { key: 'status', label: '狀態' },
-                    { key: 'severity', label: '嚴重程度' },
-                    { key: 'priority', label: '優先級' },
-                    { key: 'serviceImpact', label: '服務影響' },
-                    { key: 'resource', label: '資源' },
-                    { key: 'assignee', label: '處理人' },
-                    { key: 'triggeredAt', label: '觸發時間' },
-                ]);
-            }
-        };
-
-        loadTableColumns();
-    }, []);
+    }, [currentPage, pageSize, filters, pageKey]);
 
     useEffect(() => {
         if (pageKey) {
