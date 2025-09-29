@@ -26,11 +26,11 @@ const UserEditModal: React.FC<UserEditModalProps> = ({ isOpen, onClose, onSave, 
             if(user) setFormData(user);
             setIsLoadingLocalOptions(true);
             Promise.all([
-                api.get<Team[]>('/iam/teams'),
-                api.get<Role[]>('/iam/roles'),
+                api.get<{ items: Team[] }>('/iam/teams', { params: { page: 1, page_size: 1000 } }),
+                api.get<{ items: Role[] }>('/iam/roles', { params: { page: 1, page_size: 1000 } }),
             ]).then(([teamsRes, rolesRes]) => {
-                setTeams(teamsRes.data);
-                setRoles(rolesRes.data);
+                setTeams(teamsRes.data.items || []);
+                setRoles(rolesRes.data.items || []);
             }).catch(err => console.error("Failed to fetch teams or roles", err))
             .finally(() => setIsLoadingLocalOptions(false));
         }

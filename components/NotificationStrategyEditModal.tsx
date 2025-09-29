@@ -199,9 +199,15 @@ const Step2: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Fu
     const [suggestedTeam, setSuggestedTeam] = useState<string | null>(null);
 
     useEffect(() => {
-        api.get<Team[]>('/iam/teams').then(res => setTeams(res.data));
-        api.get<NotificationChannel[]>('/settings/notification-channels').then(res => setChannels(res.data));
-        api.get<ResourceGroup[]>('/resource-groups').then(res => setAllGroups(res.data));
+        api.get<{ items: Team[] }>('/iam/teams', { params: { page: 1, page_size: 1000 } })
+            .then(res => setTeams(res.data.items || []))
+            .catch(err => console.error('Failed to load teams for notification strategy modal', err));
+        api.get<NotificationChannel[]>('/settings/notification-channels')
+            .then(res => setChannels(res.data))
+            .catch(err => console.error('Failed to load notification channels for strategy modal', err));
+        api.get<ResourceGroup[]>('/resource-groups')
+            .then(res => setAllGroups(res.data))
+            .catch(err => console.error('Failed to load resource groups for strategy modal', err));
     }, []);
 
     useEffect(() => {

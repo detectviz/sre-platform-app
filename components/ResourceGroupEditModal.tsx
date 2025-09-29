@@ -49,12 +49,14 @@ const ResourceGroupEditModal: React.FC<ResourceGroupEditModalProps> = ({ isOpen,
             setIsLoading(true);
             Promise.all([
                 api.get<{ items: Resource[] }>('/resources', { params: { page: 1, page_size: 1000 } }),
-                api.get<Team[]>('/iam/teams')
+                api.get<{ items: Team[] }>('/iam/teams', { params: { page: 1, page_size: 1000 } })
             ]).then(([resourcesRes, teamsRes]) => {
-                setAllResources(resourcesRes.data.items);
-                setTeams(teamsRes.data);
-                if (!group?.ownerTeam && teamsRes.data.length > 0) {
-                    setOwnerTeam(teamsRes.data[0].name);
+                const resourceItems = resourcesRes.data.items || [];
+                const teamItems = teamsRes.data.items || [];
+                setAllResources(resourceItems);
+                setTeams(teamItems);
+                if (!group?.ownerTeam && teamItems.length > 0) {
+                    setOwnerTeam(teamItems[0].name);
                 }
             }).catch(err => console.error("Failed to fetch data for modal", err))
               .finally(() => setIsLoading(false));

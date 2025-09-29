@@ -31,16 +31,18 @@ const InviteUserModal: React.FC<InviteUserModalProps> = ({ isOpen, onClose, onIn
         if (isOpen) {
             setIsLoading(true);
             Promise.all([
-                api.get<Role[]>('/iam/roles'),
-                api.get<Team[]>('/iam/teams')
+                api.get<{ items: Role[] }>('/iam/roles', { params: { page: 1, page_size: 1000 } }),
+                api.get<{ items: Team[] }>('/iam/teams', { params: { page: 1, page_size: 1000 } })
             ]).then(([rolesRes, teamsRes]) => {
-                setRoles(rolesRes.data);
-                setTeams(teamsRes.data);
-                if (rolesRes.data.length > 0) {
-                    setRole(rolesRes.data[0].name as User['role']);
+                const roleItems = rolesRes.data.items || [];
+                const teamItems = teamsRes.data.items || [];
+                setRoles(roleItems);
+                setTeams(teamItems);
+                if (roleItems.length > 0) {
+                    setRole(roleItems[0].name as User['role']);
                 }
-                if (teamsRes.data.length > 0) {
-                    setTeam(teamsRes.data[0].name);
+                if (teamItems.length > 0) {
+                    setTeam(teamItems[0].name);
                 }
             }).catch(err => console.error("Failed to load roles/teams for invite modal", err))
             .finally(() => setIsLoading(false));
