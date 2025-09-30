@@ -4,9 +4,10 @@ import Modal from './Modal';
 import FormRow from './FormRow';
 import Icon from './Icon';
 import KeyValueInput from './KeyValueInput';
-import { Datasource, KeyValueTag } from '../types';
+import { Datasource, DatasourceTestResponse } from '../types';
 import { showToast } from '../services/toast';
 import { useOptions } from '../contexts/OptionsContext';
+import api from '../services/api';
 
 interface DatasourceEditModalProps {
   isOpen: boolean;
@@ -42,16 +43,33 @@ const DatasourceEditModal: React.FC<DatasourceEditModalProps> = ({ isOpen, onClo
     };
 
     const handleTestConnection = async () => {
-        setIsTesting(true);
-        showToast('正在測試連線...', 'success');
-        await new Promise(res => setTimeout(res, 1500)); // Simulate API call
-        const success = Math.random() > 0.3; // Simulate success/failure
-        if (success) {
-            showToast('連線成功！', 'success');
-        } else {
-            showToast('連線失敗，請檢查 URL 和驗證方式。', 'error');
+        if (!formData.url || !formData.url.trim()) {
+            showToast('請先填寫連線 URL 後再進行測試。', 'error');
+            return;
         }
-        setIsTesting(false);
+
+        setIsTesting(true);
+        try {
+            const payload = {
+                id: formData.id,
+                name: formData.name,
+                type: formData.type,
+                url: formData.url,
+                authMethod: formData.authMethod,
+                tags: formData.tags,
+            };
+            const { data } = await api.post<DatasourceTestResponse>('/resources/datasources/test', payload);
+            if (formData.id) {
+                setFormData(prev => ({ ...prev, status: data.status }));
+            }
+            const latencyText = typeof data.latencyMs === 'number' ? ` (延遲約 ${Math.round(data.latencyMs)} 毫秒)` : '';
+            showToast(`${data.message}${latencyText}`, data.success ? 'success' : 'error');
+        } catch (err: any) {
+            const message = err?.response?.data?.message || '連線測試失敗，請稍後再試。';
+            showToast(message, 'error');
+        } finally {
+            setIsTesting(false);
+        }
     };
 
     return (

@@ -1,5 +1,5 @@
 import { DB, uuidv4 } from './db';
-import type { DiscoveryJob, Incident, NotificationStrategy, TabConfigMap, TagDefinition } from '../types';
+import type { ConnectionStatus, DiscoveryJob, Incident, NotificationStrategy, TabConfigMap, TagDefinition } from '../types';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -645,22 +645,54 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     return { success: true, updated: resourceIds.length };
                 }
                 if (id === 'datasources') {
+                    if (subId === 'test' && !action) {
+                        const { url, id: payloadId } = body || {};
+                        if (!url) throw { status: 400, message: '缺少測試連線所需的 URL。' };
+                        const latencyMs = Math.floor(50 + Math.random() * 200);
+                        const success = Math.random() > 0.2;
+                        const status: ConnectionStatus = success ? 'ok' : 'error';
+                        if (payloadId) {
+                            const idx = DB.datasources.findIndex((d: any) => d.id === payloadId);
+                            if (idx > -1) {
+                                DB.datasources[idx].status = status;
+                            }
+                        }
+                        const message = success
+                            ? `成功連線至 ${url}。`
+                            : `無法連線至 ${url}，請檢查設定。`;
+                        return { success, status, latencyMs, message };
+                    }
                     if (subId && action === 'test') {
                         const dsId = subId;
-                        const ds = DB.datasources.find((d: any) => d.id === dsId);
-                        if (!ds) throw { status: 404 };
-                        ds.status = 'pending';
-                        setTimeout(() => {
-                            const idx = DB.datasources.findIndex((d: any) => d.id === dsId);
-                            if (idx > -1) DB.datasources[idx].status = Math.random() > 0.3 ? 'ok' : 'error';
-                        }, 1500);
-                        return { success: true, message: 'Test initiated.' };
+                        const index = DB.datasources.findIndex((d: any) => d.id === dsId);
+                        if (index === -1) throw { status: 404, message: '找不到指定的 Datasource。' };
+                        const latencyMs = Math.floor(50 + Math.random() * 200);
+                        const success = Math.random() > 0.2;
+                        const status: ConnectionStatus = success ? 'ok' : 'error';
+                        DB.datasources[index].status = status;
+                        const dsName = DB.datasources[index].name || '資料來源';
+                        const message = success
+                            ? `成功連線至 ${dsName}。`
+                            : `無法連線至 ${dsName}，請檢查設定。`;
+                        return { success, status, latencyMs, message };
                     }
                     const newDs = { ...body, id: `ds-${uuidv4()}`, createdAt: new Date().toISOString().slice(0, 19).replace('T', ' '), status: 'pending' };
                     DB.datasources.unshift(newDs);
                     return newDs;
                 }
                 if (id === 'discovery-jobs') {
+                    if (subId === 'test' && !action) {
+                        const success = Math.random() > 0.2;
+                        const discoveredCount = success ? Math.floor(Math.random() * 20) + 1 : 0;
+                        const warnings = [] as string[];
+                        if (success && Math.random() > 0.7) {
+                            warnings.push('部分節點需要額外憑證才能完成匯入。');
+                        }
+                        const message = success
+                            ? '測試掃描成功。'
+                            : '測試掃描失敗，請檢查目標配置。';
+                        return { success, discoveredCount, message, warnings };
+                    }
                     if (subId && action === 'run') {
                         const jobId = subId;
                         const jobIndex = DB.discoveryJobs.findIndex((j: any) => j.id === jobId);

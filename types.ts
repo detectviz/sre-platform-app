@@ -871,6 +871,13 @@ export type DatasourceType = 'VictoriaMetrics' | 'Grafana' | 'Elasticsearch' | '
 export type AuthMethod = 'Token' | 'Basic Auth' | 'Keycloak Integration' | 'Keycloak 整合' | 'None' | '無';
 export type ConnectionStatus = 'ok' | 'error' | 'pending';
 
+export interface DatasourceTestResponse {
+  success: boolean;
+  status: ConnectionStatus;
+  latencyMs?: number;
+  message: string;
+}
+
 export interface KeyValueTag {
   id: string;
   key: string;
@@ -917,6 +924,13 @@ export interface DiscoveryJob {
   edgeGateway?: DiscoveryJobEdgeGateway | null;
   tags: KeyValueTag[];
   deleted_at?: string;
+}
+
+export interface DiscoveryTestResponse {
+  success: boolean;
+  discoveredCount: number;
+  message: string;
+  warnings?: string[];
 }
 
 export interface DatasourceFilters {
