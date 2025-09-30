@@ -132,7 +132,7 @@ const SilenceRuleEditModal: React.FC<SilenceRuleEditModalProps> = ({ isOpen, onC
             case 1: return <Step1 formData={formData} setFormData={setFormData} />;
             case 2: return <Step2 formData={formData} setFormData={setFormData} options={silenceRuleOptions} />;
             case 3: return <Step3 formData={formData} setFormData={setFormData} options={silenceRuleOptions} />;
-            default: return null;
+            default: return <div className="p-4 text-center text-slate-400">尚未選擇步驟。</div>;
         }
     };
     

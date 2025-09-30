@@ -169,13 +169,13 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onU
                 {incident.severity}
               </span>
             </InfoItem>
-            <InfoItem label="優先級">
-              <span className={`px-3 py-1 text-sm font-semibold rounded-full ${getStyle(incidentOptions?.priorities, incident.priority)}`}>
-                {incident.priority || 'N/A'}
+            <InfoItem label="影響範圍">
+              <span className={`px-3 py-1 text-sm font-semibold rounded-full border ${getStyle(incidentOptions?.impacts, incident.impact)}`}>
+                {incident.impact}
               </span>
             </InfoItem>
             <InfoItem label="指派給">
-              {incident.status === 'new' || !incident.assignee ? (
+              {incident.status === 'New' || !incident.assignee ? (
                 <div className="flex items-center space-x-2">
                   <span className="text-slate-400">無</span>
                   <button onClick={handleAcknowledge} className="px-3 py-1 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-full transition-colors flex items-center shadow-sm">
@@ -207,9 +207,9 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onU
                     {incident.resource}
                   </Link>
                 </InfoItem>
-                <InfoItem label="服務影響">
-                  <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(incidentOptions?.serviceImpacts, incident.serviceImpact)}`}>
-                    {incident.serviceImpact}
+                <InfoItem label="影響範圍">
+                  <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(incidentOptions?.impacts, incident.impact)}`}>
+                    {incident.impact}
                   </span>
                 </InfoItem>
                 <InfoItem label="規則">
@@ -217,7 +217,7 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onU
                     {incident.rule}
                   </Link>
                 </InfoItem>
-                <InfoItem label="觸發時間">{incident.triggeredAt}</InfoItem>
+                <InfoItem label="發生時間">{incident.occurredAt}</InfoItem>
               </dl>
             </div>
           </div>

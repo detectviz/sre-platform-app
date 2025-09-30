@@ -109,7 +109,7 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  const requestUrl = new URL(req.url, 'http://localhost');
+  const requestUrl = new URL(req.url, `http://${process.env.MOCK_SERVER_HOST ?? 'localhost'}`);
   const pathname = requestUrl.pathname;
 
   if (!pathname.startsWith('/api/v1')) {
@@ -156,8 +156,9 @@ const server = createServer(async (req, res) => {
   });
 });
 
+const host = process.env.MOCK_SERVER_HOST || 'localhost';
 const port = Number(process.env.MOCK_SERVER_PORT || 4000);
 server.listen(port, () => {
-  console.log(`\u2705  SRE Platform Mock Server is running on http://localhost:${port}`);
-  console.log(`\u2139\ufe0f  API base URL: http://localhost:${port}/api/v1`);
+  console.log(`\u2705  SRE Platform Mock Server is running on http://${host}:${port}`);
+  console.log(`\u2139\ufe0f  API base URL: http://${host}:${port}/api/v1`);
 });

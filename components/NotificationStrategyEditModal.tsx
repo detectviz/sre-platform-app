@@ -64,14 +64,25 @@ const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps
     useEffect(() => {
         if (isOpen) {
             if (!isLoadingOptions && strategyOptions) {
-                const initialData = strategy || {
-                    name: '',
-                    enabled: true,
-                    triggerCondition: strategyOptions.defaultCondition,
-                    channelCount: 1,
-                    priority: strategyOptions.priorities[1] || 'Medium',
-                };
-                if(strategy && !strategy.id) {
+                const defaultSeverityLevels = strategyOptions.severityLevels?.length ? [strategyOptions.severityLevels[0]] : [];
+                const defaultImpactLevels = strategyOptions.impactLevels?.length ? [strategyOptions.impactLevels[0]] : [];
+
+                const initialData: Partial<NotificationStrategy> = strategy
+                    ? {
+                        ...strategy,
+                        severityLevels: strategy.severityLevels?.length ? strategy.severityLevels : defaultSeverityLevels,
+                        impactLevels: strategy.impactLevels?.length ? strategy.impactLevels : defaultImpactLevels,
+                    }
+                    : {
+                        name: '',
+                        enabled: true,
+                        triggerCondition: strategyOptions.defaultCondition,
+                        channelCount: 1,
+                        severityLevels: defaultSeverityLevels,
+                        impactLevels: defaultImpactLevels,
+                    };
+
+                if (strategy && !strategy.id) {
                     initialData.name = `Copy of ${strategy.name}`;
                 }
                 setFormData(initialData);
@@ -104,9 +115,18 @@ const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps
         const additionalCondition = serializeConditions(additionalConditions);
         const finalCondition = [groupCondition, additionalCondition].filter(Boolean).join(' AND ');
 
-        onSave({ 
-            ...formData, 
-            triggerCondition: finalCondition 
+        const severityLevels = (formData.severityLevels && formData.severityLevels.length > 0)
+            ? formData.severityLevels
+            : strategyOptions?.severityLevels ?? [];
+        const impactLevels = (formData.impactLevels && formData.impactLevels.length > 0)
+            ? formData.impactLevels
+            : strategyOptions?.impactLevels ?? [];
+
+        onSave({
+            ...formData,
+            severityLevels,
+            impactLevels,
+            triggerCondition: finalCondition
         } as NotificationStrategy);
     };
 
@@ -118,7 +138,13 @@ const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps
             case 1: return <Step1 formData={formData} setFormData={setFormData} options={strategyOptions} selectedGroups={selectedGroups} setSelectedGroups={setSelectedGroups} />;
             case 2: return <Step2 formData={formData} setFormData={setFormData} selectedGroups={selectedGroups} />;
             case 3: return <Step3 additionalConditions={additionalConditions} setAdditionalConditions={setAdditionalConditions} options={strategyOptions} />;
-            default: return null;
+            default:
+                return (
+                    <div className="p-6 text-center text-slate-400">
+                        <Icon name="info" className="w-5 h-5 mx-auto mb-2" />
+                        <p>尚未選擇步驟，請從上方導覽選擇一個步驟。</p>
+                    </div>
+                );
         }
     };
     
@@ -175,13 +201,24 @@ const Step1: React.FC<{
             <FormRow label="策略名稱 *">
                 <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
             </FormRow>
-            <FormRow label="優先級">
-                <select value={formData.priority} onChange={e => setFormData({ ...formData, priority: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={!options}>
-                    {options?.priorities.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
+            <FormRow label="涵蓋嚴重度 *">
+                <MultiSelectDropdown
+                    items={(options?.severityLevels || []).map(level => ({ value: level, label: level }))}
+                    selected={(formData.severityLevels as string[]) || []}
+                    onSelectedChange={(values) => setFormData({ ...formData, severityLevels: values as NotificationStrategy['severityLevels'] })}
+                    placeholder={options ? '選擇至少一個嚴重度...' : '載入中...'}
+                />
+            </FormRow>
+            <FormRow label="涵蓋影響範圍 *">
+                <MultiSelectDropdown
+                    items={(options?.impactLevels || []).map(level => ({ value: level, label: level }))}
+                    selected={(formData.impactLevels as string[]) || []}
+                    onSelectedChange={(values) => setFormData({ ...formData, impactLevels: values as NotificationStrategy['impactLevels'] })}
+                    placeholder={options ? '選擇至少一個影響層級...' : '載入中...'}
+                />
             </FormRow>
             <FormRow label="資源群組 *">
-                <MultiSelectDropdown 
+                <MultiSelectDropdown
                     items={resourceGroups.map(g => ({ value: g.name, label: g.name }))}
                     selected={selectedGroups}
                     onSelectedChange={setSelectedGroups}

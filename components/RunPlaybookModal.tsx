@@ -62,7 +62,14 @@ const RunPlaybookModal: React.FC<RunPlaybookModalProps> = ({ isOpen, onClose, pl
         }
     };
     
-    if (!playbook) return null;
+    if (!playbook) {
+        return (
+            <div className="p-6 text-center text-slate-400">
+                <Icon name="sparkles" className="w-5 h-5 mx-auto mb-2" />
+                <p>請先選擇要執行的自動化腳本。</p>
+            </div>
+        );
+    }
 
     return (
         <Modal

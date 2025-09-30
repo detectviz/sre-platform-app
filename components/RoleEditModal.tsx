@@ -28,6 +28,9 @@ const RoleEditModal: React.FC<RoleEditModalProps> = ({ isOpen, onClose, onSave, 
     const { content: pageContent } = useContent();
     const globalContent = pageContent?.GLOBAL;
     const content = pageContent?.ROLE_EDIT_MODAL;
+    const modalTitle = role ? (content?.EDIT_TITLE ?? '編輯角色') : (content?.ADD_TITLE ?? '新增角色');
+    const cancelLabel = globalContent?.CANCEL ?? '取消';
+    const saveLabel = globalContent?.SAVE ?? '儲存';
     
     useEffect(() => {
         if(isOpen) {
@@ -85,19 +88,31 @@ const RoleEditModal: React.FC<RoleEditModalProps> = ({ isOpen, onClose, onSave, 
     };
 
     if (!content || !globalContent) {
-        return null;
+        return (
+            <Modal
+                title={modalTitle}
+                isOpen={isOpen}
+                onClose={onClose}
+                width="w-1/2 max-w-3xl"
+            >
+                <div className="flex flex-col items-center justify-center py-12 text-slate-400 space-y-3">
+                    <Icon name="loader-circle" className="w-6 h-6 animate-spin" />
+                    <p className="text-sm">正在載入角色編輯內容，請稍候...</p>
+                </div>
+            </Modal>
+        );
     }
 
     return (
         <Modal
-            title={role ? content.EDIT_TITLE : content.ADD_TITLE}
+            title={modalTitle}
             isOpen={isOpen}
             onClose={onClose}
             width="w-1/2 max-w-3xl"
             footer={
                 <div className="flex justify-end space-x-2">
-                    <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">{globalContent.CANCEL}</button>
-                    <button onClick={handleSave} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md">{globalContent.SAVE}</button>
+                    <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">{cancelLabel}</button>
+                    <button onClick={handleSave} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md">{saveLabel}</button>
                 </div>
             }
         >

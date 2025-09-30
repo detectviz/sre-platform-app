@@ -9,6 +9,7 @@ import TableError from './TableError';
 import { showToast } from '../services/toast';
 import ImportResourceModal from './ImportResourceModal';
 import BatchTagModal from './BatchTagModal';
+import { useOptions } from '../contexts/OptionsContext';
 
 interface DiscoveryJobResultDrawerProps {
   job: DiscoveryJob | null;
@@ -22,6 +23,10 @@ const DiscoveryJobResultDrawer: React.FC<DiscoveryJobResultDrawerProps> = ({ job
     const [isBatchTagModalOpen, setIsBatchTagModalOpen] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const { options } = useOptions();
+    const autoDiscoveryOptions = options?.autoDiscovery;
+    const exporterTemplates = autoDiscoveryOptions?.exporterTemplates || [];
+    const edgeGateways = autoDiscoveryOptions?.edgeGateways || [];
 
     const fetchResults = useCallback(async () => {
         if (!job) return;
@@ -130,13 +135,39 @@ const DiscoveryJobResultDrawer: React.FC<DiscoveryJobResultDrawerProps> = ({ job
         </>
     );
 
-    if (!job) return null;
+    if (!job) {
+        return (
+            <div className="p-6 text-center text-slate-400">
+                <Icon name="radar" className="w-6 h-6 mx-auto mb-2" />
+                <p>請先選擇一個掃描任務以檢視掃描結果。</p>
+            </div>
+        );
+    }
+
+    const templateMeta = exporterTemplates.find((tpl) => tpl.id === job.exporterBinding?.templateId);
+    const gatewayLabel = job.edgeGateway?.enabled
+        ? edgeGateways.find((gw) => gw.id === job.edgeGateway?.gatewayId)?.name || job.edgeGateway?.gatewayId || '未指定'
+        : '未啟用';
 
     const selectedResources = results.filter(r => selectedIds.includes(r.id));
 
     return (
         <div className="h-full flex flex-col">
-            <Toolbar 
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className="bg-slate-800/40 border border-slate-700 rounded-lg p-4">
+                    <h4 className="text-xs uppercase text-slate-400">掃描類型</h4>
+                    <p className="mt-1 text-sm text-white font-medium">{job.kind}</p>
+                </div>
+                <div className="bg-slate-800/40 border border-slate-700 rounded-lg p-4">
+                    <h4 className="text-xs uppercase text-slate-400">Exporter 模板</h4>
+                    <p className="mt-1 text-sm text-white font-medium">{templateMeta?.name || job.exporterBinding?.templateId || '未設定'}</p>
+                </div>
+                <div className="bg-slate-800/40 border border-slate-700 rounded-lg p-4">
+                    <h4 className="text-xs uppercase text-slate-400">Edge Gateway</h4>
+                    <p className="mt-1 text-sm text-white font-medium">{gatewayLabel}</p>
+                </div>
+            </div>
+            <Toolbar
                 selectedCount={selectedIds.length}
                 onClearSelection={() => setSelectedIds([])}
                 batchActions={batchActions}

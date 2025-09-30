@@ -153,12 +153,21 @@ const TagManagementPage: React.FC = () => {
     const filteredTags = useMemo(() => {
         return tags.filter(tag => {
             const keyword = filters.keyword?.toLowerCase() || '';
-            const category = filters.category || '';
-            
-            const matchesSearch = !keyword || tag.key.toLowerCase().includes(keyword) || tag.description.toLowerCase().includes(keyword);
-            const matchesCategory = !category || tag.category === category;
-            
-            return matchesSearch && matchesCategory;
+            const scopeFilter = filters.scope;
+            const kindFilter = filters.kind;
+            const piiLevelFilter = filters.piiLevel;
+            const systemOnly = filters.systemOnly;
+
+            const matchesSearch =
+                !keyword ||
+                tag.key.toLowerCase().includes(keyword) ||
+                (tag.description ?? '').toLowerCase().includes(keyword);
+            const matchesScope = !scopeFilter || (tag.scopes || []).includes(scopeFilter);
+            const matchesKind = !kindFilter || tag.kind === kindFilter;
+            const matchesPii = !piiLevelFilter || tag.piiLevel === piiLevelFilter;
+            const matchesSystem = !systemOnly || tag.system;
+
+            return matchesSearch && matchesScope && matchesKind && matchesPii && matchesSystem;
         });
     }, [tags, filters]);
 
@@ -169,16 +178,20 @@ const TagManagementPage: React.FC = () => {
         }
         exportToCsv({
             filename: `tag-definitions-${new Date().toISOString().split('T')[0]}.csv`,
-            headers: ['key', 'category', 'description', 'required'],
+            headers: ['key', 'scopes', 'kind', 'piiLevel', 'required', 'uniqueWithinScope', 'writableRoles', 'system'],
             data: filteredTags.map(tag => ({
                 key: tag.key,
-                category: tag.category,
-                description: tag.description,
-                required: tag.required
+                scopes: (tag.scopes || []).join('|'),
+                kind: tag.kind,
+                piiLevel: tag.piiLevel,
+                required: tag.required,
+                uniqueWithinScope: tag.uniqueWithinScope,
+                writableRoles: (tag.writableRoles || []).join('|'),
+                system: tag.system,
             })),
         });
     };
-    
+
     const renderCellContent = (tag: TagDefinition, columnKey: string) => {
         switch (columnKey) {
             case 'key':
@@ -188,10 +201,32 @@ const TagManagementPage: React.FC = () => {
                         <p className="text-xs text-slate-400 font-normal">{tag.description}</p>
                     </>
                 );
-            case 'category':
-                return tag.category;
+            case 'scopes':
+                return (
+                    <div className="flex flex-wrap gap-1">
+                        {(tag.scopes || []).map(scope => (
+                            <span key={scope} className="px-2 py-0.5 text-xs bg-slate-700/70 text-slate-100 rounded-full font-mono">{scope}</span>
+                        ))}
+                    </div>
+                );
+            case 'kind':
+                return <span className="capitalize">{tag.kind}</span>;
             case 'required':
                 return tag.required ? <Icon name="check-circle" className="w-5 h-5 text-green-400" /> : <Icon name="circle" className="w-5 h-5 text-slate-500" />;
+            case 'uniqueWithinScope':
+                return tag.uniqueWithinScope ? <Icon name="check-circle" className="w-5 h-5 text-green-400" /> : <Icon name="circle" className="w-5 h-5 text-slate-500" />;
+            case 'piiLevel':
+                return <span className="uppercase tracking-wide text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-200">{tag.piiLevel}</span>;
+            case 'writableRoles':
+                return (
+                    <div className="flex flex-wrap gap-1">
+                        {(tag.writableRoles || []).map(role => (
+                            <span key={role} className="px-2 py-0.5 text-xs bg-slate-800 border border-slate-700 rounded-full font-mono text-slate-200">{role}</span>
+                        ))}
+                    </div>
+                );
+            case 'system':
+                return tag.system ? <span className="text-amber-300 text-xs font-semibold">系統保留</span> : <span className="text-slate-400 text-xs">自訂</span>;
             case 'usageCount':
                 return tag.usageCount;
             case 'allowedValues':
@@ -204,7 +239,7 @@ const TagManagementPage: React.FC = () => {
                     </div>
                 );
             default:
-                return null;
+                return <span className="text-slate-500">--</span>;
         }
     };
 
@@ -249,7 +284,12 @@ const TagManagementPage: React.FC = () => {
                                         <td key={key} className="px-6 py-4">{renderCellContent(tag, key)}</td>
                                     ))}
                                     <td className="px-6 py-4 text-center">
-                                        <button onClick={() => handleManageValues(tag)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="管理標籤值">
+                                        <button
+                                            onClick={() => handleManageValues(tag)}
+                                            className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white disabled:opacity-40"
+                                            title="管理標籤值"
+                                            disabled={tag.kind !== 'enum'}
+                                        >
                                             <Icon name="tags" className="w-4 h-4" />
                                         </button>
                                         <button onClick={() => handleEditTag(tag)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯">
@@ -313,7 +353,7 @@ const TagManagementPage: React.FC = () => {
                 onImportSuccess={fetchTags}
                 itemName="標籤"
                 importEndpoint="/settings/tags/import"
-                templateHeaders={['key', 'category', 'description', 'required']}
+                templateHeaders={['key', 'scopes', 'kind', 'piiLevel', 'required', 'uniqueWithinScope', 'writableRoles']}
                 templateFilename="tags-template.csv"
             />
             <ColumnSettingsModal

@@ -220,7 +220,7 @@ const AppLayout: React.FC = () => {
             let label: string | null = null;
             
             // 1. Search in nav items (recursive)
-            const findNav = (items: NavItem[]): NavItem | null => {
+            const findNav = (items: NavItem[]): NavItem | undefined => {
                 for (const item of items) {
                    if (`/${item.key}` === current) return item;
                    if (item.children) {
@@ -228,7 +228,7 @@ const AppLayout: React.FC = () => {
                        if (found) return found;
                    }
                }
-               return null;
+               return undefined;
             }
             const navItem = findNav(navItems);
             if (navItem) {

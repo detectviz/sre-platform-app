@@ -184,7 +184,7 @@ const AutomationPlaybooksPage: React.FC = () => {
             case 'runCount':
                 return pb.runCount;
             default:
-                return null;
+                return <span className="text-slate-500">--</span>;
         }
     };
 

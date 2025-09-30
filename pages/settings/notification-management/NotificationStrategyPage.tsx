@@ -216,10 +216,30 @@ const NotificationStrategyPage: React.FC = () => {
             case 'name': return <span className="font-medium text-white">{strategy.name}</span>;
             case 'triggerCondition': return renderConditionTags(strategy.triggerCondition);
             case 'channelCount': return strategy.channelCount;
-            case 'priority': return strategy.priority;
+            case 'severityLevels':
+                return (
+                    <div className="flex flex-wrap gap-1">
+                        {strategy.severityLevels.map(level => (
+                            <span key={level} className="px-2 py-0.5 text-xs rounded-full border border-red-500/40 text-red-300 bg-red-900/20">
+                                {level}
+                            </span>
+                        ))}
+                    </div>
+                );
+            case 'impactLevels':
+                return (
+                    <div className="flex flex-wrap gap-1">
+                        {strategy.impactLevels.map(level => (
+                            <span key={level} className="px-2 py-0.5 text-xs rounded-full border border-amber-500/40 text-amber-200 bg-amber-900/10">
+                                {level}
+                            </span>
+                        ))}
+                    </div>
+                );
             case 'creator': return strategy.creator;
             case 'lastUpdated': return strategy.lastUpdated;
-            default: return null;
+            default:
+                return <span className="text-slate-500">-</span>;
         }
     };
 

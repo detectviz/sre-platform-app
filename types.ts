@@ -108,19 +108,22 @@ export interface RuleAnalysisReport {
   recommendations: RuleAnalysisRecommendation[];
 }
 
+export type IncidentStatus = 'New' | 'Acknowledged' | 'Resolved' | 'Silenced';
+export type IncidentSeverity = 'Critical' | 'Warning' | 'Info';
+export type IncidentImpact = 'High' | 'Medium' | 'Low';
+
 export interface Incident {
   id: string;
   summary: string;
   resource: string;
   resourceId: string;
-  serviceImpact: 'High' | 'Medium' | 'Low';
+  status: IncidentStatus;
+  severity: IncidentSeverity;
+  impact: IncidentImpact;
   rule: string;
   ruleId: string;
-  status: 'new' | 'acknowledged' | 'resolved' | 'silenced';
-  severity: 'critical' | 'warning' | 'info';
-  priority?: 'P0' | 'P1' | 'P2' | 'P3';
   assignee?: string;
-  triggeredAt: string;
+  occurredAt: string;
   history: IncidentEvent[];
   aiAnalysis?: IncidentAnalysis;
 }
@@ -129,9 +132,8 @@ export interface IncidentCreateRequest {
   summary: string;
   resourceId: string;
   ruleId: string;
-  severity: Incident['severity'];
-  serviceImpact: Incident['serviceImpact'];
-  priority?: Incident['priority'];
+  severity: IncidentSeverity;
+  impact: IncidentImpact;
   assignee?: string;
 }
 
@@ -441,7 +443,8 @@ export interface NotificationStrategy {
   enabled: boolean;
   triggerCondition: string;
   channelCount: number;
-  priority: 'High' | 'Medium' | 'Low';
+  severityLevels: IncidentSeverity[];
+  impactLevels: IncidentImpact[];
   creator: string;
   lastUpdated: string;
   deleted_at?: string;
@@ -485,6 +488,25 @@ export interface AuthSettings {
   idpAdminUrl: string;
 }
 
+export type TagScope =
+  | 'resource'
+  | 'datasource'
+  | 'discovery_job'
+  | 'exporter'
+  | 'dashboard'
+  | 'alert_rule'
+  | 'incident'
+  | 'notification_policy'
+  | 'automation'
+  | 'analysis'
+  | 'tenant'
+  | 'team'
+  | 'user';
+
+export type TagValueKind = 'enum' | 'string' | 'number' | 'boolean';
+
+export type PiiLevel = 'none' | 'low' | 'high';
+
 export interface TagValue {
   id: string;
   value: string;
@@ -492,20 +514,32 @@ export interface TagValue {
   usageCount: number;
 }
 
-export interface TagDefinition {
-  id: string;
+export interface TagRegistryEntry {
   key: string;
-  category: 'Infrastructure' | 'Application' | 'Business' | 'Security';
   description: string;
-  allowedValues: TagValue[];
+  scopes: TagScope[];
+  kind: TagValueKind;
+  enumValues?: string[];
   required: boolean;
+  uniqueWithinScope: boolean;
+  writableRoles: string[];
+  piiLevel: PiiLevel;
+  system: boolean;
+}
+
+export interface TagDefinition extends TagRegistryEntry {
+  id: string;
+  allowedValues: TagValue[];
   usageCount: number;
   deleted_at?: string;
 }
 
 export interface TagManagementFilters {
   keyword?: string;
-  category?: string;
+  scope?: TagScope;
+  kind?: TagValueKind;
+  piiLevel?: PiiLevel;
+  systemOnly?: boolean;
 }
 
 export interface AuditLogFilters {
@@ -742,8 +776,7 @@ export interface InfraInsightsOptions {
 export interface IncidentOptions {
     statuses: StyleDescriptor<Incident['status']>[];
     severities: StyleDescriptor<Incident['severity']>[];
-    priorities: StyleDescriptor<Incident['priority']>[];
-    serviceImpacts: StyleDescriptor<Incident['serviceImpact']>[];
+    impacts: StyleDescriptor<Incident['impact']>[];
     quickSilenceDurations: { label: string, value: number }[];
 }
 
@@ -801,7 +834,8 @@ export interface NotificationChannelOptions {
 }
 
 export interface NotificationStrategyOptions {
-    priorities: ('High' | 'Medium' | 'Low')[];
+    severityLevels: IncidentSeverity[];
+    impactLevels: IncidentImpact[];
     defaultCondition: string;
     conditionKeys: Record<string, string[]>;
     tagKeys: string[];
@@ -826,7 +860,11 @@ export interface DashboardOptions {
 }
 
 export interface TagManagementOptions {
-    categories: string[];
+    scopes: { value: TagScope; label: string; description: string }[];
+    kinds: { value: TagValueKind; label: string; description: string }[];
+    piiLevels: { value: PiiLevel; label: string; description: string }[];
+    writableRoles: string[];
+    governanceNotes?: string;
 }
 
 export interface LogExplorerFilters {
@@ -857,27 +895,33 @@ export interface Datasource {
     deleted_at?: string;
 }
 
-export type DiscoveryJobType = 'K8s' | 'SNMP' | 'Cloud Provider' | 'Static Range' | 'Custom Script';
+export type DiscoveryJobKind = 'K8s' | 'SNMP' | 'Cloud Provider' | 'Static Range' | 'Custom Script';
 export type DiscoveryJobStatus = 'success' | 'partial_failure' | 'failed' | 'running';
 
-export type ExporterType = 'none' | 'node_exporter' | 'snmp_exporter' | 'modbus_exporter' | 'ipmi_exporter';
+export type ExporterTemplateId = 'none' | 'node_exporter' | 'snmp_exporter' | 'modbus_exporter' | 'ipmi_exporter';
 
-export interface ExporterConfig {
-    type: ExporterType;
-    mibProfile?: string; // for snmp
-    customConfigYaml?: string; // for others that need yaml
+export interface DiscoveryJobExporterBinding {
+    templateId: ExporterTemplateId;
+    overridesYaml?: string;
+    mibProfileId?: string;
+}
+
+export interface DiscoveryJobEdgeGateway {
+    enabled: boolean;
+    gatewayId?: string;
 }
 
 export interface DiscoveryJob {
     id: string;
     name: string;
-    type: DiscoveryJobType;
+    kind: DiscoveryJobKind;
     schedule: string;
     lastRun: string;
     status: DiscoveryJobStatus;
-    config: Record<string, any>;
+    targetConfig: Record<string, any>;
+    exporterBinding?: DiscoveryJobExporterBinding | null;
+    edgeGateway?: DiscoveryJobEdgeGateway | null;
     tags: KeyValueTag[];
-    exporterConfig?: ExporterConfig;
     deleted_at?: string;
 }
 
@@ -888,7 +932,7 @@ export interface DatasourceFilters {
 
 export interface DiscoveryJobFilters {
     keyword?: string;
-    type?: DiscoveryJobType;
+    kind?: DiscoveryJobKind;
     status?: DiscoveryJobStatus;
 }
 
@@ -943,9 +987,33 @@ export interface DatasourceOptions {
     authMethods: AuthMethod[];
 }
 
+export interface ExporterTemplateOption {
+    id: ExporterTemplateId;
+    name: string;
+    description?: string;
+    supportsMibProfile?: boolean;
+    supportsOverrides?: boolean;
+}
+
+export interface MibProfileOption {
+    id: string;
+    name: string;
+    description?: string;
+    templateId: ExporterTemplateId;
+}
+
+export interface EdgeGatewayOption {
+    id: string;
+    name: string;
+    location?: string;
+    description?: string;
+}
+
 export interface AutoDiscoveryOptions {
-    jobTypes: DiscoveryJobType[];
-    exporterTypes: ExporterType[];
+    jobKinds: DiscoveryJobKind[];
+    exporterTemplates: ExporterTemplateOption[];
+    mibProfiles: MibProfileOption[];
+    edgeGateways: EdgeGatewayOption[];
 }
 
 export interface AllOptions {

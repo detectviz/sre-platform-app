@@ -63,7 +63,14 @@ const DualListSelector: React.FC<DualListSelectorProps> = ({ available, selected
         onChange(newSelected);
     };
 
-    if (!pageContent) return null;
+    if (!pageContent) {
+        return (
+            <div className="col-span-2 flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-700 bg-slate-900/40 p-6 text-slate-400">
+                <Icon name="loader-circle" className="w-5 h-5 animate-spin mb-2" />
+                <p className="text-sm">正在載入版面選項...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="grid grid-cols-2 gap-4">
@@ -104,7 +111,14 @@ const AccordionItem: React.FC<AccordionItemProps> = ({ pageName, layouts, handle
     const widgetIds = pageLayout?.widgetIds || [];
     const getWidgetById = (id: string) => allWidgets.find(w => w.id === id);
 
-    if (!pageContent) return null;
+    if (!pageContent) {
+        return (
+            <div className="border-b border-slate-800 p-4 text-slate-500 flex items-center space-x-2">
+                <Icon name="loader-circle" className="w-4 h-4 animate-spin" />
+                <span>正在載入 {pageName} 的版面資訊...</span>
+            </div>
+        );
+    }
 
     return (
         <div className="border-b border-slate-800">

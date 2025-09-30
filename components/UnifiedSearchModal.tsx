@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Modal from './Modal';
 import Icon from './Icon';
-import { 
-    Resource, ResourceFilters, AlertRule, Incident, SilenceRule, TagManagementFilters, User, AuditLogFilters,
+import {
+    Resource, ResourceFilters, AlertRule, Incident, IncidentImpact, IncidentSeverity, IncidentStatus, SilenceRule, TagManagementFilters, User, AuditLogFilters,
     DashboardFilters, AutomationHistoryFilters, PersonnelFilters, ResourceGroupFilters, AutomationTriggerFilters,
     NotificationStrategyFilters, NotificationChannelFilters, NotificationHistoryFilters, AutomationPlaybook,
     LogExplorerFilters
@@ -13,8 +13,9 @@ import { useContent } from '../contexts/ContentContext';
 
 export interface IncidentFilters {
   keyword?: string;
-  status?: 'new' | 'acknowledged' | 'resolved' | 'silenced';
-  severity?: 'critical' | 'warning' | 'info';
+  status?: IncidentStatus;
+  severity?: IncidentSeverity;
+  impact?: IncidentImpact;
   assignee?: string;
   startTime?: string;
   endTime?: string;
@@ -82,8 +83,22 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
       setFilters({});
   }
 
+  const modalTitle = content?.TITLE ?? '進階搜尋';
+
   if (!content || !globalContent) {
-    return null;
+    return (
+      <Modal
+        title={modalTitle}
+        isOpen={isOpen}
+        onClose={onClose}
+        width="w-1/2 max-w-2xl"
+      >
+        <div className="flex flex-col items-center justify-center py-12 text-slate-400 space-y-3">
+          <Icon name="loader-circle" className="w-6 h-6 animate-spin" />
+          <p className="text-sm">搜尋配置載入中，請稍候...</p>
+        </div>
+      </Modal>
+    );
   }
 
   const renderIncidentFilters = () => (
@@ -91,13 +106,19 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
       <FormRow label={content.INCIDENTS.STATUS}>
         <select value={(filters as IncidentFilters).status || ''} onChange={e => setFilters(prev => ({ ...(prev as IncidentFilters), status: e.target.value as IncidentFilters['status'] }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
           <option value="">{content.ALL_STATUSES}</option>
-          {options?.incidents.statuses.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+          {options?.incidents?.statuses.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
         </select>
       </FormRow>
       <FormRow label={content.INCIDENTS.SEVERITY}>
         <select value={(filters as IncidentFilters).severity || ''} onChange={e => setFilters(prev => ({ ...(prev as IncidentFilters), severity: e.target.value as IncidentFilters['severity'] }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
           <option value="">{content.ALL_SEVERITIES}</option>
-          {options?.incidents.severities.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+          {options?.incidents?.severities.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+        </select>
+      </FormRow>
+      <FormRow label={content.INCIDENTS.IMPACT}>
+        <select value={(filters as IncidentFilters).impact || ''} onChange={e => setFilters(prev => ({ ...(prev as IncidentFilters), impact: e.target.value as IncidentFilters['impact'] }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
+          <option value="">{content.ALL_IMPACTS}</option>
+          {options?.incidents?.impacts.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
         </select>
       </FormRow>
       <FormRow label={content.INCIDENTS.ASSIGNEE}>
@@ -179,16 +200,45 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
 
   const renderTagManagementFilters = () => (
     <>
-      <FormRow label={content.TAG_MANAGEMENT.CATEGORY}>
-        <select 
-          value={(filters as TagManagementFilters).category || ''} 
-          onChange={e => setFilters(prev => ({ ...(prev as TagManagementFilters), category: e.target.value as TagManagementFilters['category'] }))} 
+      <FormRow label={content.TAG_MANAGEMENT.SCOPE}>
+        <select
+          value={(filters as TagManagementFilters).scope || ''}
+          onChange={e => setFilters(prev => ({ ...(prev as TagManagementFilters), scope: e.target.value as TagManagementFilters['scope'] }))}
           className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
         >
-          <option value="">{content.TAG_MANAGEMENT.ALL_CATEGORIES}</option>
-          {options?.tagManagement.categories.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+          <option value="">{content.TAG_MANAGEMENT.ALL_SCOPES}</option>
+          {options?.tagManagement.scopes.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
         </select>
       </FormRow>
+      <FormRow label={content.TAG_MANAGEMENT.KIND}>
+        <select
+          value={(filters as TagManagementFilters).kind || ''}
+          onChange={e => setFilters(prev => ({ ...(prev as TagManagementFilters), kind: e.target.value as TagManagementFilters['kind'] }))}
+          className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
+        >
+          <option value="">{content.TAG_MANAGEMENT.ALL_KINDS}</option>
+          {options?.tagManagement.kinds.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+        </select>
+      </FormRow>
+      <FormRow label={content.TAG_MANAGEMENT.PII_LEVEL}>
+        <select
+          value={(filters as TagManagementFilters).piiLevel || ''}
+          onChange={e => setFilters(prev => ({ ...(prev as TagManagementFilters), piiLevel: e.target.value as TagManagementFilters['piiLevel'] }))}
+          className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
+        >
+          <option value="">{content.TAG_MANAGEMENT.ALL_PII}</option>
+          {options?.tagManagement.piiLevels.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+        </select>
+      </FormRow>
+      <label className="flex items-center space-x-2 text-sm text-slate-200">
+        <input
+          type="checkbox"
+          className="h-4 w-4 rounded bg-slate-900 border-slate-600 text-sky-500 focus:ring-sky-500"
+          checked={(filters as TagManagementFilters).systemOnly || false}
+          onChange={e => setFilters(prev => ({ ...(prev as TagManagementFilters), systemOnly: e.target.checked }))}
+        />
+        <span>{content.TAG_MANAGEMENT.ONLY_SYSTEM}</span>
+      </label>
     </>
   );
 
@@ -295,7 +345,7 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
 
   return (
     <Modal
-      title={content.TITLE}
+      title={modalTitle}
       isOpen={isOpen}
       onClose={onClose}
       width="w-1/2 max-w-2xl"

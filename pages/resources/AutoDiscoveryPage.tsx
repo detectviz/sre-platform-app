@@ -139,7 +139,7 @@ const AutoDiscoveryPage: React.FC = () => {
                             ) : jobs.map((job) => (
                                 <tr key={job.id} className="border-b border-slate-800 hover:bg-slate-800/40">
                                     <td className="px-6 py-4 font-medium text-white">{job.name}</td>
-                                    <td className="px-6 py-4">{job.type}</td>
+                                    <td className="px-6 py-4">{job.kind}</td>
                                     <td className="px-6 py-4 font-mono">{job.schedule}</td>
                                     <td className="px-6 py-4">{job.lastRun}</td>
                                     <td className="px-6 py-4">{getStatusIndicator(job.status)}</td>

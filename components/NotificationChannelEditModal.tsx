@@ -208,7 +208,7 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
                     </FormRow>
                 );
             default:
-                return null;
+                return <div className="p-4 text-center text-slate-400">此通知類型目前無額外設定。</div>;
         }
     };
 

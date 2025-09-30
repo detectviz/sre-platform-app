@@ -212,7 +212,9 @@ const DashboardListPage: React.FC = () => {
     };
 
     const renderCellContent = (dashboard: Dashboard, columnKey: string) => {
-        if (!pageContent) return null;
+        if (!pageContent) {
+            return <span className="text-slate-500">--</span>;
+        }
         switch (columnKey) {
             case 'name':
                 return (
@@ -237,7 +239,7 @@ const DashboardListPage: React.FC = () => {
             case 'updatedAt':
                 return dashboard.updatedAt;
             default:
-                return null;
+                return <span className="text-slate-500">--</span>;
         }
     };
 

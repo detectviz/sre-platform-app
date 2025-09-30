@@ -785,7 +785,14 @@ const AlertRuleEditModal: React.FC<AlertRuleEditModalProps> = ({ isOpen, onClose
             case 2: return <Step2 formData={formData} setFormData={setFormData} />;
             case 3: return <Step3 formData={formData} setFormData={setFormData} />;
             case 4: return <Step4 formData={formData} setFormData={setFormData} />;
-            default: return null;
+            default:
+                return (
+                    <div className="flex flex-col items-center justify-center py-12 text-slate-400 space-y-2">
+                        <Icon name="alert-circle" className="w-6 h-6" />
+                        <p className="font-medium">目前無法顯示此步驟內容。</p>
+                        <p className="text-sm text-slate-500">請重新整理頁面或返回前一步重試。</p>
+                    </div>
+                );
         }
     };
     

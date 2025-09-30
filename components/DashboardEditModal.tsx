@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import FormRow from './FormRow';
+import Icon from './Icon';
 import { Dashboard } from '../types';
 import { useOptions } from '../contexts/OptionsContext';
 import { useContent } from '../contexts/ContentContext';
@@ -36,18 +37,36 @@ const DashboardEditModal: React.FC<DashboardEditModalProps> = ({ isOpen, onClose
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
-    if (!pageContent || !globalContent) return null;
+    const modalTitle = pageContent?.ACTIONS?.SETTINGS ? `${pageContent.ACTIONS.SETTINGS}: ${dashboard?.name || ''}` : `儀表板設定${dashboard ? `: ${dashboard.name}` : ''}`;
+    const cancelLabel = globalContent?.CANCEL ?? '取消';
+    const saveLabel = globalContent?.SAVE ?? '儲存';
+
+    if (!pageContent || !globalContent) {
+        return (
+            <Modal
+                title={modalTitle}
+                isOpen={isOpen}
+                onClose={onClose}
+                width="w-1/2 max-w-2xl"
+            >
+                <div className="flex flex-col items-center justify-center py-12 text-slate-400 space-y-3">
+                    <Icon name="loader-circle" className="w-6 h-6 animate-spin" />
+                    <p className="text-sm">儀表板設定內容載入中，請稍候...</p>
+                </div>
+            </Modal>
+        );
+    }
 
     return (
         <Modal
-            title={`${pageContent.ACTIONS.SETTINGS}: ${dashboard?.name}`}
+            title={modalTitle}
             isOpen={isOpen}
             onClose={onClose}
             width="w-1/2 max-w-2xl"
             footer={
                 <div className="flex justify-end space-x-2">
-                    <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">{globalContent.CANCEL}</button>
-                    <button onClick={handleSave} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md">{globalContent.SAVE}</button>
+                    <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">{cancelLabel}</button>
+                    <button onClick={handleSave} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md">{saveLabel}</button>
                 </div>
             }
         >

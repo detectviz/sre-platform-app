@@ -236,7 +236,12 @@ const SilenceRulePage: React.FC = () => {
                  return 'N/A';
             case 'creator': return rule.creator;
             case 'createdAt': return rule.createdAt;
-            default: return null;
+            default:
+                return (
+                    <div className="text-center text-slate-500 py-6">
+                        無法載入此步驟內容，請稍後再試。
+                    </div>
+                );
         }
     };
 

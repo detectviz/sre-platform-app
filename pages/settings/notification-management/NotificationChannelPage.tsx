@@ -226,7 +226,8 @@ const NotificationChannelPage: React.FC = () => {
                     </span>
                 );
             case 'lastTestedAt': return channel.lastTestedAt;
-            default: return null;
+            default:
+                return <span className="text-slate-500">--</span>;
         }
     };
 

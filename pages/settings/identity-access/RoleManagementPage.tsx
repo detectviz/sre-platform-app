@@ -187,7 +187,7 @@ const RoleManagementPage: React.FC = () => {
             case 'createdAt':
                 return role.createdAt;
             default:
-                return null;
+                return <span className="text-slate-500">--</span>;
         }
     };
 

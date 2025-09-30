@@ -1,5 +1,5 @@
 import { DB, uuidv4 } from './db';
-import type { Incident, TabConfigMap } from '../types';
+import type { DiscoveryJob, Incident, NotificationStrategy, TabConfigMap, TagDefinition } from '../types';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -345,8 +345,8 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
             }
             case 'POST /incidents': {
                 if (!id) {
-                    const { summary, resourceId, ruleId, severity, serviceImpact, priority, assignee } = body || {};
-                    if (!summary || !resourceId || !ruleId || !severity || !serviceImpact) {
+                    const { summary, resourceId, ruleId, severity, impact, assignee } = body || {};
+                    if (!summary || !resourceId || !ruleId || !severity || !impact) {
                         throw { status: 400, message: 'Missing required fields for creating an incident.' };
                     }
 
@@ -362,19 +362,20 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
 
                     const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
                     const newIncidentId = `INC-${uuidv4().slice(0, 8).toUpperCase()}`;
+                    const normalizedSeverity = (severity as string)?.charAt(0).toUpperCase() + (severity as string)?.slice(1).toLowerCase();
+                    const normalizedImpact = (impact as string)?.charAt(0).toUpperCase() + (impact as string)?.slice(1).toLowerCase();
                     const newIncident: Incident = {
                         id: newIncidentId,
                         summary,
                         resource: resource.name,
                         resourceId,
-                        serviceImpact,
+                        impact: normalizedImpact as Incident['impact'],
                         rule: rule.name,
                         ruleId,
-                        status: 'new',
-                        severity,
-                        priority: priority || undefined,
+                        status: 'New',
+                        severity: normalizedSeverity as Incident['severity'],
                         assignee: assignee || undefined,
-                        triggeredAt: timestamp,
+                        occurredAt: timestamp,
                         history: [
                             {
                                 timestamp,
@@ -401,14 +402,14 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
 
                     if (incidentAction === 'acknowledge') {
                         const oldStatus = DB.incidents[index].status;
-                        DB.incidents[index].status = 'acknowledged';
+                        DB.incidents[index].status = 'Acknowledged';
                         DB.incidents[index].assignee = currentUser.name;
-                        DB.incidents[index].history.push({ timestamp, user: currentUser.name, action: 'Acknowledged', details: `Status changed from '${oldStatus}' to 'acknowledged'.` });
+                        DB.incidents[index].history.push({ timestamp, user: currentUser.name, action: 'Acknowledged', details: `Status changed from '${oldStatus}' to 'Acknowledged'.` });
                     }
                     if (incidentAction === 'resolve') {
                         const oldStatus = DB.incidents[index].status;
-                        DB.incidents[index].status = 'resolved';
-                        DB.incidents[index].history.push({ timestamp, user: currentUser.name, action: 'Resolved', details: `Status changed from '${oldStatus}' to 'resolved'.` });
+                        DB.incidents[index].status = 'Resolved';
+                        DB.incidents[index].history.push({ timestamp, user: currentUser.name, action: 'Resolved', details: `Status changed from '${oldStatus}' to 'Resolved'.` });
                     }
                     if (incidentAction === 'assign') {
                         const oldAssignee = DB.incidents[index].assignee || 'Unassigned';
@@ -417,8 +418,8 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     }
                     if (incidentAction === 'silence') {
                         const oldStatus = DB.incidents[index].status;
-                        DB.incidents[index].status = 'silenced';
-                        DB.incidents[index].history.push({ timestamp, user: currentUser.name, action: 'Silenced', details: `Incident silenced for ${durationHours} hour(s). Status changed from '${oldStatus}' to 'silenced'.` });
+                        DB.incidents[index].status = 'Silenced';
+                        DB.incidents[index].history.push({ timestamp, user: currentUser.name, action: 'Silenced', details: `Incident silenced for ${durationHours} hour(s). Status changed from '${oldStatus}' to 'Silenced'.` });
                     }
                     if (incidentAction === 'add_note') {
                         DB.incidents[index].history.push({ timestamp, user: currentUser.name, action: 'Note Added', details });
@@ -674,7 +675,17 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         }, 3000);
                         return { message: 'Run triggered.' };
                     }
-                    const newJob = { ...body, id: `dj-${uuidv4()}`, lastRun: 'N/A', status: 'success' };
+                    const newJob: DiscoveryJob = {
+                        ...body,
+                        id: `dj-${uuidv4()}`,
+                        lastRun: 'N/A',
+                        status: 'success',
+                        kind: body?.kind || 'K8s',
+                        targetConfig: body?.targetConfig || {},
+                        exporterBinding: body?.exporterBinding || { templateId: 'node_exporter' },
+                        edgeGateway: body?.edgeGateway || { enabled: false },
+                        tags: body?.tags || [],
+                    };
                     DB.discoveryJobs.unshift(newJob);
                     return newJob;
                 }
@@ -731,7 +742,15 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const jobId = subId;
                     const index = DB.discoveryJobs.findIndex((j: any) => j.id === jobId);
                     if (index === -1) throw { status: 404 };
-                    DB.discoveryJobs[index] = { ...DB.discoveryJobs[index], ...body };
+                    const existingJob = DB.discoveryJobs[index];
+                    DB.discoveryJobs[index] = {
+                        ...existingJob,
+                        ...body,
+                        targetConfig: body?.targetConfig || existingJob.targetConfig,
+                        exporterBinding: body?.exporterBinding || existingJob.exporterBinding,
+                        edgeGateway: body?.edgeGateway || existingJob.edgeGateway,
+                        tags: Array.isArray(body?.tags) ? body.tags : existingJob.tags,
+                    };
                     return DB.discoveryJobs[index];
                 }
                 const resIndex = DB.resources.findIndex((r: any) => r.id === id);
@@ -1114,7 +1133,13 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 if (urlParts[1] === 'tags' && urlParts[3] === 'values') {
                     const tagId = urlParts[2];
                     const tagIndex = DB.tagDefinitions.findIndex((t: any) => t.id === tagId);
-                    if (tagIndex > -1) DB.tagDefinitions[tagIndex].allowedValues = body;
+                    if (tagIndex === -1) {
+                        throw { status: 404, message: '標籤不存在。' };
+                    }
+                    if (DB.tagDefinitions[tagIndex].kind !== 'enum') {
+                        throw { status: 400, message: '僅枚舉型標籤支援管理允許值。' };
+                    }
+                    DB.tagDefinitions[tagIndex].allowedValues = Array.isArray(body) ? body : [];
                     return DB.tagDefinitions[tagIndex];
                 }
                 break;
@@ -1154,7 +1179,24 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     return { success: true, message: '連線成功！偵測到 Grafana v10.1.2。' };
                 }
                 if (id === 'notification-strategies') {
-                    const newStrategy = { ...body, id: `strat-${uuidv4()}`, lastUpdated: new Date().toISOString(), creator: 'Admin User' };
+                    const fallbackOptions = DB.notificationStrategyOptions || { severityLevels: [], impactLevels: [] };
+                    const severityLevels = Array.isArray(body?.severityLevels) && body.severityLevels.length > 0
+                        ? body.severityLevels
+                        : fallbackOptions.severityLevels;
+                    const impactLevels = Array.isArray(body?.impactLevels) && body.impactLevels.length > 0
+                        ? body.impactLevels
+                        : fallbackOptions.impactLevels;
+
+                    const newStrategy: NotificationStrategy = {
+                        ...body,
+                        id: `strat-${uuidv4()}`,
+                        lastUpdated: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                        creator: 'Admin User',
+                        severityLevels,
+                        impactLevels,
+                        channelCount: body?.channelCount ?? 0,
+                        enabled: body?.enabled ?? true,
+                    };
                     DB.notificationStrategies.unshift(newStrategy);
                     return newStrategy;
                 }
@@ -1164,9 +1206,43 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     return newChannel;
                 }
                 if (id === 'tags') {
-                    const newTag = { ...body, id: `tag-${uuidv4()}`, allowedValues: [], usageCount: 0 };
-                    DB.tagDefinitions.unshift(newTag);
-                    return newTag;
+                    const fallbackRoles = DB.allOptions?.tagManagement?.writableRoles || ['platform_admin'];
+                    const payload = {
+                        id: `tag-${uuidv4()}`,
+                        allowedValues: [],
+                        usageCount: 0,
+                        scopes: Array.isArray(body?.scopes) ? body.scopes : [],
+                        kind: body?.kind ?? 'string',
+                        writableRoles: Array.isArray(body?.writableRoles) && body.writableRoles.length > 0 ? body.writableRoles : fallbackRoles,
+                        piiLevel: body?.piiLevel ?? 'none',
+                        required: Boolean(body?.required),
+                        uniqueWithinScope: Boolean(body?.uniqueWithinScope),
+                        description: body?.description ?? '',
+                        system: Boolean(body?.system),
+                        enumValues: body?.enumValues,
+                        key: body?.key,
+                    } as TagDefinition;
+
+                    if (!payload.key) {
+                        throw { status: 400, message: '標籤鍵為必填項目。' };
+                    }
+                    if (!payload.scopes.length) {
+                        throw { status: 400, message: '至少需指定一個適用範圍。' };
+                    }
+                    if (payload.kind === 'enum' && Array.isArray(body?.allowedValues)) {
+                        payload.allowedValues = body.allowedValues;
+                    }
+                    if (payload.kind === 'enum' && Array.isArray(body?.enumValues)) {
+                        payload.allowedValues = body.enumValues.map((value: string, index: number) => ({ id: `${payload.key}:${value}:${index}`, value, usageCount: 0 }));
+                        payload.enumValues = body.enumValues;
+                    }
+                    if (payload.kind !== 'enum') {
+                        payload.allowedValues = [];
+                        payload.enumValues = undefined;
+                    }
+
+                    DB.tagDefinitions.unshift(payload);
+                    return payload;
                 }
                 break;
             }
@@ -1177,7 +1253,21 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 if (collectionId === 'notification-strategies') {
                     const index = DB.notificationStrategies.findIndex((s: any) => s.id === itemId);
                     if (index === -1) throw { status: 404 };
-                    DB.notificationStrategies[index] = { ...DB.notificationStrategies[index], ...body, lastUpdated: new Date().toISOString() };
+                    const existingStrategy = DB.notificationStrategies[index];
+                    const severityLevels = Array.isArray(body?.severityLevels) && body?.severityLevels.length > 0
+                        ? body.severityLevels
+                        : existingStrategy.severityLevels;
+                    const impactLevels = Array.isArray(body?.impactLevels) && body?.impactLevels.length > 0
+                        ? body.impactLevels
+                        : existingStrategy.impactLevels;
+
+                    DB.notificationStrategies[index] = {
+                        ...existingStrategy,
+                        ...body,
+                        severityLevels,
+                        impactLevels,
+                        lastUpdated: new Date().toISOString().replace('T', ' ').substring(0, 19)
+                    };
                     return DB.notificationStrategies[index];
                 }
                 if (collectionId === 'notification-channels') {
@@ -1189,8 +1279,40 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 if (collectionId === 'tags') {
                     const index = DB.tagDefinitions.findIndex((t: any) => t.id === itemId);
                     if (index === -1) throw { status: 404 };
-                    DB.tagDefinitions[index] = { ...DB.tagDefinitions[index], ...body };
-                    return DB.tagDefinitions[index];
+                    const existing = DB.tagDefinitions[index];
+                    const next: TagDefinition = {
+                        ...existing,
+                        ...body,
+                    };
+
+                    if (existing.system) {
+                        next.key = existing.key;
+                        next.scopes = existing.scopes;
+                        next.kind = existing.kind;
+                    } else if (Array.isArray(body?.scopes)) {
+                        next.scopes = body.scopes;
+                    }
+
+                    if (Array.isArray(body?.writableRoles) && body.writableRoles.length > 0) {
+                        next.writableRoles = body.writableRoles;
+                    }
+
+                    if (body?.kind && body.kind !== 'enum') {
+                        next.allowedValues = [];
+                        next.enumValues = undefined;
+                    }
+
+                    if (next.kind === 'enum') {
+                        if (Array.isArray(body?.enumValues)) {
+                            next.enumValues = body.enumValues;
+                            next.allowedValues = body.enumValues.map((value: string, index: number) => ({ id: `${next.key}:${value}:${index}`, value, usageCount: 0 }));
+                        } else if (Array.isArray(body?.allowedValues)) {
+                            next.allowedValues = body.allowedValues;
+                        }
+                    }
+
+                    DB.tagDefinitions[index] = next;
+                    return next;
                 }
                 break;
             }
@@ -1210,7 +1332,12 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 }
                 if (collectionId === 'tags') {
                     const index = DB.tagDefinitions.findIndex((t: any) => t.id === itemId);
-                    if (index > -1) DB.tagDefinitions.splice(index, 1);
+                    if (index > -1) {
+                        if (DB.tagDefinitions[index].system) {
+                            throw { status: 400, message: '系統保留標籤不可刪除。' };
+                        }
+                        DB.tagDefinitions.splice(index, 1);
+                    }
                     return {};
                 }
                 break;

@@ -191,7 +191,7 @@ const TeamManagementPage: React.FC = () => {
             case 'createdAt':
                 return team.createdAt;
             default:
-                return null;
+                return <span className="text-slate-500">--</span>;
         }
     };
 

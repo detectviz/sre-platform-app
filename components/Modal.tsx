@@ -28,7 +28,7 @@ const Modal: React.FC<ModalProps> = ({ title, isOpen, onClose, children, footer,
     };
   }, [onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen) return <></>;
 
   const finalWidth = width || modalContent?.DEFAULT_WIDTH || 'w-1/2';
   const finalClassName = className || `${modalContent?.BASE_CLASSES || ''} ${finalWidth}`;
