@@ -299,6 +299,8 @@ const IncidentListPage: React.FC = () => {
             <ToolbarButton icon="brain-circuit" text="AI 分析" onClick={handleRunAIAnalysis} ai />
             <ToolbarButton icon="user-check" text="認領" onClick={() => handleAcknowledge(selectedIds)} />
             <ToolbarButton icon="check-circle" text="解決" onClick={() => handleResolve(selectedIds)} />
+            <ToolbarButton icon="upload" text="匯入" onClick={() => setIsImportModalOpen(true)} />
+            <ToolbarButton icon="download" text="匯出" onClick={handleExport} />
         </>
     );
 

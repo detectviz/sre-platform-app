@@ -260,6 +260,8 @@ const AlertRulePage: React.FC = () => {
             <ToolbarButton icon="toggle-right" text="啟用" onClick={() => handleBatchAction('enable')} />
             <ToolbarButton icon="toggle-left" text="停用" onClick={() => handleBatchAction('disable')} />
             <ToolbarButton icon="trash-2" text="刪除" danger onClick={() => handleBatchAction('delete')} />
+            <ToolbarButton icon="upload" text="匯入" onClick={() => setIsImportModalOpen(true)} />
+            <ToolbarButton icon="download" text="匯出" onClick={handleExport} />
         </>
     );
     

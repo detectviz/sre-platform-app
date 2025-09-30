@@ -260,6 +260,8 @@ const ResourceListPage: React.FC = () => {
         <>
             <ToolbarButton icon="brain-circuit" text="AI 分析" onClick={handleAIAnalysis} ai />
             <ToolbarButton icon="trash-2" text="刪除" danger onClick={handleBatchDelete} />
+            <ToolbarButton icon="upload" text="匯入" onClick={() => setIsImportModalOpen(true)} />
+            <ToolbarButton icon="download" text="匯出" onClick={handleExport} />
         </>
     );
 
