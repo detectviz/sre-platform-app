@@ -15,9 +15,8 @@ interface NewIncidentModalProps {
 
 type FormState = IncidentCreateRequest & { assignee?: string };
 
-const DEFAULT_PRIORITY: Incident['priority'] = 'P2';
+const DEFAULT_IMPACT: Incident['impact'] = 'Medium';
 const DEFAULT_SEVERITY: Incident['severity'] = 'warning';
-const DEFAULT_SERVICE_IMPACT: Incident['serviceImpact'] = 'Medium';
 
 const NewIncidentModal: React.FC<NewIncidentModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { options } = useOptions();
@@ -36,8 +35,7 @@ const NewIncidentModal: React.FC<NewIncidentModalProps> = ({ isOpen, onClose, on
     resourceId: '',
     ruleId: '',
     severity: incidentOptions?.severities?.[0]?.value ?? DEFAULT_SEVERITY,
-    serviceImpact: incidentOptions?.serviceImpacts?.[0]?.value ?? DEFAULT_SERVICE_IMPACT,
-    priority: incidentOptions?.priorities?.[0]?.value ?? DEFAULT_PRIORITY,
+    impact: incidentOptions?.impacts?.[0]?.value ?? DEFAULT_IMPACT,
     assignee: '',
   }), [incidentOptions]);
 
@@ -83,8 +81,7 @@ const NewIncidentModal: React.FC<NewIncidentModalProps> = ({ isOpen, onClose, on
     setForm(prev => ({
       ...prev,
       severity: prev.severity || incidentOptions?.severities?.[0]?.value || DEFAULT_SEVERITY,
-      serviceImpact: prev.serviceImpact || incidentOptions?.serviceImpacts?.[0]?.value || DEFAULT_SERVICE_IMPACT,
-      priority: prev.priority || incidentOptions?.priorities?.[0]?.value || DEFAULT_PRIORITY,
+      impact: prev.impact || incidentOptions?.impacts?.[0]?.value || DEFAULT_IMPACT,
     }));
   }, [incidentOptions]);
 
@@ -93,7 +90,7 @@ const NewIncidentModal: React.FC<NewIncidentModalProps> = ({ isOpen, onClose, on
   }, []);
 
   const canSubmit = useMemo(() => {
-    return Boolean(form.summary && form.resourceId && form.ruleId && form.severity && form.serviceImpact);
+    return Boolean(form.summary && form.resourceId && form.ruleId && form.severity && form.impact);
   }, [form]);
 
   const handleSubmit = useCallback(async (event: React.FormEvent) => {
@@ -108,8 +105,7 @@ const NewIncidentModal: React.FC<NewIncidentModalProps> = ({ isOpen, onClose, on
         resourceId: form.resourceId,
         ruleId: form.ruleId,
         severity: form.severity,
-        serviceImpact: form.serviceImpact,
-        priority: form.priority ? form.priority : undefined,
+        impact: form.impact,
         assignee: form.assignee?.trim() ? form.assignee.trim() : undefined,
       };
       const { data } = await api.post<Incident>('/incidents', payload);
@@ -212,26 +208,13 @@ const NewIncidentModal: React.FC<NewIncidentModalProps> = ({ isOpen, onClose, on
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">服務影響</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">影響範圍</label>
               <select
-                value={form.serviceImpact}
-                onChange={e => handleInputChange('serviceImpact', e.target.value as Incident['serviceImpact'])}
+                value={form.impact}
+                onChange={e => handleInputChange('impact', e.target.value as Incident['impact'])}
                 className="w-full rounded-md border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm text-white focus:border-sky-500 focus:outline-none"
               >
-                {incidentOptions?.serviceImpacts?.map(option => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">優先順序</label>
-              <select
-                value={form.priority || ''}
-                onChange={e => handleInputChange('priority', e.target.value ? (e.target.value as Incident['priority']) : undefined)}
-                className="w-full rounded-md border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm text-white focus:border-sky-500 focus:outline-none"
-              >
-                <option value="">未指定</option>
-                {incidentOptions?.priorities?.map(option => (
+                {incidentOptions?.impacts?.map(option => (
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>

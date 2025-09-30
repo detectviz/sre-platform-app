@@ -169,9 +169,9 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onU
                 {incident.severity}
               </span>
             </InfoItem>
-            <InfoItem label="優先級">
-              <span className={`px-3 py-1 text-sm font-semibold rounded-full ${getStyle(incidentOptions?.priorities, incident.priority)}`}>
-                {incident.priority || 'N/A'}
+            <InfoItem label="影響範圍">
+              <span className={`px-3 py-1 text-sm font-semibold rounded-full border ${getStyle(incidentOptions?.impacts, incident.impact)}`}>
+                {incident.impact}
               </span>
             </InfoItem>
             <InfoItem label="指派給">
@@ -207,9 +207,9 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onU
                     {incident.resource}
                   </Link>
                 </InfoItem>
-                <InfoItem label="服務影響">
-                  <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(incidentOptions?.serviceImpacts, incident.serviceImpact)}`}>
-                    {incident.serviceImpact}
+                <InfoItem label="影響範圍">
+                  <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(incidentOptions?.impacts, incident.impact)}`}>
+                    {incident.impact}
                   </span>
                 </InfoItem>
                 <InfoItem label="規則">
