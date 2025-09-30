@@ -366,6 +366,122 @@ components:
       responses:
         "204":
           description: 觸發器已成功刪除。
+
+  /settings/tags:
+    get:
+      tags: [平台]
+      summary: 取得標籤登錄處清單
+      operationId: listTagDefinitions
+      responses:
+        "200":
+          description: 成功回傳所有已註冊的標籤鍵。系統保留鍵與自訂鍵會一併列出。
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TagDefinition'
+    post:
+      tags: [平台]
+      summary: 新增標籤鍵
+      operationId: createTagDefinition
+      description: |
+        建立新的標籤鍵並定義其治理屬性。鍵名須符合 `^[a-z0-9_]{1,32}$` 規則，並至少綁定一個使用範圍。
+        系統會自動將 `usageCount` 初始化為 0，並依據資料型別處理允許值。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagDefinitionCreateRequest'
+      responses:
+        "201":
+          description: 標籤鍵建立成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagDefinition'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /settings/tags/{tag_id}:
+    patch:
+      tags: [平台]
+      summary: 更新標籤鍵治理屬性
+      operationId: updateTagDefinition
+      parameters:
+        - name: tag_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagDefinitionUpdateRequest'
+      responses:
+        "200":
+          description: 成功回傳更新後的標籤定義。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagDefinition'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [平台]
+      summary: 刪除標籤鍵
+      operationId: deleteTagDefinition
+      parameters:
+        - name: tag_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: 標籤鍵已刪除。若為系統保留鍵將回傳 400 並拒絕操作。
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /settings/tags/{tag_id}/values:
+    put:
+      tags: [平台]
+      summary: 管理枚舉型標籤允許值
+      operationId: replaceTagValues
+      description: 僅適用於資料型別為 `enum` 的標籤。此操作會覆寫既有允許值並重置其使用次數統計。
+      parameters:
+        - name: tag_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              description: 新的允許值清單。
+              items:
+                $ref: '#/components/schemas/TagValue'
+      responses:
+        "200":
+          description: 成功回傳更新後的標籤定義。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagDefinition'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /automation/triggers/batch-actions:
     post:
       tags: [自動化]
@@ -387,6 +503,268 @@ components:
         name:
           type: string
         # ... (other properties) ...
+    IncidentHistoryEvent:
+      type: object
+      description: 代表事故時間軸上的一則事件紀錄。
+      required: [timestamp, user, action]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: 發生事件的時間 (格式：YYYY-MM-DD HH:mm:ss)。
+        user:
+          type: string
+          description: 觸發此次紀錄的使用者名稱。
+        action:
+          type: string
+          description: 動作名稱，例如 `Created`、`Acknowledged`。
+        details:
+          type: string
+          description: 額外說明或備註。
+          nullable: true
+    Incident:
+      type: object
+      description: 平台中的事件資料結構，已改為僅保留狀態、嚴重性與影響三層標籤。
+      required: [id, summary, resource, resourceId, impact, rule, ruleId, status, severity, triggeredAt, history]
+      properties:
+        id:
+          type: string
+          description: 事件唯一識別碼 (例如 `INC-001`)。
+        summary:
+          type: string
+          description: 事件的摘要說明。
+        resource:
+          type: string
+          description: 受影響資源的顯示名稱。
+        resourceId:
+          type: string
+          description: 受影響資源的唯一 ID。
+        impact:
+          type: string
+          description: 事件對服務造成的影響層級。
+          enum: [High, Medium, Low]
+        rule:
+          type: string
+          description: 觸發本事件的告警規則名稱。
+        ruleId:
+          type: string
+          description: 觸發本事件的告警規則 ID。
+        status:
+          type: string
+          description: 事件目前狀態。
+          enum: [new, acknowledged, resolved, silenced]
+        severity:
+          type: string
+          description: 事件的嚴重性分類。
+          enum: [critical, warning, info]
+        assignee:
+          type: string
+          nullable: true
+          description: 目前負責處理事件的人員名稱。
+        triggeredAt:
+          type: string
+          format: date-time
+          description: 事件觸發時間 (格式：YYYY-MM-DD HH:mm:ss)。
+        history:
+          type: array
+          description: 事件時間軸紀錄。
+          items:
+            $ref: '#/components/schemas/IncidentHistoryEvent'
+        aiAnalysis:
+          description: AI 自動產出的分析內容。
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/IncidentAnalysis'
+
+    TagValue:
+      type: object
+      description: 代表枚舉型標籤的允許值。
+      required: [id, value, usageCount]
+      properties:
+        id:
+          type: string
+          description: 允許值的唯一識別碼。
+        value:
+          type: string
+          maxLength: 128
+          description: 實際可指派的值內容。
+        description:
+          type: string
+          nullable: true
+          description: 額外註記或說明。
+        usageCount:
+          type: integer
+          minimum: 0
+          description: 此值目前被引用的次數統計。
+
+    TagDefinition:
+      type: object
+      description: 標籤登錄處中對單一標籤鍵的完整定義。
+      required: [id, key, scopes, kind, required, uniqueWithinScope, writableRoles, piiLevel, system, usageCount, allowedValues]
+      properties:
+        id:
+          type: string
+          description: 標籤鍵的唯一識別碼。
+        key:
+          type: string
+          pattern: '^[a-z0-9_]{1,32}$'
+          description: 標籤鍵名稱，使用小寫英數字與底線。
+        description:
+          type: string
+          nullable: true
+          description: 用於向使用者說明此標籤的用途與治理規則。
+        scopes:
+          type: array
+          minItems: 1
+          description: 標籤可被套用的模組範圍。
+          items:
+            type: string
+            enum: [resource, datasource, discovery_job, exporter, dashboard, alert_rule, incident, notification_policy, automation, analysis, tenant, team, user]
+        kind:
+          type: string
+          enum: [enum, string, number, boolean]
+          description: 標籤值的資料型別。
+        enumValues:
+          type: array
+          nullable: true
+          description: 若型別為枚舉 (enum) 時，定義允許的原始值。
+          items:
+            type: string
+            maxLength: 128
+        allowedValues:
+          type: array
+          description: 目前在平台中所維護的允許值資料。
+          items:
+            $ref: '#/components/schemas/TagValue'
+        required:
+          type: boolean
+          description: 指定此標籤在對應範圍內是否為必填。
+        uniqueWithinScope:
+          type: boolean
+          description: 同一個範圍內是否僅允許唯一值 (常用於 tenant、tags.schema_version 等鍵)。
+        writableRoles:
+          type: array
+          minItems: 1
+          description: 允許修改此標籤的角色代碼清單。
+          items:
+            type: string
+        piiLevel:
+          type: string
+          enum: [none, low, high]
+          description: 此標籤值是否可能含有個資，決定審計與保護策略。
+        system:
+          type: boolean
+          description: 是否為系統保留鍵。保留鍵不可更改鍵名、範圍或資料型別。
+        usageCount:
+          type: integer
+          minimum: 0
+          description: 此標籤鍵在平台中被使用的次數統計。
+
+    TagDefinitionCreateRequest:
+      type: object
+      description: 用於新增標籤鍵的請求結構。
+      required: [key, scopes, kind, writableRoles]
+      properties:
+        key:
+          type: string
+          pattern: '^[a-z0-9_]{1,32}$'
+        description:
+          type: string
+          nullable: true
+        scopes:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            enum: [resource, datasource, discovery_job, exporter, dashboard, alert_rule, incident, notification_policy, automation, analysis, tenant, team, user]
+        kind:
+          type: string
+          enum: [enum, string, number, boolean]
+        enumValues:
+          type: array
+          nullable: true
+          items:
+            type: string
+            maxLength: 128
+        writableRoles:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        piiLevel:
+          type: string
+          enum: [none, low, high]
+          default: none
+        required:
+          type: boolean
+          default: false
+        uniqueWithinScope:
+          type: boolean
+          default: false
+        system:
+          type: boolean
+          default: false
+
+    TagDefinitionUpdateRequest:
+      type: object
+      description: 用於更新標籤鍵的請求結構。未提供的欄位保持原值。
+      properties:
+        description:
+          type: string
+          nullable: true
+        scopes:
+          type: array
+          items:
+            type: string
+            enum: [resource, datasource, discovery_job, exporter, dashboard, alert_rule, incident, notification_policy, automation, analysis, tenant, team, user]
+        kind:
+          type: string
+          enum: [enum, string, number, boolean]
+        enumValues:
+          type: array
+          nullable: true
+          items:
+            type: string
+            maxLength: 128
+        writableRoles:
+          type: array
+          items:
+            type: string
+        piiLevel:
+          type: string
+          enum: [none, low, high]
+        required:
+          type: boolean
+        uniqueWithinScope:
+          type: boolean
+        system:
+          type: boolean
+    IncidentCreateRequest:
+      type: object
+      description: 建立新事件時所需的資料結構。
+      required: [summary, resourceId, ruleId, severity, impact]
+      properties:
+        summary:
+          type: string
+          description: 事件摘要。
+        resourceId:
+          type: string
+          description: 受影響資源的唯一 ID。
+        ruleId:
+          type: string
+          description: 觸發事件的告警規則 ID。
+        severity:
+          type: string
+          enum: [critical, warning, info]
+          description: 事件嚴重性。
+        impact:
+          type: string
+          enum: [High, Medium, Low]
+          description: 事件的影響層級。
+        assignee:
+          type: string
+          nullable: true
+          description: 指定的事件處理人員。
     MetricMetadata:
       type: object
       properties:

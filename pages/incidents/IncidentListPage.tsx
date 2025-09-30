@@ -136,7 +136,7 @@ const IncidentListPage: React.FC = () => {
 
         exportToCsv({
             filename: `incidents-${new Date().toISOString().split('T')[0]}.csv`,
-            headers: ['id', 'summary', 'resource', 'status', 'severity', 'priority', 'assignee', 'triggeredAt'],
+            headers: ['id', 'summary', 'resource', 'status', 'severity', 'impact', 'assignee', 'triggeredAt'],
             data: dataToExport,
         });
     };
@@ -254,10 +254,8 @@ const IncidentListPage: React.FC = () => {
             case 'severity':
                 const severityMap: Record<string, string> = { 'critical': '嚴重', 'warning': '警告', 'info': '資訊' };
                 return <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(incidentOptions?.severities, inc.severity)}`}>{severityMap[inc.severity] || getLabel(incidentOptions?.severities, inc.severity)}</span>;
-            case 'priority':
-                return <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStyle(incidentOptions?.priorities, inc.priority)}`}>{getLabel(incidentOptions?.priorities, inc.priority)}</span>;
-            case 'serviceImpact':
-                return <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(incidentOptions?.serviceImpacts, inc.serviceImpact)}`}>{getLabel(incidentOptions?.serviceImpacts, inc.serviceImpact)}</span>;
+            case 'impact':
+                return <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(incidentOptions?.impacts, inc.impact)}`}>{getLabel(incidentOptions?.impacts, inc.impact)}</span>;
             case 'resource':
                 return inc.resource;
             case 'assignee':
@@ -388,7 +386,7 @@ const IncidentListPage: React.FC = () => {
                 onImportSuccess={fetchIncidents}
                 itemName="事件"
                 importEndpoint="/incidents/import"
-                templateHeaders={['id', 'summary', 'resource', 'status', 'severity', 'priority', 'assignee', 'triggeredAt']}
+                templateHeaders={['id', 'summary', 'resource', 'status', 'severity', 'impact', 'assignee', 'triggeredAt']}
                 templateFilename="incidents-template.csv"
             />
         </div>

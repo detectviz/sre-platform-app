@@ -113,12 +113,11 @@ export interface Incident {
   summary: string;
   resource: string;
   resourceId: string;
-  serviceImpact: 'High' | 'Medium' | 'Low';
+  impact: 'High' | 'Medium' | 'Low';
   rule: string;
   ruleId: string;
   status: 'new' | 'acknowledged' | 'resolved' | 'silenced';
   severity: 'critical' | 'warning' | 'info';
-  priority?: 'P0' | 'P1' | 'P2' | 'P3';
   assignee?: string;
   triggeredAt: string;
   history: IncidentEvent[];
@@ -130,8 +129,7 @@ export interface IncidentCreateRequest {
   resourceId: string;
   ruleId: string;
   severity: Incident['severity'];
-  serviceImpact: Incident['serviceImpact'];
-  priority?: Incident['priority'];
+  impact: Incident['impact'];
   assignee?: string;
 }
 
@@ -485,6 +483,25 @@ export interface AuthSettings {
   idpAdminUrl: string;
 }
 
+export type TagScope =
+  | 'resource'
+  | 'datasource'
+  | 'discovery_job'
+  | 'exporter'
+  | 'dashboard'
+  | 'alert_rule'
+  | 'incident'
+  | 'notification_policy'
+  | 'automation'
+  | 'analysis'
+  | 'tenant'
+  | 'team'
+  | 'user';
+
+export type TagValueKind = 'enum' | 'string' | 'number' | 'boolean';
+
+export type PiiLevel = 'none' | 'low' | 'high';
+
 export interface TagValue {
   id: string;
   value: string;
@@ -492,20 +509,32 @@ export interface TagValue {
   usageCount: number;
 }
 
-export interface TagDefinition {
-  id: string;
+export interface TagRegistryEntry {
   key: string;
-  category: 'Infrastructure' | 'Application' | 'Business' | 'Security';
   description: string;
-  allowedValues: TagValue[];
+  scopes: TagScope[];
+  kind: TagValueKind;
+  enumValues?: string[];
   required: boolean;
+  uniqueWithinScope: boolean;
+  writableRoles: string[];
+  piiLevel: PiiLevel;
+  system: boolean;
+}
+
+export interface TagDefinition extends TagRegistryEntry {
+  id: string;
+  allowedValues: TagValue[];
   usageCount: number;
   deleted_at?: string;
 }
 
 export interface TagManagementFilters {
   keyword?: string;
-  category?: string;
+  scope?: TagScope;
+  kind?: TagValueKind;
+  piiLevel?: PiiLevel;
+  systemOnly?: boolean;
 }
 
 export interface AuditLogFilters {
@@ -742,8 +771,7 @@ export interface InfraInsightsOptions {
 export interface IncidentOptions {
     statuses: StyleDescriptor<Incident['status']>[];
     severities: StyleDescriptor<Incident['severity']>[];
-    priorities: StyleDescriptor<Incident['priority']>[];
-    serviceImpacts: StyleDescriptor<Incident['serviceImpact']>[];
+    impacts: StyleDescriptor<Incident['impact']>[];
     quickSilenceDurations: { label: string, value: number }[];
 }
 
@@ -826,7 +854,11 @@ export interface DashboardOptions {
 }
 
 export interface TagManagementOptions {
-    categories: string[];
+    scopes: { value: TagScope; label: string; description: string }[];
+    kinds: { value: TagValueKind; label: string; description: string }[];
+    piiLevels: { value: PiiLevel; label: string; description: string }[];
+    writableRoles: string[];
+    governanceNotes?: string;
 }
 
 export interface LogExplorerFilters {
