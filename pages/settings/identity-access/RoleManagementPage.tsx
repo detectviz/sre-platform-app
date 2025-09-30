@@ -142,8 +142,13 @@ const RoleManagementPage: React.FC = () => {
         }
     };
 
-    const getStatusPill = (status: Role['status']) => {
-        return status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-slate-500/20 text-slate-400';
+    const handleToggleEnabled = async (role: Role) => {
+        try {
+            await api.patch(`/iam/roles/${role.id}`, { ...role, enabled: !role.enabled });
+            fetchRoles();
+        } catch (err) {
+            showToast('切換角色狀態失敗。', 'error');
+        }
     };
 
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -163,6 +168,13 @@ const RoleManagementPage: React.FC = () => {
 
     const renderCellContent = (role: Role, columnKey: string) => {
         switch (columnKey) {
+            case 'enabled':
+                return (
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked={role.enabled} className="sr-only peer" onChange={() => handleToggleEnabled(role)} />
+                        <div className="w-11 h-6 bg-slate-700 rounded-full peer peer-focus:ring-4 peer-focus:ring-sky-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
+                    </label>
+                );
             case 'name':
                 return (
                     <>
@@ -172,12 +184,6 @@ const RoleManagementPage: React.FC = () => {
                 );
             case 'userCount':
                 return role.userCount;
-            case 'status':
-                return (
-                    <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusPill(role.status)}`}>
-                        {role.status}
-                    </span>
-                );
             case 'createdAt':
                 return role.createdAt;
             default:

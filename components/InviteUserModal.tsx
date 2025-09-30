@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import FormRow from './FormRow';
+import Icon from './Icon';
 import { User, Role, Team } from '../types';
 import api from '../services/api';
 
@@ -75,15 +76,31 @@ const InviteUserModal: React.FC<InviteUserModalProps> = ({ isOpen, onClose, onIn
             }
         >
             <div className="space-y-4">
-                <FormRow label="電子郵件 *">
+                <FormRow label={
+                    <div className="flex items-center">
+                        電子郵件
+                        <span className="ml-1 text-red-400">*</span>
+                    </div>
+                }>
                     <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
-                           className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+                           className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
+                           placeholder="user@example.com" />
                 </FormRow>
                 <FormRow label="姓名 (選填)">
                     <input type="text" value={name} onChange={e => setName(e.target.value)}
-                           className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+                           className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
+                           placeholder="使用者全名" />
                 </FormRow>
-                <FormRow label="角色">
+                <FormRow label={
+                    <div className="flex items-center">
+                        角色
+                        {role && roles.find(r => r.name === role)?.description && (
+                            <span className="ml-1.5 text-slate-400 cursor-help" title={roles.find(r => r.name === role)?.description}>
+                                <Icon name="info" className="w-3.5 h-3.5" />
+                            </span>
+                        )}
+                    </div>
+                }>
                     <select value={role} onChange={e => setRole(e.target.value as User['role'])}
                             className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoading}>
                         {isLoading ? <option>載入中...</option> : roles.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}

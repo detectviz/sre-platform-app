@@ -350,7 +350,7 @@ const Step3 = ({ formData, setFormData, options }: { formData: Partial<SilenceRu
                 value={matcher.value}
                 onChange={(e) => handleMatcherChange(index, 'value', e.target.value)}
                 className="flex-grow bg-slate-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                placeholder="標籤值 (e.g., api-service)"
+                placeholder="標籤值（例如：api-service）"
             />
         );
     };

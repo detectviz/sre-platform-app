@@ -246,7 +246,9 @@ const AlertRulePage: React.FC = () => {
             case 'name': return <span className="font-medium text-white">{rule.name}</span>;
             case 'target': return rule.target;
             case 'conditionsSummary': return rule.conditionsSummary;
-            case 'severity': return <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getSeverityPill(rule.severity)}`}>{rule.severity.toUpperCase()}</span>;
+            case 'severity':
+                const severityMap: Record<string, string> = { 'critical': '嚴重', 'warning': '警告', 'info': '資訊' };
+                return <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getSeverityPill(rule.severity)}`}>{severityMap[rule.severity] || rule.severity}</span>;
             case 'automationEnabled': return rule.automationEnabled ? <Icon name="check-circle" className="w-5 h-5 text-green-400"/> : <Icon name="x-circle" className="w-5 h-5 text-slate-500" />;
             case 'creator': return rule.creator;
             case 'lastUpdated': return rule.lastUpdated;

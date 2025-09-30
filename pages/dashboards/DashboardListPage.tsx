@@ -228,7 +228,8 @@ const DashboardListPage: React.FC = () => {
                     </>
                 );
             case 'type':
-                return <span className={`px-2 py-1 text-xs rounded-full ${dashboard.type === 'built-in' ? 'bg-cyan-900 text-cyan-300' : 'bg-green-900 text-green-300'}`}>{dashboard.type}</span>;
+                const typeLabel = dashboard.type === 'built-in' ? '內建' : dashboard.type === 'grafana' ? 'Grafana' : dashboard.type;
+                return <span className={`px-2 py-1 text-xs rounded-full ${dashboard.type === 'built-in' ? 'bg-cyan-900 text-cyan-300' : 'bg-green-900 text-green-300'}`}>{typeLabel}</span>;
             case 'category':
                 return dashboard.category;
             case 'owner':

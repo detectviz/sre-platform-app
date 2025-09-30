@@ -174,8 +174,14 @@ const TeamManagementPage: React.FC = () => {
             case 'name':
                 return (
                     <>
-                        <div className="font-medium text-white">{team.name}</div>
-                        <p className="text-xs text-slate-400 font-normal">{team.description}</p>
+                        <div className="font-medium text-white flex items-center">
+                            {team.name}
+                            {team.description && (
+                                <span className="ml-1.5 text-slate-400 cursor-help" title={team.description}>
+                                    <Icon name="info" className="w-3.5 h-3.5" />
+                                </span>
+                            )}
+                        </div>
                     </>
                 );
             case 'ownerId':

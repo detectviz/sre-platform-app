@@ -204,9 +204,10 @@ const AutomationTriggersPage: React.FC = () => {
             case 'name':
                 return <span className="font-medium text-white">{trigger.name}</span>;
             case 'type':
+                const typeLabel = trigger.type === 'Schedule' ? '排程' : trigger.type === 'Webhook' ? 'Webhook' : trigger.type === 'Event' ? '事件' : trigger.type;
                 return (
                     <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getTriggerTypePill(trigger.type)}`}>
-                        {trigger.type}
+                        {typeLabel}
                     </span>
                 );
             case 'targetPlaybookId':

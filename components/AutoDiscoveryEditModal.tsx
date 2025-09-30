@@ -203,13 +203,13 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
                 </div>
 
                 <div className="p-4 border border-slate-700 rounded-lg bg-slate-800/20 space-y-4">
-                    <h3 className="text-lg font-semibold text-white">2. 目標配置 (Target Configuration)</h3>
+                    <h3 className="text-lg font-semibold text-white">2. 目標配置</h3>
                     <p className="text-sm text-slate-400 -mt-2">專注於 **如何找到資源**，只放掃描需要的連線參數。</p>
                     {renderConfigFields()}
                 </div>
 
                 <div className="p-4 border border-slate-700 rounded-lg bg-slate-800/20 space-y-4">
-                    <h3 className="text-lg font-semibold text-white">3. Exporter 綁定 (Exporter Binding)</h3>
+                    <h3 className="text-lg font-semibold text-white">3. Exporter 綁定</h3>
                     <p className="text-sm text-slate-400 -mt-2">專注於 **如何持續監控**。系統會依「掃描類型」自動選擇常見 Exporter。</p>
                     <FormRow label="Exporter 模板">
                         <select value={formData.exporterConfig?.type || 'none'} onChange={e => handleExporterConfigChange('type', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoadingOptions}>
@@ -219,7 +219,7 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
                     </FormRow>
                     {formData.exporterConfig?.type === 'snmp_exporter' && (
                         <FormRow label="MIB Profile">
-                            <input type="text" value={formData.exporterConfig.mibProfile || ''} onChange={e => handleExporterConfigChange('mibProfile', e.target.value)} placeholder="e.g., cisco_standard" className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+                            <input type="text" value={formData.exporterConfig.mibProfile || ''} onChange={e => handleExporterConfigChange('mibProfile', e.target.value)} placeholder="例如：cisco_standard" className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
                         </FormRow>
                     )}
                     {(formData.exporterConfig?.type === 'modbus_exporter' || formData.exporterConfig?.type === 'ipmi_exporter') && (

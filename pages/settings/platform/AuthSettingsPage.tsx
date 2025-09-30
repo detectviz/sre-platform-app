@@ -61,7 +61,14 @@ const AuthSettingsPage: React.FC = () => {
                     </FormRow>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormRow label="Realm / Domain">
+                        <FormRow label={
+                            <div className="flex items-center">
+                                領域 / 網域
+                                <span className="ml-1.5 text-slate-400 cursor-help" title="身份提供商的命名空間或租戶識別碼">
+                                    <Icon name="info" className="w-3.5 h-3.5" />
+                                </span>
+                            </div>
+                        }>
                             <ReadOnlyInput value={settings.realm} />
                         </FormRow>
                          <FormRow label="Client ID">
@@ -69,7 +76,14 @@ const AuthSettingsPage: React.FC = () => {
                         </FormRow>
                     </div>
 
-                     <FormRow label="Client Secret">
+                     <FormRow label={
+                        <div className="flex items-center">
+                            客戶端密鑰
+                            <span className="ml-1.5 text-amber-400 cursor-help" title="機密資訊，請勿外洩。建議定期輪換。">
+                                <Icon name="shield-alert" className="w-3.5 h-3.5" />
+                            </span>
+                        </div>
+                    }>
                         <ReadOnlyInput value="********************" />
                     </FormRow>
 

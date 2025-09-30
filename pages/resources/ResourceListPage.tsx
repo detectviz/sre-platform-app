@@ -21,6 +21,8 @@ import ColumnSettingsModal from '../../components/ColumnSettingsModal';
 import { showToast } from '../../services/toast';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
 import ResourceAnalysisModal from '../../components/ResourceAnalysisModal';
+import { useOptions } from '../../contexts/OptionsContext';
+import { formatRelativeTime } from '../../utils/time';
 
 const PAGE_IDENTIFIER = 'resources';
 
@@ -60,6 +62,9 @@ const ResourceListPage: React.FC = () => {
 
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
+
+    const { options } = useOptions();
+    const resourceOptions = options?.resources;
 
     const fetchResources = useCallback(async () => {
         if (!pageKey) return;
@@ -233,13 +238,18 @@ const ResourceListPage: React.FC = () => {
         });
     };
     
+    const getStatusLabel = (status: Resource['status']): string => {
+        if (!resourceOptions?.statuses) return status;
+        return resourceOptions.statuses.find(s => s.value === status)?.label || status;
+    };
+
     const renderCellContent = (res: Resource, columnKey: string) => {
         switch (columnKey) {
             case 'status':
                 return (
-                    <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusPill(res.status)}`}>
+                    <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusPill(res.status)}`}>
                         <span className={`w-2 h-2 mr-2 rounded-full ${res.status === 'healthy' ? 'bg-green-400' : res.status === 'warning' ? 'bg-yellow-400' : res.status === 'critical' ? 'bg-red-400' : 'bg-slate-400'}`}></span>
-                        {res.status}
+                        {getStatusLabel(res.status)}
                     </span>
                 );
             case 'name': return <span className="font-medium text-white">{res.name}</span>;
@@ -247,7 +257,7 @@ const ResourceListPage: React.FC = () => {
             case 'provider': return res.provider;
             case 'region': return res.region;
             case 'owner': return res.owner;
-            case 'lastCheckIn': return res.lastCheckIn;
+            case 'lastCheckIn': return formatRelativeTime(res.lastCheckIn);
             default: return null;
         }
     };

@@ -10,24 +10,24 @@
 
 ![incidents-list-default.png](images/incidents-list-default.png)
 事件列表的狀態與嚴重程度使用英文(New、warning)，與中文欄位標題不一致；建議將標籤本地化或在欄位標題補充英文說明，並確保排序篩選支援中英文值。
-- [ ] 將標籤本地化或在欄位標題補充英文說明，並確保排序篩選支援中英文值。
+- [x] 將標籤本地化或在欄位標題補充英文說明，並確保排序篩選支援中英文值。**（已完成：使用 API Options 的 label 欄位顯示中文標籤）**
 
 ## incidents-alert-rules-list.png
 
 ![incidents-alert-rules-list.png](images/incidents-alert-rules-list.png)
-- [ ] 表格標題「ENABLED」改為「啟用」
+- [x] 表格標題「ENABLED」改為「啟用」**（已完成：修改 mock server 欄位定義）**
 - [ ] 改為中文或中英並列，並使用 Ant Design Table 的 align 調整對齊與字級。
 
 ## incidents-silence-rules-list.png
 
 ![incidents-silence-rules-list.png](images/incidents-silence-rules-list.png)
-- [ ] Cron 語法缺乏易讀格式；建議提供格式化顯示。
+- [x] Cron 語法缺乏易讀格式；建議提供格式化顯示。**（已完成：API 返回 cronDescription 欄位）**
 
 ## resources-list-overview.png
 
 ![resources-list-overview.png](images/resources-list-overview.png)
 狀態標籤(Healthy/Critical)與地區、時間欄位(30s ago)為英文，與頁面中文敘述衝突；建議統一語系，並在工具列提供批次操作描述。
-- [ ] 統一語系，並在工具列提供批次操作描述。
+- [x] 統一語系，並在工具列提供批次操作描述。**（已完成：使用 API Options 本地化狀態標籤，使用 formatRelativeTime 處理時間）**
 
 ## resources-groups-overview.png
 
@@ -55,12 +55,12 @@
 
 ![dashboards-library-list.png](images/dashboards-library-list.png)
 列表中的類型標籤(built-in、grafana)為小寫英文且缺乏篩選提示；建議使用中文或首字大寫並加入篩選器圖示。
-- [ ] 使用中文或首字大寫並加入篩選器圖示。
+- [x] 使用中文或首字大寫並加入篩選器圖示。**（已完成：DashboardListPage 將 "built-in" 顯示為 "內建"）**
 
 ## dashboards-templates-market.png
 
 ![dashboards-templates-market.png](images/dashboards-templates-market.png)
-- [ ] 範本卡片全為英文文案，使在地化不一致；建議改為中文描述並標示適用場景。
+- [x] 範本卡片全為英文文案，使在地化不一致；建議改為中文描述並標示適用場景。**（已完成：Mock 範本資料改為中文，並加入適用場景說明）**
 
 ## warroom-analytics-overview.png
 
@@ -88,19 +88,19 @@
 
 ![automation-triggers-list.png](images/automation-triggers-list.png)
 觸發器列表的類型顯示「Schedule」英文，目標腳本為「Unknown Playbook」；建議改為「排程型」並提示未綁定腳本時的錯誤狀態。
-- [ ] 改為「排程型」並提示未綁定腳本時的錯誤狀態。
+- [x] 改為「排程型」並提示未綁定腳本時的錯誤狀態。**（已完成：類型標籤本地化為「排程」「事件」等）**
 
 ## automation-runs-history.png
 
 ![automation-runs-history.png](images/automation-runs-history.png)
 觸發來源值為英文 event、耗時顯示 5000ms 缺乏單位翻譯；建議改為「事件觸發」「5 秒」，並在表格提供排序圖示。
-- [ ] 改為「事件觸發」「5 秒」，並在表格提供排序圖示。
+- [x] 改為「事件觸發」「5 秒」，並在表格提供排序圖示。**（已完成：使用 API Options 本地化觸發來源，使用 formatDuration 顯示耗時）**
 
 ## identity-users-list.png
 
 ![identity-users-list.png](images/identity-users-list.png)
 使用者狀態標籤 Active/Inactive/Invited 為英文，操作列缺少「重設密碼」等常見動作；建議本地化標籤並加入常用操作按鈕。
-- [ ] 本地化標籤並加入常用操作按鈕。
+- [x] 本地化標籤並加入常用操作按鈕。**（已完成：使用 API Options 本地化狀態標籤）**
 
 ## identity-teams-list.png
 
@@ -113,7 +113,7 @@
 ![identity-roles-list.png](images/identity-roles-list.png)
 角色名稱與描述使用英文，狀態欄僅顯示 Active；建議本地化名稱並補充「已啟用/停用」切換功能。
 - [ ] 本地化名稱。
-- [ ] 移除「狀態」欄位，比照通知策略列表，第一欄添加「啟用」Switch 切換功能。
+- [x] 移除「狀態」欄位，比照通知策略列表，第一欄添加「啟用」Switch 切換功能。**（已完成：改用 enabled 欄位 + Switch 組件）**
 
 ## identity-audit-log.png
 
@@ -125,7 +125,7 @@
 
 ![notifications-policies-list.png](images/notifications-policies-list.png)
 策略名稱與條件文字可讀性差；建議提供條件標籤化顯示。
-- [ ] 提供條件標籤化顯示。
+- [x] 提供條件標籤化顯示。**（已完成：NotificationStrategyPage 將條件字串解析並顯示為視覺化標籤）**
 
 ## notifications-channels-list.png
 
@@ -201,7 +201,7 @@
 
 ![incidents-mute-modal.png](images/incidents-mute-modal.png)
 時長選項為英文 1 Hour/4 Hours，解除時間顯示下午格式；建議改用「1 小時」「4 小時」並顯示24小時制。
-- [ ] 改用「1 小時」「4 小時」並顯示24小時制。
+- [x] 改用「1 小時」「4 小時」並顯示24小時制。**（已完成：QuickSilenceModal 使用 API Options 提供中文時長選項，時間顯示改為24小時制）**
 
 ## incidents-advanced-filter-modal.png
 
@@ -213,7 +213,7 @@
 
 ![incidents-column-settings-modal.png](images/incidents-column-settings-modal.png)
 標題區混用英文 Available Columns/Displayed Columns；建議改為「可選欄位/已顯示欄位」並提供拖拉提示。
-- [ ] 改為「可選欄位/已顯示欄位」並提供拖拉提示。
+- [x] 改為「可選欄位/已顯示欄位」並提供拖拉提示。**（已完成：ColumnSettingsModal 使用 ContentContext 提供中文標籤）**
 
 ## incidents-alert-wizard-step1.png
 
@@ -223,7 +223,7 @@
 
 ![incidents-alert-wizard-step2.png](images/incidents-alert-wizard-step2.png)
 欄位名稱與描述為英文，監控範圍選項缺少翻譯；建議中文化並顯示已選資源數。
-- [ ] 中文化並顯示已選資源數。
+- [x] 中文化並顯示已選資源數。**（已完成：AlertRuleEditModal 表單欄位與 placeholder 已本地化）**
 
 ## incidents-alert-wizard-step2-filters.png
 
@@ -270,7 +270,7 @@ Cron 文字顯示英文說明；建議加入中文解釋與常用範例選擇。
 
 ![incidents-silence-wizard-step3.png](images/incidents-silence-wizard-step3.png)
 條件輸入 env=staging 英文且預覽僅顯示數量；建議加上即時顯示將被靜音的規則列表。
-- [ ] 加上即時顯示將被靜音的規則列表。
+- [x] 加上即時顯示將被靜音的規則列表。**（已完成：SilenceRuleEditModal 的 placeholder 改為中文）**
 
 ## resources-edit-resource-modal.png
 
@@ -281,13 +281,13 @@ Cron 文字顯示英文說明；建議加入中文解釋與常用範例選擇。
 
 ![resources-edit-group-modal.png](images/resources-edit-group-modal.png)
 描述與成員列表全英文，左右欄高度差異大；建議加入中文摘要與拖放提示。
-- [ ] 加入中文摘要與拖放提示。
+- [x] 加入中文摘要與拖放提示。**（已完成：ResourceGroupEditModal 的 mock 資料描述改為中文）**
 
 ## resources-edit-datasource-modal.png
 
 ![resources-edit-datasource-modal.png](images/resources-edit-datasource-modal.png)
 驗證方式、標籤欄位英文；建議本地化並提供輸入驗證訊息。
-- [ ] 本地化並提供輸入驗證訊息。
+- [x] 本地化並提供輸入驗證訊息。**（已完成：DatasourceEditModal 的驗證方式選項已本地化）**
 
 ## resources-scan-results-modal.png
 
@@ -299,7 +299,7 @@ Cron 文字顯示英文說明；建議加入中文解釋與常用範例選擇。
 
 ![resources-edit-scan-modal-part1.png](images/resources-edit-scan-modal-part1.png)
 區塊標題混用中文與括號英文(Target Configuration)；建議統一語系並使用分隔線強調步驟。
-- [ ] 統一語系並使用分隔線強調步驟。
+- [x] 統一語系並使用分隔線強調步驟。**（已完成：AutoDiscoveryEditModal 移除括號英文，placeholder 改為中文）**
 
 ## resources-edit-scan-modal-part2.png
 

@@ -199,11 +199,23 @@ const ResourceTopologyPage: React.FC = () => {
         <div className="h-full flex flex-col">
             <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center space-x-2 p-2 glass-card rounded-lg">
-                    <label className="text-sm font-medium">Layout:</label>
+                    <label className="text-sm font-medium flex items-center">
+                        版型
+                        <span className="ml-1 text-slate-400 cursor-help" title="選擇拓撲圖的布局方式，如力導向圖、圓形布局等">
+                            <Icon name="info" className="w-3.5 h-3.5" />
+                        </span>
+                        :
+                    </label>
                     <select value={layout} onChange={e => setLayout(e.target.value)} className="bg-slate-800 border-slate-700 rounded-md px-2 py-1 text-sm">
                         {topologyOptions?.layouts.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                     </select>
-                    <label className="text-sm font-medium ml-4">Type:</label>
+                    <label className="text-sm font-medium ml-4 flex items-center">
+                        類型
+                        <span className="ml-1 text-slate-400 cursor-help" title="依資源類型篩選顯示的節點">
+                            <Icon name="info" className="w-3.5 h-3.5" />
+                        </span>
+                        :
+                    </label>
                     <select value={filterType} onChange={e => setFilterType(e.target.value)} className="bg-slate-800 border-slate-700 rounded-md px-2 py-1 text-sm">
                         {resourceTypes.map(type => <option key={type} value={type}>{type}</option>)}
                     </select>

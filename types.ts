@@ -232,6 +232,7 @@ export interface AutomationTrigger {
   config: {
     // Schedule
     cron?: string;
+    cronDescription?: string; // 人類可讀的 cron 描述
     // Webhook
     webhookUrl?: string;
     // Event
@@ -289,7 +290,7 @@ export interface Role {
     name: string;
     description: string;
     userCount: number;
-    status: 'active' | 'inactive';
+    enabled: boolean; // 改用 enabled 替代 status
     createdAt: string;
     permissions: RolePermission[];
     deleted_at?: string;
@@ -362,6 +363,7 @@ export interface SilenceSchedule {
   startsAt?: string;
   endsAt?: string;
   cron?: string;
+  cronDescription?: string; // 人類可讀的 cron 描述
   timezone?: string;
 }
 
@@ -833,8 +835,8 @@ export interface LogExplorerFilters {
 }
 
 // --- Datasource & Discovery Types ---
-export type DatasourceType = 'VictoriaMetrics' | 'Grafana' | 'Elasticsearch' | 'Prometheus' | 'Custom';
-export type AuthMethod = 'Token' | 'Basic Auth' | 'Keycloak Integration' | 'None';
+export type DatasourceType = 'VictoriaMetrics' | 'Grafana' | 'Elasticsearch' | 'Prometheus' | 'Custom' | '自訂';
+export type AuthMethod = 'Token' | 'Basic Auth' | 'Keycloak Integration' | 'Keycloak 整合' | 'None' | '無';
 export type ConnectionStatus = 'ok' | 'error' | 'pending';
 
 export interface KeyValueTag {

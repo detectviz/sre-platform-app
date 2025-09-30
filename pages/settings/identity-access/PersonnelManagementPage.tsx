@@ -112,6 +112,11 @@ const PersonnelManagementPage: React.FC = () => {
         return style ? style.className : 'bg-slate-500/20 text-slate-400';
     };
 
+    const getStatusLabel = (status: User['status']) => {
+        const style = options?.personnel?.statuses.find(s => s.value === status);
+        return style ? style.label : status;
+    };
+
     const handleInvite = async (details: { email: string; name?: string; role: User['role']; team: string }) => {
         try {
             await api.post('/iam/users', details);
@@ -215,7 +220,7 @@ const PersonnelManagementPage: React.FC = () => {
                 );
             case 'role': return user.role;
             case 'team': return user.team;
-            case 'status': return <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusPill(user.status)}`}>{user.status}</span>;
+            case 'status': return <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusPill(user.status)}`}>{getStatusLabel(user.status)}</span>;
             case 'lastLogin': return user.lastLogin;
             default: return null;
         }

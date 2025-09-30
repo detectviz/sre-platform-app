@@ -193,17 +193,6 @@ const SilenceRulePage: React.FC = () => {
         }
     };
 
-    const batchActions = (
-        <>
-            <ToolbarButton icon="brain-circuit" text="AI 分析" onClick={handleAIAnalysis} ai />
-            <ToolbarButton icon="toggle-right" text="啟用" onClick={() => handleBatchAction('enable')} />
-            <ToolbarButton icon="toggle-left" text="停用" onClick={() => handleBatchAction('disable')} />
-            <ToolbarButton icon="trash-2" text="刪除" danger onClick={() => handleBatchAction('delete')} />
-            <ToolbarButton icon="upload" text="匯入" onClick={() => setIsImportModalOpen(true)} />
-            <ToolbarButton icon="download" text="匯出" onClick={handleExport} />
-        </>
-    );
-
     const handleExport = () => {
         if (rules.length === 0) {
             alert("沒有可匯出的資料。");
@@ -215,6 +204,17 @@ const SilenceRulePage: React.FC = () => {
             data: rules.map(r => ({ ...r, matchers: JSON.stringify(r.matchers), schedule: JSON.stringify(r.schedule) })),
         });
     };
+
+    const batchActions = (
+        <>
+            <ToolbarButton icon="brain-circuit" text="AI 分析" onClick={handleAIAnalysis} ai />
+            <ToolbarButton icon="toggle-right" text="啟用" onClick={() => handleBatchAction('enable')} />
+            <ToolbarButton icon="toggle-left" text="停用" onClick={() => handleBatchAction('disable')} />
+            <ToolbarButton icon="trash-2" text="刪除" danger onClick={() => handleBatchAction('delete')} />
+            <ToolbarButton icon="upload" text="匯入" onClick={() => setIsImportModalOpen(true)} />
+            <ToolbarButton icon="download" text="匯出" onClick={handleExport} />
+        </>
+    );
     
     const renderCellContent = (rule: SilenceRule, columnKey: string) => {
         switch(columnKey) {
@@ -230,7 +230,9 @@ const SilenceRulePage: React.FC = () => {
             case 'matchers': return <code className="text-xs">{rule.matchers.map(m => `${m.key}${m.operator}"${m.value}"`).join(', ')}</code>;
             case 'schedule':
                  if (rule.schedule.type === 'single') return `${rule.schedule.startsAt} -> ${rule.schedule.endsAt}`;
-                 if (rule.schedule.type === 'recurring') return `Cron: ${rule.schedule.cron}`;
+                 if (rule.schedule.type === 'recurring') {
+                     return rule.schedule.cronDescription || rule.schedule.cron || 'N/A';
+                 }
                  return 'N/A';
             case 'creator': return rule.creator;
             case 'createdAt': return rule.createdAt;

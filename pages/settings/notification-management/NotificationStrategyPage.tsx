@@ -180,6 +180,30 @@ const NotificationStrategyPage: React.FC = () => {
         <ToolbarButton icon="search" text="搜尋和篩選" onClick={() => setIsSearchModalOpen(true)} />
     );
     
+    const renderConditionTags = (condition: string) => {
+        // 解析條件字串並顯示為標籤
+        const parts = condition.split(/\s+(AND|OR)\s+/i);
+        const elements: React.ReactNode[] = [];
+
+        parts.forEach((part, index) => {
+            if (part.toUpperCase() === 'AND' || part.toUpperCase() === 'OR') {
+                elements.push(
+                    <span key={`op-${index}`} className="text-xs text-slate-400 mx-1">
+                        {part.toUpperCase()}
+                    </span>
+                );
+            } else if (part.trim()) {
+                elements.push(
+                    <span key={`cond-${index}`} className="inline-flex items-center px-2 py-1 text-xs font-medium bg-sky-900/50 text-sky-300 rounded-md border border-sky-700/50">
+                        {part.trim()}
+                    </span>
+                );
+            }
+        });
+
+        return <div className="flex flex-wrap items-center gap-1">{elements}</div>;
+    };
+
     const renderCellContent = (strategy: NotificationStrategy, columnKey: string) => {
         switch (columnKey) {
             case 'enabled':
@@ -190,7 +214,7 @@ const NotificationStrategyPage: React.FC = () => {
                     </label>
                 );
             case 'name': return <span className="font-medium text-white">{strategy.name}</span>;
-            case 'triggerCondition': return <span className="font-mono text-xs">{strategy.triggerCondition}</span>;
+            case 'triggerCondition': return renderConditionTags(strategy.triggerCondition);
             case 'channelCount': return strategy.channelCount;
             case 'priority': return strategy.priority;
             case 'creator': return strategy.creator;

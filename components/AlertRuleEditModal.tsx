@@ -47,7 +47,7 @@ const Step0 = ({ selectedTemplate, setSelectedTemplate }: { selectedTemplate: Al
             );
     }, [templates, selectedType, searchTerm]);
 
-    const allResourceTypes = [{ id: 'all', name: 'All', icon: 'layout-grid' }, ...resourceTypes];
+    const allResourceTypes = [{ id: 'all', name: '全部', icon: 'layout-grid' }, ...resourceTypes];
 
     return (
         <div className="px-1 flex space-x-6 h-full">
@@ -343,12 +343,12 @@ const Step2 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
                         const metricMeta = metricMetadata.find(m => m.id === cond.metric);
                         const unit = metricMeta?.unit;
                         return (
-                            <div key={condIndex} className="flex items-center space-x-2">
-                                <span className="text-slate-400 text-sm font-medium">AND</span>
+                            <div key={condIndex} className="flex items-center space-x-3">
+                                <span className="text-slate-400 text-sm font-medium w-10 shrink-0">AND</span>
                                 <select
                                     value={cond.metric}
                                     onChange={e => handleConditionChange(groupIndex, condIndex, 'metric', e.target.value)}
-                                    className="flex-grow bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
+                                    className="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
                                     disabled={isMetricLoading}
                                 >
                                     {isMetricLoading ? (
@@ -362,24 +362,24 @@ const Step2 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
                                         </>
                                     )}
                                 </select>
-                                <select value={cond.operator} onChange={e => handleConditionChange(groupIndex, condIndex, 'operator', e.target.value)} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
+                                <select value={cond.operator} onChange={e => handleConditionChange(groupIndex, condIndex, 'operator', e.target.value)} className="w-20 shrink-0 bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
                                     <option value=">">&gt;</option><option value="<">&lt;</option><option value=">=">&gt;=</option><option value="<=">&lt;=</option>
                                 </select>
-                                <div className="relative">
-                                    <input 
-                                        type="number" 
-                                        value={cond.threshold} 
-                                        onChange={e => handleConditionChange(groupIndex, condIndex, 'threshold', parseFloat(e.target.value))} 
-                                        className={`w-24 bg-slate-800 border border-slate-700 rounded-md py-2 text-sm ${unit ? 'pl-3 pr-8' : 'px-3'}`} 
-                                        placeholder="Threshold" 
+                                <div className="relative w-32 shrink-0">
+                                    <input
+                                        type="number"
+                                        value={cond.threshold}
+                                        onChange={e => handleConditionChange(groupIndex, condIndex, 'threshold', parseFloat(e.target.value))}
+                                        className={`w-full bg-slate-800 border border-slate-700 rounded-md py-2 text-sm ${unit ? 'pl-3 pr-12' : 'px-3'}`}
+                                        placeholder="閾值"
                                     />
-                                    {unit && <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 text-sm pointer-events-none">{unit}</span>}
+                                    {unit && <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 text-xs pointer-events-none">{unit}</span>}
                                 </div>
-                                <div className="relative">
-                                    <input type="number" value={cond.durationMinutes} onChange={e => handleConditionChange(groupIndex, condIndex, 'durationMinutes', parseInt(e.target.value))} className="w-28 bg-slate-800 border border-slate-700 rounded-md pl-3 pr-12 py-2 text-sm" placeholder="Duration" />
-                                    <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 text-sm">min</span>
+                                <div className="relative w-32 shrink-0">
+                                    <input type="number" value={cond.durationMinutes} onChange={e => handleConditionChange(groupIndex, condIndex, 'durationMinutes', parseInt(e.target.value))} className="w-full bg-slate-800 border border-slate-700 rounded-md pl-3 pr-14 py-2 text-sm" placeholder="持續" />
+                                    <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 text-xs pointer-events-none">分鐘</span>
                                 </div>
-                                <button onClick={() => removeCondition(groupIndex, condIndex)} className="p-2 text-slate-400 hover:text-red-400"><Icon name="trash-2" className="w-4 h-4" /></button>
+                                <button onClick={() => removeCondition(groupIndex, condIndex)} className="p-2 shrink-0 text-slate-400 hover:text-red-400 transition-colors"><Icon name="trash-2" className="w-4 h-4" /></button>
                             </div>
                         );
                     })}

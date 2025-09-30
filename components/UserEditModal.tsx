@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import FormRow from './FormRow';
+import Icon from './Icon';
 import { User, Team, Role } from '../types';
 import api from '../services/api';
 import { useOptions } from '../contexts/OptionsContext';
@@ -68,7 +69,16 @@ const UserEditModal: React.FC<UserEditModalProps> = ({ isOpen, onClose, onSave, 
                     <input type="text" value={formData.name || ''} disabled
                            className="w-full bg-slate-800/50 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-400" />
                 </FormRow>
-                <FormRow label="角色">
+                <FormRow label={
+                    <div className="flex items-center">
+                        角色
+                        {formData.role && roles.find(r => r.name === formData.role)?.description && (
+                            <span className="ml-1.5 text-slate-400 cursor-help" title={roles.find(r => r.name === formData.role)?.description}>
+                                <Icon name="info" className="w-3.5 h-3.5" />
+                            </span>
+                        )}
+                    </div>
+                }>
                     <select value={formData.role || ''} onChange={e => handleChange('role', e.target.value as User['role'])}
                             className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoadingLocalOptions}>
                         {isLoadingLocalOptions ? <option>載入中...</option> : roles.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}

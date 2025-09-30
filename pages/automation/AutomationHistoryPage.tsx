@@ -16,6 +16,7 @@ import UnifiedSearchModal from '../../components/UnifiedSearchModal';
 import ColumnSettingsModal from '../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
 import SortableHeader from '../../components/SortableHeader';
+import { formatDuration } from '../../utils/time';
 
 const PAGE_IDENTIFIER = 'automation_history';
 
@@ -145,20 +146,35 @@ const AutomationHistoryPage: React.FC = () => {
     const isAllSelected = executions.length > 0 && selectedIds.length === executions.length;
     const isIndeterminate = selectedIds.length > 0 && selectedIds.length < executions.length;
     
+    const getStatusLabel = (status: AutomationExecution['status']): string => {
+        if (!executionOptions?.statuses) return status;
+        return executionOptions.statuses.find(s => s.value === status)?.label || status;
+    };
+
+    const getTriggerSourceLabel = (source: string): string => {
+        const sourceMap: Record<string, string> = {
+            'event': '事件觸發',
+            'manual': '手動執行',
+            'schedule': '排程觸發',
+            'webhook': 'Webhook'
+        };
+        return sourceMap[source] || source;
+    };
+
     const renderCellContent = (ex: AutomationExecution, columnKey: string) => {
         switch (columnKey) {
             case 'scriptName':
                 return <span className="font-medium text-white">{ex.scriptName}</span>;
             case 'status':
-                return <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusPill(ex.status)}`}>{ex.status}</span>;
+                return <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusPill(ex.status)}`}>{getStatusLabel(ex.status)}</span>;
             case 'triggerSource':
-                return ex.triggerSource;
+                return getTriggerSourceLabel(ex.triggerSource);
             case 'triggeredBy':
                 return ex.triggeredBy;
             case 'startTime':
                 return ex.startTime;
             case 'durationMs':
-                return ex.durationMs ? `${ex.durationMs}ms` : 'N/A';
+                return formatDuration(ex.durationMs);
             default:
                 return null;
         }

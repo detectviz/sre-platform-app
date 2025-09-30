@@ -50,7 +50,7 @@ const IncidentListPage: React.FC = () => {
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
     const [assigningIncident, setAssigningIncident] = useState<Incident | null>(null);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-    
+
     const { options, isLoading: isLoadingOptions } = useOptions();
     const incidentOptions = options?.incidents;
 
@@ -101,7 +101,7 @@ const IncidentListPage: React.FC = () => {
             fetchIncidents();
         }
     }, [fetchIncidents, pageKey]);
-    
+
     useEffect(() => {
         setSelectedIds([]);
     }, [currentPage, pageSize, filters]);
@@ -123,17 +123,17 @@ const IncidentListPage: React.FC = () => {
             setIsColumnSettingsModalOpen(false);
         }
     };
-    
+
     const handleExport = () => {
         const dataToExport = selectedIds.length > 0
             ? incidents.filter(i => selectedIds.includes(i.id))
             : incidents;
-        
+
         if (dataToExport.length === 0) {
             showToast("沒有可匯出的資料。", 'error');
             return;
         }
-        
+
         exportToCsv({
             filename: `incidents-${new Date().toISOString().split('T')[0]}.csv`,
             headers: ['id', 'summary', 'resource', 'status', 'severity', 'priority', 'assignee', 'triggeredAt'],
@@ -193,7 +193,7 @@ const IncidentListPage: React.FC = () => {
             showToast('建立靜音規則失敗。', 'error');
         }
     };
-    
+
     const handleRunAIAnalysis = async () => {
         if (selectedIds.length === 0) return;
 
@@ -215,7 +215,7 @@ const IncidentListPage: React.FC = () => {
 
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => setSelectedIds(e.target.checked ? incidents.map(i => i.id) : []);
     const handleSelectOne = (e: React.ChangeEvent<HTMLInputElement>, id: string) => setSelectedIds(prev => e.target.checked ? [...prev, id] : prev.filter(sid => sid !== id));
-    
+
     const handleReassignClick = (incident: Incident) => {
         setAssigningIncident(incident);
     };
@@ -234,10 +234,15 @@ const IncidentListPage: React.FC = () => {
 
     const isAllSelected = incidents.length > 0 && selectedIds.length === incidents.length;
     const isIndeterminate = selectedIds.length > 0 && selectedIds.length < incidents.length;
-    
+
     const getStyle = (descriptors: StyleDescriptor[] | undefined, value: string | undefined): string => {
         if (!descriptors || !value) return 'bg-slate-500/20 text-slate-400';
         return descriptors.find(d => d.value === value)?.className || 'bg-slate-500/20 text-slate-400';
+    };
+
+    const getLabel = (descriptors: any[] | undefined, value: string | undefined): string => {
+        if (!descriptors || !value) return value || 'N/A';
+        return descriptors.find(d => d.value === value)?.label || value;
     };
 
     const renderCellContent = (inc: Incident, columnKey: string) => {
@@ -245,13 +250,14 @@ const IncidentListPage: React.FC = () => {
             case 'summary':
                 return <span className="font-medium text-white">{inc.summary}</span>;
             case 'status':
-                return <span className={`px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStyle(incidentOptions?.statuses, inc.status)}`}>{inc.status}</span>;
+                return <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStyle(incidentOptions?.statuses, inc.status)}`}>{getLabel(incidentOptions?.statuses, inc.status)}</span>;
             case 'severity':
-                return <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(incidentOptions?.severities, inc.severity)}`}>{inc.severity}</span>;
+                const severityMap: Record<string, string> = { 'critical': '嚴重', 'warning': '警告', 'info': '資訊' };
+                return <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(incidentOptions?.severities, inc.severity)}`}>{severityMap[inc.severity] || getLabel(incidentOptions?.severities, inc.severity)}</span>;
             case 'priority':
-                return <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStyle(incidentOptions?.priorities, inc.priority)}`}>{inc.priority || 'N/A'}</span>;
+                return <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStyle(incidentOptions?.priorities, inc.priority)}`}>{getLabel(incidentOptions?.priorities, inc.priority)}</span>;
             case 'serviceImpact':
-                return <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(incidentOptions?.serviceImpacts, inc.serviceImpact)}`}>{inc.serviceImpact}</span>;
+                return <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(incidentOptions?.serviceImpacts, inc.serviceImpact)}`}>{getLabel(incidentOptions?.serviceImpacts, inc.serviceImpact)}</span>;
             case 'resource':
                 return inc.resource;
             case 'assignee':
@@ -259,7 +265,7 @@ const IncidentListPage: React.FC = () => {
                     return (
                         <button
                             onClick={(e) => { e.stopPropagation(); handleAcknowledge([inc.id]); }}
-                            className="px-3 py-1 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-md transition-colors flex items-center"
+                            className="px-3 py-1 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-full transition-colors flex items-center shadow-sm"
                         >
                             <Icon name="user-check" className="w-3 h-3 mr-1.5" />
                             認領
@@ -270,11 +276,10 @@ const IncidentListPage: React.FC = () => {
                 return (
                     <button
                         onClick={(e) => { e.stopPropagation(); handleReassignClick(inc); }}
-                        className="group flex items-center space-x-2 p-1 -m-1 rounded-md hover:bg-slate-700/50 transition-colors"
+                        className="group flex items-center space-x-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-slate-700/40 hover:bg-sky-600/25 border border-slate-600/40 hover:border-sky-500/60 text-slate-200 hover:text-sky-200 transition-all duration-200 shadow-sm"
                     >
-                        <UserAvatar user={assigneeUser || { name: inc.assignee }} className="w-6 h-6" iconClassName="w-4 h-4" />
-                        <span className="text-slate-200 group-hover:text-sky-400">{inc.assignee}</span>
-                        <Icon name="repeat" className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <span className="leading-none">{inc.assignee}</span>
+                        <Icon name="repeat" className="w-3 h-3 opacity-60 group-hover:opacity-100 text-slate-400 group-hover:text-sky-400 transition-all duration-200 flex-shrink-0" />
                     </button>
                 );
             case 'triggeredAt':
@@ -285,7 +290,7 @@ const IncidentListPage: React.FC = () => {
     };
 
     const leftActions = <ToolbarButton icon="search" text="搜索和篩選" onClick={() => setIsSearchModalOpen(true)} />;
-    
+
     const rightActions = (
         <>
             <ToolbarButton icon="upload" text="匯入" onClick={() => setIsImportModalOpen(true)} />
@@ -306,21 +311,21 @@ const IncidentListPage: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col">
-            <Toolbar 
+            <Toolbar
                 leftActions={leftActions}
                 rightActions={rightActions}
                 selectedCount={selectedIds.length}
                 onClearSelection={() => setSelectedIds([])}
                 batchActions={batchActions}
             />
-            
+
             <TableContainer>
                 <div className="flex-1 overflow-y-auto">
                     <table className="w-full text-sm text-left text-slate-300">
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
                                 <th scope="col" className="p-4 w-12">
-                                     <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded" checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
+                                    <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded" checked={isAllSelected} ref={el => { if (el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
                                 {visibleColumns.map(key => (
                                     <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
@@ -357,13 +362,13 @@ const IncidentListPage: React.FC = () => {
             <Drawer isOpen={!!incidentId} onClose={() => navigate('/incidents')} title={`事故詳情: ${incidentId}`} width="w-3/5">
                 {incidentId && <IncidentDetailPage incidentId={incidentId} onUpdate={fetchIncidents} currentUser={currentUser} />}
             </Drawer>
-            
+
             <UnifiedSearchModal page="incidents" isOpen={isSearchModalOpen} onClose={() => setIsSearchModalOpen(false)} onSearch={(newFilters) => { setFilters(newFilters as IncidentFilters); setIsSearchModalOpen(false); setCurrentPage(1); }} initialFilters={filters} />
-            
+
             <IncidentAnalysisModal isOpen={isAnalysisModalOpen} onClose={() => setIsAnalysisModalOpen(false)} title="AI 分析報告" report={analysisReport} isLoading={isAnalysisLoading} />
-            
+
             <QuickSilenceModal isOpen={isQuickSilenceModalOpen} onClose={() => setIsQuickSilenceModalOpen(false)} onSave={handleConfirmSilence} incident={silencingIncident} />
-            
+
             <ColumnSettingsModal
                 isOpen={isColumnSettingsModalOpen}
                 onClose={() => setIsColumnSettingsModalOpen(false)}
@@ -371,7 +376,7 @@ const IncidentListPage: React.FC = () => {
                 allColumns={allColumns}
                 visibleColumnKeys={visibleColumns}
             />
-            <AssignIncidentModal 
+            <AssignIncidentModal
                 isOpen={!!assigningIncident}
                 onClose={() => setAssigningIncident(null)}
                 onAssign={handleConfirmAssign}
