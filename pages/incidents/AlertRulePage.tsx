@@ -15,6 +15,7 @@ import ColumnSettingsModal from '../../components/ColumnSettingsModal';
 import { showToast } from '../../services/toast';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
 import RuleAnalysisModal from '../../components/RuleAnalysisModal';
+import { useOptions } from '../../contexts/OptionsContext';
 
 const PAGE_IDENTIFIER = 'alert_rules';
 
@@ -41,6 +42,9 @@ const AlertRulePage: React.FC = () => {
 
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
+
+    const { options } = useOptions();
+    const alertRuleOptions = options?.alertRules;
 
     const fetchRules = useCallback(async () => {
         if (!pageKey) return;
@@ -226,14 +230,6 @@ const AlertRulePage: React.FC = () => {
         });
     };
 
-    const getSeverityPill = (severity: AlertRule['severity']) => {
-        switch (severity) {
-            case 'critical': return 'border-red-500 text-red-500';
-            case 'warning': return 'border-orange-500 text-orange-500';
-            case 'info': return 'border-sky-500 text-sky-500';
-        }
-    };
-
     const renderCellContent = (rule: AlertRule, columnKey: string) => {
         switch (columnKey) {
             case 'enabled':
@@ -246,9 +242,12 @@ const AlertRulePage: React.FC = () => {
             case 'name': return <span className="font-medium text-white">{rule.name}</span>;
             case 'target': return rule.target;
             case 'conditionsSummary': return rule.conditionsSummary;
-            case 'severity':
-                const severityMap: Record<string, string> = { 'critical': '嚴重', 'warning': '警告', 'info': '資訊' };
-                return <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getSeverityPill(rule.severity)}`}>{severityMap[rule.severity] || rule.severity}</span>;
+            case 'severity': {
+                const descriptor = alertRuleOptions?.severities.find(option => option.value === rule.severity);
+                const pillClass = descriptor?.className || 'bg-slate-800/60 border border-slate-600 text-slate-200';
+                const label = descriptor?.label || rule.severity;
+                return <span className={`px-2 py-1 text-xs font-semibold rounded-full ${pillClass}`}>{label}</span>;
+            }
             case 'automationEnabled': return rule.automationEnabled ? <Icon name="check-circle" className="w-5 h-5 text-green-400" /> : <Icon name="x-circle" className="w-5 h-5 text-slate-500" />;
             case 'creator': return rule.creator;
             case 'lastUpdated': return rule.lastUpdated;

@@ -1891,12 +1891,18 @@ const MOCK_INCIDENT_OPTIONS: IncidentOptions = {
     ],
 };
 
+const ALERT_RULE_SEVERITY_DESCRIPTORS: Record<AlertRule['severity'], { label: string; className: string }> = {
+    critical: { label: '嚴重', className: 'bg-red-950/40 border border-red-500/40 text-red-300 backdrop-blur-sm shadow-sm' },
+    warning: { label: '警告', className: 'bg-amber-950/40 border border-amber-500/40 text-amber-300 backdrop-blur-sm shadow-sm' },
+    info: { label: '資訊', className: 'bg-sky-950/40 border border-sky-500/40 text-sky-300 backdrop-blur-sm shadow-sm' },
+};
+
 const MOCK_ALERT_RULE_OPTIONS: AlertRuleOptions = {
-    severities: [
-        { value: 'critical', label: 'Critical', className: 'bg-red-950/40 border border-red-500/40 text-red-300 backdrop-blur-sm shadow-sm' },
-        { value: 'warning', label: 'Warning', className: 'bg-amber-950/40 border border-amber-500/40 text-amber-300 backdrop-blur-sm shadow-sm' },
-        { value: 'info', label: 'Info', className: 'bg-sky-950/40 border border-sky-500/40 text-sky-300 backdrop-blur-sm shadow-sm' },
-    ],
+    severities: (['critical', 'warning', 'info'] as AlertRule['severity'][]).map(value => ({
+        value,
+        label: ALERT_RULE_SEVERITY_DESCRIPTORS[value].label,
+        className: ALERT_RULE_SEVERITY_DESCRIPTORS[value].className,
+    })),
     statuses: [
         { value: true, label: 'Enabled' },
         { value: false, label: 'Disabled' }
@@ -1947,11 +1953,17 @@ const MOCK_AUTOMATION_SCRIPT_OPTIONS: AutomationScriptOptions = {
 
 const MOCK_AUTOMATION_EXECUTION_OPTIONS: AutomationExecutionOptions = {
     statuses: [
-        { value: 'success', label: 'Success', className: 'bg-green-500/20 text-green-400' },
-        { value: 'failed', label: 'Failed', className: 'bg-red-500/20 text-red-400' },
-        { value: 'running', label: 'Running', className: 'bg-sky-500/20 text-sky-400' },
-        { value: 'pending', label: 'Pending', className: 'bg-yellow-500/20 text-yellow-400' },
-    ]
+        { value: 'success', label: '成功', className: 'bg-green-500/20 text-green-400' },
+        { value: 'failed', label: '失敗', className: 'bg-red-500/20 text-red-400' },
+        { value: 'running', label: '執行中', className: 'bg-sky-500/20 text-sky-400' },
+        { value: 'pending', label: '等待中', className: 'bg-yellow-500/20 text-yellow-400' },
+    ],
+    triggerSources: [
+        { value: 'event', label: '事件觸發' },
+        { value: 'manual', label: '手動執行' },
+        { value: 'schedule', label: '排程觸發' },
+        { value: 'webhook', label: 'Webhook' },
+    ],
 };
 
 const MOCK_NOTIFICATION_CHANNEL_OPTIONS: NotificationChannelOptions = {

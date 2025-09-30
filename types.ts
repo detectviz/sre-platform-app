@@ -209,7 +209,7 @@ export interface AutomationExecution {
   scriptId: string;
   scriptName: string;
   status: 'success' | 'failed' | 'running' | 'pending';
-  triggerSource: 'manual' | 'event' | 'schedule';
+  triggerSource: 'manual' | 'event' | 'schedule' | 'webhook';
   triggeredBy: string;
   startTime: string;
   endTime?: string;
@@ -785,6 +785,7 @@ export interface AlertRuleOptions {
 
 export interface AutomationExecutionOptions {
   statuses: StyleDescriptor<AutomationExecution['status']>[];
+  triggerSources: { value: AutomationExecution['triggerSource']; label: string }[];
 }
 
 export interface AutomationPlaybookOptions {
