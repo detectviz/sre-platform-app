@@ -1179,7 +1179,10 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
             case 'GET /kpi-data': {
                 return DB.kpiData;
             }
-             case 'GET /notifications': {
+            case 'GET /notifications': {
+                if (id === 'options') {
+                    return DB.notificationOptions;
+                }
                 return DB.notifications;
             }
             case 'POST /notifications': {
