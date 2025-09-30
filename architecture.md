@@ -382,16 +382,16 @@ graph LR
 根據藍圖設計文件，SRE平台涉及以下技術棧：
 
 ### 前端技術
-- **React 18**：用於構建互動原型
+- **React 19**：用於構建互動原型
 - **TypeScript**：提供類型安全
-- **Ant Design 5**：UI組件庫
-- **ECharts 5**：數據可視化工具
+- **Tailwind CSS（CDN）+ 客製元件**：透過 CDN 載入 Tailwind 並配合自製元件建立 UI
+- **ECharts 6**：以 `echarts@^6.0.0` 作為主要依賴，並在 `index.html` 保留 5.5.0 CDN 做為備援
 
 ### 前端觀測性
-- **Sentry**：前端錯誤追蹤和性能監控
-- **OpenTelemetry JavaScript**：前端人員行為追蹤
-- **Web Vitals**：核心 Web 性能指標監控
-- **Real User Monitoring (RUM)**：真實人員監控
+- **Sentry（規劃中）**：目前尚未導入 SDK，待後端統一權限審核與錯誤分類方案完成後再接入，用於前端錯誤追蹤與性能監控。
+- **OpenTelemetry JavaScript（規劃中）**：尚未初始化追蹤程式，預計在導入後串接 Alloy 以獲取前端操作軌跡。
+- **Web Vitals（規劃中）**：尚未啟用量測，待建立性能指標基準與告警門檻後再啟動收集。
+- **Real User Monitoring／RUM（規劃中）**：目前僅為目標狀態，需確認法遵與隱私條款後才會部署。
 
 ### 後端與監控技術
 - **Go 1.21+**：高性能後端語言
@@ -412,14 +412,14 @@ https://github.com/grafana/grafana/blob/main/public/api-merged.json
 
 
 ### 觀測性架構 (Observability)
-- **OpenTelemetry 統一匯出**：Logs/Traces/Metrics 三合一觀測性數據
-- **Grafana Alloy 作為收集器**：統一接收和轉發觀測性數據
-- **多目標匯出**：支援本地 Grafana 或 Grafana Cloud
-- **結構化日誌**：使用 Zap (後端) 提供高性能結構化日誌記錄
-- **分散式追蹤**：端到端請求追蹤和性能監控
-- **業務指標**：自定義業務指標收集和分析
-- **前端監控**：Sentry + Web Vitals + RUM 真實人員監控
-- **性能測試**：K6 負載測試和性能監控
+- **OpenTelemetry 統一匯出（規劃中）**：目前尚未部署 Collector，待後端完成 Tracing SDK 接入後再統一輸出 Logs/Traces/Metrics。
+- **Grafana Alloy 作為收集器（規劃中）**：尚未建置 Alloy 節點，需完成部署資源評估後才會成為集中收集層。
+- **多目標匯出（規劃中）**：目前僅以本地 Grafana 做手動匯入，尚未串接 Grafana Cloud，待 Alloy 上線後再進行多目標分流設定。
+- **結構化日誌**：已使用 Zap（後端）輸出結構化日誌，後續會再補上集中式儲存與查詢流程。
+- **分散式追蹤（規劃中）**：尚未串接 Tracing，需在服務完成 Trace Context 管理與抽樣策略後才會啟動。
+- **業務指標（規劃中）**：尚未建立 Prometheus Exporter，自定義指標規格仍在彙整。
+- **前端監控（規劃中）**：Sentry / Web Vitals / RUM 尚未導入，待完成前端 SDK 評估及隱私審核。
+- **性能測試（規劃中）**：尚未將 K6 納入 CI/CD，後續待測試團隊提供場景腳本後才會加入觀測鏈路。
 
 ### 數據流架構
 ```
