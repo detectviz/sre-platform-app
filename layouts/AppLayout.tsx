@@ -10,14 +10,14 @@ import { showToast } from '../services/toast';
 import api from '../services/api';
 import { useUIConfig } from '../contexts/UIConfigContext';
 import { useUser } from '../contexts/UserContext';
-import { useContent } from '../contexts/ContentContext';
+import { useContent, useContentSection } from '../contexts/ContentContext';
 import UserAvatar from '../components/UserAvatar';
 
 const AppLayout: React.FC = () => {
   const { navItems, tabConfigs, isLoading: isNavLoading } = useUIConfig();
   const { currentUser } = useUser();
-  const { content, isLoading: isContentLoading } = useContent();
-  const appLayoutContent = content?.APP_LAYOUT;
+  const { isLoading: isContentLoading } = useContent();
+  const appLayoutContent = useContentSection('APP_LAYOUT');
   
   const [collapsed, setCollapsed] = useState(false);
   const [openKeys, setOpenKeys] = useState<string[]>([]);

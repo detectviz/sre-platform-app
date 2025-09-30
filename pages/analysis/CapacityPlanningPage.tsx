@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import EChartsReact from '../../components/EChartsReact';
 import Icon from '../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
@@ -7,6 +7,7 @@ import Dropdown from '../../components/Dropdown';
 import { exportToCsv } from '../../services/export';
 import { CapacityPlanningData } from '../../types';
 import api from '../../services/api';
+import { useChartTheme } from '../../contexts/ChartThemeContext';
 
 const CapacityPlanningPage: React.FC = () => {
     const [data, setData] = useState<CapacityPlanningData | null>(null);
@@ -14,6 +15,17 @@ const CapacityPlanningPage: React.FC = () => {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [timeRange, setTimeRange] = useState('60_30');
+
+    const { theme: chartTheme } = useChartTheme();
+
+    const toRgba = useCallback((hex: string, alpha: number) => {
+        const sanitized = hex.replace('#', '');
+        if (sanitized.length !== 6) return hex;
+        const r = parseInt(sanitized.slice(0, 2), 16);
+        const g = parseInt(sanitized.slice(2, 4), 16);
+        const b = parseInt(sanitized.slice(4, 6), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }, []);
 
     const fetchData = useCallback(async (isRefresh = false) => {
         if (isRefresh) setIsRefreshing(true);
@@ -38,34 +50,54 @@ const CapacityPlanningPage: React.FC = () => {
         fetchData();
     }, [fetchData]);
 
-    const trendOption = {
+    const trendOption = useMemo(() => ({
         tooltip: { trigger: 'axis' },
-        legend: { data: ['CPU', 'Memory', 'Storage'], textStyle: { color: '#fff' } },
+        legend: { data: ['CPU', 'Memory', 'Storage'], textStyle: { color: chartTheme.text.primary } },
         grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-        xAxis: { type: 'time', axisLine: { lineStyle: { color: '#888' } } },
-        yAxis: { type: 'value', min: 0, max: 100, axisLabel: { formatter: '{value} %' }, splitLine: { lineStyle: { color: '#374151' } } },
+        xAxis: { type: 'time', axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
+        yAxis: {
+            type: 'value',
+            min: 0,
+            max: 100,
+            axisLabel: { formatter: '{value} %' },
+            splitLine: { lineStyle: { color: chartTheme.grid.splitLine } },
+        },
         series: [
-            { name: 'CPU', type: 'line', data: data?.trends.cpu.historical, showSymbol: false, lineStyle: { color: '#38bdf8' } },
-            { name: 'CPU Forecast', type: 'line', data: data?.trends.cpu.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: '#38bdf8' } },
-            { name: 'Memory', type: 'line', data: data?.trends.memory.historical, showSymbol: false, lineStyle: { color: '#a78bfa' } },
-            { name: 'Memory Forecast', type: 'line', data: data?.trends.memory.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: '#a78bfa' } },
-            { name: 'Storage', type: 'line', data: data?.trends.storage.historical, showSymbol: false, lineStyle: { color: '#34d399' } },
-            { name: 'Storage Forecast', type: 'line', data: data?.trends.storage.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: '#34d399' } },
+            { name: 'CPU', type: 'line', data: data?.trends.cpu.historical, showSymbol: false, lineStyle: { color: chartTheme.capacityPlanning.cpu } },
+            { name: 'CPU Forecast', type: 'line', data: data?.trends.cpu.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: chartTheme.capacityPlanning.cpu } },
+            { name: 'Memory', type: 'line', data: data?.trends.memory.historical, showSymbol: false, lineStyle: { color: chartTheme.capacityPlanning.memory } },
+            { name: 'Memory Forecast', type: 'line', data: data?.trends.memory.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: chartTheme.capacityPlanning.memory } },
+            { name: 'Storage', type: 'line', data: data?.trends.storage.historical, showSymbol: false, lineStyle: { color: chartTheme.capacityPlanning.storage } },
+            { name: 'Storage Forecast', type: 'line', data: data?.trends.storage.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: chartTheme.capacityPlanning.storage } },
         ]
-    };
+    }), [chartTheme, data]);
 
-    const forecastModelOption = {
+    const forecastModelOption = useMemo(() => ({
         tooltip: { trigger: 'axis' },
-        legend: { data: ['預測', '信賴區間'], textStyle: { color: '#fff' } },
+        legend: { data: ['預測', '信賴區間'], textStyle: { color: chartTheme.text.primary } },
         grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-        xAxis: { type: 'time', axisLine: { lineStyle: { color: '#888' } } },
-        yAxis: { type: 'value', min: 0, max: 100, axisLabel: { formatter: '{value} %' }, splitLine: { lineStyle: { color: '#374151' } } },
+        xAxis: { type: 'time', axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
+        yAxis: {
+            type: 'value',
+            min: 0,
+            max: 100,
+            axisLabel: { formatter: '{value} %' },
+            splitLine: { lineStyle: { color: chartTheme.grid.splitLine } },
+        },
         series: [
-            { name: '預測', type: 'line', data: data?.forecast_model.prediction, showSymbol: false, lineStyle: { color: '#facc15' } },
+            { name: '預測', type: 'line', data: data?.forecast_model.prediction, showSymbol: false, lineStyle: { color: chartTheme.capacityPlanning.forecast } },
             { name: '信賴區間', type: 'line', data: data?.forecast_model.confidence_band[0], lineStyle: { opacity: 0 }, stack: 'confidence-band', symbol: 'none' },
-            { name: '信賴區間', type: 'line', data: data ? data.forecast_model.confidence_band[1].map((point, i) => [point[0], point[1] - data.forecast_model.confidence_band[0][i][1]]) : [], lineStyle: { opacity: 0 }, areaStyle: { color: 'rgba(250, 204, 21, 0.2)' }, stack: 'confidence-band', symbol: 'none' }
+            {
+                name: '信賴區間',
+                type: 'line',
+                data: data ? data.forecast_model.confidence_band[1].map((point, i) => [point[0], point[1] - data.forecast_model.confidence_band[0][i][1]]) : [],
+                lineStyle: { opacity: 0 },
+                areaStyle: { color: toRgba(chartTheme.capacityPlanning.forecast, 0.2) },
+                stack: 'confidence-band',
+                symbol: 'none'
+            }
         ]
-    };
+    }), [chartTheme, data, toRgba]);
 
     const handleExport = () => {
         if (!data?.resource_analysis || data.resource_analysis.length === 0) {

@@ -104,11 +104,14 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 if (id === 'options') {
                     return DB.allOptions;
                 }
+                if (id === 'themes' && subId === 'charts') return DB.chartColors;
                 if (id === 'content') {
+                    if (action === 'command-palette') return DB.commandPaletteContent;
+                    if (action === 'execution-log-detail') return DB.executionLogDetailContent;
+                    if (action === 'import-modal') return DB.importModalContent;
                     return DB.pageContent;
                 }
                 if (id === 'icons') return DB.iconMap;
-                if (id === 'themes' && subId === 'charts') return DB.chartColors;
                 if (id === 'tabs') {
                     const VITE_EDITION = 'community'; // Simulate portfolio mode
                     let tabsConfig = JSON.parse(JSON.stringify(DB.tabConfigs)) as TabConfigMap;
@@ -124,11 +127,6 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     return tabsConfig;
                 }
                 if (id === 'icons-config') return DB.notificationChannelIcons;
-                if (id === 'content') {
-                    if (action === 'command-palette') return DB.commandPaletteContent;
-                    if (action === 'execution-log-detail') return DB.executionLogDetailContent;
-                    if (action === 'import-modal') return DB.importModalContent;
-                }
                 break;
             }
             // Me / Profile

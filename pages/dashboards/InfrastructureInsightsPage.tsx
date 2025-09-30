@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import EChartsReact from '../../components/EChartsReact';
 import Icon from '../../components/Icon';
 import Dropdown from '../../components/Dropdown';
@@ -7,6 +7,7 @@ import { Resource } from '../../types';
 import PageKPIs from '../../components/PageKPIs';
 import { exportToCsv } from '../../services/export';
 import { useOptions } from '../../contexts/OptionsContext';
+import { useChartTheme } from '../../contexts/ChartThemeContext';
 
 // AI Response Types
 interface RiskPrediction {
@@ -30,6 +31,7 @@ const InfrastructureInsightsPage: React.FC = () => {
     const [isBookmarkLoading, setIsBookmarkLoading] = useState(true);
     
     const { options } = useOptions();
+    const { theme: chartTheme } = useChartTheme();
     const infraInsightsOptions = options?.infraInsights;
     const [timeRange, setTimeRange] = useState('');
 
@@ -109,12 +111,12 @@ const InfrastructureInsightsPage: React.FC = () => {
    };
 
     // Chart Options
-    const riskBreakdownOption = {
+    const riskBreakdownOption = useMemo(() => ({
         tooltip: { trigger: 'item' },
         legend: {
             orient: 'vertical',
             left: 'left',
-            textStyle: { color: '#fff' }
+            textStyle: { color: chartTheme.text.primary }
         },
         series: [
             {
@@ -133,10 +135,10 @@ const InfrastructureInsightsPage: React.FC = () => {
                         shadowColor: 'rgba(0, 0, 0, 0.5)'
                     }
                 },
-                color: ['#dc2626', '#f97316', '#10b981']
+                color: [chartTheme.pie.high, chartTheme.pie.medium, chartTheme.pie.low]
             }
         ]
-    };
+    }), [chartTheme, riskPrediction]);
 
     return (
         <div className="space-y-6">

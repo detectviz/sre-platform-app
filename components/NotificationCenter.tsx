@@ -4,7 +4,7 @@ import { NotificationItem, NotificationOptions, StyleDescriptor } from '../types
 import Icon from './Icon';
 import api from '../services/api';
 import { showToast } from '../services/toast';
-import { useContent } from '../contexts/ContentContext';
+import { useContentSection } from '../contexts/ContentContext';
 
 const NotificationCenter: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -12,8 +12,7 @@ const NotificationCenter: React.FC = () => {
     const [options, setOptions] = useState<NotificationOptions | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const [isLoading, setIsLoading] = useState(false); // Only for dropdown content
-    const { content: pageContent } = useContent();
-    const content = pageContent?.NOTIFICATION_CENTER;
+    const content = useContentSection('NOTIFICATION_CENTER');
 
     const timeSince = useCallback((dateString: string) => {
         if (!content) return '';

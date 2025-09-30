@@ -1,13 +1,14 @@
 
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import EChartsReact from '../components/EChartsReact';
 import Icon from '../components/Icon';
 import api from '../services/api';
 import PageKPIs from '../components/PageKPIs';
-import { ServiceHealthData, ResourceGroupStatusData } from '../types';
+import { ServiceHealthData, ResourceGroupStatusData, ResourceGroupStatusKey } from '../types';
 import { useContent } from '../contexts/ContentContext';
+import { useChartTheme } from '../contexts/ChartThemeContext';
 
 interface BriefingData {
     stability_summary: string;
@@ -36,6 +37,7 @@ const SREWarRoomPage: React.FC = () => {
     const [serviceHealthError, setServiceHealthError] = useState<string | null>(null);
     const [resourceGroupError, setResourceGroupError] = useState<string | null>(null);
     const navigate = useNavigate();
+    const { theme: chartTheme } = useChartTheme();
 
     const fetchBriefing = useCallback(async () => {
         setIsBriefingLoading(true);
@@ -105,14 +107,14 @@ const SREWarRoomPage: React.FC = () => {
         }
     };
 
-    const serviceHealthOption = {
+    const serviceHealthOption = useMemo(() => ({
         tooltip: { trigger: 'item' },
-        xAxis: { type: 'category', data: serviceHealthData?.x_axis_labels || [], axisLine: { lineStyle: { color: '#888' } } },
-        yAxis: { type: 'category', data: serviceHealthData?.y_axis_labels || [], axisLine: { lineStyle: { color: '#888' } } },
+        xAxis: { type: 'category', data: serviceHealthData?.x_axis_labels || [], axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
+        yAxis: { type: 'category', data: serviceHealthData?.y_axis_labels || [], axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
         visualMap: {
             min: 0, max: 100, calculable: true, orient: 'horizontal', left: 'center', bottom: '2%',
-            inRange: { color: ['#dc2626', '#f97316', '#10b981'] },
-            textStyle: { color: '#fff' }
+            inRange: { color: [chartTheme.heatmap.critical, chartTheme.heatmap.warning, chartTheme.heatmap.healthy] },
+            textStyle: { color: chartTheme.text.primary }
         },
         series: [{
             name: '服務健康度',
@@ -121,23 +123,41 @@ const SREWarRoomPage: React.FC = () => {
             label: { show: true },
             emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0, 0, 0, 0.5)' } }
         }]
-    };
+    }), [chartTheme, serviceHealthData]);
 
-    const resourceGroupOption = {
-        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-        legend: { data: resourceGroupData?.series.map(s => s.name) || [], textStyle: { color: '#fff' } },
-        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-        xAxis: { type: 'value', axisLine: { lineStyle: { color: '#888' } } },
-        yAxis: { type: 'category', data: resourceGroupData?.group_names || [], axisLine: { lineStyle: { color: '#888' } } },
-        series: resourceGroupData?.series.map(s => ({
-            ...s,
-            type: 'bar',
-            stack: 'total',
-            label: { show: true },
-            emphasis: { focus: 'series' },
-            color: s.name === '健康' ? '#10b981' : s.name === '警告' ? '#f97316' : '#dc2626'
-        })) || []
-    };
+    const resourceGroupOption = useMemo(() => {
+        if (!resourceGroupData) {
+            return {
+                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                legend: { data: [], textStyle: { color: chartTheme.text.primary } },
+                grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                xAxis: { type: 'value', axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
+                yAxis: { type: 'category', data: [], axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
+                series: [],
+            };
+        }
+        const colorMap: Record<ResourceGroupStatusKey, string> = {
+            healthy: chartTheme.heatmap.healthy,
+            warning: chartTheme.heatmap.warning,
+            critical: chartTheme.heatmap.critical,
+        };
+        return {
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            legend: { data: resourceGroupData.series.map(s => s.label), textStyle: { color: chartTheme.text.primary } },
+            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+            xAxis: { type: 'value', axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
+            yAxis: { type: 'category', data: resourceGroupData.group_names || [], axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
+            series: resourceGroupData.series.map(s => ({
+                name: s.label,
+                type: 'bar',
+                stack: 'total',
+                data: s.data,
+                label: { show: true },
+                emphasis: { focus: 'series' },
+                color: colorMap[s.key],
+            })),
+        };
+    }, [chartTheme, resourceGroupData]);
 
     const serviceHealthEvents = { 'click': handleServiceHealthClick };
     const resourceGroupEvents = { 'click': handleResourceGroupClick };

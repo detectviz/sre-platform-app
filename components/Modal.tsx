@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import Icon from './Icon';
-import { useContent } from '../contexts/ContentContext';
+import { useContentSection } from '../contexts/ContentContext';
 
 interface ModalProps {
   title: string;
@@ -13,8 +13,7 @@ interface ModalProps {
 }
 
 const Modal: React.FC<ModalProps> = ({ title, isOpen, onClose, children, footer, width, className }) => {
-  const { content } = useContent();
-  const modalContent = content?.MODAL;
+  const modalContent = useContentSection('MODAL');
   
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {

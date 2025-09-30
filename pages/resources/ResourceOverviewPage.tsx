@@ -1,15 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import PageKPIs from '../../components/PageKPIs';
 import EChartsReact from '../../components/EChartsReact';
 import Icon from '../../components/Icon';
 import { ResourceOverviewData } from '../../types';
 import api from '../../services/api';
+import { useChartTheme } from '../../contexts/ChartThemeContext';
 
 const ResourceOverviewPage: React.FC = () => {
     const [overviewData, setOverviewData] = useState<ResourceOverviewData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    const { theme: chartTheme } = useChartTheme();
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -28,12 +31,12 @@ const ResourceOverviewPage: React.FC = () => {
         fetchData();
     }, [fetchData]);
 
-    const typeDistributionOption = {
+    const typeDistributionOption = useMemo(() => ({
         tooltip: { trigger: 'item' },
         legend: {
             orient: 'vertical',
             left: 'left',
-            textStyle: { color: '#fff' }
+            textStyle: { color: chartTheme.text.primary }
         },
         series: [{
             name: '資源類型',
@@ -42,29 +45,34 @@ const ResourceOverviewPage: React.FC = () => {
             avoidLabelOverlap: false,
             itemStyle: {
                 borderRadius: 10,
-                borderColor: '#1e293b', // slate-800
+                borderColor: chartTheme.resourceDistribution.border,
                 borderWidth: 2
             },
             label: { show: false, position: 'center' },
             emphasis: { label: { show: true, fontSize: 20, fontWeight: 'bold' } },
             labelLine: { show: false },
-            data: overviewData?.distributionByType || []
+            data: overviewData?.distributionByType || [],
+            color: chartTheme.palette
         }]
-    };
+    }), [chartTheme, overviewData]);
 
-    const providerDistributionOption = {
+    const providerDistributionOption = useMemo(() => ({
         tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
         grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-        xAxis: { type: 'category', data: overviewData?.distributionByProvider.map(p => p.provider) || [], axisLine: { lineStyle: { color: '#888' } } },
-        yAxis: { type: 'value', axisLine: { lineStyle: { color: '#888' } } },
+        xAxis: {
+            type: 'category',
+            data: overviewData?.distributionByProvider.map(p => p.provider) || [],
+            axisLine: { lineStyle: { color: chartTheme.grid.axis } }
+        },
+        yAxis: { type: 'value', axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
         series: [{
             name: '資源數量',
             type: 'bar',
             barWidth: '60%',
             data: overviewData?.distributionByProvider.map(p => p.count) || [],
-            itemStyle: { color: '#38bdf8' }
+            itemStyle: { color: chartTheme.resourceDistribution.primary }
         }]
-    };
+    }), [chartTheme, overviewData]);
 
     if (isLoading) {
         return (

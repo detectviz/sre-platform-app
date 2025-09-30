@@ -11,6 +11,7 @@ import { exportToCsv } from '../../services/export';
 import LogAnalysisModal from '../../components/LogAnalysisModal';
 import { useOptions } from '../../contexts/OptionsContext';
 import UnifiedSearchModal from '../../components/UnifiedSearchModal';
+import { useChartTheme } from '../../contexts/ChartThemeContext';
 
 const LogExplorerPage: React.FC = () => {
     const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -36,6 +37,8 @@ const LogExplorerPage: React.FC = () => {
     const [isLogAnalysisModalOpen, setIsLogAnalysisModalOpen] = useState(false);
     const [logAnalysisReport, setLogAnalysisReport] = useState<LogAnalysis | null>(null);
     const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
+
+    const { theme: chartTheme } = useChartTheme();
 
 
     const fetchData = useCallback((isLiveUpdate = false) => {
@@ -105,18 +108,27 @@ const LogExplorerPage: React.FC = () => {
         };
     }, [logs]);
 
-    const histogramOption = {
+    const histogramOption = useMemo(() => ({
         tooltip: { trigger: 'axis' },
-        legend: { data: ['Error', 'Warning', 'Info'], textStyle: { color: '#fff' } },
+        legend: { data: ['Error', 'Warning', 'Info'], textStyle: { color: chartTheme.text.primary } },
         grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-        xAxis: { type: 'category', data: histogramData.timestamps, axisLabel: { show: false } },
-        yAxis: { type: 'value' },
+        xAxis: {
+            type: 'category',
+            data: histogramData.timestamps,
+            axisLabel: { show: false },
+            axisLine: { lineStyle: { color: chartTheme.grid.axis } },
+        },
+        yAxis: {
+            type: 'value',
+            axisLine: { lineStyle: { color: chartTheme.grid.axis } },
+            splitLine: { lineStyle: { color: chartTheme.grid.splitLine } },
+        },
         series: [
-            { name: 'Error', type: 'bar', stack: 'total', data: histogramData.error, color: '#f87171' },
-            { name: 'Warning', type: 'bar', stack: 'total', data: histogramData.warning, color: '#facc15' },
-            { name: 'Info', type: 'bar', stack: 'total', data: histogramData.info, color: '#38bdf8' }
+            { name: 'Error', type: 'bar', stack: 'total', data: histogramData.error, color: chartTheme.logLevels.error },
+            { name: 'Warning', type: 'bar', stack: 'total', data: histogramData.warning, color: chartTheme.logLevels.warning },
+            { name: 'Info', type: 'bar', stack: 'total', data: histogramData.info, color: chartTheme.logLevels.info }
         ]
-    };
+    }), [chartTheme, histogramData]);
     
     const toggleExpand = (id: string) => {
         setExpandedLogId(prevId => (prevId === id ? null : id));
