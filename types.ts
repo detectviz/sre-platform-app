@@ -24,6 +24,7 @@ export interface Dashboard {
   category: string;
   description: string;
   owner: string;
+  createdAt: string;
   updatedAt: string;
   path: string;
   grafanaUrl?: string;
@@ -124,6 +125,8 @@ export interface Incident {
   ruleId: string;
   assignee?: string;
   occurredAt: string;
+  createdAt: string;
+  updatedAt: string;
   history: IncidentEvent[];
   aiAnalysis?: IncidentAnalysis;
 }
@@ -152,7 +155,9 @@ export interface Resource {
   provider: string;
   region: string;
   owner: string;
-  lastCheckIn: string;
+  lastCheckInAt: string;
+  createdAt: string;
+  updatedAt: string;
   // New fields for lineage
   discoveredByJobId?: string;
   monitoringAgent?: string;
@@ -177,6 +182,8 @@ export interface ResourceGroup {
     warning: number;
     critical: number;
   };
+  createdAt: string;
+  updatedAt: string;
   deleted_at?: string;
 }
 
@@ -197,9 +204,11 @@ export interface AutomationPlaybook {
   trigger: string;
   type: 'shell' | 'python' | 'ansible' | 'terraform';
   content: string;
-  lastRun: string;
+  lastRunAt: string;
   lastRunStatus: 'success' | 'failed' | 'running';
   runCount: number;
+  createdAt: string;
+  updatedAt: string;
   parameters?: ParameterDefinition[];
   deleted_at?: string;
 }
@@ -240,8 +249,10 @@ export interface AutomationTrigger {
     // Event
     eventConditions?: string; // Simplified condition string
   };
-  lastTriggered: string;
+  lastTriggeredAt: string;
   creator: string;
+  createdAt: string;
+  updatedAt: string;
   deleted_at?: string;
 }
 
@@ -269,7 +280,9 @@ export interface User {
   role: 'Admin' | 'SRE' | 'Developer' | 'Viewer';
   team: string;
   status: 'active' | 'invited' | 'inactive';
-  lastLogin: string;
+  lastLoginAt: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Team {
@@ -279,6 +292,7 @@ export interface Team {
   ownerId: string;
   memberIds: string[];
   createdAt: string;
+  updatedAt: string;
   deleted_at?: string;
 }
 
@@ -294,6 +308,7 @@ export interface Role {
   userCount: number;
   enabled: boolean; // 改用 enabled 替代 status
   createdAt: string;
+  updatedAt: string;
   permissions: RolePermission[];
   deleted_at?: string;
 }
@@ -338,7 +353,8 @@ export interface AlertRule {
   severity: 'critical' | 'warning' | 'info';
   automationEnabled: boolean;
   creator: string;
-  lastUpdated: string;
+  createdAt: string;
+  updatedAt: string;
   labels?: string[];
   conditionGroups?: ConditionGroup[];
   titleTemplate?: string;
@@ -379,6 +395,7 @@ export interface SilenceRule {
   schedule: SilenceSchedule;
   creator: string;
   createdAt: string;
+  updatedAt: string;
   deleted_at?: string;
 }
 
@@ -434,6 +451,8 @@ export interface NotificationChannel {
   };
   lastTestResult: 'success' | 'failed' | 'pending';
   lastTestedAt: string;
+  createdAt: string;
+  updatedAt: string;
   deleted_at?: string;
 }
 
@@ -446,7 +465,8 @@ export interface NotificationStrategy {
   severityLevels: IncidentSeverity[];
   impactLevels: IncidentImpact[];
   creator: string;
-  lastUpdated: string;
+  createdAt: string;
+  updatedAt: string;
   deleted_at?: string;
 }
 
@@ -982,12 +1002,14 @@ export interface DiscoveryJob {
   name: string;
   kind: DiscoveryJobKind;
   schedule: string;
-  lastRun: string;
+  lastRunAt: string;
   status: DiscoveryJobStatus;
   targetConfig: Record<string, any>;
   exporterBinding?: DiscoveryJobExporterBinding | null;
   edgeGateway?: DiscoveryJobEdgeGateway | null;
   tags: KeyValueTag[];
+  createdAt: string;
+  updatedAt: string;
   deleted_at?: string;
 }
 

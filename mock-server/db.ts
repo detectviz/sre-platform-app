@@ -1090,8 +1090,8 @@ const MOCK_NAV_ITEMS: NavItem[] = [
     },
 ];
 const MOCK_DASHBOARDS: Dashboard[] = [
-    { id: 'sre-war-room', name: 'SRE 戰情室', type: 'built-in', category: '業務與 SLA', description: '跨團隊即時戰情看板，聚焦重大事件與 SLA 指標。', owner: '事件指揮中心', updatedAt: '2025/09/18 17:15', path: '/sre-war-room' },
-    { id: 'infrastructure-insights', name: '基礎設施洞察', type: 'built-in', category: '基礎設施', description: '整合多雲與多中心資源健康狀態。', owner: 'SRE 平台團隊', updatedAt: '2025/09/18 16:30', path: '/dashboard/infrastructure-insights' },
+    { id: 'sre-war-room', name: 'SRE 戰情室', type: 'built-in', category: '業務與 SLA', description: '跨團隊即時戰情看板，聚焦重大事件與 SLA 指標。', owner: '事件指揮中心', createdAt: '2025-09-18T17:15:00Z', updatedAt: '2025-09-18T17:15:00Z', path: '/sre-war-room' },
+    { id: 'infrastructure-insights', name: '基礎設施洞察', type: 'built-in', category: '基礎設施', description: '整合多雲與多中心資源健康狀態。', owner: 'SRE 平台團隊', createdAt: '2025-09-18T16:30:00Z', updatedAt: '2025-09-18T16:30:00Z', path: '/dashboard/infrastructure-insights' },
     {
         id: 'resource-overview',
         name: '資源總覽儀表板',
@@ -1099,11 +1099,12 @@ const MOCK_DASHBOARDS: Dashboard[] = [
         category: '基礎設施',
         description: '提供所有已納管資源的宏觀視圖，包含類型分佈、提供商分佈等關鍵指標。',
         owner: 'SRE 平台團隊',
-        updatedAt: '2025/09/27 10:00',
+        createdAt: '2025-09-27T10:00:00Z',
+        updatedAt: '2025-09-27T10:00:00Z',
         path: '/dashboard/resource-overview'
     },
-    { id: 'api-service-status', name: 'API 服務狀態', type: 'grafana', category: '業務與 SLA', description: 'API 響應時間、錯誤率、吞吐量等服務指標。', owner: 'SRE 平台團隊', updatedAt: '2025/09/18 16:45', path: '/dashboard/api-service-status', grafanaUrl: `${DEFAULT_GRAFANA_BASE_URL}/d/aead3d54-423b-4a91-b91c-dbdf40d7fff5`, grafana_dashboard_uid: 'aead3d54-423b-4a91-b91c-dbdf40d7fff5', grafana_folder_uid: 'biz-folder' },
-    { id: 'user-experience-monitoring', name: '用戶體驗監控', type: 'grafana', category: '營運與容量', description: '頁面載入時間、用戶行為分析、錯誤追蹤。', owner: '前端團隊', updatedAt: '2025/09/18 17:00', path: '/dashboard/user-experience-monitoring', grafanaUrl: `${DEFAULT_GRAFANA_BASE_URL}/d/another-dashboard-id-for-ux`, grafana_dashboard_uid: 'another-dashboard-id-for-ux', grafana_folder_uid: 'ux-folder' },
+    { id: 'api-service-status', name: 'API 服務狀態', type: 'grafana', category: '業務與 SLA', description: 'API 響應時間、錯誤率、吞吐量等服務指標。', owner: 'SRE 平台團隊', createdAt: '2025-09-18T16:45:00Z', updatedAt: '2025-09-18T16:45:00Z', path: '/dashboard/api-service-status', grafanaUrl: `${DEFAULT_GRAFANA_BASE_URL}/d/aead3d54-423b-4a91-b91c-dbdf40d7fff5`, grafana_dashboard_uid: 'aead3d54-423b-4a91-b91c-dbdf40d7fff5`, grafana_folder_uid: 'biz-folder' },
+    { id: 'user-experience-monitoring', name: '用戶體驗監控', type: 'grafana', category: '營運與容量', description: '頁面載入時間、用戶行為分析、錯誤追蹤。', owner: '前端團隊', createdAt: '2025-09-18T17:00:00Z', updatedAt: '2025-09-18T17:00:00Z', path: '/dashboard/user-experience-monitoring', grafanaUrl: `${DEFAULT_GRAFANA_BASE_URL}/d/another-dashboard-id-for-ux`, grafana_dashboard_uid: 'another-dashboard-id-for-ux', grafana_folder_uid: 'ux-folder' },
     {
         id: 'custom-built-in-1',
         name: 'My Custom Dashboard',
@@ -1111,7 +1112,8 @@ const MOCK_DASHBOARDS: Dashboard[] = [
         category: '團隊自訂',
         description: 'A custom dashboard created by a user.',
         owner: 'Admin User',
-        updatedAt: '2025/09/20 11:00',
+        createdAt: '2025-09-20T11:00:00Z',
+        updatedAt: '2025-09-20T11:00:00Z',
         path: '/dashboard/custom-built-in-1',
         layout: [
             { i: 'sre_pending_incidents', x: 0, y: 0, w: 4, h: 2 },
@@ -1130,9 +1132,9 @@ const MOCK_DASHBOARD_TEMPLATES: DashboardTemplate[] = [
     { id: 'tpl-002', name: '業務 KPI 總覽', description: '追蹤關鍵業務指標，如用戶註冊數、營收、轉換率等。適用於產品經理、業務團隊使用。', icon: 'briefcase', category: '業務' },
 ];
 const MOCK_INCIDENTS: Incident[] = [
-    { id: 'INC-001', summary: 'API 延遲超過閾值', resource: 'api-server-01', resourceId: 'res-001', impact: 'High', rule: 'API 延遲規則', ruleId: 'rule-002', status: 'New', severity: 'Warning', assignee: '張三', occurredAt: '2024-01-15T10:30:00Z', history: [{ timestamp: '2024-01-15T10:30:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "API 延遲規則".' }] },
-    { id: 'INC-002', summary: '資料庫連接超時', resource: 'db-primary', resourceId: 'res-002', impact: 'High', rule: '資料庫連接規則', ruleId: 'rule-db-conn', status: 'Acknowledged', severity: 'Critical', assignee: '李四', occurredAt: '2024-01-15T10:15:00Z', history: [{ timestamp: '2024-01-15T10:15:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "資料庫連接規則".' }] },
-    { id: 'INC-003', summary: 'CPU 使用率異常', resource: 'web-prod-12', resourceId: 'res-004', impact: 'Medium', rule: 'CPU 使用率規則', ruleId: 'rule-cpu', status: 'Resolved', severity: 'Warning', assignee: '王五', occurredAt: '2024-01-15T09:45:00Z', history: [{ timestamp: '2024-01-15T09:45:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "CPU 使用率規則".' }] },
+    { id: 'INC-001', summary: 'API 延遲超過閾值', resource: 'api-server-01', resourceId: 'res-001', impact: 'High', rule: 'API 延遲規則', ruleId: 'rule-002', status: 'New', severity: 'Warning', assignee: '張三', occurredAt: '2024-01-15T10:30:00Z', createdAt: '2024-01-15T10:30:00Z', updatedAt: '2024-01-15T10:30:00Z', history: [{ timestamp: '2024-01-15T10:30:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "API 延遲規則".' }] },
+    { id: 'INC-002', summary: '資料庫連接超時', resource: 'db-primary', resourceId: 'res-002', impact: 'High', rule: '資料庫連接規則', ruleId: 'rule-db-conn', status: 'Acknowledged', severity: 'Critical', assignee: '李四', occurredAt: '2024-01-15T10:15:00Z', createdAt: '2024-01-15T10:15:00Z', updatedAt: '2024-01-15T10:15:00Z', history: [{ timestamp: '2024-01-15T10:15:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "資料庫連接規則".' }] },
+    { id: 'INC-003', summary: 'CPU 使用率異常', resource: 'web-prod-12', resourceId: 'res-004', impact: 'Medium', rule: 'CPU 使用率規則', ruleId: 'rule-cpu', status: 'Resolved', severity: 'Warning', assignee: '王五', occurredAt: '2024-01-15T09:45:00Z', createdAt: '2024-01-15T09:45:00Z', updatedAt: '2024-01-15T09:45:00Z', history: [{ timestamp: '2024-01-15T09:45:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "CPU 使用率規則".' }] },
 ];
 const MOCK_QUICK_SILENCE_DURATIONS = [1, 2, 4, 8, 12, 24]; // hours
 const MOCK_ALERT_RULE_DEFAULT: Partial<AlertRule> = {
@@ -1176,7 +1178,8 @@ const MOCK_ALERT_RULES: AlertRule[] = [
         severity: 'critical',
         automationEnabled: true,
         creator: 'Admin User',
-        lastUpdated: '2025-09-22T10:00:00Z',
+        createdAt: '2025-09-20T10:00:00Z',
+        updatedAt: '2025-09-22T10:00:00Z',
         automation: { enabled: true, scriptId: 'play-002', parameters: { namespace: 'production' } },
         testPayload: {
             metric: 'cpu_usage_percent',
@@ -1194,7 +1197,8 @@ const MOCK_ALERT_RULES: AlertRule[] = [
         severity: 'warning',
         automationEnabled: false,
         creator: 'Emily White',
-        lastUpdated: '2025-09-21T15:30:00Z',
+        createdAt: '2025-09-21T15:30:00Z',
+        updatedAt: '2025-09-21T15:30:00Z',
         automation: { enabled: false },
         testPayload: {
             metric: 'http_request_duration_seconds_p95',
@@ -1262,7 +1266,7 @@ const MOCK_ALERT_RULE_TEMPLATES: AlertRuleTemplate[] = [
     }
 ];
 const MOCK_SILENCE_RULES: SilenceRule[] = [
-    { id: 'sil-001', name: '週末維護窗口', description: '週末例行維護期間静音所有 staging 環境的告警。', enabled: true, type: 'repeat', matchers: [{ key: 'env', operator: '=', value: 'staging' }], schedule: { type: 'recurring', cron: '0 22 * * 5', cronDescription: '每週五 22:00', timezone: 'Asia/Taipei' }, creator: 'Admin User', createdAt: '2025-09-20T18:00:00Z' },
+    { id: 'sil-001', name: '週末維護窗口', description: '週末例行維護期間静音所有 staging 環境的告警。', enabled: true, type: 'repeat', matchers: [{ key: 'env', operator: '=', value: 'staging' }], schedule: { type: 'recurring', cron: '0 22 * * 5', cronDescription: '每週五 22:00', timezone: 'Asia/Taipei' }, creator: 'Admin User', createdAt: '2025-09-20T18:00:00Z', updatedAt: '2025-09-20T18:00:00Z' },
 ];
 const MOCK_SILENCE_RULE_TEMPLATES: SilenceRuleTemplate[] = [
     { id: 'srt-001', name: 'Staging Maintenance', emoji: '🚧', data: { description: 'Silence all alerts from the staging environment.', matchers: [{ key: 'env', operator: '=', value: 'staging' }] } },
@@ -1297,16 +1301,16 @@ const MOCK_SILENCE_RULE_OPTIONS: SilenceRuleOptions = {
     ],
 };
 const MOCK_RESOURCES: Resource[] = [
-    { id: 'res-001', name: 'api-gateway-prod-01', status: 'healthy', type: 'API Gateway', provider: 'AWS', region: 'us-east-1', owner: 'SRE Team', lastCheckIn: '30s ago' },
-    { id: 'res-002', name: 'rds-prod-main', status: 'critical', type: 'RDS Database', provider: 'AWS', region: 'us-east-1', owner: 'DBA Team', lastCheckIn: '2m ago' },
-    { id: 'res-003', name: 'k8s-prod-cluster', status: 'healthy', type: 'EKS Cluster', provider: 'AWS', region: 'us-west-2', owner: 'SRE Team', lastCheckIn: '1m ago' },
-    { id: 'res-004', name: 'web-prod-12', status: 'healthy', type: 'EC2 Instance', provider: 'AWS', region: 'us-west-2', owner: 'Web Team', lastCheckIn: '45s ago' },
-    { id: 'res-007', name: 'api-service', status: 'warning', type: 'Kubernetes Service', provider: 'AWS', region: 'us-east-1', owner: 'API Services', lastCheckIn: '1m ago' },
+    { id: 'res-001', name: 'api-gateway-prod-01', status: 'healthy', type: 'API Gateway', provider: 'AWS', region: 'us-east-1', owner: 'SRE Team', lastCheckInAt: new Date(Date.now() - 30 * 1000).toISOString(), createdAt: '2024-01-10T10:00:00Z', updatedAt: '2024-01-15T11:00:00Z' },
+    { id: 'res-002', name: 'rds-prod-main', status: 'critical', type: 'RDS Database', provider: 'AWS', region: 'us-east-1', owner: 'DBA Team', lastCheckInAt: new Date(Date.now() - 2 * 60 * 1000).toISOString(), createdAt: '2024-01-10T10:00:00Z', updatedAt: '2024-01-15T11:00:00Z' },
+    { id: 'res-003', name: 'k8s-prod-cluster', status: 'healthy', type: 'EKS Cluster', provider: 'AWS', region: 'us-west-2', owner: 'SRE Team', lastCheckInAt: new Date(Date.now() - 60 * 1000).toISOString(), createdAt: '2024-01-10T10:00:00Z', updatedAt: '2024-01-15T11:00:00Z' },
+    { id: 'res-004', name: 'web-prod-12', status: 'healthy', type: 'EC2 Instance', provider: 'AWS', region: 'us-west-2', owner: 'Web Team', lastCheckInAt: new Date(Date.now() - 45 * 1000).toISOString(), createdAt: '2024-01-10T10:00:00Z', updatedAt: '2024-01-15T11:00:00Z' },
+    { id: 'res-007', name: 'api-service', status: 'warning', type: 'Kubernetes Service', provider: 'AWS', region: 'us-east-1', owner: 'API Services', lastCheckInAt: new Date(Date.now() - 60 * 1000).toISOString(), createdAt: '2024-01-10T10:00:00Z', updatedAt: '2024-01-15T11:00:00Z' },
 ];
 const MOCK_RESOURCE_GROUPS: ResourceGroup[] = [
-    { id: 'rg-001', name: '正式環境 Web 伺服器', description: '所有面向正式環境的 Web 伺服器', ownerTeam: 'Web Team', memberIds: ['res-004'], statusSummary: { healthy: 12, warning: 1, critical: 0 } },
-    { id: 'rg-002', name: '核心資料庫', description: '核心服務的主資料庫與副本資料庫', ownerTeam: 'DBA Team', memberIds: ['res-002'], statusSummary: { healthy: 8, warning: 0, critical: 1 } },
-    { id: 'rg-003', name: 'API 服務', description: '主要 API 的所有微服務', ownerTeam: 'API Team', memberIds: ['res-007'], statusSummary: { healthy: 25, warning: 3, critical: 2 } },
+    { id: 'rg-001', name: '正式環境 Web 伺服器', description: '所有面向正式環境的 Web 伺服器', ownerTeam: 'Web Team', memberIds: ['res-004'], statusSummary: { healthy: 12, warning: 1, critical: 0 }, createdAt: '2024-01-12T10:00:00Z', updatedAt: '2024-01-12T10:00:00Z' },
+    { id: 'rg-002', name: '核心資料庫', description: '核心服務的主資料庫與副本資料庫', ownerTeam: 'DBA Team', memberIds: ['res-002'], statusSummary: { healthy: 8, warning: 0, critical: 1 }, createdAt: '2024-01-12T10:00:00Z', updatedAt: '2024-01-12T10:00:00Z' },
+    { id: 'rg-003', name: 'API 服務', description: '主要 API 的所有微服務', ownerTeam: 'API Team', memberIds: ['res-007'], statusSummary: { healthy: 25, warning: 3, critical: 2 }, createdAt: '2024-01-12T10:00:00Z', updatedAt: '2024-01-12T10:00:00Z' },
 ];
 const MOCK_RESOURCE_OVERVIEW_DATA: ResourceOverviewData = {
     distributionByType: [
@@ -1332,31 +1336,31 @@ const MOCK_RESOURCE_OVERVIEW_DATA: ResourceOverviewData = {
     ]
 };
 const MOCK_PLAYBOOKS: AutomationPlaybook[] = [
-    { id: 'play-001', name: '重啟故障 Pod', description: '自動重啟處於 CrashLoopBackOff 狀態的 Pod。', trigger: 'K8s 告警', lastRun: '5分鐘前', lastRunStatus: 'success', runCount: 12, type: 'shell', content: '#!/bin/bash...', parameters: [{ name: 'namespace', label: '命名空間', type: 'string', required: true }] },
-    { id: 'play-002', name: '擴展 Web 層', description: '向 Web 伺服器自動擴展組增加更多 EC2 實例。', trigger: '高 CPU', lastRun: '1小時前', lastRunStatus: 'success', runCount: 3, type: 'python', content: 'import boto3...', parameters: [{ name: 'instance_count', label: '實例數量', type: 'number', required: true, defaultValue: 2 }] },
+    { id: 'play-001', name: '重啟故障 Pod', description: '自動重啟處於 CrashLoopBackOff 狀態的 Pod。', trigger: 'K8s 告警', lastRunAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(), lastRunStatus: 'success', runCount: 12, type: 'shell', content: '#!/bin/bash...', parameters: [{ name: 'namespace', label: '命名空間', type: 'string', required: true }], createdAt: '2025-09-20T10:00:00Z', updatedAt: '2025-09-23T12:00:00Z' },
+    { id: 'play-002', name: '擴展 Web 層', description: '向 Web 伺服器自動擴展組增加更多 EC2 實例。', trigger: '高 CPU', lastRunAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(), lastRunStatus: 'success', runCount: 3, type: 'python', content: 'import boto3...', parameters: [{ name: 'instance_count', label: '實例數量', type: 'number', required: true, defaultValue: 2 }], createdAt: '2025-09-21T11:00:00Z', updatedAt: '2025-09-22T13:00:00Z' },
 ];
 const MOCK_AUTOMATION_EXECUTIONS: AutomationExecution[] = [
     { id: 'exec-001', scriptId: 'play-001', scriptName: '重啟故障 Pod', status: 'success', triggerSource: 'event', triggeredBy: 'Alert Rule: K8s 告警', startTime: '2025-09-23T14:05:10Z', endTime: '2025-09-23T14:05:15Z', durationMs: 5000, parameters: { namespace: 'production' }, logs: { stdout: 'Successfully restarted pod.', stderr: '' } },
 ];
 const MOCK_AUTOMATION_TRIGGERS: AutomationTrigger[] = [
-    { id: 'trig-001', name: '每日日誌歸檔', description: '在每天凌晨 3 點運行「歸檔舊日誌」腳本。', type: 'Schedule', enabled: true, targetPlaybookId: 'play-005', config: { cron: '0 3 * * *', cronDescription: '每日 03:00' }, lastTriggered: '18 小時前', creator: 'Admin User' },
+    { id: 'trig-001', name: '每日日誌歸檔', description: '在每天凌晨 3 點運行「歸檔舊日誌」腳本。', type: 'Schedule', enabled: true, targetPlaybookId: 'play-005', config: { cron: '0 3 * * *', cronDescription: '每日 03:00' }, lastTriggeredAt: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(), creator: 'Admin User', createdAt: '2025-09-19T08:00:00Z', updatedAt: '2025-09-19T08:00:00Z' },
 ];
 const MOCK_USERS: User[] = [
-    { id: 'usr-001', name: 'Admin User', email: 'admin@sre.platform', role: 'Admin', team: 'SRE Platform', status: 'active', lastLogin: '2分鐘前' },
-    { id: 'usr-002', name: 'Emily White', email: 'emily.w@example.com', role: 'SRE', team: 'Core Infrastructure', status: 'active', lastLogin: '1小時前' },
-    { id: 'usr-003', name: 'John Doe', email: 'john.d@example.com', role: 'Developer', team: 'API Services', status: 'active', lastLogin: '5小時前' },
-    { id: 'usr-004', name: 'Sarah Connor', email: 'sarah.c@example.com', role: 'Viewer', team: 'Marketing', status: 'inactive', lastLogin: '3天前' },
-    { id: 'usr-005', name: 'pending.invite@example.com', email: 'pending.invite@example.com', role: 'Developer', team: 'API Services', status: 'invited', lastLogin: 'N/A' },
+    { id: 'usr-001', name: 'Admin User', email: 'admin@sre.platform', role: 'Admin', team: 'SRE Platform', status: 'active', lastLoginAt: new Date(Date.now() - 2 * 60 * 1000).toISOString(), createdAt: '2024-01-01T09:00:00Z', updatedAt: '2024-01-15T10:00:00Z' },
+    { id: 'usr-002', name: 'Emily White', email: 'emily.w@example.com', role: 'SRE', team: 'Core Infrastructure', status: 'active', lastLoginAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(), createdAt: '2024-01-02T09:00:00Z', updatedAt: '2024-01-14T10:00:00Z' },
+    { id: 'usr-003', name: 'John Doe', email: 'john.d@example.com', role: 'Developer', team: 'API Services', status: 'active', lastLoginAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), createdAt: '2024-01-03T09:00:00Z', updatedAt: '2024-01-13T10:00:00Z' },
+    { id: 'usr-004', name: 'Sarah Connor', email: 'sarah.c@example.com', role: 'Viewer', team: 'Marketing', status: 'inactive', lastLoginAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), createdAt: '2024-01-04T09:00:00Z', updatedAt: '2024-01-12T10:00:00Z' },
+    { id: 'usr-005', name: 'pending.invite@example.com', email: 'pending.invite@example.com', role: 'Developer', team: 'API Services', status: 'invited', lastLoginAt: 'N/A', createdAt: '2024-01-15T09:00:00Z', updatedAt: '2024-01-15T09:00:00Z' },
 ];
 const MOCK_USER_STATUSES: User['status'][] = ['active', 'invited', 'inactive'];
 const MOCK_TEAMS: Team[] = [
-    { id: 'team-001', name: 'SRE Platform', description: 'Manages the SRE platform itself.', ownerId: 'usr-001', memberIds: ['usr-001'], createdAt: '2024-01-01T10:00:00Z' },
-    { id: 'team-002', name: 'Core Infrastructure', description: 'Maintains core infrastructure services.', ownerId: 'usr-002', memberIds: ['usr-002'], createdAt: '2024-01-02T11:00:00Z' },
-    { id: 'team-003', name: 'API Services', description: 'Develops and maintains all public APIs.', ownerId: 'usr-003', memberIds: ['usr-003', 'usr-005'], createdAt: '2024-01-03T12:00:00Z' },
+    { id: 'team-001', name: 'SRE Platform', description: 'Manages the SRE platform itself.', ownerId: 'usr-001', memberIds: ['usr-001'], createdAt: '2024-01-01T10:00:00Z', updatedAt: '2024-01-01T10:00:00Z' },
+    { id: 'team-002', name: 'Core Infrastructure', description: 'Maintains core infrastructure services.', ownerId: 'usr-002', memberIds: ['usr-002'], createdAt: '2024-01-02T11:00:00Z', updatedAt: '2024-01-02T11:00:00Z' },
+    { id: 'team-003', name: 'API Services', description: 'Develops and maintains all public APIs.', ownerId: 'usr-003', memberIds: ['usr-003', 'usr-005'], createdAt: '2024-01-03T12:00:00Z', updatedAt: '2024-01-03T12:00:00Z' },
 ];
 const MOCK_ROLES: Role[] = [
     {
-        id: 'role-001', name: 'Administrator', description: '擁有所有權限', userCount: 1, enabled: true, createdAt: '2024-01-01T09:00:00Z', permissions: [
+        id: 'role-001', name: 'Administrator', description: '擁有所有權限', userCount: 1, enabled: true, createdAt: '2024-01-01T09:00:00Z', updatedAt: '2024-01-01T09:00:00Z', permissions: [
             { module: 'Incidents', actions: ['read', 'create', 'update', 'delete'] },
             { module: 'Resources', actions: ['read', 'create', 'update', 'delete'] },
             { module: 'Automation', actions: ['read', 'create', 'update', 'delete', 'execute'] },
@@ -1364,14 +1368,14 @@ const MOCK_ROLES: Role[] = [
         ]
     },
     {
-        id: 'role-002', name: 'SRE Engineer', description: '擁有事件、資源、自動化管理權限', userCount: 1, enabled: true, createdAt: '2024-01-01T09:00:00Z', permissions: [
+        id: 'role-002', name: 'SRE Engineer', description: '擁有事件、資源、自動化管理權限', userCount: 1, enabled: true, createdAt: '2024-01-01T09:00:00Z', updatedAt: '2024-01-01T09:00:00Z', permissions: [
             { module: 'Incidents', actions: ['read', 'update'] },
             { module: 'Resources', actions: ['read', 'update'] },
             { module: 'Automation', actions: ['read', 'execute'] },
         ]
     },
     {
-        id: 'role-003', name: 'Developer', description: '擁有應用程式開發相關權限', userCount: 2, enabled: true, createdAt: '2024-01-01T09:00:00Z', permissions: [
+        id: 'role-003', name: 'Developer', description: '擁有應用程式開發相關權限', userCount: 2, enabled: true, createdAt: '2024-01-01T09:00:00Z', updatedAt: '2024-01-01T09:00:00Z', permissions: [
             { module: 'Incidents', actions: ['read'] },
             { module: 'Resources', actions: ['read'] },
         ]
@@ -1400,7 +1404,8 @@ const MOCK_NOTIFICATION_STRATEGIES: NotificationStrategy[] = [
         severityLevels: ['Critical'],
         impactLevels: ['High'],
         creator: 'Admin',
-        lastUpdated: '2025-09-20T10:00:00Z'
+        createdAt: '2025-09-20T10:00:00Z',
+        updatedAt: '2025-09-20T10:00:00Z'
     }
 ];
 const MOCK_NOTIFICATION_STRATEGY_OPTIONS: NotificationStrategyOptions = {
@@ -1431,7 +1436,9 @@ const MOCK_NOTIFICATION_CHANNELS: NotificationChannel[] = [
             bcc: 'audit@example.com'
         },
         lastTestResult: 'success',
-        lastTestedAt: '2025-09-22T11:00:00Z'
+        lastTestedAt: '2025-09-22T11:00:00Z',
+        createdAt: '2025-09-21T09:00:00Z',
+        updatedAt: '2025-09-22T11:00:00Z'
     },
 ];
 const MOCK_NOTIFICATION_OPTIONS: NotificationOptions = {
@@ -2196,36 +2203,42 @@ const MOCK_DISCOVERY_JOBS: DiscoveryJob[] = [
         name: 'K8s Cluster A',
         kind: 'K8s',
         schedule: '0 9 * * *', // 每天 09:00
-        lastRun: '2025-09-23T09:00:15Z',
+        lastRunAt: '2025-09-23T09:00:15Z',
         status: 'success',
         targetConfig: { kubeconfig: '...' },
         exporterBinding: { templateId: 'node_exporter' },
         edgeGateway: { enabled: false },
-        tags: [{ id: 'tag-4', key: 'cluster', value: 'A' }]
+        tags: [{ id: 'tag-4', key: 'cluster', value: 'A' }],
+        createdAt: '2025-09-01T09:00:00Z',
+        updatedAt: '2025-09-23T09:00:15Z',
     },
     {
         id: 'dj-002',
         name: 'IDC-SNMP-Scan',
         kind: 'SNMP',
         schedule: '30 * * * *', // 每小時 30 分
-        lastRun: '2025-09-23T10:30:05Z',
+        lastRunAt: '2025-09-23T10:30:05Z',
         status: 'partial_failure',
         targetConfig: { community: 'public', ipRange: '10.1.1.1/24' },
         exporterBinding: { templateId: 'snmp_exporter', mibProfileId: 'snmp-default' },
         edgeGateway: { enabled: true, gatewayId: 'edge-gw-1' },
-        tags: [{ id: 'tag-5', key: 'datacenter', value: 'IDC-1' }]
+        tags: [{ id: 'tag-5', key: 'datacenter', value: 'IDC-1' }],
+        createdAt: '2025-09-02T10:00:00Z',
+        updatedAt: '2025-09-23T10:30:05Z',
     },
     {
         id: 'dj-003',
         name: 'Cloud Provider Sync',
         kind: 'Cloud Provider',
         schedule: '0 0 * * *', // 每天
-        lastRun: '2025-09-23T00:00:10Z',
+        lastRunAt: '2025-09-23T00:00:10Z',
         status: 'running',
         targetConfig: { apiKey: '***masked***' },
         exporterBinding: { templateId: 'node_exporter' },
         edgeGateway: { enabled: false },
-        tags: []
+        tags: [],
+        createdAt: '2025-09-03T11:00:00Z',
+        updatedAt: '2025-09-23T00:00:10Z',
     }
 ];
 
