@@ -40,6 +40,9 @@ const ColumnSettingsModal: React.FC<ColumnSettingsModalProps> = ({ isOpen, onClo
     const { content: pageContent } = useContent();
     const globalContent = pageContent?.GLOBAL;
     const layoutContent = pageContent?.LAYOUT_SETTINGS;
+    const modalTitle = globalContent?.COLUMN_SETTINGS ?? '欄位設定';
+    const cancelLabel = globalContent?.CANCEL ?? '取消';
+    const saveLabel = globalContent?.SAVE ?? '儲存';
 
     useEffect(() => {
         if (isOpen) {
@@ -78,19 +81,31 @@ const ColumnSettingsModal: React.FC<ColumnSettingsModalProps> = ({ isOpen, onClo
     };
 
     if (!globalContent || !layoutContent) {
-        return null;
+        return (
+            <Modal
+                title={modalTitle}
+                isOpen={isOpen}
+                onClose={onClose}
+                width="w-2/3 max-w-4xl"
+            >
+                <div className="flex flex-col items-center justify-center py-12 text-slate-400 space-y-3">
+                    <Icon name="loader-circle" className="w-6 h-6 animate-spin" />
+                    <p className="text-sm">正在載入欄位設定，請稍候...</p>
+                </div>
+            </Modal>
+        );
     }
 
     return (
         <Modal
-            title={globalContent.COLUMN_SETTINGS}
+            title={modalTitle}
             isOpen={isOpen}
             onClose={onClose}
             width="w-2/3 max-w-4xl"
             footer={
                 <div className="flex justify-end space-x-2">
-                    <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">{globalContent.CANCEL}</button>
-                    <button onClick={handleConfirmSave} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md">{globalContent.SAVE}</button>
+                    <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">{cancelLabel}</button>
+                    <button onClick={handleConfirmSave} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md">{saveLabel}</button>
                 </div>
             }
         >

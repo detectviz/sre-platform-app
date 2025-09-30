@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ContextualKPICard from './ContextualKPICard';
+import Icon from './Icon';
 import { LayoutWidget } from '../types';
 import api from '../services/api';
 
@@ -69,8 +70,25 @@ const PageKPIs: React.FC<PageKPIsProps> = ({ pageName, widgetIds: explicitWidget
 
   const widgetIds = explicitWidgetIds || layouts[pageName]?.widgetIds || [];
 
-  if (isLoading || widgetIds.length === 0) {
-    return null; // Don't show anything if loading or no widgets configured
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 gap-4 mb-6">
+        <div className="flex flex-col items-center justify-center rounded-lg border border-slate-700 bg-slate-900/60 py-10 text-slate-400 space-y-3">
+          <Icon name="loader-circle" className="w-6 h-6 animate-spin" />
+          <p className="text-sm">正在載入頁面 KPI，請稍候...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (widgetIds.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed border-slate-700 bg-slate-900/40 p-8 text-center text-slate-400">
+        <Icon name="layout-dashboard" className="w-6 h-6 mx-auto mb-3" />
+        <p className="font-semibold">尚未為此頁面設定 KPI 卡片。</p>
+        <p className="text-sm text-slate-500 mt-1">請至「版面設定」頁面挑選適合的指標小工具。</p>
+      </div>
+    );
   }
   
   const getWidgetById = (id: string): LayoutWidget | undefined => widgets.find(w => w.id === id);
@@ -103,8 +121,16 @@ const PageKPIs: React.FC<PageKPIsProps> = ({ pageName, widgetIds: explicitWidget
       {widgetIds.map(id => {
         const widget = getWidgetById(id);
         const data = kpiData[id];
-        if (!widget || !data) return null;
-        
+        if (!widget || !data) {
+          return (
+            <div key={id} className="flex flex-col items-center justify-center border border-dashed border-slate-700 bg-slate-900/40 rounded-lg p-6 text-center text-slate-400 space-y-2">
+              <Icon name="alert-circle" className="w-5 h-5" />
+              <p className="text-sm">無法載入代號為 {id} 的 KPI 配置。</p>
+              <p className="text-xs text-slate-500">請檢查是否已於管理頁設定資料來源。</p>
+            </div>
+          );
+        }
+
         return (
           <ContextualKPICard
             key={id}

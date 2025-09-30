@@ -320,12 +320,25 @@ const DashboardEditorPage: React.FC = () => {
                     const isInteracting = interactionState?.item.i === item.i;
                     const { top, left, width, height } = getPixelValues(item, gridRef.current!.offsetWidth);
 
-                    if (!widget) return null;
+                    if (!widget) {
+                        return (
+                            <div key={item.i} className="absolute border border-dashed border-slate-700 bg-slate-900/40 rounded-xl flex items-center justify-center text-slate-400 text-sm" style={{ top, left, width, height }}>
+                                <Icon name="alert-circle" className="w-4 h-4 mr-2" /> 缺少對應的小工具設定
+                            </div>
+                        );
+                    }
                     const data = kpiData[widget.id];
-                    if (!data) return null;
-                    
+                    if (!data) {
+                        return (
+                            <div key={item.i} className="absolute border border-dashed border-slate-700 bg-slate-900/40 rounded-xl flex flex-col items-center justify-center text-slate-400 text-sm" style={{ top, left, width, height }}>
+                                <Icon name="database" className="w-4 h-4 mb-1" />
+                                <span>尚未取得 {widget.name} 資料</span>
+                            </div>
+                        );
+                    }
+
                     return (
-                        <div key={item.i} 
+                        <div key={item.i}
                             onMouseDown={(e) => handleInteractionStart(e, 'drag', item)}
                             className={`absolute transition-all duration-200 ease-in-out group ${isInteracting ? 'z-20 shadow-2xl opacity-80' : 'z-10'}`}
                             style={{ top, left, width, height }}>
@@ -337,11 +350,13 @@ const DashboardEditorPage: React.FC = () => {
                         </div>
                     );
                  })}
-                 
+
                  {/* Ghost element for drag/resize feedback */}
                  {interactionState && gridRef.current && (() => {
                      const ghostLayout = layout.find(l => l.i === interactionState.item.i);
-                     if (!ghostLayout) return null;
+                     if (!ghostLayout) {
+                         return <span className="sr-only">沒有可顯示的預覽位置</span>;
+                     }
                      const { top, left, width, height } = getPixelValues(ghostLayout, gridRef.current.offsetWidth);
                      const isColliding = checkCollision(ghostLayout, layout);
                      return <div className={`absolute z-10 rounded-xl transition-colors ${isColliding ? 'bg-red-500/30' : 'bg-sky-500/30'} border-2 border-dashed ${isColliding ? 'border-red-400' : 'border-sky-400'}`} style={{ top, left, width, height }} />;

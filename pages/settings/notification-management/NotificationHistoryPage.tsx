@@ -154,7 +154,7 @@ const NotificationHistoryPage: React.FC = () => {
                 </button>
             );
         }
-        return null;
+        return <span className="text-xs text-slate-500">無可執行動作</span>;
     };
     
     const renderCellContent = (record: NotificationHistoryRecord, columnKey: string) => {
@@ -177,7 +177,7 @@ const NotificationHistoryPage: React.FC = () => {
                     </span>
                 );
             case 'content': return <span className="truncate max-w-xs block">{record.content}</span>;
-            default: return null;
+            default: return <span className="text-slate-500">--</span>;
         }
     };
 

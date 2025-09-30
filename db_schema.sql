@@ -217,6 +217,36 @@ CREATE TABLE "resource_group_members" (
 );
 COMMENT ON TABLE "resource_group_members" IS '定義資源與資源群組的成員關係。';
 
+-- 自動探索任務設定
+CREATE TABLE "discovery_jobs" (
+    "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    "name" VARCHAR(255) NOT NULL,
+    "kind" VARCHAR(50) NOT NULL,
+    "schedule" VARCHAR(255) NOT NULL,
+    "status" VARCHAR(50) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'paused', 'draft')),
+    "last_run_at" TIMESTAMPTZ,
+    "target_config" JSONB NOT NULL DEFAULT '{}'::jsonb,
+    "exporter_binding" JSONB,
+    "edge_gateway" JSONB,
+    "tags" JSONB NOT NULL DEFAULT '[]'::jsonb,
+    "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "deleted_at" TIMESTAMPTZ
+);
+COMMENT ON TABLE "discovery_jobs" IS '定義自動探索任務，包含目標設定與 exporter 綁定。';
+COMMENT ON COLUMN "discovery_jobs"."target_config" IS '依探索類型而異的動態設定 (JSON)。';
+COMMENT ON COLUMN "discovery_jobs"."exporter_binding" IS 'Exporter 範本與覆寫設定 (JSON)。';
+COMMENT ON COLUMN "discovery_jobs"."edge_gateway" IS 'Edge Gateway 啟用狀態與對應裝置 (JSON)。';
+
+CREATE INDEX "idx_discovery_jobs_status" ON "discovery_jobs"("status");
+CREATE INDEX "idx_discovery_jobs_kind" ON "discovery_jobs"("kind");
+CREATE INDEX "idx_discovery_jobs_last_run" ON "discovery_jobs"("last_run_at" DESC);
+
+CREATE TRIGGER set_timestamp
+BEFORE UPDATE ON "discovery_jobs"
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
 -- 資源依賴關係 (用於拓撲圖)
 CREATE TABLE "resource_dependencies" (
     "source_resource_id" UUID NOT NULL REFERENCES "resources"("id") ON DELETE CASCADE,
@@ -307,13 +337,12 @@ CREATE TABLE "incidents" (
     "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     "summary" TEXT NOT NULL,
     "resource_id" UUID REFERENCES "resources"("id") ON DELETE SET NULL,
-    "service_impact" VARCHAR(50) CHECK (service_impact IN ('High', 'Medium', 'Low')),
     "alert_rule_id" UUID REFERENCES "alert_rules"("id") ON DELETE SET NULL,
-    "status" VARCHAR(50) NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'acknowledged', 'resolved', 'silenced')),
-    "severity" VARCHAR(50) NOT NULL CHECK (severity IN ('critical', 'warning', 'info')),
-    "priority" VARCHAR(10) CHECK (priority IN ('P0', 'P1', 'P2', 'P3')),
+    "status" VARCHAR(50) NOT NULL DEFAULT 'New' CHECK (status IN ('New', 'Acknowledged', 'Resolved', 'Silenced')),
+    "severity" VARCHAR(50) NOT NULL CHECK (severity IN ('Critical', 'Warning', 'Info')),
+    "impact" VARCHAR(50) NOT NULL CHECK (impact IN ('High', 'Medium', 'Low')),
     "assignee_id" UUID REFERENCES "users"("id") ON DELETE SET NULL,
-    "triggered_at" TIMESTAMPTZ NOT NULL,
+    "occurred_at" TIMESTAMPTZ NOT NULL,
     "acknowledged_at" TIMESTAMPTZ,
     "resolved_at" TIMESTAMPTZ,
     "ai_analysis" JSONB,
@@ -357,7 +386,7 @@ CREATE INDEX "idx_alert_rules_enabled" ON "alert_rules"("enabled");
 CREATE INDEX "idx_incidents_status" ON "incidents"("status");
 CREATE INDEX "idx_incidents_resource_id" ON "incidents"("resource_id");
 CREATE INDEX "idx_incidents_assignee_id" ON "incidents"("assignee_id");
-CREATE INDEX "idx_incidents_triggered_at" ON "incidents"("triggered_at" DESC);
+CREATE INDEX "idx_incidents_occurred_at" ON "incidents"("occurred_at" DESC);
 CREATE INDEX "idx_incident_history_incident_id" ON "incident_history"("incident_id");
 CREATE INDEX "idx_silence_rules_enabled" ON "silence_rules"("enabled");
 
@@ -556,7 +585,8 @@ CREATE TABLE "notification_strategies" (
     "name" VARCHAR(255) NOT NULL,
     "enabled" BOOLEAN NOT NULL DEFAULT true,
     "trigger_condition" TEXT NOT NULL,
-    "priority" VARCHAR(50) NOT NULL DEFAULT 'Medium' CHECK (priority IN ('High', 'Medium', 'Low')),
+    "severity_levels" TEXT[] NOT NULL DEFAULT ARRAY['Critical'],
+    "impact_levels" TEXT[] NOT NULL DEFAULT ARRAY['High'],
     "creator_id" UUID REFERENCES "users"("id") ON DELETE SET NULL,
     "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

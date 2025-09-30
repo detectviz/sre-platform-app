@@ -175,7 +175,7 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onU
               </span>
             </InfoItem>
             <InfoItem label="指派給">
-              {incident.status === 'new' || !incident.assignee ? (
+              {incident.status === 'New' || !incident.assignee ? (
                 <div className="flex items-center space-x-2">
                   <span className="text-slate-400">無</span>
                   <button onClick={handleAcknowledge} className="px-3 py-1 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-full transition-colors flex items-center shadow-sm">
@@ -217,7 +217,7 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onU
                     {incident.rule}
                   </Link>
                 </InfoItem>
-                <InfoItem label="觸發時間">{incident.triggeredAt}</InfoItem>
+                <InfoItem label="發生時間">{incident.occurredAt}</InfoItem>
               </dl>
             </div>
           </div>

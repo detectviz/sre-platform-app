@@ -176,7 +176,7 @@ const AutomationHistoryPage: React.FC = () => {
             case 'durationMs':
                 return formatDuration(ex.durationMs);
             default:
-                return null;
+                return <span className="text-slate-500">--</span>;
         }
     };
     
@@ -208,7 +208,13 @@ const AutomationHistoryPage: React.FC = () => {
                                 </th>
                                 {visibleColumns.map(key => {
                                     const col = allColumns.find(c => c.key === key);
-                                    if (!col) return null;
+                                    if (!col) {
+                                        return (
+                                            <th key={key} scope="col" className="px-6 py-3 text-left text-slate-500">
+                                                未定義欄位
+                                            </th>
+                                        );
+                                    }
                                     return <SortableHeader key={key} label={col.label} sortKey={col.key} sortConfig={sortConfig} onSort={handleSort} />;
                                 })}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>

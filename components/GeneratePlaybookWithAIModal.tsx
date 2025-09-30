@@ -53,20 +53,35 @@ const GeneratePlaybookWithAIModal: React.FC<GeneratePlaybookWithAIModalProps> = 
         }
     };
 
+    const modalTitle = content?.TITLE ?? 'AI 助手生成腳本';
+    const cancelLabel = globalContent?.CANCEL ?? '取消';
+
     if (!content || !globalContent) {
-        return null;
+        return (
+            <Modal
+                title={modalTitle}
+                isOpen={isOpen}
+                onClose={onClose}
+                width="w-2/3 max-w-4xl"
+            >
+                <div className="flex flex-col items-center justify-center py-12 text-slate-400 space-y-3">
+                    <Icon name="loader-circle" className="w-6 h-6 animate-spin" />
+                    <p className="text-sm">正在準備 AI 腳本產生器，請稍候...</p>
+                </div>
+            </Modal>
+        );
     }
-    
+
     return (
         <Modal
-            title={content.TITLE}
+            title={modalTitle}
             isOpen={isOpen}
             onClose={onClose}
             width="w-2/3 max-w-4xl"
             footer={
                 <div className="flex justify-between w-full">
                      <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">
-                        {globalContent.CANCEL}
+                        {cancelLabel}
                     </button>
                     {result && (
                          <button onClick={handleApply} className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md flex items-center">

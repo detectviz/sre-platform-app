@@ -86,7 +86,15 @@ const ResourceAnalysisModal: React.FC<ResourceAnalysisModalProps> = ({ isOpen, o
             );
         }
 
-        if (!analysis) return null;
+        if (!analysis) {
+            return (
+                <div className="flex flex-col items-center justify-center h-64 text-slate-400">
+                    <Icon name="info" className="w-10 h-10 mb-3" />
+                    <p className="font-medium">目前沒有可顯示的分析結果。</p>
+                    <p className="text-sm text-slate-500">請確認已選擇資源，或稍後再試一次。</p>
+                </div>
+            );
+        }
 
         return (
             <div className="space-y-6 text-slate-300">

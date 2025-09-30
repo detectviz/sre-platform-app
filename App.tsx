@@ -65,7 +65,7 @@ const RenderIcons = () => {
       window.lucide.createIcons();
     }
   }, [location.pathname]);
-  return null;
+  return <span className="hidden" aria-hidden="true" />;
 };
 
 interface SystemConfig {

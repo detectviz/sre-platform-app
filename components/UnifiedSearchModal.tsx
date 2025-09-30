@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Modal from './Modal';
 import Icon from './Icon';
-import { 
-    Resource, ResourceFilters, AlertRule, Incident, SilenceRule, TagManagementFilters, User, AuditLogFilters,
+import {
+    Resource, ResourceFilters, AlertRule, Incident, IncidentImpact, IncidentSeverity, IncidentStatus, SilenceRule, TagManagementFilters, User, AuditLogFilters,
     DashboardFilters, AutomationHistoryFilters, PersonnelFilters, ResourceGroupFilters, AutomationTriggerFilters,
     NotificationStrategyFilters, NotificationChannelFilters, NotificationHistoryFilters, AutomationPlaybook,
     LogExplorerFilters
@@ -13,9 +13,9 @@ import { useContent } from '../contexts/ContentContext';
 
 export interface IncidentFilters {
   keyword?: string;
-  status?: 'new' | 'acknowledged' | 'resolved' | 'silenced';
-  severity?: 'critical' | 'warning' | 'info';
-  impact?: Incident['impact'];
+  status?: IncidentStatus;
+  severity?: IncidentSeverity;
+  impact?: IncidentImpact;
   assignee?: string;
   startTime?: string;
   endTime?: string;
@@ -83,8 +83,22 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
       setFilters({});
   }
 
+  const modalTitle = content?.TITLE ?? '進階搜尋';
+
   if (!content || !globalContent) {
-    return null;
+    return (
+      <Modal
+        title={modalTitle}
+        isOpen={isOpen}
+        onClose={onClose}
+        width="w-1/2 max-w-2xl"
+      >
+        <div className="flex flex-col items-center justify-center py-12 text-slate-400 space-y-3">
+          <Icon name="loader-circle" className="w-6 h-6 animate-spin" />
+          <p className="text-sm">搜尋配置載入中，請稍候...</p>
+        </div>
+      </Modal>
+    );
   }
 
   const renderIncidentFilters = () => (
@@ -331,7 +345,7 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
 
   return (
     <Modal
-      title={content.TITLE}
+      title={modalTitle}
       isOpen={isOpen}
       onClose={onClose}
       width="w-1/2 max-w-2xl"

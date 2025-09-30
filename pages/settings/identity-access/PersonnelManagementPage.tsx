@@ -222,7 +222,8 @@ const PersonnelManagementPage: React.FC = () => {
             case 'team': return user.team;
             case 'status': return <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusPill(user.status)}`}>{getStatusLabel(user.status)}</span>;
             case 'lastLogin': return user.lastLogin;
-            default: return null;
+            default:
+                return <span className="text-slate-500">--</span>;
         }
     };
 

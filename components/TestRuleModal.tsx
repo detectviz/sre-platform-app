@@ -10,10 +10,10 @@ interface TestRuleModalProps {
   rule: AlertRule | null;
 }
 
-const buildFallbackPayload = (targetRule: AlertRule): Record<string, unknown> | null => {
+const buildFallbackPayload = (targetRule: AlertRule): Record<string, unknown> | undefined => {
     const firstCondition = targetRule.conditionGroups?.[0]?.conditions?.[0];
     if (!firstCondition) {
-        return null;
+        return undefined;
     }
 
     const threshold = typeof firstCondition.threshold === 'number' ? firstCondition.threshold : 0;
@@ -119,28 +119,29 @@ const TestRuleModal: React.FC<TestRuleModalProps> = ({ isOpen, onClose, rule }) 
         }
     };
     
-  if (!rule) return null;
+  const modalTitle = rule ? `測試規則: ${rule.name}` : '測試規則';
 
   return (
     <Modal
-      title={`測試規則: ${rule.name}`}
+      title={modalTitle}
       isOpen={isOpen}
       onClose={onClose}
       width="w-1/2"
       footer={
         <div className="flex justify-end space-x-2">
           <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">關閉</button>
-          <button onClick={handleTest} disabled={isLoading} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md flex items-center disabled:bg-slate-600 disabled:cursor-not-allowed">
+          <button onClick={handleTest} disabled={!rule || isLoading} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md flex items-center disabled:bg-slate-600 disabled:cursor-not-allowed">
             {isLoading ? <Icon name="loader-circle" className="w-4 h-4 mr-2 animate-spin" /> : <Icon name="play" className="w-4 h-4 mr-2" />}
             {isLoading ? '測試中...' : '執行測試'}
           </button>
         </div>
       }
     >
-        <div className="space-y-4">
+        {rule ? (
+          <div className="space-y-4">
             <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1">測試 Payload (JSON)</label>
-                <textarea 
+                <textarea
                     value={payload}
                     onChange={(e) => setPayload(e.target.value)}
                     rows={8}
@@ -163,7 +164,14 @@ const TestRuleModal: React.FC<TestRuleModalProps> = ({ isOpen, onClose, rule }) 
                     <p className="mt-1 text-sm text-slate-300 font-mono">{result.preview}</p>
                 </div>
             )}
-        </div>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-12 text-slate-400 space-y-2">
+            <Icon name="alert-triangle" className="w-6 h-6" />
+            <p className="font-medium">尚未選擇要測試的告警規則。</p>
+            <p className="text-sm text-slate-500">請先於告警規則列表中選擇目標，再開啟測試功能。</p>
+          </div>
+        )}
     </Modal>
   );
 };

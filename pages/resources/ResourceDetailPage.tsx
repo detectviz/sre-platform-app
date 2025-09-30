@@ -129,9 +129,9 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resourceId }) =
                 <div className="glass-card rounded-lg p-3 flex justify-between items-center hover:bg-slate-700/50 transition-colors">
                   <div>
                     <p className="font-semibold text-white">{inc.summary}</p>
-                    <p className="text-xs text-slate-400">{inc.triggeredAt}</p>
+                    <p className="text-xs text-slate-400">{inc.occurredAt}</p>
                   </div>
-                  <span className={`px-2 py-1 text-xs font-semibold rounded-full capitalize ${inc.status === 'new' ? 'text-orange-400' : 'text-slate-400'}`}>{inc.status}</span>
+                  <span className={`px-2 py-1 text-xs font-semibold rounded-full capitalize ${inc.status === 'New' ? 'text-orange-400' : 'text-slate-400'}`}>{inc.status}</span>
                 </div>
               </Link>
             ))

@@ -258,7 +258,8 @@ const ResourceListPage: React.FC = () => {
             case 'region': return res.region;
             case 'owner': return res.owner;
             case 'lastCheckIn': return formatRelativeTime(res.lastCheckIn);
-            default: return null;
+            default:
+                return <span className="text-slate-500">--</span>;
         }
     };
 

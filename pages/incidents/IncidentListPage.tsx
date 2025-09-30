@@ -136,7 +136,7 @@ const IncidentListPage: React.FC = () => {
 
         exportToCsv({
             filename: `incidents-${new Date().toISOString().split('T')[0]}.csv`,
-            headers: ['id', 'summary', 'resource', 'status', 'severity', 'impact', 'assignee', 'triggeredAt'],
+            headers: ['id', 'summary', 'resource', 'status', 'severity', 'impact', 'assignee', 'occurredAt'],
             data: dataToExport,
         });
     };
@@ -252,14 +252,14 @@ const IncidentListPage: React.FC = () => {
             case 'status':
                 return <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStyle(incidentOptions?.statuses, inc.status)}`}>{getLabel(incidentOptions?.statuses, inc.status)}</span>;
             case 'severity':
-                const severityMap: Record<string, string> = { 'critical': '嚴重', 'warning': '警告', 'info': '資訊' };
+                const severityMap: Record<string, string> = { Critical: '嚴重', Warning: '警告', Info: '資訊' };
                 return <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(incidentOptions?.severities, inc.severity)}`}>{severityMap[inc.severity] || getLabel(incidentOptions?.severities, inc.severity)}</span>;
             case 'impact':
                 return <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(incidentOptions?.impacts, inc.impact)}`}>{getLabel(incidentOptions?.impacts, inc.impact)}</span>;
             case 'resource':
                 return inc.resource;
             case 'assignee':
-                if (inc.status === 'new' || !inc.assignee) {
+                if (inc.status === 'New' || !inc.assignee) {
                     return (
                         <button
                             onClick={(e) => { e.stopPropagation(); handleAcknowledge([inc.id]); }}
@@ -280,10 +280,10 @@ const IncidentListPage: React.FC = () => {
                         <Icon name="repeat" className="w-3 h-3 opacity-60 group-hover:opacity-100 text-slate-400 group-hover:text-sky-400 transition-all duration-200 flex-shrink-0" />
                     </button>
                 );
-            case 'triggeredAt':
-                return inc.triggeredAt;
+            case 'occurredAt':
+                return inc.occurredAt;
             default:
-                return null;
+                return <span className="text-slate-500">--</span>;
         }
     };
 
@@ -386,7 +386,7 @@ const IncidentListPage: React.FC = () => {
                 onImportSuccess={fetchIncidents}
                 itemName="事件"
                 importEndpoint="/incidents/import"
-                templateHeaders={['id', 'summary', 'resource', 'status', 'severity', 'impact', 'assignee', 'triggeredAt']}
+                templateHeaders={['id', 'summary', 'resource', 'status', 'severity', 'impact', 'assignee', 'occurredAt']}
                 templateFilename="incidents-template.csv"
             />
         </div>

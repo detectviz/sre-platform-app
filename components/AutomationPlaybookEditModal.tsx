@@ -169,7 +169,12 @@ const AutomationPlaybookEditModal: React.FC<AutomationPlaybookEditModalProps> = 
     };
 
     if (!content || !globalContent) {
-        return null;
+        return (
+            <div className="p-6 text-center text-slate-400">
+                <Icon name="loader-circle" className="w-6 h-6 mx-auto mb-2 animate-spin" />
+                <p>正在載入自動化編輯介面...</p>
+            </div>
+        );
     }
 
     return (

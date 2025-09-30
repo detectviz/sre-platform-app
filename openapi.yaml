@@ -25,8 +25,12 @@ info:
 
     本文件定義 SRE 平台前後端之間的資料契約，作為後端開發的唯一真實來源 (SSOT)。
 servers:
-  - url: http://localhost:4000/api/v1
-    description: 本地 Mock 伺服器
+  - url: "{baseUrl}"
+    description: 可設定的 API 基底路徑
+    variables:
+      baseUrl:
+        default: "http://localhost:4000/api/v1"
+        description: 本地 Mock 伺服器
 tags:
   - name: 認證與個人設定
     description: 登入、個人資訊與偏好設定。
@@ -525,7 +529,7 @@ components:
     Incident:
       type: object
       description: 平台中的事件資料結構，已改為僅保留狀態、嚴重性與影響三層標籤。
-      required: [id, summary, resource, resourceId, impact, rule, ruleId, status, severity, triggeredAt, history]
+      required: [id, summary, resource, resourceId, impact, rule, ruleId, status, severity, occurredAt, history]
       properties:
         id:
           type: string
@@ -552,19 +556,19 @@ components:
         status:
           type: string
           description: 事件目前狀態。
-          enum: [new, acknowledged, resolved, silenced]
+          enum: [New, Acknowledged, Resolved, Silenced]
         severity:
           type: string
           description: 事件的嚴重性分類。
-          enum: [critical, warning, info]
+          enum: [Critical, Warning, Info]
         assignee:
           type: string
           nullable: true
           description: 目前負責處理事件的人員名稱。
-        triggeredAt:
+        occurredAt:
           type: string
           format: date-time
-          description: 事件觸發時間 (格式：YYYY-MM-DD HH:mm:ss)。
+          description: 事件發生時間 (格式：YYYY-MM-DD HH:mm:ss)。
         history:
           type: array
           description: 事件時間軸紀錄。
@@ -755,7 +759,7 @@ components:
           description: 觸發事件的告警規則 ID。
         severity:
           type: string
-          enum: [critical, warning, info]
+          enum: [Critical, Warning, Info]
           description: 事件嚴重性。
         impact:
           type: string
@@ -765,6 +769,133 @@ components:
           type: string
           nullable: true
           description: 指定的事件處理人員。
+    KeyValueTag:
+      type: object
+      description: 以鍵值對呈現的標籤資料。
+      required: [key, value]
+      properties:
+        key:
+          type: string
+          description: 標籤鍵名稱。
+        value:
+          type: string
+          description: 標籤對應的值內容。
+    DiscoveryJobExporterBinding:
+      type: object
+      description: 定義探索任務匯出的 Exporter 綁定設定。
+      required: [templateId]
+      properties:
+        templateId:
+          type: string
+          description: Exporter 範本識別碼，例如 `node_exporter` 或 `snmp_exporter`。
+        overridesYaml:
+          type: string
+          nullable: true
+          description: 針對範本的覆寫 YAML 內容，允許在匯出前客製化參數。
+        mibProfileId:
+          type: string
+          nullable: true
+          description: 若為 SNMP 類型，可選擇對應的 MIB Profile。
+    DiscoveryJobEdgeGateway:
+      type: object
+      description: 邊緣閘道設定，適用於需要透過 Edge Gateway 執行探索的情境。
+      required: [enabled]
+      properties:
+        enabled:
+          type: boolean
+          description: 是否啟用邊緣閘道。
+        gatewayId:
+          type: string
+          nullable: true
+          description: 指定要透過的閘道裝置 ID。
+    DiscoveryJob:
+      type: object
+      description: 自動探索任務的完整設定描述。
+      required: [id, name, kind, schedule, status, targetConfig, tags]
+      properties:
+        id:
+          type: string
+          description: 任務唯一識別碼。
+        name:
+          type: string
+          description: 任務名稱。
+        kind:
+          type: string
+          description: 探索類型，例如 `K8s`、`VM`、`SNMP`。
+        schedule:
+          type: string
+          description: Cron 表達式或排程描述。
+        lastRun:
+          type: string
+          nullable: true
+          description: 最近一次執行時間。
+        status:
+          type: string
+          description: 任務狀態，例如 `active`、`paused`。
+        targetConfig:
+          type: object
+          description: 與探索目標相關的動態設定 (依任務類型而異)。
+        exporterBinding:
+          allOf:
+            - $ref: '#/components/schemas/DiscoveryJobExporterBinding'
+          nullable: true
+          description: 與探索任務綁定的 Exporter 範本與覆寫設定。
+        edgeGateway:
+          allOf:
+            - $ref: '#/components/schemas/DiscoveryJobEdgeGateway'
+          nullable: true
+          description: 若任務需透過 Edge Gateway 執行時的相關設定。
+        tags:
+          type: array
+          description: 任務套用的標籤清單。
+          items:
+            $ref: '#/components/schemas/KeyValueTag'
+        deleted_at:
+          type: string
+          nullable: true
+          description: 若任務已刪除，紀錄刪除時間。
+    NotificationStrategy:
+      type: object
+      description: 通知策略的清單回應格式，支援多重嚴重度與影響層級。
+      required: [id, name, enabled, triggerCondition, channelCount, severityLevels, impactLevels, creator, lastUpdated]
+      properties:
+        id:
+          type: string
+          description: 策略唯一識別碼。
+        name:
+          type: string
+          description: 策略名稱。
+        enabled:
+          type: boolean
+          description: 是否啟用此策略。
+        triggerCondition:
+          type: string
+          description: 觸發此策略的條件描述。
+        channelCount:
+          type: integer
+          description: 策略下所綁定的通知管道數量。
+        severityLevels:
+          type: array
+          description: 會觸發通知的事件嚴重性清單。
+          items:
+            type: string
+            enum: [Critical, Warning, Info]
+        impactLevels:
+          type: array
+          description: 會觸發通知的事件影響層級清單。
+          items:
+            type: string
+            enum: [High, Medium, Low]
+        creator:
+          type: string
+          description: 建立此策略的使用者名稱。
+        lastUpdated:
+          type: string
+          description: 最近更新時間。
+        deleted_at:
+          type: string
+          nullable: true
+          description: 若策略已刪除，紀錄刪除時間。
     MetricMetadata:
       type: object
       properties:

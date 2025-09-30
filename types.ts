@@ -108,18 +108,22 @@ export interface RuleAnalysisReport {
   recommendations: RuleAnalysisRecommendation[];
 }
 
+export type IncidentStatus = 'New' | 'Acknowledged' | 'Resolved' | 'Silenced';
+export type IncidentSeverity = 'Critical' | 'Warning' | 'Info';
+export type IncidentImpact = 'High' | 'Medium' | 'Low';
+
 export interface Incident {
   id: string;
   summary: string;
   resource: string;
   resourceId: string;
-  impact: 'High' | 'Medium' | 'Low';
+  status: IncidentStatus;
+  severity: IncidentSeverity;
+  impact: IncidentImpact;
   rule: string;
   ruleId: string;
-  status: 'new' | 'acknowledged' | 'resolved' | 'silenced';
-  severity: 'critical' | 'warning' | 'info';
   assignee?: string;
-  triggeredAt: string;
+  occurredAt: string;
   history: IncidentEvent[];
   aiAnalysis?: IncidentAnalysis;
 }
@@ -128,8 +132,8 @@ export interface IncidentCreateRequest {
   summary: string;
   resourceId: string;
   ruleId: string;
-  severity: Incident['severity'];
-  impact: Incident['impact'];
+  severity: IncidentSeverity;
+  impact: IncidentImpact;
   assignee?: string;
 }
 
@@ -439,7 +443,8 @@ export interface NotificationStrategy {
   enabled: boolean;
   triggerCondition: string;
   channelCount: number;
-  priority: 'High' | 'Medium' | 'Low';
+  severityLevels: IncidentSeverity[];
+  impactLevels: IncidentImpact[];
   creator: string;
   lastUpdated: string;
   deleted_at?: string;
@@ -829,7 +834,8 @@ export interface NotificationChannelOptions {
 }
 
 export interface NotificationStrategyOptions {
-    priorities: ('High' | 'Medium' | 'Low')[];
+    severityLevels: IncidentSeverity[];
+    impactLevels: IncidentImpact[];
     defaultCondition: string;
     conditionKeys: Record<string, string[]>;
     tagKeys: string[];
@@ -889,27 +895,33 @@ export interface Datasource {
     deleted_at?: string;
 }
 
-export type DiscoveryJobType = 'K8s' | 'SNMP' | 'Cloud Provider' | 'Static Range' | 'Custom Script';
+export type DiscoveryJobKind = 'K8s' | 'SNMP' | 'Cloud Provider' | 'Static Range' | 'Custom Script';
 export type DiscoveryJobStatus = 'success' | 'partial_failure' | 'failed' | 'running';
 
-export type ExporterType = 'none' | 'node_exporter' | 'snmp_exporter' | 'modbus_exporter' | 'ipmi_exporter';
+export type ExporterTemplateId = 'none' | 'node_exporter' | 'snmp_exporter' | 'modbus_exporter' | 'ipmi_exporter';
 
-export interface ExporterConfig {
-    type: ExporterType;
-    mibProfile?: string; // for snmp
-    customConfigYaml?: string; // for others that need yaml
+export interface DiscoveryJobExporterBinding {
+    templateId: ExporterTemplateId;
+    overridesYaml?: string;
+    mibProfileId?: string;
+}
+
+export interface DiscoveryJobEdgeGateway {
+    enabled: boolean;
+    gatewayId?: string;
 }
 
 export interface DiscoveryJob {
     id: string;
     name: string;
-    type: DiscoveryJobType;
+    kind: DiscoveryJobKind;
     schedule: string;
     lastRun: string;
     status: DiscoveryJobStatus;
-    config: Record<string, any>;
+    targetConfig: Record<string, any>;
+    exporterBinding?: DiscoveryJobExporterBinding | null;
+    edgeGateway?: DiscoveryJobEdgeGateway | null;
     tags: KeyValueTag[];
-    exporterConfig?: ExporterConfig;
     deleted_at?: string;
 }
 
@@ -920,7 +932,7 @@ export interface DatasourceFilters {
 
 export interface DiscoveryJobFilters {
     keyword?: string;
-    type?: DiscoveryJobType;
+    kind?: DiscoveryJobKind;
     status?: DiscoveryJobStatus;
 }
 
@@ -975,9 +987,33 @@ export interface DatasourceOptions {
     authMethods: AuthMethod[];
 }
 
+export interface ExporterTemplateOption {
+    id: ExporterTemplateId;
+    name: string;
+    description?: string;
+    supportsMibProfile?: boolean;
+    supportsOverrides?: boolean;
+}
+
+export interface MibProfileOption {
+    id: string;
+    name: string;
+    description?: string;
+    templateId: ExporterTemplateId;
+}
+
+export interface EdgeGatewayOption {
+    id: string;
+    name: string;
+    location?: string;
+    description?: string;
+}
+
 export interface AutoDiscoveryOptions {
-    jobTypes: DiscoveryJobType[];
-    exporterTypes: ExporterType[];
+    jobKinds: DiscoveryJobKind[];
+    exporterTemplates: ExporterTemplateOption[];
+    mibProfiles: MibProfileOption[];
+    edgeGateways: EdgeGatewayOption[];
 }
 
 export interface AllOptions {

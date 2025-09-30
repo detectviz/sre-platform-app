@@ -51,6 +51,10 @@ import {
     TableColumn
 } from '../types';
 import { TAG_SCOPE_OPTIONS, TAG_KIND_OPTIONS, TAG_PII_LEVELS, createTagDefinitions, getEnumValuesForTag } from '../tag-registry';
+const DEFAULT_API_BASE_URL = process.env.MOCK_API_BASE_URL ?? 'http://localhost:4000/api/v1';
+const DEFAULT_GRAFANA_BASE_URL = process.env.MOCK_GRAFANA_BASE_URL ?? 'http://localhost:3000';
+const DEFAULT_IDP_ADMIN_URL = process.env.MOCK_IDP_ADMIN_URL ?? 'http://localhost:8080/admin/master/console/';
+
 
 // Helper to generate UUIDs
 export function uuidv4() {
@@ -764,7 +768,7 @@ const MOCK_EXPORTER_TYPES = [
 
 const MOCK_SYSTEM_CONFIG = {
     defaultDashboard: 'sre-war-room',
-    apiBaseUrl: 'http://localhost:4000/api/v1',
+    apiBaseUrl: DEFAULT_API_BASE_URL,
     theme: 'dark',
     autoRefreshInterval: 30000,
     maxLoginAttempts: 5,
@@ -834,7 +838,7 @@ const MOCK_ALL_COLUMNS: Record<string, TableColumn[]> = {
         { key: 'impact', label: '影響範圍' },
         { key: 'resource', label: '資源' },
         { key: 'assignee', label: '處理人' },
-        { key: 'triggeredAt', label: '觸發時間' },
+        { key: 'occurredAt', label: '發生時間' },
     ],
     resources: [
         { key: 'status', label: '狀態' },
@@ -924,7 +928,8 @@ const MOCK_ALL_COLUMNS: Record<string, TableColumn[]> = {
         { key: 'name', label: '策略名稱' },
         { key: 'triggerCondition', label: '觸發條件' },
         { key: 'channelCount', label: '管道數' },
-        { key: 'priority', label: '優先級' },
+        { key: 'severityLevels', label: '嚴重度範圍' },
+        { key: 'impactLevels', label: '影響層級' },
         { key: 'creator', label: '創建者' },
         { key: 'lastUpdated', label: '最後更新' },
     ],
@@ -1046,8 +1051,8 @@ const MOCK_DASHBOARDS: Dashboard[] = [
         updatedAt: '2025/09/27 10:00',
         path: '/dashboard/resource-overview'
     },
-    { id: 'api-service-status', name: 'API 服務狀態', type: 'grafana', category: '業務與 SLA', description: 'API 響應時間、錯誤率、吞吐量等服務指標。', owner: 'SRE 平台團隊', updatedAt: '2025/09/18 16:45', path: '/dashboard/api-service-status', grafanaUrl: 'http://localhost:3000/d/aead3d54-423b-4a91-b91c-dbdf40d7fff5', grafana_dashboard_uid: 'aead3d54-423b-4a91-b91c-dbdf40d7fff5', grafana_folder_uid: 'biz-folder' },
-    { id: 'user-experience-monitoring', name: '用戶體驗監控', type: 'grafana', category: '營運與容量', description: '頁面載入時間、用戶行為分析、錯誤追蹤。', owner: '前端團隊', updatedAt: '2025/09/18 17:00', path: '/dashboard/user-experience-monitoring', grafanaUrl: 'http://localhost:3000/d/another-dashboard-id-for-ux', grafana_dashboard_uid: 'another-dashboard-id-for-ux', grafana_folder_uid: 'ux-folder' },
+    { id: 'api-service-status', name: 'API 服務狀態', type: 'grafana', category: '業務與 SLA', description: 'API 響應時間、錯誤率、吞吐量等服務指標。', owner: 'SRE 平台團隊', updatedAt: '2025/09/18 16:45', path: '/dashboard/api-service-status', grafanaUrl: `${DEFAULT_GRAFANA_BASE_URL}/d/aead3d54-423b-4a91-b91c-dbdf40d7fff5`, grafana_dashboard_uid: 'aead3d54-423b-4a91-b91c-dbdf40d7fff5', grafana_folder_uid: 'biz-folder' },
+    { id: 'user-experience-monitoring', name: '用戶體驗監控', type: 'grafana', category: '營運與容量', description: '頁面載入時間、用戶行為分析、錯誤追蹤。', owner: '前端團隊', updatedAt: '2025/09/18 17:00', path: '/dashboard/user-experience-monitoring', grafanaUrl: `${DEFAULT_GRAFANA_BASE_URL}/d/another-dashboard-id-for-ux`, grafana_dashboard_uid: 'another-dashboard-id-for-ux', grafana_folder_uid: 'ux-folder' },
     {
         id: 'custom-built-in-1',
         name: 'My Custom Dashboard',
@@ -1066,17 +1071,17 @@ const MOCK_DASHBOARDS: Dashboard[] = [
     },
 ];
 const MOCK_AVAILABLE_GRAFANA_DASHBOARDS = [
-    { uid: 'grafana-uid-1', title: 'Service Health', url: 'http://localhost:3000/d/grafana-uid-1', folderTitle: 'Production', folderUid: 'prod-folder' },
-    { uid: 'grafana-uid-2', title: 'Kubernetes Cluster', url: 'http://localhost:3000/d/grafana-uid-2', folderTitle: 'Infrastructure', folderUid: 'infra-folder' },
+    { uid: 'grafana-uid-1', title: 'Service Health', url: `${DEFAULT_GRAFANA_BASE_URL}/d/grafana-uid-1`, folderTitle: 'Production', folderUid: 'prod-folder' },
+    { uid: 'grafana-uid-2', title: 'Kubernetes Cluster', url: `${DEFAULT_GRAFANA_BASE_URL}/d/grafana-uid-2`, folderTitle: 'Infrastructure', folderUid: 'infra-folder' },
 ];
 const MOCK_DASHBOARD_TEMPLATES: DashboardTemplate[] = [
     { id: 'tpl-001', name: '微服務健康度', description: '監控單一微服務，包括延遲、流量、錯誤率與資源飽和度。適用於 API 服務、後端服務監控。', icon: 'server', category: '應用程式' },
     { id: 'tpl-002', name: '業務 KPI 總覽', description: '追蹤關鍵業務指標，如用戶註冊數、營收、轉換率等。適用於產品經理、業務團隊使用。', icon: 'briefcase', category: '業務' },
 ];
 const MOCK_INCIDENTS: Incident[] = [
-    { id: 'INC-001', summary: 'API 延遲超過閾值', resource: 'api-server-01', resourceId: 'res-001', impact: 'High', rule: 'API 延遲規則', ruleId: 'rule-002', status: 'new', severity: 'warning', assignee: '張三', triggeredAt: '2024-01-15 10:30:00', history: [{ timestamp: '2024-01-15 10:30:00', user: 'System', action: 'Created', details: 'Incident created from rule "API 延遲規則".' }] },
-    { id: 'INC-002', summary: '資料庫連接超時', resource: 'db-primary', resourceId: 'res-002', impact: 'High', rule: '資料庫連接規則', ruleId: 'rule-db-conn', status: 'acknowledged', severity: 'critical', assignee: '李四', triggeredAt: '2024-01-15 10:15:00', history: [{ timestamp: '2024-01-15 10:15:00', user: 'System', action: 'Created', details: 'Incident created from rule "資料庫連接規則".' }] },
-    { id: 'INC-003', summary: 'CPU 使用率異常', resource: 'web-prod-12', resourceId: 'res-004', impact: 'Medium', rule: 'CPU 使用率規則', ruleId: 'rule-cpu', status: 'resolved', severity: 'warning', assignee: '王五', triggeredAt: '2024-01-15 09:45:00', history: [{ timestamp: '2024-01-15 09:45:00', user: 'System', action: 'Created', details: 'Incident created from rule "CPU 使用率規則".' }] },
+    { id: 'INC-001', summary: 'API 延遲超過閾值', resource: 'api-server-01', resourceId: 'res-001', impact: 'High', rule: 'API 延遲規則', ruleId: 'rule-002', status: 'New', severity: 'Warning', assignee: '張三', occurredAt: '2024-01-15 10:30:00', history: [{ timestamp: '2024-01-15 10:30:00', user: 'System', action: 'Created', details: 'Incident created from rule "API 延遲規則".' }] },
+    { id: 'INC-002', summary: '資料庫連接超時', resource: 'db-primary', resourceId: 'res-002', impact: 'High', rule: '資料庫連接規則', ruleId: 'rule-db-conn', status: 'Acknowledged', severity: 'Critical', assignee: '李四', occurredAt: '2024-01-15 10:15:00', history: [{ timestamp: '2024-01-15 10:15:00', user: 'System', action: 'Created', details: 'Incident created from rule "資料庫連接規則".' }] },
+    { id: 'INC-003', summary: 'CPU 使用率異常', resource: 'web-prod-12', resourceId: 'res-004', impact: 'Medium', rule: 'CPU 使用率規則', ruleId: 'rule-cpu', status: 'Resolved', severity: 'Warning', assignee: '王五', occurredAt: '2024-01-15 09:45:00', history: [{ timestamp: '2024-01-15 09:45:00', user: 'System', action: 'Created', details: 'Incident created from rule "CPU 使用率規則".' }] },
 ];
 const MOCK_QUICK_SILENCE_DURATIONS = [1, 2, 4, 8, 12, 24]; // hours
 const MOCK_ALERT_RULE_DEFAULT: Partial<AlertRule> = {
@@ -1335,14 +1340,26 @@ const MOCK_NOTIFICATIONS: NotificationItem[] = [
     { id: 'notif-1', title: 'Critical: DB CPU > 95%', description: 'The production database is under heavy load.', severity: 'critical', status: 'unread', createdAt: new Date(Date.now() - 60000 * 5).toISOString(), linkUrl: '/incidents/INC-002' },
 ];
 const MOCK_NOTIFICATION_STRATEGIES: NotificationStrategy[] = [
-    { id: 'strat-1', name: 'Critical Database Alerts', enabled: true, triggerCondition: 'severity = critical AND resource_type = RDS', channelCount: 2, priority: 'High', creator: 'Admin', lastUpdated: '2025-09-20 10:00:00' }
+    {
+        id: 'strat-1',
+        name: 'Critical Database Alerts',
+        enabled: true,
+        triggerCondition: 'severity = Critical AND service = api-gateway',
+        channelCount: 2,
+        severityLevels: ['Critical'],
+        impactLevels: ['High'],
+        creator: 'Admin',
+        lastUpdated: '2025-09-20 10:00:00'
+    }
 ];
 const MOCK_NOTIFICATION_STRATEGY_OPTIONS: NotificationStrategyOptions = {
-    priorities: ['High', 'Medium', 'Low'],
-    defaultCondition: 'severity = critical',
+    severityLevels: ['Critical', 'Warning', 'Info'],
+    impactLevels: ['High', 'Medium', 'Low'],
+    defaultCondition: 'severity = Critical',
     conditionKeys: {
-        severity: ['critical', 'warning', 'info'],
-        resource_type: ['API Gateway', 'RDS Database', 'EKS Cluster'],
+        severity: ['Critical', 'Warning', 'Info'],
+        impact: ['High', 'Medium', 'Low'],
+        service: ['api-gateway', 'payment-service']
     },
     tagKeys: ['env', 'service'],
     tagValues: {
@@ -1398,7 +1415,7 @@ const MOCK_LOG_TIME_OPTIONS: { label: string, value: string }[] = [
     { label: '最近 1 天', value: '1d' },
 ];
 const MOCK_MAIL_SETTINGS: MailSettings = { smtpServer: 'smtp.example.com', port: 587, username: 'noreply@sre.platform', senderName: 'SRE Platform', senderEmail: 'noreply@sre.platform', encryption: 'tls' };
-const MOCK_GRAFANA_SETTINGS: GrafanaSettings = { enabled: true, url: 'http://localhost:3000', apiKey: 'glsa_xxxxxxxxxxxxxxxxxxxxxxxx', orgId: 1 };
+const MOCK_GRAFANA_SETTINGS: GrafanaSettings = { enabled: true, url: DEFAULT_GRAFANA_BASE_URL, apiKey: 'glsa_xxxxxxxxxxxxxxxxxxxxxxxx', orgId: 1 };
 const MOCK_GRAFANA_OPTIONS: GrafanaOptions = {
     timeOptions: [{ label: 'Last 6 hours', value: 'from=now-6h&to=now' }, { label: 'Last 24 hours', value: 'from=now-24h&to=now' }],
     refreshOptions: [{ label: '1m', value: '1m' }, { label: '5m', value: '5m' }],
@@ -1409,7 +1426,7 @@ const MOCK_GRAFANA_OPTIONS: GrafanaOptions = {
     refreshLabel: '刷新',
     timeLabel: '時間',
 };
-const MOCK_AUTH_SETTINGS: AuthSettings = { provider: 'Keycloak', enabled: true, clientId: 'sre-platform-client', clientSecret: '...', realm: 'sre', authUrl: '...', tokenUrl: '...', userInfoUrl: '...', idpAdminUrl: 'http://localhost:8080/admin/master/console/' };
+const MOCK_AUTH_SETTINGS: AuthSettings = { provider: 'Keycloak', enabled: true, clientId: 'sre-platform-client', clientSecret: '...', realm: 'sre', authUrl: '...', tokenUrl: '...', userInfoUrl: '...', idpAdminUrl: DEFAULT_IDP_ADMIN_URL };
 const LAYOUT_WIDGETS: LayoutWidget[] = [
     // Incident Management
     { id: 'incident_pending_count', name: '待處理事件', description: '顯示目前狀態為「新」的事件總數。', supportedPages: ['事件'] },
@@ -1838,16 +1855,16 @@ const MOCK_TAB_CONFIGS: TabConfigMap = {
 };
 
 const INCIDENT_STATUS_STYLES: Record<string, { label: string; className: string }> = {
-    new: { label: '新事件', className: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border border-amber-400/30 shadow-sm' },
-    acknowledged: { label: '已認領', className: 'bg-gradient-to-r from-sky-500 to-blue-500 text-white border border-sky-400/30 shadow-sm' },
-    resolved: { label: '已解決', className: 'bg-gradient-to-r from-emerald-500 to-green-500 text-white border border-emerald-400/30 shadow-sm' },
-    silenced: { label: '已靜音', className: 'bg-gradient-to-r from-slate-600 to-slate-500 text-slate-200 border border-slate-500/30 shadow-sm' },
+    New: { label: '新事件', className: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border border-amber-400/30 shadow-sm' },
+    Acknowledged: { label: '已認領', className: 'bg-gradient-to-r from-sky-500 to-blue-500 text-white border border-sky-400/30 shadow-sm' },
+    Resolved: { label: '已解決', className: 'bg-gradient-to-r from-emerald-500 to-green-500 text-white border border-emerald-400/30 shadow-sm' },
+    Silenced: { label: '已靜音', className: 'bg-gradient-to-r from-slate-600 to-slate-500 text-slate-200 border border-slate-500/30 shadow-sm' },
 };
 
 const INCIDENT_SEVERITY_STYLES: Record<string, { label: string; className: string }> = {
-    critical: { label: '嚴重', className: 'bg-red-950/40 border border-red-500/40 text-red-300 backdrop-blur-sm shadow-sm' },
-    warning: { label: '警告', className: 'bg-amber-950/40 border border-amber-500/40 text-amber-300 backdrop-blur-sm shadow-sm' },
-    info: { label: '資訊', className: 'bg-sky-950/40 border border-sky-500/40 text-sky-300 backdrop-blur-sm shadow-sm' },
+    Critical: { label: '嚴重', className: 'bg-red-950/40 border border-red-500/40 text-red-300 backdrop-blur-sm shadow-sm' },
+    Warning: { label: '警告', className: 'bg-amber-950/40 border border-amber-500/40 text-amber-300 backdrop-blur-sm shadow-sm' },
+    Info: { label: '資訊', className: 'bg-sky-950/40 border border-sky-500/40 text-sky-300 backdrop-blur-sm shadow-sm' },
 };
 
 const INCIDENT_IMPACT_STYLES: Record<string, { label: string; className: string }> = {
@@ -2036,8 +2053,23 @@ const MOCK_DATASOURCE_OPTIONS: DatasourceOptions = {
 };
 
 const MOCK_AUTO_DISCOVERY_OPTIONS: AutoDiscoveryOptions = {
-    jobTypes: ['K8s', 'SNMP', 'Cloud Provider', 'Static Range', 'Custom Script'],
-    exporterTypes: ['none', 'node_exporter', 'snmp_exporter', 'modbus_exporter', 'ipmi_exporter'],
+    jobKinds: ['K8s', 'SNMP', 'Cloud Provider', 'Static Range', 'Custom Script'],
+    exporterTemplates: [
+        { id: 'none', name: '不部署 Exporter', description: '僅建立資源資料，不自動綁定監控代理。' },
+        { id: 'node_exporter', name: 'Node Exporter', description: '適用於 Linux/Windows 主機的系統監控。', supportsOverrides: true },
+        { id: 'snmp_exporter', name: 'SNMP Exporter', description: '適用於網路設備與 OT 設備，支援 MIB Profile。', supportsMibProfile: true },
+        { id: 'modbus_exporter', name: 'Modbus Exporter', description: '用於 PLC 或工業設備，支援 YAML 覆寫。', supportsOverrides: true },
+        { id: 'ipmi_exporter', name: 'IPMI Exporter', description: '收集裸機 BMC 感測資料。', supportsOverrides: true },
+    ],
+    mibProfiles: [
+        { id: 'snmp-default', name: '通用 SNMP Profile', description: '涵蓋 CPU/記憶體/網路等基礎 OID。', templateId: 'snmp_exporter' },
+        { id: 'snmp-cisco', name: 'Cisco 網路設備', description: '針對 Cisco 路由/交換器的延伸指標。', templateId: 'snmp_exporter' },
+        { id: 'modbus-energy', name: '能源表計', description: '量測溫度、電流、電壓等欄位。', templateId: 'modbus_exporter' },
+    ],
+    edgeGateways: [
+        { id: 'edge-gw-1', name: 'IDC Edge Gateway', location: '台北 IDC', description: '連線至資料中心網段，提供 SNMP/Modbus 掃描。' },
+        { id: 'edge-gw-2', name: 'Factory OT Gateway', location: '台中廠房', description: '工廠產線專用，支援隔離網段的 OT 探測。' },
+    ],
 };
 
 const MOCK_ALL_OPTIONS: AllOptions = {
@@ -2100,31 +2132,37 @@ const MOCK_DISCOVERY_JOBS: DiscoveryJob[] = [
     {
         id: 'dj-001',
         name: 'K8s Cluster A',
-        type: 'K8s',
+        kind: 'K8s',
         schedule: '0 9 * * *', // 每天 09:00
         lastRun: '2025-09-23 09:00:15',
         status: 'success',
-        config: { kubeconfig: '...' },
+        targetConfig: { kubeconfig: '...' },
+        exporterBinding: { templateId: 'node_exporter' },
+        edgeGateway: { enabled: false },
         tags: [{ id: 'tag-4', key: 'cluster', value: 'A' }]
     },
     {
         id: 'dj-002',
         name: 'IDC-SNMP-Scan',
-        type: 'SNMP',
+        kind: 'SNMP',
         schedule: '30 * * * *', // 每小時 30 分
         lastRun: '2025-09-23 10:30:05',
         status: 'partial_failure',
-        config: { community: 'public', ipRange: '10.1.1.1/24' },
+        targetConfig: { community: 'public', ipRange: '10.1.1.1/24' },
+        exporterBinding: { templateId: 'snmp_exporter', mibProfileId: 'snmp-default' },
+        edgeGateway: { enabled: true, gatewayId: 'edge-gw-1' },
         tags: [{ id: 'tag-5', key: 'datacenter', value: 'IDC-1' }]
     },
     {
         id: 'dj-003',
         name: 'Cloud Provider Sync',
-        type: 'Cloud Provider',
+        kind: 'Cloud Provider',
         schedule: '0 0 * * *', // 每天
         lastRun: '2025-09-23 00:00:10',
         status: 'running',
-        config: {},
+        targetConfig: { apiKey: '***masked***' },
+        exporterBinding: { templateId: 'node_exporter' },
+        edgeGateway: { enabled: false },
         tags: []
     }
 ];
@@ -2195,7 +2233,7 @@ function createInitialDB() {
         allColumns: JSON.parse(JSON.stringify(MOCK_ALL_COLUMNS)),
         columnConfigs: {
             dashboards: ['name', 'type', 'category', 'owner', 'updatedAt'],
-            incidents: ['summary', 'status', 'severity', 'impact', 'resource', 'assignee', 'triggeredAt'],
+            incidents: ['summary', 'status', 'severity', 'impact', 'resource', 'assignee', 'occurredAt'],
             resources: ['status', 'name', 'type', 'provider', 'region', 'owner', 'lastCheckIn'],
             personnel: ['name', 'role', 'team', 'status', 'lastLogin'],
             alert_rules: ['enabled', 'name', 'target', 'conditionsSummary', 'severity', 'automationEnabled', 'creator', 'lastUpdated'],
@@ -2208,7 +2246,7 @@ function createInitialDB() {
             roles: ['enabled', 'name', 'userCount', 'createdAt'],
             audit_logs: ['timestamp', 'user', 'action', 'target', 'result', 'ip'],
             tag_management: ['key', 'scopes', 'kind', 'piiLevel', 'required', 'uniqueWithinScope', 'writableRoles', 'system', 'usageCount', 'allowedValues'],
-            notification_strategies: ['enabled', 'name', 'triggerCondition', 'channelCount', 'priority', 'creator', 'lastUpdated'],
+            notification_strategies: ['enabled', 'name', 'triggerCondition', 'channelCount', 'severityLevels', 'impactLevels', 'creator', 'lastUpdated'],
             notification_channels: ['enabled', 'name', 'type', 'lastTestResult', 'lastTestedAt'],
             notification_history: ['timestamp', 'strategy', 'channel', 'recipient', 'status', 'content'],
         },

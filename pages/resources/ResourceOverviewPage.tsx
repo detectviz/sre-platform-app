@@ -86,7 +86,17 @@ const ResourceOverviewPage: React.FC = () => {
         );
     }
     
-    if (!overviewData) return null;
+    if (!overviewData) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-2">
+                <Icon name="database" className="w-10 h-10" />
+                <p className="font-medium">目前沒有可用的資源總覽資料。</p>
+                <button onClick={fetchData} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md">
+                    重新整理
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">

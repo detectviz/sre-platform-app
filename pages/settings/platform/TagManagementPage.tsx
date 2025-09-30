@@ -239,7 +239,7 @@ const TagManagementPage: React.FC = () => {
                     </div>
                 );
             default:
-                return null;
+                return <span className="text-slate-500">--</span>;
         }
     };
 
