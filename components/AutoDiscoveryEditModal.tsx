@@ -3,9 +3,10 @@ import Modal from './Modal';
 import FormRow from './FormRow';
 import Icon from './Icon';
 import KeyValueInput from './KeyValueInput';
-import { DiscoveryJob, DiscoveryJobKind, DiscoveryJobExporterBinding } from '../types';
+import { DiscoveryJob, DiscoveryJobKind, DiscoveryJobExporterBinding, DiscoveryTestResponse } from '../types';
 import { showToast } from '../services/toast';
 import { useOptions } from '../contexts/OptionsContext';
+import api from '../services/api';
 
 interface AutoDiscoveryEditModalProps {
   isOpen: boolean;
@@ -150,17 +151,31 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
   };
 
   const handleTestScan = async () => {
-    setIsTesting(true);
-    showToast('正在測試掃描...', 'success');
-    await new Promise((res) => setTimeout(res, 2000));
-    const success = Math.random() > 0.2;
-    if (success) {
-      const count = Math.floor(Math.random() * 20) + 1;
-      showToast(`測試掃描成功！發現 ${count} 個資源。`, 'success');
-    } else {
-      showToast('測試掃描失敗，請檢查目標配置。', 'error');
+    if (!formData.name || !formData.kind) {
+      showToast('請先填寫掃描名稱與類型後再進行測試。', 'error');
+      return;
     }
-    setIsTesting(false);
+
+    setIsTesting(true);
+    try {
+      const payload = {
+        jobId: formData.id,
+        name: formData.name,
+        kind: formData.kind,
+        targetConfig: formData.targetConfig || {},
+        exporterBinding: formData.exporterBinding,
+        edgeGateway: formData.edgeGateway,
+      };
+      const { data } = await api.post<DiscoveryTestResponse>('/resources/discovery-jobs/test', payload);
+      const warnings = data.warnings?.length ? ` 注意事項：${data.warnings.join('；')}` : '';
+      const countInfo = data.success ? ` 預估可發現 ${data.discoveredCount} 個資源。` : '';
+      showToast(`${data.message}${countInfo}${warnings}`, data.success ? 'success' : 'error');
+    } catch (err: any) {
+      const message = err?.response?.data?.message || '測試掃描失敗，請稍後再試。';
+      showToast(message, 'error');
+    } finally {
+      setIsTesting(false);
+    }
   };
 
   const renderConfigFields = () => {
