@@ -17,6 +17,28 @@ const sourceDbPath = path.join(__dirname, 'db.ts');
 
 const require = createRequire(import.meta.url);
 
+const REQUIRED_ENV_VARS = [
+  'MOCK_API_BASE_URL',
+  'MOCK_GRAFANA_BASE_URL',
+  'MOCK_IDP_ADMIN_URL'
+];
+
+const ensureRequiredEnv = () => {
+  const missing = REQUIRED_ENV_VARS.filter((key) => {
+    const value = process.env[key];
+    return !value || !value.trim();
+  });
+
+  if (missing.length > 0) {
+    console.error('\u274c  Missing required environment variables for the mock server:');
+    for (const key of missing) {
+      console.error(`   - ${key}`);
+    }
+    console.error('\nPlease define the variables above in your environment or .env file before starting the mock server.');
+    process.exit(1);
+  }
+};
+
 const ensureDistDir = () => {
   if (!fs.existsSync(distDir)) {
     fs.mkdirSync(distDir, { recursive: true });
@@ -80,6 +102,8 @@ if (needsBuild()) {
   console.log('\u2692\ufe0f  Building mock-server TypeScript sources...');
   buildSources();
 }
+
+ensureRequiredEnv();
 
 const handlerModuleUrl = pathToFileURL(compiledHandlerPath).href;
 const { handleRequest } = await import(handlerModuleUrl);

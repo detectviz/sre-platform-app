@@ -27,6 +27,24 @@
   npm install express cors body-parser
   ```
 
+### 必填環境變數
+
+Mock Server 依賴以下環境變數以產生連結與外部系統 URL，啟動時若缺失將直接中止並顯示提示：
+
+| 環境變數 | 說明 |
+| --- | --- |
+| `MOCK_API_BASE_URL` | 提供給 mock 資料中的 API 基礎 URL（例如 `http://127.0.0.1:4000/api/v1`）。 |
+| `MOCK_GRAFANA_BASE_URL` | 提供儀表板與探索頁面所需的 Grafana 入口網址。 |
+| `MOCK_IDP_ADMIN_URL` | 提供 IAM 頁面指向身分提供者管理主控台的網址。 |
+
+可透過 shell 匯出或在 `.env` 檔案中設定：
+
+```bash
+export MOCK_API_BASE_URL="http://127.0.0.1:4000/api/v1"
+export MOCK_GRAFANA_BASE_URL="https://grafana.internal.example"
+export MOCK_IDP_ADMIN_URL="https://idp.internal.example/admin/master/console/"
+```
+
 ### 啟動伺服器
 
 1.  開啟您的終端機。
@@ -37,14 +55,14 @@
     node mock-server/server.js
     ```
 
-4.  如果成功，您將在終端機中看到以下訊息：
+4.  如果成功，您將在終端機中看到以下訊息（實際主機與埠號取決於您的環境變數設定）：
     ```
-    SRE Platform Mock Server is running on http://localhost:4000
+    SRE Platform Mock Server is running on http://127.0.0.1:4000
     ```
 
 ### API 端點
 
-- **基礎 URL**: `http://localhost:4000/api/v1`
+- **基礎 URL**: 由 `MOCK_API_BASE_URL` 決定（例如 `http://127.0.0.1:4000/api/v1`）。
 - 所有可用的端點請參考 `openapi.yaml` 檔案。
 
 ##  Fired Endpoints (v2.0)
