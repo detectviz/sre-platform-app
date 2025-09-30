@@ -151,14 +151,9 @@ const AutomationHistoryPage: React.FC = () => {
         return executionOptions.statuses.find(s => s.value === status)?.label || status;
     };
 
-    const getTriggerSourceLabel = (source: string): string => {
-        const sourceMap: Record<string, string> = {
-            'event': '事件觸發',
-            'manual': '手動執行',
-            'schedule': '排程觸發',
-            'webhook': 'Webhook'
-        };
-        return sourceMap[source] || source;
+    const getTriggerSourceLabel = (source: AutomationExecution['triggerSource']): string => {
+        if (!executionOptions?.triggerSources) return source;
+        return executionOptions.triggerSources.find(item => item.value === source)?.label || source;
     };
 
     const renderCellContent = (ex: AutomationExecution, columnKey: string) => {

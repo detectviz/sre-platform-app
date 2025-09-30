@@ -252,8 +252,7 @@ const IncidentListPage: React.FC = () => {
             case 'status':
                 return <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStyle(incidentOptions?.statuses, inc.status)}`}>{getLabel(incidentOptions?.statuses, inc.status)}</span>;
             case 'severity':
-                const severityMap: Record<string, string> = { Critical: '嚴重', Warning: '警告', Info: '資訊' };
-                return <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(incidentOptions?.severities, inc.severity)}`}>{severityMap[inc.severity] || getLabel(incidentOptions?.severities, inc.severity)}</span>;
+                return <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(incidentOptions?.severities, inc.severity)}`}>{getLabel(incidentOptions?.severities, inc.severity)}</span>;
             case 'impact':
                 return <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(incidentOptions?.impacts, inc.impact)}`}>{getLabel(incidentOptions?.impacts, inc.impact)}</span>;
             case 'resource':
