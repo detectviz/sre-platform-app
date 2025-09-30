@@ -1,6 +1,6 @@
 
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import EChartsReact from '../../components/EChartsReact';
 import Icon from '../../components/Icon';
@@ -8,12 +8,13 @@ import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import { exportToCsv } from '../../services/export';
 import { AnalysisOverviewData, LogEntry, Anomaly, Suggestion } from '../../types';
 import api from '../../services/api';
+import { useChartTheme } from '../../contexts/ChartThemeContext';
 
 const AnalysisOverviewPage: React.FC = () => {
     const [overviewData, setOverviewData] = useState<AnalysisOverviewData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [chartTheme, setChartTheme] = useState<any>(null);
+    const { theme: chartTheme } = useChartTheme();
 
     const [logQuery, setLogQuery] = useState('');
     const navigate = useNavigate();
@@ -22,12 +23,8 @@ const AnalysisOverviewPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const [overviewResponse, chartThemeResponse] = await Promise.all([
-                api.get<AnalysisOverviewData>('/analysis/overview'),
-                api.get('/ui/themes/charts')
-            ]);
-            setOverviewData(overviewResponse.data);
-            setChartTheme(chartThemeResponse.data);
+            const { data } = await api.get<AnalysisOverviewData>('/analysis/overview');
+            setOverviewData(data);
         } catch (err) {
             setError('無法獲取分析總覽數據。');
         } finally {
@@ -49,34 +46,48 @@ const AnalysisOverviewPage: React.FC = () => {
         }
     };
     
-    const healthScoreGaugeOption = overviewData && chartTheme ? {
-        series: [{
-            type: 'gauge',
-            radius: '90%',
-            center: ['50%', '55%'],
-            axisLine: { lineStyle: { width: 18, color: [[0.5, chartTheme.healthGauge?.critical || '#dc2626'],[0.8, chartTheme.healthGauge?.warning || '#f97316'],[1, chartTheme.healthGauge?.healthy || '#10b981']]}},
-            pointer: { itemStyle: { color: 'auto' }, length: '60%', width: 6 },
-            axisTick: { distance: -18, length: 5, lineStyle: { color: '#FFF', width: 1 } },
-            splitLine: { distance: -18, length: 12, lineStyle: { color: '#FFF', width: 2 } },
-            axisLabel: { color: 'auto', distance: 25, fontSize: 12 },
-            detail: { valueAnimation: true, formatter: '{value}', color: 'auto', fontSize: 36, fontWeight: 'bold', offsetCenter: [0, '40%'] },
-            data: [{ value: overviewData.health_score.score }]
-        }]
-    } : {};
+    const healthScoreGaugeOption = useMemo(() => {
+        if (!overviewData) return {};
+        const { critical, warning, healthy } = chartTheme.healthGauge;
+        const tickColor = chartTheme.text.primary;
+        return {
+            series: [{
+                type: 'gauge',
+                radius: '90%',
+                center: ['50%', '55%'],
+                axisLine: {
+                    lineStyle: {
+                        width: 18,
+                        color: [
+                            [0.5, critical],
+                            [0.8, warning],
+                            [1, healthy],
+                        ],
+                    },
+                },
+                pointer: { itemStyle: { color: 'auto' }, length: '60%', width: 6 },
+                axisTick: { distance: -18, length: 5, lineStyle: { color: tickColor, width: 1 } },
+                splitLine: { distance: -18, length: 12, lineStyle: { color: tickColor, width: 2 } },
+                axisLabel: { color: 'auto', distance: 25, fontSize: 12 },
+                detail: { valueAnimation: true, formatter: '{value}', color: 'auto', fontSize: 36, fontWeight: 'bold', offsetCenter: [0, '40%'] },
+                data: [{ value: overviewData.health_score.score }]
+            }]
+        };
+    }, [overviewData, chartTheme]);
 
 
-    const eventCorrelationOption = {
+    const eventCorrelationOption = useMemo(() => ({
         tooltip: { trigger: 'item', formatter: '{a} <br/>{b}: {c}' },
-        legend: { data: overviewData?.event_correlation_data.categories.map(c => c.name) || [], textStyle: { color: '#fff' } },
+        legend: { data: overviewData?.event_correlation_data.categories.map(c => c.name) || [], textStyle: { color: chartTheme.text.primary } },
         series: [{
             name: 'Event Correlation', type: 'graph', layout: 'force',
             data: overviewData?.event_correlation_data.nodes || [],
             links: overviewData?.event_correlation_data.links || [],
             categories: overviewData?.event_correlation_data.categories || [],
             roam: true, label: { show: true }, force: { repulsion: 200 },
-            color: chartTheme?.eventCorrelation || ['#dc2626', '#f97316', '#10b981']
+            color: chartTheme.eventCorrelation
         }],
-    };
+    }), [chartTheme, overviewData]);
 
     const handleExport = () => {
         if (!overviewData) return;

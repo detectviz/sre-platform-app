@@ -1,7 +1,7 @@
 import React from 'react';
 import { AutomationExecution } from '../types';
 import Icon from './Icon';
-import { useContent } from '../contexts/ContentContext';
+import { useContent, useContentSection } from '../contexts/ContentContext';
 
 interface ExecutionLogDetailProps {
   execution: AutomationExecution;
@@ -15,8 +15,8 @@ const InfoItem: React.FC<{ label: string; children?: React.ReactNode }> = ({ lab
 );
 
 const ExecutionLogDetail: React.FC<ExecutionLogDetailProps> = ({ execution }) => {
-    const { content, isLoading } = useContent();
-    const pageContent = content?.EXECUTION_LOG_DETAIL;
+    const { isLoading } = useContent();
+    const pageContent = useContentSection('EXECUTION_LOG_DETAIL');
 
     const getStatusPill = (status: AutomationExecution['status']) => {
         switch (status) {

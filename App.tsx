@@ -48,12 +48,13 @@ import GrafanaSettingsPage from './pages/settings/platform/GrafanaSettingsPage';
 import { UserProvider } from './contexts/UserContext';
 import { OptionsProvider } from './contexts/OptionsContext';
 import { showToast } from './services/toast';
-import { ContentProvider, useContent } from './contexts/ContentContext';
+import { ContentProvider, useContent, useContentSection } from './contexts/ContentContext';
 import DatasourceManagementPage from './pages/resources/DatasourceManagementPage';
 import AutoDiscoveryPage from './pages/resources/AutoDiscoveryPage';
 import ResourceOverviewPage from './pages/resources/ResourceOverviewPage';
 import LicensePage from './pages/settings/platform/LicensePage';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { ChartThemeProvider } from './contexts/ChartThemeContext';
 
 // Lucide icons renderer
 const RenderIcons = () => {
@@ -99,12 +100,12 @@ const DashboardRedirector: React.FC = () => {
 
 const AppRoutes: React.FC = () => {
     const { tabConfigs, isLoading: isNavLoading, error: navError } = useUIConfig();
-    const { content, isLoading: isContentLoading, error: contentError } = useContent();
-    
+    const { isLoading: isContentLoading, error: contentError } = useContent();
+    const pageLayouts = useContentSection('PAGE_LAYOUTS');
+    const appContent = useContentSection('APP');
+
     const error = navError || contentError;
     const isLoading = isNavLoading || isContentLoading;
-    const pageLayouts = content?.PAGE_LAYOUTS;
-    const appContent = content?.APP;
 
     if (error) {
         return (
@@ -220,9 +221,11 @@ const App: React.FC = () => {
             <OptionsProvider>
                 <PageMetadataProvider>
                     <ContentProvider>
-                        <ThemeProvider>
-                            <AppRoutes />
-                        </ThemeProvider>
+                        <ChartThemeProvider>
+                            <ThemeProvider>
+                                <AppRoutes />
+                            </ThemeProvider>
+                        </ChartThemeProvider>
                     </ContentProvider>
                 </PageMetadataProvider>
             </OptionsProvider>

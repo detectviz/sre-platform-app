@@ -5,7 +5,7 @@ import { Outlet } from 'react-router-dom';
 import PageKPIs from '../components/PageKPIs';
 import Tabs from '../components/Tabs';
 import Icon from '../components/Icon';
-import { useContent } from '../contexts/ContentContext';
+import { useContentSection } from '../contexts/ContentContext';
 
 interface PageWithTabsLayoutProps {
   title: string;
@@ -16,8 +16,7 @@ interface PageWithTabsLayoutProps {
 }
 
 const PageWithTabsLayout: React.FC<PageWithTabsLayoutProps> = ({ title, description, kpiPageName, tabs, showRefresh = false }) => {
-  const { content } = useContent();
-  const pageContent = content?.PAGE_WITH_TABS;
+  const pageContent = useContentSection('PAGE_WITH_TABS');
 
   const handleRefresh = () => {
     // A simple page reload is a robust way to refresh data for a mock app.

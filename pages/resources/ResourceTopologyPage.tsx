@@ -6,6 +6,7 @@ import { Resource, TopologyOptions } from '../../types';
 import Icon from '../../components/Icon';
 import api from '../../services/api';
 import { useOptions } from '../../contexts/OptionsContext';
+import { useChartTheme } from '../../contexts/ChartThemeContext';
 
 interface TopologyData {
     nodes: Resource[];
@@ -23,6 +24,8 @@ const ResourceTopologyPage: React.FC = () => {
     const [layout, setLayout] = useState('force');
     const [filterType, setFilterType] = useState('all');
     const navigate = useNavigate();
+
+    const { theme: chartTheme } = useChartTheme();
 
     const [contextMenu, setContextMenu] = useState<{
         visible: boolean;
@@ -88,14 +91,14 @@ const ResourceTopologyPage: React.FC = () => {
             symbolSize: 40,
             category: res.type,
             itemStyle: {
-                color: statusColorMap[res.status] || '#64748b',
-                borderColor: '#f8fafc', // slate-50
+                color: statusColorMap[res.status] || chartTheme.topology.edge,
+                borderColor: chartTheme.topology.nodeBorder,
                 borderWidth: 2,
             },
             label: {
                 show: true,
                 position: 'bottom',
-                color: '#cbd5e1', // slate-300
+                color: chartTheme.topology.nodeLabel,
             },
             tooltip: {
                 formatter: `{b}<br/>Type: ${res.type}<br/>Status: ${res.status}<br/>Owner: ${res.owner}`
@@ -106,7 +109,7 @@ const ResourceTopologyPage: React.FC = () => {
             source: link.source,
             target: link.target,
             lineStyle: {
-                color: '#475569', // slate-600
+                color: chartTheme.topology.edge,
             }
         }));
 
@@ -116,7 +119,7 @@ const ResourceTopologyPage: React.FC = () => {
             tooltip: {},
             legend: [{
                 data: categories.map(a => a.name),
-                textStyle: { color: '#f8fafc' },
+                textStyle: { color: chartTheme.text.primary },
                 orient: 'vertical',
                 left: 'left',
                 top: 'center',
@@ -151,7 +154,7 @@ const ResourceTopologyPage: React.FC = () => {
                 }
             }]
         };
-    }, [topologyData, filterType, layout, statusColorMap]);
+    }, [topologyData, filterType, layout, statusColorMap, chartTheme]);
 
     const echartsEvents = {
         contextmenu: (params: any) => {

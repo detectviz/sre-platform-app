@@ -628,12 +628,17 @@ export interface ServiceHealthData {
   y_axis_labels: string[];
 }
 
+export type ResourceGroupStatusKey = 'healthy' | 'warning' | 'critical';
+
+export interface ResourceGroupStatusSeries {
+  key: ResourceGroupStatusKey;
+  label: string;
+  data: number[];
+}
+
 export interface ResourceGroupStatusData {
   group_names: string[];
-  series: {
-    name: '健康' | '警告' | '嚴重';
-    data: number[];
-  }[];
+  series: ResourceGroupStatusSeries[];
 }
 
 export interface Anomaly {
@@ -731,6 +736,66 @@ export interface ColorDescriptor<T extends string = string> {
   value: T;
   label: string;
   color: string;
+}
+
+export interface ChartTheme {
+  palette: string[];
+  text: {
+    primary: string;
+    secondary: string;
+  };
+  grid: {
+    axis: string;
+    splitLine: string;
+  };
+  background: {
+    card: string;
+    accent: string;
+  };
+  healthGauge: {
+    critical: string;
+    warning: string;
+    healthy: string;
+  };
+  eventCorrelation: string[];
+  severity: {
+    critical: string;
+    warning: string;
+    info: string;
+  };
+  logLevels: {
+    error: string;
+    warning: string;
+    info: string;
+    debug: string;
+  };
+  capacityPlanning: {
+    cpu: string;
+    memory: string;
+    storage: string;
+    forecast: string;
+    baseline: string;
+  };
+  resourceDistribution: {
+    primary: string;
+    border: string;
+    axis: string;
+  };
+  pie: {
+    high: string;
+    medium: string;
+    low: string;
+  };
+  topology: {
+    nodeBorder: string;
+    nodeLabel: string;
+    edge: string;
+  };
+  heatmap: {
+    critical: string;
+    warning: string;
+    healthy: string;
+  };
 }
 
 export interface GrafanaOptions {

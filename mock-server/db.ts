@@ -46,10 +46,12 @@ import {
     DiscoveredResource,
     ResourceOverviewData,
     ResourceAnalysis,
+    ResourceGroupStatusData,
     DatasourceOptions,
     AutoDiscoveryOptions,
     TableColumn,
-    StyleDescriptor
+    StyleDescriptor,
+    ChartTheme
 } from '../types';
 import { TAG_SCOPE_OPTIONS, TAG_KIND_OPTIONS, createTagDefinitions, getEnumValuesForTag } from '../tag-registry';
 const DEFAULT_API_BASE_URL = process.env.MOCK_API_BASE_URL ?? 'http://localhost:4000/api/v1';
@@ -738,6 +740,8 @@ const PAGE_CONTENT = {
     },
 };
 
+export type PageContent = typeof PAGE_CONTENT;
+
 const MOCK_METRIC_METADATA: MetricMetadata[] = [
     { id: 'cpu_usage_percent', name: 'CPU Usage', unit: '%' },
     { id: 'memory_usage_percent', name: 'Memory Usage', unit: '%' },
@@ -998,24 +1002,65 @@ const MOCK_ICON_MAP: Record<string, string> = {
     'deployment-unit': 'box',
 };
 
-const MOCK_CHART_COLORS = {
-    // Main color palette for charts
-    primary: ['#38bdf8', '#a78bfa', '#34d399', '#f87171', '#fbbf24', '#60a5fa'],
-    // Health score gauge colors (red, orange, green)
-    healthGauge: {
-        critical: '#dc2626',  // red-600
-        warning: '#f97316',   // orange-500
-        healthy: '#10b981'    // emerald-500
+const MOCK_CHART_COLORS: ChartTheme = {
+    palette: ['#38bdf8', '#a78bfa', '#34d399', '#f87171', '#fbbf24', '#60a5fa'],
+    text: {
+        primary: '#f8fafc',
+        secondary: '#94a3b8',
     },
-    // Event correlation colors
+    grid: {
+        axis: '#94a3b8',
+        splitLine: '#334155',
+    },
+    background: {
+        card: '#0f172a',
+        accent: '#1e293b',
+    },
+    healthGauge: {
+        critical: '#dc2626',
+        warning: '#f97316',
+        healthy: '#10b981',
+    },
     eventCorrelation: ['#dc2626', '#f97316', '#10b981'],
-    // Severity-based colors
     severity: {
         critical: '#dc2626',
         warning: '#f97316',
-        info: '#10b981'
-    }
-};
+        info: '#10b981',
+    },
+    logLevels: {
+        error: '#f87171',
+        warning: '#facc15',
+        info: '#38bdf8',
+        debug: '#94a3b8',
+    },
+    capacityPlanning: {
+        cpu: '#38bdf8',
+        memory: '#a78bfa',
+        storage: '#34d399',
+        forecast: '#facc15',
+        baseline: '#64748b',
+    },
+    resourceDistribution: {
+        primary: '#38bdf8',
+        border: '#1e293b',
+        axis: '#94a3b8',
+    },
+    pie: {
+        high: '#dc2626',
+        medium: '#f97316',
+        low: '#10b981',
+    },
+    topology: {
+        nodeBorder: '#f8fafc',
+        nodeLabel: '#cbd5e1',
+        edge: '#475569',
+    },
+    heatmap: {
+        critical: '#dc2626',
+        warning: '#f97316',
+        healthy: '#10b981',
+    },
+} as const;
 
 const MOCK_NAV_ITEMS: NavItem[] = [
     { key: 'home', label: '首頁', icon: 'home' },
@@ -1759,12 +1804,12 @@ const MOCK_SERVICE_HEALTH_DATA = {
     y_axis_labels: ['API Gateway', 'RDS Database', 'EKS Cluster', 'Kubernetes Service'],
 };
 
-const MOCK_RESOURCE_GROUP_STATUS_DATA = {
+const MOCK_RESOURCE_GROUP_STATUS_DATA: ResourceGroupStatusData = {
     group_names: ['Production Web Servers', 'Core Databases', 'Cache Cluster', 'Logging Stack', 'API Services'],
     series: [
-        { name: '健康' as const, data: [12, 8, 5, 10, 22] },
-        { name: '警告' as const, data: [1, 0, 1, 2, 3] },
-        { name: '嚴重' as const, data: [0, 1, 0, 0, 1] },
+        { key: 'healthy', label: '健康', data: [12, 8, 5, 10, 22] },
+        { key: 'warning', label: '警告', data: [1, 0, 1, 2, 3] },
+        { key: 'critical', label: '嚴重', data: [0, 1, 0, 0, 1] },
     ],
 };
 

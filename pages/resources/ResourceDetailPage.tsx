@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Resource, Incident, MetricsData } from '../../types';
 import Icon from '../../components/Icon';
 import EChartsReact from '../../components/EChartsReact';
 import api from '../../services/api';
+import { useChartTheme } from '../../contexts/ChartThemeContext';
 
 interface ResourceDetailPageProps {
   resourceId: string;
@@ -22,6 +23,8 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resourceId }) =
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const { theme: chartTheme } = useChartTheme();
 
   const fetchResourceDetails = useCallback(async () => {
     if (!resourceId) return;
@@ -77,26 +80,37 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resourceId }) =
     }
   };
 
-  const getMetricOption = (title: string, data: [string, number][] | undefined, color: string) => ({
+  const toRgba = useCallback((hex: string, alpha: number) => {
+    const sanitized = hex.replace('#', '');
+    if (sanitized.length !== 6) return hex;
+    const r = parseInt(sanitized.slice(0, 2), 16);
+    const g = parseInt(sanitized.slice(2, 4), 16);
+    const b = parseInt(sanitized.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }, []);
+
+  const getMetricOption = useCallback((title: string, data: [string, number][] | undefined, color: string) => ({
     tooltip: { trigger: 'axis' },
     xAxis: { type: 'time', splitLine: { show: false } },
     yAxis: { type: 'value', min: 0, max: 100, axisLabel: { formatter: '{value}%' } },
     series: [{
-      name: title, type: 'line', showSymbol: false, data: data || [],
-      lineStyle: { color: color },
+      name: title,
+      type: 'line',
+      showSymbol: false,
+      data: data || [],
+      lineStyle: { color },
       areaStyle: {
-        color: new window.echarts.graphic.LinearGradient(0, 0, 0, 1, [{
-          offset: 0, color: `rgba(${parseInt(color.slice(1, 3), 16)}, ${parseInt(color.slice(3, 5), 16)}, ${parseInt(color.slice(5, 7), 16)}, 0.3)`
-        }, {
-          offset: 1, color: 'rgba(0,0,0,0)'
-        }])
+        color: new window.echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: toRgba(color, 0.3) },
+          { offset: 1, color: toRgba(color, 0) }
+        ])
       }
     }],
     grid: { left: '10%', right: '5%', top: '15%', bottom: '15%' },
-  });
+  }), [toRgba]);
 
-  const cpuOption = getMetricOption('CPU Usage', metrics?.cpu, '#38bdf8');
-  const memoryOption = getMetricOption('Memory Usage', metrics?.memory, '#a78bfa');
+  const cpuOption = useMemo(() => getMetricOption('CPU Usage', metrics?.cpu, chartTheme.capacityPlanning.cpu), [chartTheme.capacityPlanning.cpu, getMetricOption, metrics?.cpu]);
+  const memoryOption = useMemo(() => getMetricOption('Memory Usage', metrics?.memory, chartTheme.capacityPlanning.memory), [chartTheme.capacityPlanning.memory, getMetricOption, metrics?.memory]);
   
   return (
     <div className="flex flex-col h-full space-y-6">
