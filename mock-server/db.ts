@@ -22,6 +22,7 @@ import {
     ResourceOptions,
     AutomationScriptOptions,
     NotificationChannelOptions,
+    NotificationOptions,
     AutomationPlaybookOptions,
     ParameterDefinition,
     NotificationChannelType,
@@ -1339,10 +1340,10 @@ const MOCK_NOTIFICATION_STRATEGY_OPTIONS: NotificationStrategyOptions = {
     stepTitles: ["基本資訊", "通知管道", "匹配條件"],
 };
 const MOCK_NOTIFICATION_CHANNELS: NotificationChannel[] = [
-    { 
-      id: 'chan-1', 
-      name: 'SRE On-call Email', 
-      type: 'Email', 
+    {
+      id: 'chan-1',
+      name: 'SRE On-call Email',
+      type: 'Email',
       enabled: true, 
       config: { 
         to: 'sre-oncall@example.com',
@@ -1350,9 +1351,17 @@ const MOCK_NOTIFICATION_CHANNELS: NotificationChannel[] = [
         bcc: 'audit@example.com'
       }, 
       lastTestResult: 'success', 
-      lastTestedAt: '2025-09-22 11:00:00' 
+      lastTestedAt: '2025-09-22 11:00:00'
     },
 ];
+const MOCK_NOTIFICATION_OPTIONS: NotificationOptions = {
+    severities: [
+        { value: 'critical', label: 'Critical', className: 'border-red-500 bg-red-500/10 text-red-300' },
+        { value: 'warning', label: 'Warning', className: 'border-amber-500 bg-amber-500/10 text-amber-300' },
+        { value: 'info', label: 'Info', className: 'border-sky-500 bg-sky-500/10 text-sky-300' },
+        { value: 'success', label: 'Success', className: 'border-emerald-500 bg-emerald-500/10 text-emerald-300' },
+    ],
+};
 const MOCK_NOTIFICATION_CHANNEL_ICONS = {
     'Email': { icon: 'mail', color: 'text-red-400' },
     'Slack': { icon: 'slack', color: 'text-purple-400' },
@@ -2145,6 +2154,7 @@ function createInitialDB() {
         notificationStrategyOptions: JSON.parse(JSON.stringify(MOCK_NOTIFICATION_STRATEGY_OPTIONS)),
         notificationChannels: JSON.parse(JSON.stringify(MOCK_NOTIFICATION_CHANNELS)),
         notificationChannelIcons: JSON.parse(JSON.stringify(MOCK_NOTIFICATION_CHANNEL_ICONS)),
+        notificationOptions: JSON.parse(JSON.stringify(MOCK_NOTIFICATION_OPTIONS)),
         notificationHistory: JSON.parse(JSON.stringify(MOCK_NOTIFICATION_HISTORY)),
         loginHistory: JSON.parse(JSON.stringify(MOCK_LOGIN_HISTORY)),
         logs: JSON.parse(JSON.stringify(MOCK_LOGS)),
