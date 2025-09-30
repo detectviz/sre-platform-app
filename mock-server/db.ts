@@ -51,10 +51,10 @@ import {
     TableColumn
 } from '../types';
 import { TAG_SCOPE_OPTIONS, TAG_KIND_OPTIONS, TAG_PII_LEVELS, createTagDefinitions, getEnumValuesForTag } from '../tag-registry';
-
 const DEFAULT_API_BASE_URL = process.env.MOCK_API_BASE_URL ?? 'http://localhost:4000/api/v1';
 const DEFAULT_GRAFANA_BASE_URL = process.env.MOCK_GRAFANA_BASE_URL ?? 'http://localhost:3000';
 const DEFAULT_IDP_ADMIN_URL = process.env.MOCK_IDP_ADMIN_URL ?? 'http://localhost:8080/admin/master/console/';
+
 
 // Helper to generate UUIDs
 export function uuidv4() {
