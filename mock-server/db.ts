@@ -53,7 +53,7 @@ import {
     StyleDescriptor,
     ChartTheme
 } from '../types';
-import { TAG_SCOPE_OPTIONS, TAG_KIND_OPTIONS, createTagDefinitions, getEnumValuesForTag } from '../tag-registry';
+import { TAG_SCOPE_OPTIONS, createTagDefinitions, getEnumValuesForTag } from '../tag-registry';
 
 const readRequiredEnv = (name: string): string => {
     const value = process.env[name];
@@ -849,6 +849,7 @@ const MOCK_ALL_COLUMNS: Record<string, TableColumn[]> = {
         { key: 'impact', label: '影響範圍' },
         { key: 'resource', label: '資源' },
         { key: 'assignee', label: '處理人' },
+        { key: 'tags', label: '標籤' },
         { key: 'occurredAt', label: '發生時間' },
     ],
     resources: [
@@ -939,8 +940,8 @@ const MOCK_ALL_COLUMNS: Record<string, TableColumn[]> = {
         { key: 'name', label: '策略名稱' },
         { key: 'triggerCondition', label: '觸發條件' },
         { key: 'channelCount', label: '管道數' },
-        { key: 'severityLevels', label: '嚴重度範圍' },
-        { key: 'impactLevels', label: '影響層級' },
+        { key: 'severityLevels', label: '嚴重程度' },
+        { key: 'impactLevels', label: '影響範圍' },
         { key: 'creator', label: '創建者' },
         { key: 'lastUpdated', label: '最後更新' },
     ],
@@ -962,13 +963,10 @@ const MOCK_ALL_COLUMNS: Record<string, TableColumn[]> = {
     tag_management: [
         { key: 'key', label: '標籤鍵' },
         { key: 'description', label: '說明' },
-        { key: 'scopes', label: '使用範圍' },
-        { key: 'kind', label: '資料型別' },
+        { key: 'enumValues', label: '標籤值' },
         { key: 'required', label: '必填' },
-        { key: 'uniqueWithinScope', label: '唯一值' },
+        { key: 'scopes', label: '適用範圍' },
         { key: 'writableRoles', label: '可寫入角色' },
-        { key: 'usageCount', label: '使用次數' },
-        { key: 'allowedValues', label: '標籤值 (預覽)' },
     ],
 };
 
@@ -1103,7 +1101,7 @@ const MOCK_DASHBOARDS: Dashboard[] = [
         updatedAt: '2025-09-27T10:00:00Z',
         path: '/dashboard/resource-overview'
     },
-    { id: 'api-service-status', name: 'API 服務狀態', type: 'grafana', category: '業務與 SLA', description: 'API 響應時間、錯誤率、吞吐量等服務指標。', owner: 'SRE 平台團隊', createdAt: '2025-09-18T16:45:00Z', updatedAt: '2025-09-18T16:45:00Z', path: '/dashboard/api-service-status', grafanaUrl: `${DEFAULT_GRAFANA_BASE_URL}/d/aead3d54-423b-4a91-b91c-dbdf40d7fff5`, grafana_dashboard_uid: 'aead3d54-423b-4a91-b91c-dbdf40d7fff5`, grafana_folder_uid: 'biz-folder' },
+    { id: 'api-service-status', name: 'API 服務狀態', type: 'grafana', category: '業務與 SLA', description: 'API 響應時間、錯誤率、吞吐量等服務指標。', owner: 'SRE 平台團隊', createdAt: '2025-09-18T16:45:00Z', updatedAt: '2025-09-18T16:45:00Z', path: '/dashboard/api-service-status', grafanaUrl: `${DEFAULT_GRAFANA_BASE_URL}/d/aead3d54-423b-4a91-b91c-dbdf40d7fff5`, grafana_dashboard_uid: 'aead3d54-423b-4a91-b91c-dbdf40d7fff5', grafana_folder_uid: 'biz-folder' },
     { id: 'user-experience-monitoring', name: '用戶體驗監控', type: 'grafana', category: '營運與容量', description: '頁面載入時間、用戶行為分析、錯誤追蹤。', owner: '前端團隊', createdAt: '2025-09-18T17:00:00Z', updatedAt: '2025-09-18T17:00:00Z', path: '/dashboard/user-experience-monitoring', grafanaUrl: `${DEFAULT_GRAFANA_BASE_URL}/d/another-dashboard-id-for-ux`, grafana_dashboard_uid: 'another-dashboard-id-for-ux', grafana_folder_uid: 'ux-folder' },
     {
         id: 'custom-built-in-1',
@@ -1132,9 +1130,9 @@ const MOCK_DASHBOARD_TEMPLATES: DashboardTemplate[] = [
     { id: 'tpl-002', name: '業務 KPI 總覽', description: '追蹤關鍵業務指標，如用戶註冊數、營收、轉換率等。適用於產品經理、業務團隊使用。', icon: 'briefcase', category: '業務' },
 ];
 const MOCK_INCIDENTS: Incident[] = [
-    { id: 'INC-001', summary: 'API 延遲超過閾值', resource: 'api-server-01', resourceId: 'res-001', impact: 'High', rule: 'API 延遲規則', ruleId: 'rule-002', status: 'New', severity: 'Warning', assignee: '張三', occurredAt: '2024-01-15T10:30:00Z', createdAt: '2024-01-15T10:30:00Z', updatedAt: '2024-01-15T10:30:00Z', history: [{ timestamp: '2024-01-15T10:30:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "API 延遲規則".' }] },
-    { id: 'INC-002', summary: '資料庫連接超時', resource: 'db-primary', resourceId: 'res-002', impact: 'High', rule: '資料庫連接規則', ruleId: 'rule-db-conn', status: 'Acknowledged', severity: 'Critical', assignee: '李四', occurredAt: '2024-01-15T10:15:00Z', createdAt: '2024-01-15T10:15:00Z', updatedAt: '2024-01-15T10:15:00Z', history: [{ timestamp: '2024-01-15T10:15:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "資料庫連接規則".' }] },
-    { id: 'INC-003', summary: 'CPU 使用率異常', resource: 'web-prod-12', resourceId: 'res-004', impact: 'Medium', rule: 'CPU 使用率規則', ruleId: 'rule-cpu', status: 'Resolved', severity: 'Warning', assignee: '王五', occurredAt: '2024-01-15T09:45:00Z', createdAt: '2024-01-15T09:45:00Z', updatedAt: '2024-01-15T09:45:00Z', history: [{ timestamp: '2024-01-15T09:45:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "CPU 使用率規則".' }] },
+    { id: 'INC-001', summary: 'API 延遲超過閾值', resource: 'api-server-01', resourceId: 'res-001', impact: 'High', rule: 'API 延遲規則', ruleId: 'rule-002', status: 'New', severity: 'Warning', assignee: '張三', teamId: 'team-001', ownerId: 'usr-001', tags: { team: 'SRE Platform', owner: 'Alice Chen', env: 'production', service: 'api-gateway' }, occurredAt: '2024-01-15T10:30:00Z', createdAt: '2024-01-15T10:30:00Z', updatedAt: '2024-01-15T10:30:00Z', history: [{ timestamp: '2024-01-15T10:30:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "API 延遲規則".' }] },
+    { id: 'INC-002', summary: '資料庫連接超時', resource: 'db-primary', resourceId: 'res-002', impact: 'High', rule: '資料庫連接規則', ruleId: 'rule-db-conn', status: 'Acknowledged', severity: 'Critical', assignee: '李四', teamId: 'team-002', ownerId: 'usr-002', tags: { team: 'Core Infrastructure', owner: 'Bob Lee', env: 'production', service: 'database' }, occurredAt: '2024-01-15T10:15:00Z', createdAt: '2024-01-15T10:15:00Z', updatedAt: '2024-01-15T10:15:00Z', history: [{ timestamp: '2024-01-15T10:15:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "資料庫連接規則".' }] },
+    { id: 'INC-003', summary: 'CPU 使用率異常', resource: 'web-prod-12', resourceId: 'res-004', impact: 'Medium', rule: 'CPU 使用率規則', ruleId: 'rule-cpu', status: 'Resolved', severity: 'Warning', assignee: '王五', teamId: 'team-003', ownerId: 'usr-003', tags: { team: 'API Services', owner: 'Charlie Wu', env: 'production' }, occurredAt: '2024-01-15T09:45:00Z', createdAt: '2024-01-15T09:45:00Z', updatedAt: '2024-01-15T09:45:00Z', history: [{ timestamp: '2024-01-15T09:45:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "CPU 使用率規則".' }] },
 ];
 const MOCK_QUICK_SILENCE_DURATIONS = [1, 2, 4, 8, 12, 24]; // hours
 const MOCK_ALERT_RULE_DEFAULT: Partial<AlertRule> = {
@@ -1555,7 +1553,7 @@ const DEFAULT_LAYOUTS: Record<string, { widgetIds: string[]; updatedAt: string; 
     "身份與存取管理": { widgetIds: ['iam_total_users', 'iam_active_users', 'iam_login_failures'], updatedAt: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
     "通知": { widgetIds: ['notification_sent_today', 'notification_failure_rate', 'notification_channels'], updatedAt: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
     "平台": { widgetIds: ['platform_tags_defined', 'platform_auth_provider', 'platform_mail_status'], updatedAt: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
-    "個人設定": { widgetIds: ['profile_login_count_7d', 'profile_last_password_change', 'profile_mfa_status'], updatedAt: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
+    "profile": { widgetIds: ['profile_login_count_7d', 'profile_last_password_change', 'profile_mfa_status'], updatedAt: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
 };
 const KPI_DATA: Record<string, any> = {
     'incident_pending_count': { value: '5', description: '2 嚴重', icon: 'shield-alert', iconBgColor: 'bg-red-500' },
@@ -2090,7 +2088,6 @@ const MOCK_INFRA_INSIGHTS_OPTIONS: InfraInsightsOptions = {
 
 const MOCK_TAG_MANAGEMENT_OPTIONS: TagManagementOptions = {
     scopes: TAG_SCOPE_OPTIONS,
-    kinds: TAG_KIND_OPTIONS,
     writableRoles: ['platform_admin', 'sre_lead', 'compliance_officer'],
     governanceNotes: '標籤鍵須符合治理規範：鍵名使用小寫與底線、枚舉值需在登錄處定義、不得於頁面臨時建立新鍵。',
 };
@@ -2320,7 +2317,7 @@ function createInitialDB() {
             teams: ['name', 'ownerId', 'memberIds', 'createdAt'],
             roles: ['enabled', 'name', 'userCount', 'createdAt'],
             audit_logs: ['timestamp', 'user', 'action', 'target', 'result'],
-            tag_management: ['key', 'description', 'allowedValues', 'usageCount'],
+            tag_management: ['key', 'description', 'enumValues', 'required', 'writableRoles'],
             notification_strategies: ['enabled', 'name', 'triggerCondition', 'channelCount', 'severityLevels', 'impactLevels', 'creator', 'lastUpdated'],
             notification_channels: ['enabled', 'name', 'type', 'lastTestResult', 'lastTestedAt'],
             notification_history: ['timestamp', 'strategy', 'channel', 'recipient', 'status', 'content'],

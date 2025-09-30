@@ -153,9 +153,10 @@ const TagManagementPage: React.FC = () => {
     const handleSaveValues = async (tagId: string, newValues: TagValue[]) => {
         try {
             await api.put(`/settings/tags/${tagId}/values`, newValues);
+            showToast('標籤值已儲存。', 'success');
             fetchTags();
         } catch (err) {
-            alert('Failed to save tag values.');
+            showToast('儲存標籤值失敗。', 'error');
         } finally {
             setIsValuesModalOpen(false);
         }
@@ -175,12 +176,15 @@ const TagManagementPage: React.FC = () => {
         try {
             if (editingTag && 'id' in editingTag) {
                 await api.patch(`/settings/tags/${(editingTag as TagDefinition).id}`, tagData);
+                showToast('標籤已更新。', 'success');
             } else {
                 await api.post('/settings/tags', tagData);
+                showToast('標籤已創建。', 'success');
             }
             fetchTags();
-        } catch (err) {
-            alert('Failed to save tag.');
+        } catch (err: any) {
+            const errorMessage = err?.response?.data?.message || '儲存標籤失敗。';
+            showToast(errorMessage, 'error');
         } finally {
             setIsEditModalOpen(false);
         }
@@ -195,9 +199,11 @@ const TagManagementPage: React.FC = () => {
         if (deletingTag) {
             try {
                 await api.del(`/settings/tags/${deletingTag.id}`);
+                showToast('標籤已刪除。', 'success');
                 fetchTags();
-            } catch (err) {
-                alert('Failed to delete tag.');
+            } catch (err: any) {
+                const errorMessage = err?.response?.data?.message || '刪除標籤失敗。';
+                showToast(errorMessage, 'error');
             } finally {
                 setIsDeleteModalOpen(false);
                 setDeletingTag(null);
@@ -229,14 +235,12 @@ const TagManagementPage: React.FC = () => {
         }
         exportToCsv({
             filename: `tag-definitions-${new Date().toISOString().split('T')[0]}.csv`,
-            headers: ['key', 'scopes', 'kind', 'required', 'uniqueWithinScope', 'writableRoles'],
+            headers: ['key', 'scopes', 'enumValues', 'required'],
             data: filteredTags.map(tag => ({
                 key: tag.key,
                 scopes: (tag.scopes || []).join('|'),
-                kind: tag.kind,
+                enumValues: (tag.allowedValues || []).map(v => v.value).join('|'),
                 required: tag.required,
-                uniqueWithinScope: tag.uniqueWithinScope,
-                writableRoles: (tag.writableRoles || []).join('|'),
             })),
         });
     };
@@ -245,7 +249,8 @@ const TagManagementPage: React.FC = () => {
         switch (columnKey) {
             case 'key':
                 return (
-                    <span className="font-mono font-medium text-white">
+                    <span className="font-mono font-medium text-white flex items-center">
+                        {tag.readonly && <Icon name="lock" className="w-3.5 h-3.5 mr-1.5 text-slate-400" />}
                         {tag.key}
                         {tag.required && <span className="text-red-400 ml-1">*</span>}
                     </span>
@@ -269,36 +274,46 @@ const TagManagementPage: React.FC = () => {
                         )}
                     </div>
                 );
-            case 'kind':
-                return <span className="capitalize">{tag.kind}</span>;
-            case 'required':
-                return tag.required ? <Icon name="check-circle" className="w-5 h-5 text-green-400" /> : <Icon name="circle" className="w-5 h-5 text-slate-500" />;
-            case 'uniqueWithinScope':
-                return tag.uniqueWithinScope ? <Icon name="check-circle" className="w-5 h-5 text-green-400" /> : <Icon name="circle" className="w-5 h-5 text-slate-500" />;
+            case 'enumValues':
+                const values = tag.allowedValues || [];
+                if (values.length === 0) {
+                    return <span className="text-slate-500 text-xs italic">未定義值</span>;
+                }
+                const maxValuesDisplay = 3;
+                const displayValues = values.slice(0, maxValuesDisplay);
+                return (
+                    <div className="flex flex-wrap gap-1 items-center">
+                        {displayValues.map((value, idx) => (
+                            <span key={idx} className="px-2 py-0.5 text-xs bg-indigo-900/30 border border-indigo-700/50 rounded-full text-indigo-200">
+                                {value.value}
+                            </span>
+                        ))}
+                        {values.length > maxValuesDisplay && (
+                            <span className="px-2 py-0.5 text-xs text-slate-400 font-medium">
+                                +{values.length - maxValuesDisplay} 更多
+                            </span>
+                        )}
+                    </div>
+                );
             case 'writableRoles':
                 const roles = tag.writableRoles || [];
                 const maxRolesDisplay = 3;
                 return (
                     <div className="flex flex-wrap gap-1 items-center">
                         {roles.slice(0, maxRolesDisplay).map(role => (
-                            <span key={role} className="px-2 py-0.5 text-xs bg-slate-800 border border-slate-700 rounded-full font-mono text-slate-200">{role}</span>
+                            <span key={role} className="px-2 py-0.5 text-xs bg-slate-800 border border-slate-700 rounded-full font-mono text-slate-200">
+                                {role}
+                            </span>
                         ))}
                         {roles.length > maxRolesDisplay && (
-                            <span className="px-2 py-0.5 text-xs text-slate-400 font-medium">+{roles.length - maxRolesDisplay}</span>
+                            <span className="px-2 py-0.5 text-xs text-slate-400 font-medium">
+                                +{roles.length - maxRolesDisplay} 更多
+                            </span>
                         )}
                     </div>
                 );
-            case 'usageCount':
-                return tag.usageCount;
-            case 'allowedValues':
-                return (
-                    <div className="flex flex-wrap gap-1">
-                        {tag.allowedValues.slice(0, 3).map(v => (
-                            <span key={v.id} className="px-2 py-0.5 text-xs bg-slate-700 rounded-full">{v.value}</span>
-                        ))}
-                        {tag.allowedValues.length > 3 && <span className="text-xs text-slate-400">...</span>}
-                    </div>
-                );
+            case 'required':
+                return tag.required ? <Icon name="check-circle" className="w-5 h-5 text-green-400" /> : <Icon name="circle" className="w-5 h-5 text-slate-500" />;
             default:
                 return <span className="text-slate-500">--</span>;
         }
@@ -326,6 +341,24 @@ const TagManagementPage: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col">
+            {/* 管理員說明區塊 */}
+            <div className="mb-4 p-4 bg-amber-950/30 border border-amber-700/50 rounded-lg">
+                <div className="flex items-start space-x-3">
+                    <Icon name="shield-alert" className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                        <h3 className="text-sm font-semibold text-amber-200 mb-1">標籤管理（Platform Admin 專用）</h3>
+                        <p className="text-xs text-slate-300 leading-relaxed">
+                            此頁面用於定義組織的<strong>標籤管理</strong>，包括標籤鍵、適用範圍及存取權限。
+                            這些定義會影響整個系統中標籤的使用方式。一般使用者在建立資源、事件等實體時，會根據此處的標籤定義來新增標籤實例。
+                        </p>
+                        <p className="text-xs text-amber-300 mt-2 flex items-center">
+                            <Icon name="alert-triangle" className="w-3.5 h-3.5 mr-1.5" />
+                            變更標籤定義可能影響現有資源的標籤驗證與查詢功能，請謹慎操作。
+                        </p>
+                    </div>
+                </div>
+            </div>
+
             <Toolbar
                 leftActions={leftActions}
                 rightActions={rightActions}
@@ -350,13 +383,14 @@ const TagManagementPage: React.FC = () => {
                                 {visibleColumns.map(key => (
                                     <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
                                 ))}
+                                <th scope="col" className="px-6 py-3 text-right">操作</th>
                             </tr>
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <TableLoader colSpan={visibleColumns.length + 1} />
+                                <TableLoader colSpan={visibleColumns.length + 2} />
                             ) : error ? (
-                                <TableError colSpan={visibleColumns.length + 1} message={error} onRetry={fetchTags} />
+                                <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchTags} />
                             ) : filteredTags.map((tag) => (
                                 <tr key={tag.id} className={`border-b border-slate-800 hover:bg-slate-800/40 ${selectedIds.includes(tag.id) ? 'bg-sky-900/50' : ''}`}>
                                     <td className="p-4 w-12" onClick={e => e.stopPropagation()}>
@@ -370,6 +404,40 @@ const TagManagementPage: React.FC = () => {
                                     {visibleColumns.map(key => (
                                         <td key={key} className="px-6 py-4">{renderCellContent(tag, key)}</td>
                                     ))}
+                                    <td className="px-6 py-4 text-right space-x-1">
+                                        {tag.readonly ? (
+                                            <div className="inline-flex items-center space-x-2 text-xs text-slate-500">
+                                                <Icon name="lock" className="w-3.5 h-3.5" />
+                                                <span>系統自動管理</span>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <button
+                                                    onClick={() => handleEditTag(tag)}
+                                                    className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white"
+                                                    title="編輯"
+                                                >
+                                                    <Icon name="edit-3" className="w-4 h-4" />
+                                                </button>
+                                                {
+                                                    <button
+                                                        onClick={() => handleManageValues(tag)}
+                                                        className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white"
+                                                        title="管理標籤值"
+                                                    >
+                                                        <Icon name="list" className="w-4 h-4" />
+                                                    </button>
+                                                }
+                                                <button
+                                                    onClick={() => handleDeleteTag(tag)}
+                                                    className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300"
+                                                    title="刪除"
+                                                >
+                                                    <Icon name="trash-2" className="w-4 h-4" />
+                                                </button>
+                                            </>
+                                        )}
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -424,7 +492,7 @@ const TagManagementPage: React.FC = () => {
                 onImportSuccess={fetchTags}
                 itemName="標籤"
                 importEndpoint="/settings/tags/import"
-                templateHeaders={['key', 'scopes', 'kind', 'required', 'uniqueWithinScope', 'writableRoles']}
+                templateHeaders={['key', 'scopes', 'enumValues', 'required']}
                 templateFilename="tags-template.csv"
             />
             <ColumnSettingsModal

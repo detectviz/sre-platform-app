@@ -1,4 +1,4 @@
-import { TagDefinition, TagRegistryEntry, TagScope, TagValueKind } from './types';
+import { TagDefinition, TagRegistryEntry, TagScope } from './types';
 
 // 預設可寫入標籤的角色清單
 const DEFAULT_WRITABLE_ROLES = ['platform_admin', 'sre_lead'];
@@ -20,621 +20,110 @@ export const TAG_SCOPE_OPTIONS: { value: TagScope; label: string; description: s
   { value: 'user', label: '使用者 (user)', description: '使用者與權限管理。' },
 ];
 
-export const TAG_KIND_OPTIONS: { value: TagValueKind; label: string; description: string }[] = [
-  { value: 'enum', label: '枚舉 (enum)', description: '僅允許從預先定義的值域中選擇。' },
-  { value: 'string', label: '字串 (string)', description: '允許輸入長度不超過 128 字元的字串。' },
-  { value: 'number', label: '數值 (number)', description: '允許輸入具意義的數值，需統一單位。' },
-  { value: 'boolean', label: '布林 (boolean)', description: '允許 true / false 兩種值。' },
-];
-
 
 const ALL_SCOPES = TAG_SCOPE_OPTIONS.map(option => option.value);
 
-const registry: TagRegistryEntry[] = [
-  {
-    key: 'env',
-    description: '部署環境 (production、staging、dev 等)。',
-    scopes: ALL_SCOPES,
-    kind: 'string',
-    required: true,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'region',
-    description: '實體或雲端機房所在區域 (例如 ap-northeast-1)。',
-    scopes: ALL_SCOPES,
-    kind: 'string',
-    required: true,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'zone',
-    description: '區域內的可用區或資料中心分區。',
-    scopes: ALL_SCOPES,
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'site',
-    description: '本地機房或據點代碼。',
-    scopes: ALL_SCOPES,
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'rack',
-    description: '機櫃編號或實體位置。',
-    scopes: ['resource', 'datasource', 'discovery_job', 'analysis'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'team',
-    description: '負責維運的團隊。',
-    scopes: ALL_SCOPES,
-    kind: 'string',
-    required: true,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'owner',
-    description: '業務或技術負責人。',
-    scopes: ALL_SCOPES,
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'service',
-    description: '所屬服務或業務域名稱。',
-    scopes: ALL_SCOPES,
-    kind: 'string',
-    required: true,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'component',
-    description: '服務內的元件或模組名稱。',
-    scopes: ['resource', 'alert_rule', 'incident', 'analysis', 'automation', 'notification_policy'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'role',
-    description: '資源或使用者角色 (例：database、frontend)。',
-    scopes: ['resource', 'automation', 'team', 'user', 'tenant'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'business_unit',
-    description: '對應的事業單位或部門。',
-    scopes: ['resource', 'dashboard', 'analysis', 'notification_policy', 'tenant', 'team'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'cost_center',
-    description: '財務成本中心編號。',
-    scopes: ['resource', 'dashboard', 'analysis', 'tenant'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'version',
-    description: '部署版本或應用程式版本號。',
-    scopes: ['resource', 'automation', 'analysis', 'incident', 'notification_policy'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'commit',
-    description: '對應的程式碼提交版本 (Git commit)。',
-    scopes: ['resource', 'incident', 'analysis', 'automation'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'build',
-    description: '建置編號或流水線代碼。',
-    scopes: ['resource', 'analysis', 'automation'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'tags.schema_version',
-    description: '標籤綱要的版本，用於治理與稽核。',
-    scopes: ALL_SCOPES,
-    kind: 'string',
-    required: true,
-    uniqueWithinScope: true,
-    writableRoles: ['platform_admin'],
-  },
-  {
-    key: 'resource_type',
-    description: '資源種類 (VM、服務、設備等)。',
-    scopes: ['resource', 'alert_rule', 'incident', 'analysis', 'automation'],
-    kind: 'enum',
-    enumValues: ['vm', 'pod', 'service', 'device', 'plc', 'bmc', 'switch'],
-    required: true,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'os',
-    description: '作業系統名稱。',
-    scopes: ['resource', 'analysis'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'distro',
-    description: '作業系統發行版 (例如 ubuntu、alpine)。',
-    scopes: ['resource', 'analysis'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'kernel',
-    description: '核心版本。',
-    scopes: ['resource', 'analysis'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'ip',
-    description: 'IPv4/IPv6 位址。',
-    scopes: ['resource', 'datasource', 'discovery_job', 'exporter'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: true,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'hostname',
-    description: '主機名稱。',
-    scopes: ['resource', 'datasource', 'exporter'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: true,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'vendor',
-    description: '設備或服務供應商。',
-    scopes: ['resource', 'datasource', 'exporter'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'model',
-    description: '硬體或設備型號。',
-    scopes: ['resource', 'exporter'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'cluster',
-    description: '所屬叢集名稱。',
-    scopes: ['resource', 'datasource', 'discovery_job', 'alert_rule', 'incident', 'analysis'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'namespace',
-    description: 'Kubernetes Namespace 或邏輯分區。',
-    scopes: ['resource', 'alert_rule', 'incident', 'analysis'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'workload',
-    description: '應用工作負載名稱 (Deployment、Job 等)。',
-    scopes: ['resource', 'alert_rule', 'incident'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'datasource_type',
-    description: '資料來源類型。',
-    scopes: ['datasource', 'alert_rule', 'incident', 'analysis'],
-    kind: 'enum',
-    enumValues: ['prometheus', 'victoriametrics', 'loki', 'tempo', 'grafana'],
-    required: true,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'datasource_id',
-    description: '資料來源唯一識別碼。',
-    scopes: ['datasource', 'alert_rule', 'incident', 'analysis'],
-    kind: 'string',
-    required: true,
-    uniqueWithinScope: true,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'exporter_type',
-    description: '匯出器類型。',
-    scopes: ['exporter', 'resource', 'alert_rule', 'incident'],
-    kind: 'enum',
-    enumValues: ['node', 'snmp', 'modbus', 'ipmi', 'cadvisor', 'kube_state'],
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'protocol',
-    description: '通訊協定 (SNMP、MODBUS 等)。',
-    scopes: ['datasource', 'discovery_job', 'exporter'],
-    kind: 'enum',
-    enumValues: ['snmp', 'modbus', 'opcua', 'ipmi', 'mqtt'],
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'discovery_job_id',
-    description: '自動探勘任務 ID。',
-    scopes: ['discovery_job', 'resource'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: true,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'edge_gateway',
-    description: '是否為邊緣匯流排節點。',
-    scopes: ['datasource', 'discovery_job', 'resource'],
-    kind: 'boolean',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'gateway_id',
-    description: '邊緣匯流排識別碼。',
-    scopes: ['datasource', 'discovery_job'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: true,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'rule_id',
-    description: '告警規則 ID。',
-    scopes: ['alert_rule', 'incident', 'notification_policy', 'automation'],
-    kind: 'string',
-    required: true,
-    uniqueWithinScope: true,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'rule_template',
-    description: '告警規則模板或範本。',
-    scopes: ['alert_rule'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'metric',
-    description: '監控指標名稱。',
-    scopes: ['alert_rule', 'analysis'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'metric_family',
-    description: '指標族群或類別。',
-    scopes: ['alert_rule', 'analysis'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'threshold_profile',
-    description: '閾值設定模板名稱。',
-    scopes: ['alert_rule'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'window',
-    description: '評估時間窗 (ISO8601 duration)。',
-    scopes: ['alert_rule'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'operator',
-    description: '閾值比較運算子。',
-    scopes: ['alert_rule'],
-    kind: 'enum',
-    enumValues: ['>', '>=', '<', '<='],
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'slo',
-    description: '服務等級目標識別碼。',
-    scopes: ['alert_rule', 'incident', 'analysis'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'sla',
-    description: '服務等級協議識別碼。',
-    scopes: ['notification_policy', 'incident'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'status',
-    description: '事件狀態。',
-    scopes: ['incident', 'notification_policy', 'automation'],
-    kind: 'enum',
-    enumValues: ['New', 'Acknowledged', 'Resolved', 'Silenced'],
-    required: true,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'severity',
-    description: '事件嚴重度。',
-    scopes: ['incident', 'notification_policy', 'automation', 'analysis'],
-    kind: 'enum',
-    enumValues: ['Info', 'Warning', 'Critical'],
-    required: true,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'impact',
-    description: '事件影響層級 (取代 priority / service_impact)。',
-    scopes: ['incident', 'notification_policy', 'automation'],
-    kind: 'enum',
-    enumValues: ['High', 'Medium', 'Low'],
-    required: true,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'resource_id',
-    description: '受影響的資源 ID。',
-    scopes: ['incident', 'automation', 'analysis'],
-    kind: 'string',
-    required: true,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'affected_service',
-    description: '受影響的服務名稱。',
-    scopes: ['incident', 'notification_policy', 'analysis'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'silenced',
-    description: '事件是否被靜音。',
-    scopes: ['incident', 'notification_policy'],
-    kind: 'boolean',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'maintenance_window',
-    description: '對應的維護視窗識別碼。',
-    scopes: ['incident', 'notification_policy'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'channel',
-    description: '通知路由使用的管道。',
-    scopes: ['notification_policy'],
-    kind: 'enum',
-    enumValues: ['email', 'slack', 'pagerduty', 'webhook'],
-    required: true,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'routing_key',
-    description: '通知系統使用的路由鍵。',
-    scopes: ['notification_policy'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: true,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'oncall_team',
-    description: '值班團隊名稱。',
-    scopes: ['notification_policy', 'incident'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'playbook_id',
-    description: '對應的自動化腳本 ID。',
-    scopes: ['automation', 'incident'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'playbook_type',
-    description: '自動化腳本類型。',
-    scopes: ['automation'],
-    kind: 'enum',
-    enumValues: ['shell', 'python', 'ansible', 'n8n'],
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'safe_mode',
-    description: '自動化腳本是否啟用安全模式。',
-    scopes: ['automation'],
-    kind: 'boolean',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
-  {
-    key: 'lineage_id',
-    description: '資料血緣識別碼。',
-    scopes: ['analysis', 'incident'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: true,
-    writableRoles: COMPLIANCE_WRITABLE_ROLES,
-  },
-  {
-    key: 'dataset',
-    description: '資料集名稱。',
-    scopes: ['analysis'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: COMPLIANCE_WRITABLE_ROLES,
-  },
-  {
-    key: 'pii',
-    description: '資料敏感等級。',
-    scopes: ['analysis'],
-    kind: 'enum',
-    enumValues: ['none', 'low', 'high'],
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: COMPLIANCE_WRITABLE_ROLES,
-  },
-  {
-    key: 'retention_class',
-    description: '資料保存等級。',
-    scopes: ['analysis'],
-    kind: 'enum',
-    enumValues: ['hot', 'warm', 'cold', 'archive'],
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: COMPLIANCE_WRITABLE_ROLES,
-  },
-  {
-    key: 'compliance',
-    description: '遵循的法規或標準。',
-    scopes: ['analysis', 'tenant'],
-    kind: 'enum',
-    enumValues: ['iso27001', 'soc2', 'pci'],
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: COMPLIANCE_WRITABLE_ROLES,
-  },
-  {
-    key: 'tenant',
-    description: '租戶或客戶識別碼。',
-    scopes: ['tenant', 'team', 'user', 'resource', 'incident', 'analysis'],
-    kind: 'string',
-    required: true,
-    uniqueWithinScope: false,
-    writableRoles: ['platform_admin'],
-  },
-  {
-    key: 'realm',
-    description: '身份驗證領域或網域。',
-    scopes: ['tenant', 'user'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: ['platform_admin'],
-  },
-  {
-    key: 'user',
-    description: '使用者識別碼或帳號。',
-    scopes: ['team', 'user', 'incident', 'automation'],
-    kind: 'string',
-    required: false,
-    uniqueWithinScope: false,
-    writableRoles: DEFAULT_WRITABLE_ROLES,
-  },
+// ============================================================================
+// 核心標籤定義（最小必要集）
+// ============================================================================
+
+const CORE_TAGS: TagRegistryEntry[] = [
+  // 基礎分類標籤
+  { key: 'env', description: '部署環境。', scopes: ALL_SCOPES, required: true, writableRoles: DEFAULT_WRITABLE_ROLES },
+  { key: 'service', description: '所屬服務名稱。', scopes: ALL_SCOPES, required: false, writableRoles: DEFAULT_WRITABLE_ROLES },
+
+  // 事件核心屬性（系統依賴這些標籤）
+  { key: 'status', description: '事件狀態。', scopes: ['incident', 'notification_policy', 'automation'], required: true, writableRoles: DEFAULT_WRITABLE_ROLES },
+  { key: 'severity', description: '事件嚴重度。', scopes: ['incident', 'notification_policy', 'automation'], required: true, writableRoles: DEFAULT_WRITABLE_ROLES },
+  { key: 'impact', description: '事件影響層級。', scopes: ['incident', 'notification_policy', 'automation'], required: true, writableRoles: DEFAULT_WRITABLE_ROLES },
 ];
 
-const createTagDefinition = (entry: TagRegistryEntry): TagDefinition => ({
-  id: `tag-${entry.key}`,
-  ...entry,
-  allowedValues:
-    entry.kind === 'enum'
-      ? (entry.enumValues ?? []).map((value, index) => ({
-        id: `${entry.key}:${value}:${index}`,
-        value,
-        usageCount: 0,
-      }))
-      : [],
-  usageCount: 0,
-});
+// ============================================================================
+// 擴展標籤（可選，根據需求使用）
+// ============================================================================
+
+const EXTENDED_TAGS: TagRegistryEntry[] = [
+  // 資源標識
+  { key: 'resource_type', description: '資源種類。', scopes: ['resource', 'incident'], required: false, writableRoles: DEFAULT_WRITABLE_ROLES },
+  { key: 'cluster', description: '叢集名稱。', scopes: ['resource', 'incident'], required: false, writableRoles: DEFAULT_WRITABLE_ROLES },
+
+  // 監控相關
+  { key: 'datasource_type', description: '資料來源類型。', scopes: ['datasource', 'incident'], required: false, writableRoles: DEFAULT_WRITABLE_ROLES },
+
+  // 組織相關（自動從關聯實體填充，唯讀）
+  { key: 'team', description: '所屬團隊名稱（自動填充，不可編輯）。', scopes: ['resource', 'incident', 'dashboard', 'alert_rule'], required: false, writableRoles: [], readonly: true, linkToEntity: 'team' },
+  { key: 'owner', description: '負責人姓名（自動填充，不可編輯）。', scopes: ['resource', 'incident', 'dashboard', 'alert_rule'], required: false, writableRoles: [], readonly: true, linkToEntity: 'personnel' },
+];
+
+// ============================================================================
+// 標籤註冊表組合
+// ============================================================================
+
+const registry: TagRegistryEntry[] = [
+  ...CORE_TAGS,
+  ...EXTENDED_TAGS,
+];
+
+// ============================================================================
+// 輔助函數
+// ============================================================================
+
+const createTagDefinition = (entry: TagRegistryEntry): TagDefinition => {
+  // 為系統標籤設置預設的 allowedValues
+  const defaultAllowedValues: Record<string, Array<{ id: string; value: string; usageCount: number }>> = {
+    'env': [
+      { id: 'env-production', value: 'production', usageCount: 0 },
+      { id: 'env-staging', value: 'staging', usageCount: 0 },
+      { id: 'env-development', value: 'development', usageCount: 0 },
+    ],
+    'service': [
+      { id: 'service-api-gateway', value: 'api-gateway', usageCount: 0 },
+      { id: 'service-user-service', value: 'user-service', usageCount: 0 },
+      { id: 'service-order-service', value: 'order-service', usageCount: 0 },
+      { id: 'service-payment-service', value: 'payment-service', usageCount: 0 },
+      { id: 'service-notification-service', value: 'notification-service', usageCount: 0 },
+    ],
+    'status': [
+      { id: 'status-New', value: 'New', usageCount: 0 },
+      { id: 'status-Acknowledged', value: 'Acknowledged', usageCount: 0 },
+      { id: 'status-Resolved', value: 'Resolved', usageCount: 0 },
+      { id: 'status-Silenced', value: 'Silenced', usageCount: 0 },
+    ],
+    'severity': [
+      { id: 'severity-Info', value: 'Info', usageCount: 0 },
+      { id: 'severity-Warning', value: 'Warning', usageCount: 0 },
+      { id: 'severity-Critical', value: 'Critical', usageCount: 0 },
+    ],
+    'impact': [
+      { id: 'impact-High', value: 'High', usageCount: 0 },
+      { id: 'impact-Medium', value: 'Medium', usageCount: 0 },
+      { id: 'impact-Low', value: 'Low', usageCount: 0 },
+    ],
+    'cluster': [
+      { id: 'cluster-prod-us-east', value: 'prod-us-east', usageCount: 0 },
+      { id: 'cluster-prod-us-west', value: 'prod-us-west', usageCount: 0 },
+      { id: 'cluster-staging', value: 'staging', usageCount: 0 },
+      { id: 'cluster-dev', value: 'dev', usageCount: 0 },
+    ],
+    'resource_type': [
+      { id: 'resource_type-vm', value: 'vm', usageCount: 0 },
+      { id: 'resource_type-pod', value: 'pod', usageCount: 0 },
+      { id: 'resource_type-service', value: 'service', usageCount: 0 },
+      { id: 'resource_type-device', value: 'device', usageCount: 0 },
+    ],
+    'datasource_type': [
+      { id: 'datasource_type-prometheus', value: 'prometheus', usageCount: 0 },
+      { id: 'datasource_type-loki', value: 'loki', usageCount: 0 },
+    ],
+  };
+
+  return {
+    id: `tag-${entry.key}`,
+    ...entry,
+    allowedValues: defaultAllowedValues[entry.key] || [], // 使用預設值或空陣列
+    usageCount: 0,
+  };
+};
 
 export const TAG_REGISTRY = registry;
 
@@ -642,5 +131,21 @@ export const createTagDefinitions = (): TagDefinition[] => registry.map(entry =>
 
 export const getTagRegistryEntry = (key: string): TagRegistryEntry | undefined => registry.find(entry => entry.key === key);
 
-export const getEnumValuesForTag = (key: string): string[] => getTagRegistryEntry(key)?.enumValues ?? [];
+export const getEnumValuesForTag = (key: string): string[] => {
+  // 為系統標籤提供預設值
+  const defaultValues: Record<string, string[]> = {
+    'status': ['New', 'Acknowledged', 'Resolved', 'Silenced'],
+    'severity': ['Info', 'Warning', 'Critical'],
+    'impact': ['High', 'Medium', 'Low'],
+    'env': ['production', 'staging', 'development'],
+    'service': ['api-gateway', 'user-service', 'order-service', 'payment-service', 'notification-service'],
+    'cluster': ['prod-us-east', 'prod-us-west', 'staging', 'dev'],
+    'resource_type': ['vm', 'pod', 'service', 'device'],
+    'datasource_type': ['prometheus', 'loki'],
+  };
+  return defaultValues[key] ?? [];
+};
 
+// 按類別獲取標籤
+export const getCoreTagDefinitions = (): TagDefinition[] => CORE_TAGS.map(createTagDefinition);
+export const getExtendedTagDefinitions = (): TagDefinition[] => EXTENDED_TAGS.map(createTagDefinition);

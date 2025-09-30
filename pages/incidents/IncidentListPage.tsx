@@ -23,6 +23,7 @@ import { useOptions } from '../../contexts/OptionsContext';
 import AssignIncidentModal from '../../components/AssignIncidentModal';
 import UserAvatar from '../../components/UserAvatar';
 import ImportFromCsvModal from '../../components/ImportFromCsvModal';
+import { TagList } from '../../components/TagList';
 
 
 const PAGE_IDENTIFIER = 'incidents';
@@ -281,6 +282,21 @@ const IncidentListPage: React.FC = () => {
                 );
             case 'occurredAt':
                 return inc.occurredAt;
+            case 'tags':
+                if (!inc.tags || Object.keys(inc.tags).length === 0) {
+                    return <span className="text-slate-500 text-xs">無標籤</span>;
+                }
+                return (
+                    <TagList
+                        tags={inc.tags}
+                        maxVisible={5}
+                        readonlyKeys={['team', 'owner']}
+                        linkMapping={{
+                            team: (value, entityId) => `/settings/teams`,
+                            owner: (value, entityId) => `/settings/personnel`,
+                        }}
+                    />
+                );
             default:
                 return <span className="text-slate-500">--</span>;
         }

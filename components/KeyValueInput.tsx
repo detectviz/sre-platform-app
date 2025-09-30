@@ -45,8 +45,8 @@ const MultiSelectDropdown: React.FC<{
 
     return (
         <div ref={dropdownRef} className="relative w-full">
-            <div 
-                onClick={() => setIsOpen(!isOpen)} 
+            <div
+                onClick={() => setIsOpen(!isOpen)}
                 className="w-full bg-slate-700 rounded-md px-3 py-1 text-sm flex items-center flex-wrap gap-1 cursor-pointer min-h-[40px]"
             >
                 {selectedValues.length === 0 && <span className="text-slate-400">{placeholder}</span>}
@@ -89,8 +89,8 @@ const KeyValueInput: React.FC<KeyValueInputProps> = ({ values, onChange, keyPlac
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        api.get<TagDefinition[]>('/settings/tags')
-            .then(res => setTagDefinitions(res.data))
+        api.get<{ items: TagDefinition[], total: number }>('/settings/tags')
+            .then(res => setTagDefinitions(res.data.items))
             .catch(err => {
                 console.error("Failed to load tag definitions", err);
                 showToast('無法載入標籤定義。', 'error');

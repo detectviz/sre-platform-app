@@ -24,6 +24,9 @@ export interface Dashboard {
   category: string;
   description: string;
   owner: string;
+  teamId?: string;
+  ownerId?: string;
+  tags?: Record<string, string>;
   createdAt: string;
   updatedAt: string;
   path: string;
@@ -124,6 +127,9 @@ export interface Incident {
   rule: string;
   ruleId: string;
   assignee?: string;
+  teamId?: string;
+  ownerId?: string;
+  tags?: Record<string, string>;
   occurredAt: string;
   createdAt: string;
   updatedAt: string;
@@ -155,6 +161,9 @@ export interface Resource {
   provider: string;
   region: string;
   owner: string;
+  teamId?: string;
+  ownerId?: string;
+  tags?: Record<string, string>;
   lastCheckInAt: string;
   createdAt: string;
   updatedAt: string;
@@ -353,6 +362,9 @@ export interface AlertRule {
   severity: 'critical' | 'warning' | 'info';
   automationEnabled: boolean;
   creator: string;
+  teamId?: string;
+  ownerId?: string;
+  tags?: Record<string, string>;
   createdAt: string;
   updatedAt: string;
   labels?: string[];
@@ -523,7 +535,6 @@ export type TagScope =
   | 'team'
   | 'user';
 
-export type TagValueKind = 'enum' | 'string' | 'number' | 'boolean';
 
 export interface TagValue {
   id: string;
@@ -536,11 +547,10 @@ export interface TagRegistryEntry {
   key: string;
   description: string;
   scopes: TagScope[];
-  kind: TagValueKind;
-  enumValues?: string[];
   required: boolean;
-  uniqueWithinScope: boolean;
   writableRoles: string[];
+  readonly?: boolean; // 標記為唯讀（自動填充）
+  linkToEntity?: string; // 關聯實體類型（用於跳轉）
 }
 
 export interface TagDefinition extends TagRegistryEntry {
@@ -553,7 +563,6 @@ export interface TagDefinition extends TagRegistryEntry {
 export interface TagManagementFilters {
   keyword?: string;
   scope?: TagScope;
-  kind?: TagValueKind;
 }
 
 export interface AuditLogFilters {
@@ -941,7 +950,6 @@ export interface DashboardOptions {
 
 export interface TagManagementOptions {
   scopes: { value: TagScope; label: string; description: string }[];
-  kinds: { value: TagValueKind; label: string; description: string }[];
   writableRoles: string[];
   governanceNotes?: string;
 }

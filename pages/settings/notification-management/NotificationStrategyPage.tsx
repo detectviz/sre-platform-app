@@ -12,6 +12,7 @@ import UnifiedSearchModal from '../../../components/UnifiedSearchModal';
 import ColumnSettingsModal from '../../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 import { showToast } from '../../../services/toast';
+import { useOptions } from '../../../contexts/OptionsContext';
 
 const PAGE_IDENTIFIER = 'notification_strategies';
 
@@ -31,9 +32,12 @@ const NotificationStrategyPage: React.FC = () => {
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
-    
+
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
+
+    const { options } = useOptions();
+    const incidentOptions = options?.incidents;
 
     const fetchStrategies = useCallback(async () => {
         if (!pageKey) return;
@@ -180,6 +184,26 @@ const NotificationStrategyPage: React.FC = () => {
         <ToolbarButton icon="search" text="搜尋和篩選" onClick={() => setIsSearchModalOpen(true)} />
     );
     
+    const getSeverityLabel = (severity: string): string => {
+        const descriptor = incidentOptions?.severities.find(s => s.value === severity);
+        return descriptor?.label || severity;
+    };
+
+    const getSeverityStyle = (severity: string): string => {
+        const descriptor = incidentOptions?.severities.find(s => s.value === severity);
+        return descriptor?.className || 'bg-slate-800/60 border border-slate-600 text-slate-200';
+    };
+
+    const getImpactLabel = (impact: string): string => {
+        const descriptor = incidentOptions?.impacts.find(i => i.value === impact);
+        return descriptor?.label || impact;
+    };
+
+    const getImpactStyle = (impact: string): string => {
+        const descriptor = incidentOptions?.impacts.find(i => i.value === impact);
+        return descriptor?.className || 'bg-slate-800/60 border border-slate-600 text-slate-200';
+    };
+
     const renderConditionTags = (condition: string) => {
         // 解析條件字串並顯示為標籤
         const parts = condition.split(/\s+(AND|OR)\s+/i);
@@ -220,8 +244,8 @@ const NotificationStrategyPage: React.FC = () => {
                 return (
                     <div className="flex flex-wrap gap-1">
                         {strategy.severityLevels.map(level => (
-                            <span key={level} className="px-2 py-0.5 text-xs rounded-full border border-red-500/40 text-red-300 bg-red-900/20">
-                                {level}
+                            <span key={level} className={`px-2 py-0.5 text-xs rounded-full ${getSeverityStyle(level)}`}>
+                                {getSeverityLabel(level)}
                             </span>
                         ))}
                     </div>
@@ -230,8 +254,8 @@ const NotificationStrategyPage: React.FC = () => {
                 return (
                     <div className="flex flex-wrap gap-1">
                         {strategy.impactLevels.map(level => (
-                            <span key={level} className="px-2 py-0.5 text-xs rounded-full border border-amber-500/40 text-amber-200 bg-amber-900/10">
-                                {level}
+                            <span key={level} className={`px-2 py-0.5 text-xs rounded-full ${getImpactStyle(level)}`}>
+                                {getImpactLabel(level)}
                             </span>
                         ))}
                     </div>

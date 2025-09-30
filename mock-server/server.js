@@ -5,6 +5,7 @@ import { spawnSync } from 'child_process';
 import { createRequire } from 'module';
 import { createServer } from 'http';
 import { URL } from 'url';
+import 'dotenv/config';
 
 const ALLOWED_METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
 const __filename = fileURLToPath(import.meta.url);
@@ -12,8 +13,10 @@ const __dirname = path.dirname(__filename);
 const distDir = path.join(__dirname, 'dist');
 const compiledHandlerPath = path.join(distDir, 'mock-server', 'handlers.js');
 const compiledDbPath = path.join(distDir, 'mock-server', 'db.js');
+const compiledTagRegistryPath = path.join(distDir, 'tag-registry.js');
 const sourceHandlerPath = path.join(__dirname, 'handlers.ts');
 const sourceDbPath = path.join(__dirname, 'db.ts');
+const sourceTagRegistryPath = path.join(__dirname, '..', 'tag-registry.ts');
 
 const require = createRequire(import.meta.url);
 
@@ -55,7 +58,8 @@ const isOutdated = (compiledPath, sourcePath) => {
 const needsBuild = () => {
   return (
     isOutdated(compiledHandlerPath, sourceHandlerPath) ||
-    isOutdated(compiledDbPath, sourceDbPath)
+    isOutdated(compiledDbPath, sourceDbPath) ||
+    isOutdated(compiledTagRegistryPath, sourceTagRegistryPath)
   );
 };
 
@@ -68,6 +72,7 @@ const buildSources = () => {
       tscPath,
       sourceHandlerPath,
       sourceDbPath,
+      sourceTagRegistryPath,
       '--outDir',
       distDir,
       '--module',
@@ -88,13 +93,23 @@ const buildSources = () => {
     process.exit(compile.status ?? 1);
   }
 
+  // Patch handler imports
   const handlerContent = fs.readFileSync(compiledHandlerPath, 'utf8');
-  const patchedContent = handlerContent
+  const patchedHandlerContent = handlerContent
     .replace("from './db'", "from './db.js'")
     .replace("from '../tag-registry'", "from '../tag-registry.js'")
     .replace("from '../../types'", "from '../../types.js'");
-  if (patchedContent !== handlerContent) {
-    fs.writeFileSync(compiledHandlerPath, patchedContent);
+  if (patchedHandlerContent !== handlerContent) {
+    fs.writeFileSync(compiledHandlerPath, patchedHandlerContent);
+  }
+
+  // Patch db imports
+  const dbContent = fs.readFileSync(compiledDbPath, 'utf8');
+  const patchedDbContent = dbContent
+    .replace("from '../tag-registry'", "from '../tag-registry.js'")
+    .replace("from '../types'", "from '../types.js'");
+  if (patchedDbContent !== dbContent) {
+    fs.writeFileSync(compiledDbPath, patchedDbContent);
   }
 };
 

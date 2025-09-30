@@ -210,16 +210,6 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
           {options?.tagManagement.scopes.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
         </select>
       </FormRow>
-      <FormRow label={content.TAG_MANAGEMENT.KIND}>
-        <select
-          value={(filters as TagManagementFilters).kind || ''}
-          onChange={e => setFilters(prev => ({ ...(prev as TagManagementFilters), kind: e.target.value as TagManagementFilters['kind'] }))}
-          className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
-        >
-          <option value="">{content.TAG_MANAGEMENT.ALL_KINDS}</option>
-          {options?.tagManagement.kinds.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-        </select>
-      </FormRow>
     </>
   );
 

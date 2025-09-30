@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import FormRow from './FormRow';
-import { TagDefinition, TagManagementOptions, TagScope, TagValueKind } from '../types';
+import { TagDefinition, TagManagementOptions, TagScope } from '../types';
 import Icon from './Icon';
 import { useOptions } from '../contexts/OptionsContext';
 import { showToast } from '../services/toast';
@@ -22,10 +22,8 @@ const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen,
         key: '',
         description: '',
         scopes: opts.scopes.length ? [opts.scopes[0].value] : [],
-        kind: opts.kinds.length ? opts.kinds[0].value : 'string',
         writableRoles: opts.writableRoles,
         required: false,
-        uniqueWithinScope: false,
     });
 
     useEffect(() => {
@@ -57,7 +55,6 @@ const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen,
     };
 
     const scopeOptions = tagManagementOptions?.scopes || [];
-    const kindOptions = tagManagementOptions?.kinds || [];
     const writableRoleOptions = tagManagementOptions?.writableRoles || [];
     const error = optionsError;
     const isLoading = isLoadingOptions;
@@ -125,19 +122,6 @@ const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen,
                         <p className="mt-1 text-xs text-amber-300">至少選擇一個適用範圍。</p>
                     )}
                 </FormRow>
-                <FormRow label="資料型別">
-                    <select
-                        value={formData.kind || ''}
-                        onChange={e => handleChange('kind', e.target.value as TagValueKind)}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm disabled:bg-slate-800/50 disabled:cursor-not-allowed"
-                        disabled={isLoading || !!error}
-                    >
-                        {isLoading ? <option>載入中...</option> : kindOptions.map(opt => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                    </select>
-                    <p className="text-xs text-slate-500 mt-1">僅當型別為「枚舉」時，才能於「管理標籤值」中設定允許值域。</p>
-                </FormRow>
                 <FormRow label="描述">
                     <textarea
                         value={formData.description || ''}
@@ -189,16 +173,6 @@ const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen,
                             className="form-checkbox h-5 w-5 rounded bg-slate-800 border-slate-600 text-sky-500 focus:ring-sky-500"
                         />
                         <span className="text-slate-300 font-semibold">此標籤為必填項目</span>
-                    </label>
-                    <label className={`flex items-center space-x-3 p-3 bg-slate-800/30 rounded-lg ${isLoading || !!error ? 'cursor-not-allowed opacity-50' : 'hover:bg-slate-800/50 cursor-pointer'}`}>
-                        <input
-                            type="checkbox"
-                            checked={formData.uniqueWithinScope || false}
-                            onChange={e => handleChange('uniqueWithinScope', e.target.checked)}
-                            disabled={isLoading || !!error}
-                            className="form-checkbox h-5 w-5 rounded bg-slate-800 border-slate-600 text-sky-500 focus:ring-sky-500"
-                        />
-                        <span className="text-slate-300 font-semibold">同一範圍內僅允許唯一值</span>
                     </label>
                 </FormRow>
             </div>

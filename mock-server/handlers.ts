@@ -51,6 +51,32 @@ const sortData = (data: any[], sortBy: string, sortOrder: 'asc' | 'desc') => {
     });
 };
 
+/**
+ * 自動填充 team 和 owner 標籤（從關聯實體自動生成）
+ * @param entity 實體物件（需要有 teamId 和/或 ownerId 欄位）
+ */
+const autoPopulateReadonlyTags = (entity: any): void => {
+    if (!entity.tags) {
+        entity.tags = {};
+    }
+
+    // 自動填充 team 標籤
+    if (entity.teamId) {
+        const team = DB.teams.find((t: any) => t.id === entity.teamId);
+        if (team) {
+            entity.tags.team = team.name;
+        }
+    }
+
+    // 自動填充 owner 標籤
+    if (entity.ownerId) {
+        const owner = DB.users.find((u: any) => u.id === entity.ownerId);
+        if (owner) {
+            entity.tags.owner = owner.name;
+        }
+    }
+};
+
 
 const handleRequest = async (method: HttpMethod, url: string, params: any, body: any) => {
     try {
@@ -373,7 +399,12 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         status: 'New',
                         severity: normalizedSeverity as Incident['severity'],
                         assignee: assignee || undefined,
+                        teamId: body.teamId,
+                        ownerId: body.ownerId,
+                        tags: body.tags || {},
                         occurredAt: timestamp,
+                        createdAt: timestamp,
+                        updatedAt: timestamp,
                         history: [
                             {
                                 timestamp,
@@ -383,6 +414,9 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                             },
                         ],
                     };
+
+                    // 自動填充 team 和 owner 標籤
+                    autoPopulateReadonlyTags(newIncident);
 
                     DB.incidents.unshift(newIncident);
                     return newIncident;
@@ -1211,15 +1245,40 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     if (tagIndex === -1) {
                         throw { status: 404, message: '標籤不存在。' };
                     }
-                    if (DB.tagDefinitions[tagIndex].kind !== 'enum') {
-                        throw { status: 400, message: '僅枚舉型標籤支援管理允許值。' };
-                    }
                     DB.tagDefinitions[tagIndex].allowedValues = Array.isArray(body) ? body : [];
                     return DB.tagDefinitions[tagIndex];
                 }
                 break;
             }
             case 'POST /settings': {
+                if (id === 'tags') {
+                    // 創建新標籤定義
+                    if (!body.key || !body.scopes || !body.writableRoles) {
+                        throw { status: 400, message: '缺少必要欄位。' };
+                    }
+
+                    // 檢查標籤鍵是否已存在
+                    const existingTag = DB.tagDefinitions.find((t: any) => t.key === body.key);
+                    if (existingTag) {
+                        throw { status: 400, message: `標籤鍵「${body.key}」已存在。` };
+                    }
+
+                    const newTag: TagDefinition = {
+                        id: `tag-${uuidv4()}`,
+                        key: body.key,
+                        description: body.description || '',
+                        scopes: body.scopes,
+                        required: body.required || false,
+                        writableRoles: body.writableRoles,
+                        allowedValues: Array.isArray(body.allowedValues)
+                            ? body.allowedValues
+                            : [],
+                        usageCount: 0,
+                    };
+
+                    DB.tagDefinitions.push(newTag);
+                    return newTag;
+                }
                 if (urlParts[1] === 'notification-channels' && action === 'test') {
                     const channelId = subId;
                     const channel = DB.notificationChannels.find((c: any) => c.id === channelId);
@@ -1284,16 +1343,13 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const fallbackRoles = DB.allOptions?.tagManagement?.writableRoles || ['platform_admin'];
                     const payload = {
                         id: `tag-${uuidv4()}`,
-                        allowedValues: [],
+                        allowedValues: Array.isArray(body?.allowedValues) ? body.allowedValues : [],
                         usageCount: 0,
                         scopes: Array.isArray(body?.scopes) ? body.scopes : [],
-                        kind: body?.kind ?? 'string',
                         writableRoles: Array.isArray(body?.writableRoles) && body.writableRoles.length > 0 ? body.writableRoles : fallbackRoles,
                         required: Boolean(body?.required),
-                        uniqueWithinScope: Boolean(body?.uniqueWithinScope),
                         description: body?.description ?? '',
                         system: Boolean(body?.system),
-                        enumValues: body?.enumValues,
                         key: body?.key,
                     } as TagDefinition;
 
@@ -1302,17 +1358,6 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     }
                     if (!payload.scopes.length) {
                         throw { status: 400, message: '至少需指定一個適用範圍。' };
-                    }
-                    if (payload.kind === 'enum' && Array.isArray(body?.allowedValues)) {
-                        payload.allowedValues = body.allowedValues;
-                    }
-                    if (payload.kind === 'enum' && Array.isArray(body?.enumValues)) {
-                        payload.allowedValues = body.enumValues.map((value: string, index: number) => ({ id: `${payload.key}:${value}:${index}`, value, usageCount: 0 }));
-                        payload.enumValues = body.enumValues;
-                    }
-                    if (payload.kind !== 'enum') {
-                        payload.allowedValues = [];
-                        payload.enumValues = undefined;
                     }
 
                     DB.tagDefinitions.unshift(payload);
@@ -1362,7 +1407,6 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     if (existing.system) {
                         next.key = existing.key;
                         next.scopes = existing.scopes;
-                        next.kind = existing.kind;
                     } else if (Array.isArray(body?.scopes)) {
                         next.scopes = body.scopes;
                     }
@@ -1371,18 +1415,8 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         next.writableRoles = body.writableRoles;
                     }
 
-                    if (body?.kind && body.kind !== 'enum') {
-                        next.allowedValues = [];
-                        next.enumValues = undefined;
-                    }
-
-                    if (next.kind === 'enum') {
-                        if (Array.isArray(body?.enumValues)) {
-                            next.enumValues = body.enumValues;
-                            next.allowedValues = body.enumValues.map((value: string, index: number) => ({ id: `${next.key}:${value}:${index}`, value, usageCount: 0 }));
-                        } else if (Array.isArray(body?.allowedValues)) {
-                            next.allowedValues = body.allowedValues;
-                        }
+                    if (Array.isArray(body?.allowedValues)) {
+                        next.allowedValues = body.allowedValues;
                     }
 
                     DB.tagDefinitions[index] = next;
