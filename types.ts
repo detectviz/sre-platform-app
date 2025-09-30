@@ -56,7 +56,7 @@ export interface Recommendation {
 }
 
 export interface GroupActionRecommendation extends Recommendation {
-    target_incident_ids?: string[];
+  target_incident_ids?: string[];
 }
 
 export interface IncidentAnalysis {
@@ -138,10 +138,10 @@ export interface IncidentCreateRequest {
 }
 
 export interface LayoutWidget {
-    id: string;
-    name: string;
-    description: string;
-    supportedPages: string[];
+  id: string;
+  name: string;
+  description: string;
+  supportedPages: string[];
 }
 
 export interface Resource {
@@ -246,13 +246,13 @@ export interface AutomationTrigger {
 }
 
 export interface MailSettings {
-    smtpServer: string;
-    port: number;
-    username: string;
-    senderName: string;
-    senderEmail: string;
-    encryption: 'none' | 'tls' | 'ssl';
-    encryptionModes?: string[];
+  smtpServer: string;
+  port: number;
+  username: string;
+  senderName: string;
+  senderEmail: string;
+  encryption: 'none' | 'tls' | 'ssl';
+  encryptionModes?: string[];
 }
 
 export interface GrafanaSettings {
@@ -283,30 +283,30 @@ export interface Team {
 }
 
 export interface RolePermission {
-    module: string;
-    actions: ('read' | 'create' | 'update' | 'delete' | 'execute')[];
+  module: string;
+  actions: ('read' | 'create' | 'update' | 'delete' | 'execute')[];
 }
 
 export interface Role {
-    id: string;
-    name: string;
-    description: string;
-    userCount: number;
-    enabled: boolean; // 改用 enabled 替代 status
-    createdAt: string;
-    permissions: RolePermission[];
-    deleted_at?: string;
+  id: string;
+  name: string;
+  description: string;
+  userCount: number;
+  enabled: boolean; // 改用 enabled 替代 status
+  createdAt: string;
+  permissions: RolePermission[];
+  deleted_at?: string;
 }
 
 export interface AuditLog {
-    id: string;
-    timestamp: string;
-    user: { id: string, name: string };
-    action: string;
-    target: { type: string, name: string };
-    result: 'success' | 'failure';
-    ip: string;
-    details: Record<string, any>;
+  id: string;
+  timestamp: string;
+  user: { id: string, name: string };
+  action: string;
+  target: { type: string, name: string };
+  result: 'success' | 'failure';
+  ip: string;
+  details: Record<string, any>;
 }
 
 export interface RuleCondition {
@@ -383,9 +383,9 @@ export interface SilenceRule {
 }
 
 export interface ResourceType {
-    id: string;
-    name: string;
-    icon: string;
+  id: string;
+  name: string;
+  icon: string;
 }
 
 export interface AlertRuleTemplate {
@@ -505,8 +505,6 @@ export type TagScope =
 
 export type TagValueKind = 'enum' | 'string' | 'number' | 'boolean';
 
-export type PiiLevel = 'none' | 'low' | 'high';
-
 export interface TagValue {
   id: string;
   value: string;
@@ -523,8 +521,6 @@ export interface TagRegistryEntry {
   required: boolean;
   uniqueWithinScope: boolean;
   writableRoles: string[];
-  piiLevel: PiiLevel;
-  system: boolean;
 }
 
 export interface TagDefinition extends TagRegistryEntry {
@@ -538,8 +534,6 @@ export interface TagManagementFilters {
   keyword?: string;
   scope?: TagScope;
   kind?: TagValueKind;
-  piiLevel?: PiiLevel;
-  systemOnly?: boolean;
 }
 
 export interface AuditLogFilters {
@@ -603,12 +597,12 @@ export interface NotificationItem {
 
 export type LogLevel = 'info' | 'warning' | 'error' | 'debug';
 export interface LogEntry {
-    id: string;
-    timestamp: string;
-    level: LogLevel;
-    service: string;
-    message: string;
-    details: Record<string, any>;
+  id: string;
+  timestamp: string;
+  level: LogLevel;
+  service: string;
+  message: string;
+  details: Record<string, any>;
 }
 
 export interface LogAnalysis {
@@ -624,22 +618,22 @@ export interface LogAnalysis {
 export type TimeSeriesData = [string, number][];
 
 export interface MetricsData {
-    cpu: TimeSeriesData;
-    memory: TimeSeriesData;
+  cpu: TimeSeriesData;
+  memory: TimeSeriesData;
 }
 
 export interface ServiceHealthData {
-    heatmap_data: [number, number, number][];
-    x_axis_labels: string[];
-    y_axis_labels: string[];
+  heatmap_data: [number, number, number][];
+  x_axis_labels: string[];
+  y_axis_labels: string[];
 }
 
 export interface ResourceGroupStatusData {
-    group_names: string[];
-    series: {
-        name: '健康' | '警告' | '嚴重';
-        data: number[];
-    }[];
+  group_names: string[];
+  series: {
+    name: '健康' | '警告' | '嚴重';
+    data: number[];
+  }[];
 }
 
 export interface Anomaly {
@@ -658,48 +652,48 @@ export interface Suggestion {
 }
 
 export interface HealthScore {
-    score: number;
-    summary: string;
+  score: number;
+  summary: string;
 }
 
 export interface AnalysisOverviewData {
-    health_score: HealthScore;
-    anomalies: Anomaly[];
-    suggestions: Suggestion[];
-    event_correlation_data: {
-        nodes: { id: string; name: string; value: number; symbolSize: number; category: number }[];
-        links: { source: string; target: string }[];
-        categories: { name: string }[];
-    };
-    recent_logs: LogEntry[];
+  health_score: HealthScore;
+  anomalies: Anomaly[];
+  suggestions: Suggestion[];
+  event_correlation_data: {
+    nodes: { id: string; name: string; value: number; symbolSize: number; category: number }[];
+    links: { source: string; target: string }[];
+    categories: { name: string }[];
+  };
+  recent_logs: LogEntry[];
 }
 
 export interface CapacityPlanningData {
-    trends: {
-        cpu: { historical: TimeSeriesData; forecast: TimeSeriesData };
-        memory: { historical: TimeSeriesData; forecast: TimeSeriesData };
-        storage: { historical: TimeSeriesData; forecast: TimeSeriesData };
-    };
-    forecast_model: {
-        prediction: TimeSeriesData;
-        confidence_band: [TimeSeriesData, TimeSeriesData];
-    };
-    suggestions: {
-        title: string;
-        impact: '高' | '中' | '低';
-        effort: '高' | '中' | '低';
-        details: string;
-    }[];
-    resource_analysis: {
-        name: string;
-        current: string;
-        predicted: string;
-        recommended: string;
-        cost: string;
-    }[];
-    options: {
-      timeRangeOptions: { label: string; value: string }[];
-    };
+  trends: {
+    cpu: { historical: TimeSeriesData; forecast: TimeSeriesData };
+    memory: { historical: TimeSeriesData; forecast: TimeSeriesData };
+    storage: { historical: TimeSeriesData; forecast: TimeSeriesData };
+  };
+  forecast_model: {
+    prediction: TimeSeriesData;
+    confidence_band: [TimeSeriesData, TimeSeriesData];
+  };
+  suggestions: {
+    title: string;
+    impact: '高' | '中' | '低';
+    effort: '高' | '中' | '低';
+    details: string;
+  }[];
+  resource_analysis: {
+    name: string;
+    current: string;
+    predicted: string;
+    recommended: string;
+    cost: string;
+  }[];
+  options: {
+    timeRangeOptions: { label: string; value: string }[];
+  };
 }
 
 export interface PageMetadata {
@@ -729,142 +723,141 @@ export interface PreferenceOptions {
 // --- API Option Types (v2.17 Refactor) ---
 
 export interface StyleDescriptor<T extends string = string> {
-    value: T;
-    label: string;
-    className: string;
+  value: T;
+  label: string;
+  className: string;
 }
 export interface ColorDescriptor<T extends string = string> {
-    value: T;
-    label: string;
-    color: string;
+  value: T;
+  label: string;
+  color: string;
 }
 
 export interface GrafanaOptions {
-    timeOptions: { label: string, value: string }[];
-    refreshOptions: { label: string, value: string }[];
-    tvModeOptions: { label: string, value: string }[];
-    themeOptions: { label: string, value: string }[];
-    // New additions for data centralization
-    themeLabel: string;
-    tvModeLabel: string;
-    refreshLabel: string;
-    timeLabel: string;
+  timeOptions: { label: string, value: string }[];
+  refreshOptions: { label: string, value: string }[];
+  tvModeOptions: { label: string, value: string }[];
+  themeOptions: { label: string, value: string }[];
+  // New additions for data centralization
+  themeLabel: string;
+  tvModeLabel: string;
+  refreshLabel: string;
+  timeLabel: string;
 }
 
 export interface LogOptions {
-    timeRangeOptions: { label: string, value: string }[];
+  timeRangeOptions: { label: string, value: string }[];
 }
 
 export interface SilenceRuleOptions {
-    keys: string[];
-    values: Record<string, string[]>;
-    defaultMatcher: SilenceMatcher;
-    weekdays: { value: number, label: string }[];
-    types: { value: SilenceRule['type'], label: string }[];
-    statuses: { value: boolean, label: string }[];
-    recurrenceTypes: { value: 'daily' | 'weekly' | 'monthly' | 'custom', label: string }[];
+  keys: string[];
+  values: Record<string, string[]>;
+  defaultMatcher: SilenceMatcher;
+  weekdays: { value: number, label: string }[];
+  types: { value: SilenceRule['type'], label: string }[];
+  statuses: { value: boolean, label: string }[];
+  recurrenceTypes: { value: 'daily' | 'weekly' | 'monthly' | 'custom', label: string }[];
 }
 
 export interface InfraInsightsOptions {
-    timeOptions: { label: string, value: string }[];
-    riskLevels: ColorDescriptor[];
-    refreshOptions: { label: string, value: string }[];
-    tvModeOptions: { label: string, value: string }[];
-    themeOptions: { label: string, value: string }[];
+  timeOptions: { label: string, value: string }[];
+  riskLevels: ColorDescriptor[];
+  refreshOptions: { label: string, value: string }[];
+  tvModeOptions: { label: string, value: string }[];
+  themeOptions: { label: string, value: string }[];
 }
 
 export interface IncidentOptions {
-    statuses: StyleDescriptor<Incident['status']>[];
-    severities: StyleDescriptor<Incident['severity']>[];
-    impacts: StyleDescriptor<Incident['impact']>[];
-    quickSilenceDurations: { label: string, value: number }[];
+  statuses: StyleDescriptor<Incident['status']>[];
+  severities: StyleDescriptor<Incident['severity']>[];
+  impacts: StyleDescriptor<Incident['impact']>[];
+  quickSilenceDurations: { label: string, value: number }[];
 }
 
 export interface AlertRuleOptions {
-    severities: { value: AlertRule['severity'], label: string, className: string }[];
-    statuses: { value: boolean, label: string }[];
-    operators: string[];
-    scopeModes: { value: string; label: string; }[];
-    variables: string[];
-    stepTitles: string[];
+  severities: { value: AlertRule['severity'], label: string, className: string }[];
+  statuses: { value: boolean, label: string }[];
+  operators: string[];
+  scopeModes: { value: string; label: string; }[];
+  variables: string[];
+  stepTitles: string[];
 }
 
 export interface AutomationExecutionOptions {
-    statuses: StyleDescriptor<AutomationExecution['status']>[];
+  statuses: StyleDescriptor<AutomationExecution['status']>[];
 }
 
 export interface AutomationPlaybookOptions {
-    statuses: StyleDescriptor<AutomationPlaybook['lastRunStatus']>[];
+  statuses: StyleDescriptor<AutomationPlaybook['lastRunStatus']>[];
 }
 
 export interface NotificationHistoryOptions {
-    statuses: { value: NotificationHistoryRecord['status'], label: string }[];
-    channelTypes: { value: NotificationChannelType, label: string }[];
+  statuses: { value: NotificationHistoryRecord['status'], label: string }[];
+  channelTypes: { value: NotificationChannelType, label: string }[];
 }
 
 export interface NotificationOptions {
-    severities: StyleDescriptor<NotificationItem['severity']>[];
+  severities: StyleDescriptor<NotificationItem['severity']>[];
 }
 
 export interface ResourceOptions {
-    statuses: StyleDescriptor<Resource['status']>[];
-    statusColors: ColorDescriptor<Resource['status']>[];
-    types: string[];
-    providers: string[];
-    regions: string[];
-    owners: string[];
+  statuses: StyleDescriptor<Resource['status']>[];
+  statusColors: ColorDescriptor<Resource['status']>[];
+  types: string[];
+  providers: string[];
+  regions: string[];
+  owners: string[];
 }
 
 export interface PersonnelOptions {
-    statuses: StyleDescriptor<User['status']>[];
+  statuses: StyleDescriptor<User['status']>[];
 }
 
 export interface AuditLogOptions {
-    actionTypes: string[];
+  actionTypes: string[];
 }
 
 export interface AutomationScriptOptions {
-    playbookTypes: { value: AutomationPlaybook['type'], label: string }[];
-    parameterTypes: { value: ParameterDefinition['type'], label: string }[];
+  playbookTypes: { value: AutomationPlaybook['type'], label: string }[];
+  parameterTypes: { value: ParameterDefinition['type'], label: string }[];
 }
 
 export interface NotificationChannelOptions {
-    channelTypes: { value: NotificationChannelType, label: string }[];
-    httpMethods: ('POST' | 'PUT' | 'GET')[];
+  channelTypes: { value: NotificationChannelType, label: string }[];
+  httpMethods: ('POST' | 'PUT' | 'GET')[];
 }
 
 export interface NotificationStrategyOptions {
-    severityLevels: IncidentSeverity[];
-    impactLevels: IncidentImpact[];
-    defaultCondition: string;
-    conditionKeys: Record<string, string[]>;
-    tagKeys: string[];
-    tagValues: Record<string, string[]>;
-    stepTitles: string[];
+  severityLevels: IncidentSeverity[];
+  impactLevels: IncidentImpact[];
+  defaultCondition: string;
+  conditionKeys: Record<string, string[]>;
+  tagKeys: string[];
+  tagValues: Record<string, string[]>;
+  stepTitles: string[];
 }
 
 export interface AutomationTriggerOptions {
-    triggerTypes: { value: TriggerType, label: string }[];
-    conditionKeys: string[];
-    severityOptions: { value: AlertRule['severity'], label: string }[];
-    defaultConfigs: Record<TriggerType, Partial<AutomationTrigger['config']>>;
+  triggerTypes: { value: TriggerType, label: string }[];
+  conditionKeys: string[];
+  severityOptions: { value: AlertRule['severity'], label: string }[];
+  defaultConfigs: Record<TriggerType, Partial<AutomationTrigger['config']>>;
 }
 
 export interface TopologyOptions {
-    layouts: { value: string, label: string }[];
+  layouts: { value: string, label: string }[];
 }
 
 export interface DashboardOptions {
-    categories: string[];
-    owners: string[];
+  categories: string[];
+  owners: string[];
 }
 
 export interface TagManagementOptions {
-    scopes: { value: TagScope; label: string; description: string }[];
-    kinds: { value: TagValueKind; label: string; description: string }[];
-    piiLevels: { value: PiiLevel; label: string; description: string }[];
-    writableRoles: string[];
-    governanceNotes?: string;
+  scopes: { value: TagScope; label: string; description: string }[];
+  kinds: { value: TagValueKind; label: string; description: string }[];
+  writableRoles: string[];
+  governanceNotes?: string;
 }
 
 export interface LogExplorerFilters {
@@ -878,21 +871,21 @@ export type AuthMethod = 'Token' | 'Basic Auth' | 'Keycloak Integration' | 'Keyc
 export type ConnectionStatus = 'ok' | 'error' | 'pending';
 
 export interface KeyValueTag {
-    id: string;
-    key: string;
-    value: string;
+  id: string;
+  key: string;
+  value: string;
 }
 
 export interface Datasource {
-    id: string;
-    name: string;
-    type: DatasourceType;
-    status: ConnectionStatus;
-    createdAt: string;
-    url: string;
-    authMethod: AuthMethod;
-    tags: KeyValueTag[];
-    deleted_at?: string;
+  id: string;
+  name: string;
+  type: DatasourceType;
+  status: ConnectionStatus;
+  createdAt: string;
+  url: string;
+  authMethod: AuthMethod;
+  tags: KeyValueTag[];
+  deleted_at?: string;
 }
 
 export type DiscoveryJobKind = 'K8s' | 'SNMP' | 'Cloud Provider' | 'Static Range' | 'Custom Script';
@@ -901,51 +894,51 @@ export type DiscoveryJobStatus = 'success' | 'partial_failure' | 'failed' | 'run
 export type ExporterTemplateId = 'none' | 'node_exporter' | 'snmp_exporter' | 'modbus_exporter' | 'ipmi_exporter';
 
 export interface DiscoveryJobExporterBinding {
-    templateId: ExporterTemplateId;
-    overridesYaml?: string;
-    mibProfileId?: string;
+  templateId: ExporterTemplateId;
+  overridesYaml?: string;
+  mibProfileId?: string;
 }
 
 export interface DiscoveryJobEdgeGateway {
-    enabled: boolean;
-    gatewayId?: string;
+  enabled: boolean;
+  gatewayId?: string;
 }
 
 export interface DiscoveryJob {
-    id: string;
-    name: string;
-    kind: DiscoveryJobKind;
-    schedule: string;
-    lastRun: string;
-    status: DiscoveryJobStatus;
-    targetConfig: Record<string, any>;
-    exporterBinding?: DiscoveryJobExporterBinding | null;
-    edgeGateway?: DiscoveryJobEdgeGateway | null;
-    tags: KeyValueTag[];
-    deleted_at?: string;
+  id: string;
+  name: string;
+  kind: DiscoveryJobKind;
+  schedule: string;
+  lastRun: string;
+  status: DiscoveryJobStatus;
+  targetConfig: Record<string, any>;
+  exporterBinding?: DiscoveryJobExporterBinding | null;
+  edgeGateway?: DiscoveryJobEdgeGateway | null;
+  tags: KeyValueTag[];
+  deleted_at?: string;
 }
 
 export interface DatasourceFilters {
-    keyword?: string;
-    type?: DatasourceType;
+  keyword?: string;
+  type?: DatasourceType;
 }
 
 export interface DiscoveryJobFilters {
-    keyword?: string;
-    kind?: DiscoveryJobKind;
-    status?: DiscoveryJobStatus;
+  keyword?: string;
+  kind?: DiscoveryJobKind;
+  status?: DiscoveryJobStatus;
 }
 
 export type DiscoveredResourceStatus = 'new' | 'imported' | 'ignored';
 
 export interface DiscoveredResource {
-    id: string;
-    name: string;
-    ip: string;
-    type: string;
-    tags: KeyValueTag[];
-    status: DiscoveredResourceStatus;
-    ignoredAt?: string;
+  id: string;
+  name: string;
+  ip: string;
+  type: string;
+  tags: KeyValueTag[];
+  status: DiscoveredResourceStatus;
+  ignoredAt?: string;
 }
 
 export interface ResourceOverviewData {
@@ -956,24 +949,24 @@ export interface ResourceOverviewData {
 }
 // --- AI Resource Analysis Types ---
 export interface ResourceRisk {
-    resourceId: string;
-    resourceName: string;
-    riskLevel: 'High' | 'Medium' | 'Low';
-    reason: string;
-    recommendation: string;
+  resourceId: string;
+  resourceName: string;
+  riskLevel: 'High' | 'Medium' | 'Low';
+  reason: string;
+  recommendation: string;
 }
 
 export interface OptimizationSuggestion {
-    resourceId: string;
-    resourceName: string;
-    suggestion: string;
-    type: 'Cost' | 'Performance' | 'Security';
+  resourceId: string;
+  resourceName: string;
+  suggestion: string;
+  type: 'Cost' | 'Performance' | 'Security';
 }
 
 export interface ResourceAnalysis {
-    summary: string;
-    riskAnalysis: ResourceRisk[];
-    optimizationSuggestions: OptimizationSuggestion[];
+  summary: string;
+  riskAnalysis: ResourceRisk[];
+  optimizationSuggestions: OptimizationSuggestion[];
 }
 // ------------------------------------
 
@@ -983,63 +976,63 @@ export interface LicenseInfo {
 }
 
 export interface DatasourceOptions {
-    types: DatasourceType[];
-    authMethods: AuthMethod[];
+  types: DatasourceType[];
+  authMethods: AuthMethod[];
 }
 
 export interface ExporterTemplateOption {
-    id: ExporterTemplateId;
-    name: string;
-    description?: string;
-    supportsMibProfile?: boolean;
-    supportsOverrides?: boolean;
+  id: ExporterTemplateId;
+  name: string;
+  description?: string;
+  supportsMibProfile?: boolean;
+  supportsOverrides?: boolean;
 }
 
 export interface MibProfileOption {
-    id: string;
-    name: string;
-    description?: string;
-    templateId: ExporterTemplateId;
+  id: string;
+  name: string;
+  description?: string;
+  templateId: ExporterTemplateId;
 }
 
 export interface EdgeGatewayOption {
-    id: string;
-    name: string;
-    location?: string;
-    description?: string;
+  id: string;
+  name: string;
+  location?: string;
+  description?: string;
 }
 
 export interface AutoDiscoveryOptions {
-    jobKinds: DiscoveryJobKind[];
-    exporterTemplates: ExporterTemplateOption[];
-    mibProfiles: MibProfileOption[];
-    edgeGateways: EdgeGatewayOption[];
+  jobKinds: DiscoveryJobKind[];
+  exporterTemplates: ExporterTemplateOption[];
+  mibProfiles: MibProfileOption[];
+  edgeGateways: EdgeGatewayOption[];
 }
 
 export interface AllOptions {
-    // Existing
-    incidents: IncidentOptions;
-    alertRules: AlertRuleOptions;
-    silenceRules: SilenceRuleOptions;
-    resources: ResourceOptions;
-    automationScripts: AutomationScriptOptions;
-    notificationChannels: NotificationChannelOptions;
-    automationTriggers: AutomationTriggerOptions;
-    personnel: PersonnelOptions;
-    // New additions for v2.24
-    dashboards: DashboardOptions;
-    notificationStrategies: NotificationStrategyOptions;
-    grafana: GrafanaOptions;
-    auditLogs: AuditLogOptions;
-    logs: LogOptions;
-    infraInsights: InfraInsightsOptions;
-    tagManagement: TagManagementOptions;
-    topology: TopologyOptions;
-    automationExecutions: AutomationExecutionOptions;
-    notificationHistory: NotificationHistoryOptions;
-    // New additions for data centralization
-    datasources: DatasourceOptions;
-    autoDiscovery: AutoDiscoveryOptions;
+  // Existing
+  incidents: IncidentOptions;
+  alertRules: AlertRuleOptions;
+  silenceRules: SilenceRuleOptions;
+  resources: ResourceOptions;
+  automationScripts: AutomationScriptOptions;
+  notificationChannels: NotificationChannelOptions;
+  automationTriggers: AutomationTriggerOptions;
+  personnel: PersonnelOptions;
+  // New additions for v2.24
+  dashboards: DashboardOptions;
+  notificationStrategies: NotificationStrategyOptions;
+  grafana: GrafanaOptions;
+  auditLogs: AuditLogOptions;
+  logs: LogOptions;
+  infraInsights: InfraInsightsOptions;
+  tagManagement: TagManagementOptions;
+  topology: TopologyOptions;
+  automationExecutions: AutomationExecutionOptions;
+  notificationHistory: NotificationHistoryOptions;
+  // New additions for data centralization
+  datasources: DatasourceOptions;
+  autoDiscovery: AutoDiscoveryOptions;
 }
 
 // New additions for data centralization

@@ -67,7 +67,10 @@ const buildSources = () => {
   }
 
   const handlerContent = fs.readFileSync(compiledHandlerPath, 'utf8');
-  const patchedContent = handlerContent.replace("from './db'", "from './db.js'");
+  const patchedContent = handlerContent
+    .replace("from './db'", "from './db.js'")
+    .replace("from '../tag-registry'", "from '../tag-registry.js'")
+    .replace("from '../../types'", "from '../../types.js'");
   if (patchedContent !== handlerContent) {
     fs.writeFileSync(compiledHandlerPath, patchedContent);
   }

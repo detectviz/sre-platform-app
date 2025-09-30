@@ -73,7 +73,7 @@ const AlertRulePage: React.FC = () => {
             fetchRules();
         }
     }, [fetchRules, pageKey]);
-    
+
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
         if (!pageKey) {
             showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
@@ -128,7 +128,7 @@ const AlertRulePage: React.FC = () => {
             setEditingRule(null);
         }
     };
-    
+
     const handleDeleteClick = (rule: AlertRule) => {
         setDeletingRule(rule);
         setIsDeleteModalOpen(true);
@@ -152,11 +152,11 @@ const AlertRulePage: React.FC = () => {
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSelectedIds(e.target.checked ? rules.map(r => r.id) : []);
     };
-    
+
     const handleSelectOne = (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
         setSelectedIds(prev => e.target.checked ? [...prev, id] : prev.filter(selectedId => selectedId !== id));
     };
-    
+
     const isAllSelected = rules.length > 0 && selectedIds.length === rules.length;
     const isIndeterminate = selectedIds.length > 0 && selectedIds.length < rules.length;
 
@@ -170,19 +170,19 @@ const AlertRulePage: React.FC = () => {
             setSelectedIds([]);
         }
     };
-    
+
     const handleToggleEnable = async (rule: AlertRule) => {
         try {
             await api.patch(`/alert-rules/${rule.id}`, { ...rule, enabled: !rule.enabled });
             fetchRules();
-        } catch(err) {
+        } catch (err) {
             alert('Failed to toggle rule status.');
         }
     };
 
     const handleAIAnalysis = async () => {
         if (selectedIds.length === 0) {
-            showToast('請先選擇至少一條告警規則。', 'warning');
+            showToast('請先選擇至少一條告警規則。', 'error');
             return;
         }
         setIsAnalysisModalOpen(true);
@@ -235,7 +235,7 @@ const AlertRulePage: React.FC = () => {
     };
 
     const renderCellContent = (rule: AlertRule, columnKey: string) => {
-        switch(columnKey) {
+        switch (columnKey) {
             case 'enabled':
                 return (
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -249,7 +249,7 @@ const AlertRulePage: React.FC = () => {
             case 'severity':
                 const severityMap: Record<string, string> = { 'critical': '嚴重', 'warning': '警告', 'info': '資訊' };
                 return <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getSeverityPill(rule.severity)}`}>{severityMap[rule.severity] || rule.severity}</span>;
-            case 'automationEnabled': return rule.automationEnabled ? <Icon name="check-circle" className="w-5 h-5 text-green-400"/> : <Icon name="x-circle" className="w-5 h-5 text-slate-500" />;
+            case 'automationEnabled': return rule.automationEnabled ? <Icon name="check-circle" className="w-5 h-5 text-green-400" /> : <Icon name="x-circle" className="w-5 h-5 text-slate-500" />;
             case 'creator': return rule.creator;
             case 'lastUpdated': return rule.lastUpdated;
             default:
@@ -271,10 +271,10 @@ const AlertRulePage: React.FC = () => {
             <ToolbarButton icon="download" text="匯出" onClick={handleExport} />
         </>
     );
-    
+
     return (
         <div className="h-full flex flex-col">
-            <Toolbar 
+            <Toolbar
                 leftActions={<ToolbarButton icon="search" text="搜索和篩選" onClick={() => setIsSearchModalOpen(true)} />}
                 rightActions={
                     <>
@@ -288,18 +288,18 @@ const AlertRulePage: React.FC = () => {
                 onClearSelection={() => setSelectedIds([])}
                 batchActions={batchActions}
             />
-            
+
             <TableContainer>
                 <div className="flex-1 overflow-y-auto">
                     <table className="w-full text-sm text-left text-slate-300">
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
                                 <th scope="col" className="p-4 w-12">
-                                     <input type="checkbox"
-                                           className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded text-sky-500 focus:ring-sky-500"
-                                           checked={isAllSelected}
-                                           ref={el => { if (el) el.indeterminate = isIndeterminate; }}
-                                           onChange={handleSelectAll}
+                                    <input type="checkbox"
+                                        className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded text-sky-500 focus:ring-sky-500"
+                                        checked={isAllSelected}
+                                        ref={el => { if (el) el.indeterminate = isIndeterminate; }}
+                                        onChange={handleSelectAll}
                                     />
                                 </th>
                                 {visibleColumns.map(key => (
@@ -317,18 +317,18 @@ const AlertRulePage: React.FC = () => {
                                 <tr key={rule.id} className={`border-b border-slate-800 ${selectedIds.includes(rule.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
                                     <td className="p-4 w-12">
                                         <input type="checkbox"
-                                               className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded text-sky-500 focus:ring-sky-500"
-                                               checked={selectedIds.includes(rule.id)}
-                                               onChange={(e) => handleSelectOne(e, rule.id)}
+                                            className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded text-sky-500 focus:ring-sky-500"
+                                            checked={selectedIds.includes(rule.id)}
+                                            onChange={(e) => handleSelectOne(e, rule.id)}
                                         />
                                     </td>
                                     {visibleColumns.map(key => (
                                         <td key={key} className="px-6 py-4">{renderCellContent(rule, key)}</td>
                                     ))}
                                     <td className="px-6 py-4 text-center space-x-1">
-                                         <button onClick={() => handleEditRule(rule)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯"><Icon name="edit-3" className="w-4 h-4" /></button>
-                                         <button onClick={() => handleCopyRule(rule)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="複製"><Icon name="copy" className="w-4 h-4" /></button>
-                                         <button onClick={() => handleDeleteClick(rule)} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除"><Icon name="trash-2" className="w-4 h-4" /></button>
+                                        <button onClick={() => handleEditRule(rule)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯"><Icon name="edit-3" className="w-4 h-4" /></button>
+                                        <button onClick={() => handleCopyRule(rule)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="複製"><Icon name="copy" className="w-4 h-4" /></button>
+                                        <button onClick={() => handleDeleteClick(rule)} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除"><Icon name="trash-2" className="w-4 h-4" /></button>
                                     </td>
                                 </tr>
                             ))}

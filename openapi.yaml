@@ -604,7 +604,7 @@ components:
     TagDefinition:
       type: object
       description: 標籤登錄處中對單一標籤鍵的完整定義。
-      required: [id, key, scopes, kind, required, uniqueWithinScope, writableRoles, piiLevel, system, usageCount, allowedValues]
+      required: [id, key, scopes, kind, required, uniqueWithinScope, writableRoles, system, usageCount, allowedValues]
       properties:
         id:
           type: string
@@ -652,10 +652,6 @@ components:
           description: 允許修改此標籤的角色代碼清單。
           items:
             type: string
-        piiLevel:
-          type: string
-          enum: [none, low, high]
-          description: 此標籤值是否可能含有個資，決定審計與保護策略。
         system:
           type: boolean
           description: 是否為系統保留鍵。保留鍵不可更改鍵名、範圍或資料型別。
@@ -695,10 +691,6 @@ components:
           minItems: 1
           items:
             type: string
-        piiLevel:
-          type: string
-          enum: [none, low, high]
-          default: none
         required:
           type: boolean
           default: false
@@ -734,9 +726,6 @@ components:
           type: array
           items:
             type: string
-        piiLevel:
-          type: string
-          enum: [none, low, high]
         required:
           type: boolean
         uniqueWithinScope:

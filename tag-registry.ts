@@ -1,4 +1,4 @@
-import { TagDefinition, TagRegistryEntry, TagScope, TagValueKind, PiiLevel } from './types';
+import { TagDefinition, TagRegistryEntry, TagScope, TagValueKind } from './types';
 
 // 預設可寫入標籤的角色清單
 const DEFAULT_WRITABLE_ROLES = ['platform_admin', 'sre_lead'];
@@ -27,11 +27,6 @@ export const TAG_KIND_OPTIONS: { value: TagValueKind; label: string; description
   { value: 'boolean', label: '布林 (boolean)', description: '允許 true / false 兩種值。' },
 ];
 
-export const TAG_PII_LEVELS: { value: PiiLevel; label: string; description: string }[] = [
-  { value: 'none', label: '無 (none)', description: '不含個資或敏感資訊。' },
-  { value: 'low', label: '低 (low)', description: '含有限度的個資，需要記錄存取。' },
-  { value: 'high', label: '高 (high)', description: '高度敏感資訊，需加強控管與審計。' },
-];
 
 const ALL_SCOPES = TAG_SCOPE_OPTIONS.map(option => option.value);
 
@@ -44,8 +39,6 @@ const registry: TagRegistryEntry[] = [
     required: true,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'region',
@@ -55,8 +48,6 @@ const registry: TagRegistryEntry[] = [
     required: true,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'zone',
@@ -66,8 +57,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'site',
@@ -77,8 +66,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'rack',
@@ -88,8 +75,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'team',
@@ -99,8 +84,6 @@ const registry: TagRegistryEntry[] = [
     required: true,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'owner',
@@ -110,8 +93,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'service',
@@ -121,8 +102,6 @@ const registry: TagRegistryEntry[] = [
     required: true,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'component',
@@ -132,8 +111,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'role',
@@ -143,8 +120,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'business_unit',
@@ -154,8 +129,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'low',
-    system: true,
   },
   {
     key: 'cost_center',
@@ -165,19 +138,15 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'low',
-    system: true,
   },
   {
     key: 'version',
     description: '部署版本或應用程式版本號。',
-    scopes: ['resource', 'service', 'automation', 'analysis', 'incident', 'notification_policy'],
+    scopes: ['resource', 'automation', 'analysis', 'incident', 'notification_policy'],
     kind: 'string',
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'commit',
@@ -187,8 +156,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'build',
@@ -198,8 +165,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'tags.schema_version',
@@ -209,8 +174,6 @@ const registry: TagRegistryEntry[] = [
     required: true,
     uniqueWithinScope: true,
     writableRoles: ['platform_admin'],
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'resource_type',
@@ -221,8 +184,6 @@ const registry: TagRegistryEntry[] = [
     required: true,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'os',
@@ -232,8 +193,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'distro',
@@ -243,8 +202,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'kernel',
@@ -254,8 +211,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'ip',
@@ -265,8 +220,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: true,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'low',
-    system: true,
   },
   {
     key: 'hostname',
@@ -276,8 +229,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: true,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'low',
-    system: true,
   },
   {
     key: 'vendor',
@@ -287,8 +238,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'model',
@@ -298,8 +247,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'cluster',
@@ -309,8 +256,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'namespace',
@@ -320,8 +265,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'workload',
@@ -331,8 +274,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'datasource_type',
@@ -343,8 +284,6 @@ const registry: TagRegistryEntry[] = [
     required: true,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'datasource_id',
@@ -354,8 +293,6 @@ const registry: TagRegistryEntry[] = [
     required: true,
     uniqueWithinScope: true,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'low',
-    system: true,
   },
   {
     key: 'exporter_type',
@@ -366,8 +303,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'protocol',
@@ -378,8 +313,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'discovery_job_id',
@@ -389,8 +322,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: true,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'edge_gateway',
@@ -400,8 +331,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'gateway_id',
@@ -411,8 +340,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: true,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'rule_id',
@@ -422,8 +349,6 @@ const registry: TagRegistryEntry[] = [
     required: true,
     uniqueWithinScope: true,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'rule_template',
@@ -433,8 +358,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'metric',
@@ -444,8 +367,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'metric_family',
@@ -455,8 +376,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'threshold_profile',
@@ -466,8 +385,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'window',
@@ -477,8 +394,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'operator',
@@ -489,8 +404,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'slo',
@@ -500,8 +413,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'sla',
@@ -511,8 +422,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'status',
@@ -523,8 +432,6 @@ const registry: TagRegistryEntry[] = [
     required: true,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'severity',
@@ -535,8 +442,6 @@ const registry: TagRegistryEntry[] = [
     required: true,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'impact',
@@ -547,8 +452,6 @@ const registry: TagRegistryEntry[] = [
     required: true,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'resource_id',
@@ -558,8 +461,6 @@ const registry: TagRegistryEntry[] = [
     required: true,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'affected_service',
@@ -569,8 +470,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'silenced',
@@ -580,8 +479,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'maintenance_window',
@@ -591,8 +488,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'channel',
@@ -603,8 +498,6 @@ const registry: TagRegistryEntry[] = [
     required: true,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'routing_key',
@@ -614,8 +507,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: true,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'low',
-    system: true,
   },
   {
     key: 'oncall_team',
@@ -625,8 +516,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'playbook_id',
@@ -636,8 +525,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'playbook_type',
@@ -648,8 +535,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'safe_mode',
@@ -659,8 +544,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'none',
-    system: true,
   },
   {
     key: 'lineage_id',
@@ -670,8 +553,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: true,
     writableRoles: COMPLIANCE_WRITABLE_ROLES,
-    piiLevel: 'low',
-    system: true,
   },
   {
     key: 'dataset',
@@ -681,8 +562,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: COMPLIANCE_WRITABLE_ROLES,
-    piiLevel: 'low',
-    system: true,
   },
   {
     key: 'pii',
@@ -693,8 +572,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: COMPLIANCE_WRITABLE_ROLES,
-    piiLevel: 'high',
-    system: true,
   },
   {
     key: 'retention_class',
@@ -705,8 +582,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: COMPLIANCE_WRITABLE_ROLES,
-    piiLevel: 'low',
-    system: true,
   },
   {
     key: 'compliance',
@@ -717,8 +592,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: COMPLIANCE_WRITABLE_ROLES,
-    piiLevel: 'low',
-    system: true,
   },
   {
     key: 'tenant',
@@ -728,8 +601,6 @@ const registry: TagRegistryEntry[] = [
     required: true,
     uniqueWithinScope: false,
     writableRoles: ['platform_admin'],
-    piiLevel: 'low',
-    system: true,
   },
   {
     key: 'realm',
@@ -739,8 +610,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: ['platform_admin'],
-    piiLevel: 'low',
-    system: true,
   },
   {
     key: 'user',
@@ -750,8 +619,6 @@ const registry: TagRegistryEntry[] = [
     required: false,
     uniqueWithinScope: false,
     writableRoles: DEFAULT_WRITABLE_ROLES,
-    piiLevel: 'high',
-    system: true,
   },
 ];
 
@@ -761,10 +628,10 @@ const createTagDefinition = (entry: TagRegistryEntry): TagDefinition => ({
   allowedValues:
     entry.kind === 'enum'
       ? (entry.enumValues ?? []).map((value, index) => ({
-          id: `${entry.key}:${value}:${index}`,
-          value,
-          usageCount: 0,
-        }))
+        id: `${entry.key}:${value}:${index}`,
+        value,
+        usageCount: 0,
+      }))
       : [],
   usageCount: 0,
 });

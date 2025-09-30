@@ -48,9 +48,10 @@ import {
     ResourceAnalysis,
     DatasourceOptions,
     AutoDiscoveryOptions,
-    TableColumn
+    TableColumn,
+    StyleDescriptor
 } from '../types';
-import { TAG_SCOPE_OPTIONS, TAG_KIND_OPTIONS, TAG_PII_LEVELS, createTagDefinitions, getEnumValuesForTag } from '../tag-registry';
+import { TAG_SCOPE_OPTIONS, TAG_KIND_OPTIONS, createTagDefinitions, getEnumValuesForTag } from '../tag-registry';
 const DEFAULT_API_BASE_URL = process.env.MOCK_API_BASE_URL ?? 'http://localhost:4000/api/v1';
 const DEFAULT_GRAFANA_BASE_URL = process.env.MOCK_GRAFANA_BASE_URL ?? 'http://localhost:3000';
 const DEFAULT_IDP_ADMIN_URL = process.env.MOCK_IDP_ADMIN_URL ?? 'http://localhost:8080/admin/master/console/';
@@ -225,9 +226,6 @@ const PAGE_CONTENT = {
             ALL_SCOPES: '所有範圍',
             KIND: '資料型別',
             ALL_KINDS: '所有型別',
-            PII_LEVEL: 'PII 等級',
-            ALL_PII: '所有等級',
-            ONLY_SYSTEM: '僅顯示系統保留鍵',
         },
         AUDIT_LOGS: {
             USER: '使用者',
@@ -950,13 +948,12 @@ const MOCK_ALL_COLUMNS: Record<string, TableColumn[]> = {
     ],
     tag_management: [
         { key: 'key', label: '標籤鍵' },
+        { key: 'description', label: '說明' },
         { key: 'scopes', label: '使用範圍' },
         { key: 'kind', label: '資料型別' },
-        { key: 'piiLevel', label: 'PII 等級' },
         { key: 'required', label: '必填' },
         { key: 'uniqueWithinScope', label: '唯一值' },
         { key: 'writableRoles', label: '可寫入角色' },
-        { key: 'system', label: '治理' },
         { key: 'usageCount', label: '使用次數' },
         { key: 'allowedValues', label: '標籤值 (預覽)' },
     ],
@@ -1826,7 +1823,7 @@ const MOCK_TAB_CONFIGS: TabConfigMap = {
     automation: [
         { label: '腳本庫', path: '/automation', icon: 'notebook-tabs' },
         { label: '觸發器', path: '/automation/triggers', icon: 'zap' },
-        { label: '運行歷史', path: '/automation/history', icon: 'history' },
+        { label: '執行日誌', path: '/automation/history', icon: 'history' },
     ],
     iam: [
         { label: '人員管理', path: '/settings/identity-access-management', icon: 'users' },
@@ -1862,9 +1859,9 @@ const INCIDENT_STATUS_STYLES: Record<string, { label: string; className: string 
 };
 
 const INCIDENT_SEVERITY_STYLES: Record<string, { label: string; className: string }> = {
-    Critical: { label: '嚴重', className: 'bg-red-950/40 border border-red-500/40 text-red-300 backdrop-blur-sm shadow-sm' },
-    Warning: { label: '警告', className: 'bg-amber-950/40 border border-amber-500/40 text-amber-300 backdrop-blur-sm shadow-sm' },
     Info: { label: '資訊', className: 'bg-sky-950/40 border border-sky-500/40 text-sky-300 backdrop-blur-sm shadow-sm' },
+    Warning: { label: '警告', className: 'bg-amber-950/40 border border-amber-500/40 text-amber-300 backdrop-blur-sm shadow-sm' },
+    Critical: { label: '嚴重', className: 'bg-red-950/40 border border-red-500/40 text-red-300 backdrop-blur-sm shadow-sm' },
 };
 
 const INCIDENT_IMPACT_STYLES: Record<string, { label: string; className: string }> = {
@@ -1873,17 +1870,17 @@ const INCIDENT_IMPACT_STYLES: Record<string, { label: string; className: string 
     Low: { label: '低', className: 'bg-yellow-950/40 border border-yellow-500/40 text-yellow-300 backdrop-blur-sm shadow-sm' },
 };
 
-const buildIncidentStyleOptions = (values: string[], styleMap: Record<string, { label: string; className: string }>) =>
-    values.map(value => ({
+const buildIncidentStyleOptions = <T extends string>(values: T[], styleMap: Record<string, { label: string; className: string }>): StyleDescriptor<T>[] =>
+    values.map((value: T) => ({
         value,
         label: styleMap[value]?.label ?? value,
         className: styleMap[value]?.className ?? 'bg-slate-800/60 border border-slate-600 text-slate-200',
     }));
 
 const MOCK_INCIDENT_OPTIONS: IncidentOptions = {
-    statuses: buildIncidentStyleOptions(getEnumValuesForTag('status'), INCIDENT_STATUS_STYLES),
-    severities: buildIncidentStyleOptions(getEnumValuesForTag('severity'), INCIDENT_SEVERITY_STYLES),
-    impacts: buildIncidentStyleOptions(getEnumValuesForTag('impact'), INCIDENT_IMPACT_STYLES),
+    statuses: buildIncidentStyleOptions(getEnumValuesForTag('status') as Incident['status'][], INCIDENT_STATUS_STYLES),
+    severities: buildIncidentStyleOptions(getEnumValuesForTag('severity') as Incident['severity'][], INCIDENT_SEVERITY_STYLES),
+    impacts: buildIncidentStyleOptions(getEnumValuesForTag('impact') as Incident['impact'][], INCIDENT_IMPACT_STYLES),
     quickSilenceDurations: [
         { label: '1 小時', value: 1 },
         { label: '4 小時', value: 4 },
@@ -2021,7 +2018,6 @@ const MOCK_INFRA_INSIGHTS_OPTIONS: InfraInsightsOptions = {
 const MOCK_TAG_MANAGEMENT_OPTIONS: TagManagementOptions = {
     scopes: TAG_SCOPE_OPTIONS,
     kinds: TAG_KIND_OPTIONS,
-    piiLevels: TAG_PII_LEVELS,
     writableRoles: ['platform_admin', 'sre_lead', 'compliance_officer'],
     governanceNotes: '標籤鍵須符合治理規範：鍵名使用小寫與底線、枚舉值需在登錄處定義、不得於頁面臨時建立新鍵。',
 };
@@ -2244,8 +2240,8 @@ function createInitialDB() {
             automation_triggers: ['enabled', 'name', 'type', 'targetPlaybookId', 'lastTriggered'],
             teams: ['name', 'ownerId', 'memberIds', 'createdAt'],
             roles: ['enabled', 'name', 'userCount', 'createdAt'],
-            audit_logs: ['timestamp', 'user', 'action', 'target', 'result', 'ip'],
-            tag_management: ['key', 'scopes', 'kind', 'piiLevel', 'required', 'uniqueWithinScope', 'writableRoles', 'system', 'usageCount', 'allowedValues'],
+            audit_logs: ['timestamp', 'user', 'action', 'target', 'result'],
+            tag_management: ['key', 'description', 'allowedValues', 'usageCount'],
             notification_strategies: ['enabled', 'name', 'triggerCondition', 'channelCount', 'severityLevels', 'impactLevels', 'creator', 'lastUpdated'],
             notification_channels: ['enabled', 'name', 'type', 'lastTestResult', 'lastTestedAt'],
             notification_history: ['timestamp', 'strategy', 'channel', 'recipient', 'status', 'content'],

@@ -29,7 +29,7 @@ const sortData = (data: any[], sortBy: string, sortOrder: 'asc' | 'desc') => {
 
         if (valA === undefined || valA === null) return 1;
         if (valB === undefined || valB === null) return -1;
-        
+
         if (typeof valA === 'number' && typeof valB === 'number') {
             return sortOrder === 'asc' ? valA - valB : valB - valA;
         }
@@ -43,7 +43,7 @@ const sortData = (data: any[], sortBy: string, sortOrder: 'asc' | 'desc') => {
             const valueB = Number(valB);
             return sortOrder === 'asc' ? valueA - valueB : valueB - valueA;
         }
-        
+
         // Fallback for other types
         if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
         if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
@@ -234,10 +234,10 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 }
                 break;
             }
-            
+
             // Dashboards
             case 'GET /dashboards': {
-                 if (id === 'sre-war-room') {
+                if (id === 'sre-war-room') {
                     if (subId === 'service-health') return DB.serviceHealthData;
                     if (subId === 'resource-group-status') return DB.resourceGroupStatusData;
                 }
@@ -259,7 +259,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     if (params.category && params.category !== 'All') dashboards = dashboards.filter((d: any) => d.category === params.category);
                     if (params.keyword) dashboards = dashboards.filter((d: any) => d.name.toLowerCase().includes(params.keyword.toLowerCase()));
                 }
-                 if (params?.sort_by && params?.sort_order) {
+                if (params?.sort_by && params?.sort_order) {
                     dashboards = sortData(dashboards, params.sort_by, params.sort_order);
                 }
                 return paginate(dashboards, params?.page, params?.page_size);
@@ -302,9 +302,9 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         if (params?.matchers) {
                             const matchers = JSON.parse(params.matchers);
                             matchers.forEach((matcher: any) => {
-                               if (matcher.key === 'severity') {
-                                 rules = rules.filter((r: any) => r.severity === matcher.value);
-                               }
+                                if (matcher.key === 'severity') {
+                                    rules = rules.filter((r: any) => r.severity === matcher.value);
+                                }
                             });
                         }
                         return { count: rules.length };
@@ -458,12 +458,12 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     if (params?.matchers) {
                         const matchers = JSON.parse(params.matchers);
                         matchers.forEach((matcher: any) => {
-                           if (matcher.key === 'severity') {
-                               rules = rules.filter((r: any) => r.severity === matcher.value);
-                           }
-                           if (matcher.key === 'target') {
-                               rules = rules.filter((r: any) => r.target.includes(matcher.value));
-                           }
+                            if (matcher.key === 'severity') {
+                                rules = rules.filter((r: any) => r.severity === matcher.value);
+                            }
+                            if (matcher.key === 'target') {
+                                rules = rules.filter((r: any) => r.target.includes(matcher.value));
+                            }
                         });
                     }
                     return { count: rules.length };
@@ -495,7 +495,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                             preview: `事件: ${rule.titleTemplate?.replace('{{resource.name}}', payload.resource).replace('{{severity}}', rule.severity)}`
                         };
                     } else {
-                         return {
+                        return {
                             matches: false,
                             preview: `條件不匹配: ${condition?.metric} (${payload.value}) 未超過 ${condition?.threshold}`
                         };
@@ -512,7 +512,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
             case 'DELETE /alert-rules':
                 DB.alertRules = DB.alertRules.filter((r: any) => r.id !== id);
                 return {};
-            
+
             case 'GET /silence-rules': {
                 if (id === 'templates') return DB.silenceRuleTemplates;
                 let rules = getActive(DB.silenceRules);
@@ -609,7 +609,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 }
                 let resources = getActive(DB.resources);
                 if (params?.bookmarked) resources = resources.slice(0, 4);
-                 if (params?.sort_by && params?.sort_order) {
+                if (params?.sort_by && params?.sort_order) {
                     resources = sortData(resources, params.sort_by, params.sort_order);
                 }
                 return paginate(resources, params?.page, params?.page_size);
@@ -667,11 +667,11 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         if (jobIndex === -1) throw { status: 404 };
                         DB.discoveryJobs[jobIndex].status = 'running';
                         setTimeout(() => {
-                           const idx = DB.discoveryJobs.findIndex((j: any) => j.id === jobId);
-                           if (idx > -1) {
-                               DB.discoveryJobs[idx].status = Math.random() > 0.2 ? 'success' : 'partial_failure';
-                               DB.discoveryJobs[idx].lastRun = new Date().toISOString().slice(0, 19).replace('T', ' ');
-                           }
+                            const idx = DB.discoveryJobs.findIndex((j: any) => j.id === jobId);
+                            if (idx > -1) {
+                                DB.discoveryJobs[idx].status = Math.random() > 0.2 ? 'success' : 'partial_failure';
+                                DB.discoveryJobs[idx].lastRun = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                            }
                         }, 3000);
                         return { message: 'Run triggered.' };
                     }
@@ -718,16 +718,16 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     return { message: `Resource ${resourceToSilence.name} silenced successfully for ${body.duration}.` };
                 }
                 if (id === 'batch-actions') {
-                     const { action: batchAction, ids } = body;
+                    const { action: batchAction, ids } = body;
                     if (batchAction === 'delete') DB.resources.forEach((r: any) => { if (ids.includes(r.id)) r.deleted_at = new Date().toISOString(); });
                     return { success: true };
                 }
                 if (id === 'import') {
                     return { message: '成功匯入 15 筆資源。' };
                 } else {
-                     const newResource = { ...body, id: `res-${uuidv4()}` };
-                     DB.resources.unshift(newResource);
-                     return newResource;
+                    const newResource = { ...body, id: `res-${uuidv4()}` };
+                    DB.resources.unshift(newResource);
+                    return newResource;
                 }
             }
             case 'PATCH /resources': {
@@ -759,23 +759,23 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 return DB.resources[resIndex];
             }
             case 'DELETE /resources': {
-                 if (id === 'datasources') {
+                if (id === 'datasources') {
                     const dsId = subId;
                     const index = DB.datasources.findIndex((d: any) => d.id === dsId);
                     if (index > -1) (DB.datasources[index] as any).deleted_at = new Date().toISOString();
                     return {};
-                 }
-                 if (id === 'discovery-jobs') {
+                }
+                if (id === 'discovery-jobs') {
                     const jobId = subId;
                     const index = DB.discoveryJobs.findIndex((j: any) => j.id === jobId);
                     if (index > -1) (DB.discoveryJobs[index] as any).deleted_at = new Date().toISOString();
                     return {};
-                 }
+                }
                 const delResIndex = DB.resources.findIndex((r: any) => r.id === id);
                 if (delResIndex > -1) DB.resources[delResIndex].deleted_at = new Date().toISOString();
                 return {};
             }
-            
+
             case 'GET /resource-groups': {
                 let groups = getActive(DB.resourceGroups);
                 if (params?.sort_by && params?.sort_order) {
@@ -884,7 +884,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 }
                 break;
             }
-            case 'PATCH /automation': { 
+            case 'PATCH /automation': {
                 if (id === 'scripts') {
                     const itemId = subId;
                     const index = DB.playbooks.findIndex((p: any) => p.id === itemId);
@@ -893,7 +893,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     return DB.playbooks[index];
                 }
                 if (id === 'triggers') {
-                     const itemId = subId;
+                    const itemId = subId;
                     const index = DB.automationTriggers.findIndex((t: any) => t.id === itemId);
                     if (index === -1) throw { status: 404 };
                     DB.automationTriggers[index] = { ...DB.automationTriggers[index], ...body };
@@ -908,7 +908,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     if (index > -1) (DB.playbooks[index] as any).deleted_at = new Date().toISOString();
                     return {};
                 }
-                 if (id === 'triggers') {
+                if (id === 'triggers') {
                     const itemId = subId;
                     const index = DB.automationTriggers.findIndex((item: any) => item.id === itemId);
                     if (index > -1) (DB.automationTriggers[index] as any).deleted_at = new Date().toISOString();
@@ -939,7 +939,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 if (id === 'roles') {
                     let roles = getActive(DB.roles);
                     if (params?.keyword) roles = roles.filter((r: any) => r.name.toLowerCase().includes(params.keyword.toLowerCase()));
-                     if (params?.sort_by && params?.sort_order) {
+                    if (params?.sort_by && params?.sort_order) {
                         roles = sortData(roles, params.sort_by, params.sort_order);
                     }
                     return paginate(roles, params?.page, params?.page_size);
@@ -971,7 +971,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     }
                 }
                 if (id === 'teams') {
-                     if (subId === 'batch-actions') {
+                    if (subId === 'batch-actions') {
                         const { action: batchAction, ids } = body;
                         if (batchAction === 'delete') DB.teams.forEach((t: any) => { if (ids.includes(t.id)) t.deleted_at = new Date().toISOString(); });
                         return { success: true };
@@ -981,7 +981,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     return newTeam;
                 }
                 if (id === 'roles') {
-                     if (subId === 'batch-actions') {
+                    if (subId === 'batch-actions') {
                         const { action: batchAction, ids } = body;
                         if (batchAction === 'delete') DB.roles.forEach((r: any) => { if (ids.includes(r.id)) r.deleted_at = new Date().toISOString(); });
                         return { success: true };
@@ -1044,8 +1044,8 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 let logs = DB.logs;
                 if (params?.keyword) {
                     const keyword = params.keyword.toLowerCase();
-                    logs = logs.filter((log: any) => 
-                        log.message.toLowerCase().includes(keyword) || 
+                    logs = logs.filter((log: any) =>
+                        log.message.toLowerCase().includes(keyword) ||
                         log.service.toLowerCase().includes(keyword)
                     );
                 }
@@ -1059,9 +1059,17 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 if (id === 'tags') {
                     let tags = DB.tagDefinitions;
                     if (params?.sort_by && params?.sort_order) {
-                       tags = sortData(tags, params.sort_by, params.sort_order);
+                        tags = sortData(tags, params.sort_by, params.sort_order);
                     }
-                    return tags;
+                    // 支持分頁
+                    const page = Number(params?.page) || 1;
+                    const pageSize = Number(params?.page_size) || 10;
+                    const startIndex = (page - 1) * pageSize;
+                    const paginatedTags = tags.slice(startIndex, startIndex + pageSize);
+                    return {
+                        items: paginatedTags,
+                        total: tags.length
+                    };
                 }
                 if (id === 'column-config') {
                     const pageKey = subId as keyof typeof DB.columnConfigs;
@@ -1079,14 +1087,14 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     let channels = getActive(DB.notificationChannels);
                     if (params?.keyword) channels = channels.filter((c: any) => c.name.toLowerCase().includes(params.keyword.toLowerCase()));
                     if (params?.sort_by && params?.sort_order) {
-                       channels = sortData(channels, params.sort_by, params.sort_order);
+                        channels = sortData(channels, params.sort_by, params.sort_order);
                     }
                     return channels;
                 }
                 if (id === 'notification-history') {
                     let history = DB.notificationHistory;
                     if (params?.sort_by && params?.sort_order) {
-                       history = sortData(history, params.sort_by, params.sort_order);
+                        history = sortData(history, params.sort_by, params.sort_order);
                     }
                     return paginate(history, params?.page, params?.page_size);
                 }
@@ -1214,7 +1222,6 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         scopes: Array.isArray(body?.scopes) ? body.scopes : [],
                         kind: body?.kind ?? 'string',
                         writableRoles: Array.isArray(body?.writableRoles) && body.writableRoles.length > 0 ? body.writableRoles : fallbackRoles,
-                        piiLevel: body?.piiLevel ?? 'none',
                         required: Boolean(body?.required),
                         uniqueWithinScope: Boolean(body?.uniqueWithinScope),
                         description: body?.description ?? '',

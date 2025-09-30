@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import FormRow from './FormRow';
-import { TagDefinition, TagManagementOptions, TagScope, TagValueKind, PiiLevel } from '../types';
+import { TagDefinition, TagManagementOptions, TagScope, TagValueKind } from '../types';
 import Icon from './Icon';
 import { useOptions } from '../contexts/OptionsContext';
 import { showToast } from '../services/toast';
 
 interface TagDefinitionEditModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (tag: Partial<TagDefinition>) => void;
-  tag: Partial<TagDefinition> | null;
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (tag: Partial<TagDefinition>) => void;
+    tag: Partial<TagDefinition> | null;
 }
 
 const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen, onClose, onSave, tag }) => {
@@ -23,11 +23,9 @@ const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen,
         description: '',
         scopes: opts.scopes.length ? [opts.scopes[0].value] : [],
         kind: opts.kinds.length ? opts.kinds[0].value : 'string',
-        piiLevel: opts.piiLevels.length ? opts.piiLevels[0].value : 'none',
         writableRoles: opts.writableRoles,
         required: false,
         uniqueWithinScope: false,
-        system: false,
     });
 
     useEffect(() => {
@@ -60,11 +58,9 @@ const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen,
 
     const scopeOptions = tagManagementOptions?.scopes || [];
     const kindOptions = tagManagementOptions?.kinds || [];
-    const piiOptions = tagManagementOptions?.piiLevels || [];
     const writableRoleOptions = tagManagementOptions?.writableRoles || [];
     const error = optionsError;
     const isLoading = isLoadingOptions;
-    const isSystemTag = Boolean(formData.system);
 
     return (
         <Modal
@@ -101,12 +97,12 @@ const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen,
                         {scopeOptions.map(scope => {
                             const checked = (formData.scopes || []).includes(scope.value);
                             return (
-                                <label key={scope.value} className={`flex items-start space-x-2 text-sm ${isSystemTag ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}>
+                                <label key={scope.value} className="flex items-start space-x-2 text-sm cursor-pointer">
                                     <input
                                         type="checkbox"
                                         className="mt-1 h-4 w-4 rounded bg-slate-900 border-slate-600 text-sky-500 focus:ring-sky-500"
                                         checked={checked}
-                                        disabled={isLoading || !!error || isSystemTag}
+                                        disabled={isLoading || !!error}
                                         onChange={e => {
                                             const current = new Set(formData.scopes || []);
                                             if (e.target.checked) {
@@ -125,7 +121,7 @@ const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen,
                             );
                         })}
                     </div>
-                    {!isSystemTag && (formData.scopes?.length ?? 0) === 0 && (
+                    {(formData.scopes?.length ?? 0) === 0 && (
                         <p className="mt-1 text-xs text-amber-300">至少選擇一個適用範圍。</p>
                     )}
                 </FormRow>
@@ -134,7 +130,7 @@ const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen,
                         value={formData.kind || ''}
                         onChange={e => handleChange('kind', e.target.value as TagValueKind)}
                         className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm disabled:bg-slate-800/50 disabled:cursor-not-allowed"
-                        disabled={isLoading || !!error || isSystemTag}
+                        disabled={isLoading || !!error}
                     >
                         {isLoading ? <option>載入中...</option> : kindOptions.map(opt => (
                             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -153,19 +149,6 @@ const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen,
                 </FormRow>
                 <FormRow label="隱私與治理">
                     <div className="grid grid-cols-1 gap-3">
-                        <div>
-                            <label className="block text-xs text-slate-400 mb-1">PII 等級</label>
-                            <select
-                                value={formData.piiLevel || ''}
-                                onChange={e => handleChange('piiLevel', e.target.value as PiiLevel)}
-                                className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm disabled:bg-slate-800/50 disabled:cursor-not-allowed"
-                                disabled={isLoading || !!error || isSystemTag}
-                            >
-                                {isLoading ? <option>載入中...</option> : piiOptions.map(opt => (
-                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                ))}
-                            </select>
-                        </div>
                         <div>
                             <label className="block text-xs text-slate-400 mb-1">可寫入角色</label>
                             <div className={`flex flex-wrap gap-2 rounded-lg border border-slate-700 bg-slate-800/40 p-3 ${isLoading || !!error ? 'opacity-60 cursor-not-allowed' : ''}`}>
@@ -217,9 +200,6 @@ const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen,
                         />
                         <span className="text-slate-300 font-semibold">同一範圍內僅允許唯一值</span>
                     </label>
-                    {isSystemTag && (
-                        <p className="text-xs text-slate-500">系統保留標籤僅允許調整描述與治理屬性，鍵名與型別已鎖定。</p>
-                    )}
                 </FormRow>
             </div>
         </Modal>

@@ -35,7 +35,7 @@ const AutomationHistoryPage: React.FC = () => {
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'startTime', direction: 'desc' });
     const [selectedExecution, setSelectedExecution] = useState<AutomationExecution | null>(null);
-    
+
     const { options, isLoading: isLoadingOptions } = useOptions();
     const executionOptions = options?.automationExecutions;
 
@@ -91,7 +91,7 @@ const AutomationHistoryPage: React.FC = () => {
         }
         setSortConfig({ key, direction });
     };
-    
+
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
         if (!pageKey) {
             showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
@@ -107,24 +107,24 @@ const AutomationHistoryPage: React.FC = () => {
             setIsColumnSettingsModalOpen(false);
         }
     };
-    
+
     const handleExport = () => {
         const dataToExport = selectedIds.length > 0
             ? executions.filter(e => selectedIds.includes(e.id))
             : executions;
-        
+
         if (dataToExport.length === 0) {
             showToast("沒有可匯出的資料。", 'error');
             return;
         }
-        
+
         exportToCsv({
             filename: `automation-history-${new Date().toISOString().split('T')[0]}.csv`,
             headers: ['id', 'scriptName', 'status', 'triggerSource', 'triggeredBy', 'startTime', 'endTime', 'durationMs'],
             data: dataToExport,
         });
     };
-    
+
     const handleRetry = async (executionId: string) => {
         try {
             await api.post(`/automation/executions/${executionId}/retry`);
@@ -145,7 +145,7 @@ const AutomationHistoryPage: React.FC = () => {
 
     const isAllSelected = executions.length > 0 && selectedIds.length === executions.length;
     const isIndeterminate = selectedIds.length > 0 && selectedIds.length < executions.length;
-    
+
     const getStatusLabel = (status: AutomationExecution['status']): string => {
         if (!executionOptions?.statuses) return status;
         return executionOptions.statuses.find(s => s.value === status)?.label || status;
@@ -166,7 +166,22 @@ const AutomationHistoryPage: React.FC = () => {
             case 'scriptName':
                 return <span className="font-medium text-white">{ex.scriptName}</span>;
             case 'status':
-                return <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusPill(ex.status)}`}>{getStatusLabel(ex.status)}</span>;
+                return (
+                    <div className="flex items-center space-x-2">
+                        <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusPill(ex.status)}`}>
+                            {getStatusLabel(ex.status)}
+                        </span>
+                        {ex.status === 'failed' && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); handleRetry(ex.id); }}
+                                className="p-1 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white"
+                                title="重試"
+                            >
+                                <Icon name="refresh-cw" className="w-3 h-3" />
+                            </button>
+                        )}
+                    </div>
+                );
             case 'triggerSource':
                 return getTriggerSourceLabel(ex.triggerSource);
             case 'triggeredBy':
@@ -179,9 +194,9 @@ const AutomationHistoryPage: React.FC = () => {
                 return <span className="text-slate-500">--</span>;
         }
     };
-    
+
     const leftActions = <ToolbarButton icon="search" text="搜尋和篩選" onClick={() => setIsSearchModalOpen(true)} />;
-    
+
     const rightActions = (
         <>
             <ToolbarButton icon="download" text="匯出" onClick={handleExport} />
@@ -191,20 +206,20 @@ const AutomationHistoryPage: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col">
-            <Toolbar 
+            <Toolbar
                 leftActions={leftActions}
                 rightActions={rightActions}
                 selectedCount={selectedIds.length}
                 onClearSelection={() => setSelectedIds([])}
             />
-            
+
             <TableContainer>
                 <div className="flex-1 overflow-y-auto">
                     <table className="w-full text-sm text-left text-slate-300">
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
                                 <th scope="col" className="p-4 w-12">
-                                     <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded" checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
+                                    <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded" checked={isAllSelected} ref={el => { if (el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
                                 {visibleColumns.map(key => {
                                     const col = allColumns.find(c => c.key === key);
@@ -217,14 +232,13 @@ const AutomationHistoryPage: React.FC = () => {
                                     }
                                     return <SortableHeader key={key} label={col.label} sortKey={col.key} sortConfig={sortConfig} onSort={handleSort} />;
                                 })}
-                                <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
                         </thead>
                         <tbody>
                             {isLoading || isLoadingOptions ? (
-                                <TableLoader colSpan={visibleColumns.length + 2} />
+                                <TableLoader colSpan={visibleColumns.length + 1} />
                             ) : error ? (
-                                <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchExecutions} />
+                                <TableError colSpan={visibleColumns.length + 1} message={error} onRetry={fetchExecutions} />
                             ) : executions.map((ex) => (
                                 <tr key={ex.id} onClick={() => setSelectedExecution(ex)} className={`border-b border-slate-800 cursor-pointer ${selectedIds.includes(ex.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
                                     <td className="p-4 w-12" onClick={e => e.stopPropagation()}>
@@ -235,11 +249,6 @@ const AutomationHistoryPage: React.FC = () => {
                                             {renderCellContent(ex, key)}
                                         </td>
                                     ))}
-                                    <td className="px-6 py-4 text-center" onClick={e => e.stopPropagation()}>
-                                        {ex.status === 'failed' && (
-                                            <button onClick={() => handleRetry(ex.id)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="重試"><Icon name="refresh-cw" className="w-4 h-4" /></button>
-                                        )}
-                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -256,7 +265,7 @@ const AutomationHistoryPage: React.FC = () => {
             >
                 {selectedExecution && <ExecutionLogDetail execution={selectedExecution} />}
             </Drawer>
-            
+
             <UnifiedSearchModal
                 page="automation-history"
                 isOpen={isSearchModalOpen}
@@ -264,7 +273,7 @@ const AutomationHistoryPage: React.FC = () => {
                 onSearch={(newFilters) => { setFilters(newFilters as AutomationHistoryFilters); setIsSearchModalOpen(false); setCurrentPage(1); }}
                 initialFilters={filters}
             />
-            
+
             <ColumnSettingsModal
                 isOpen={isColumnSettingsModalOpen}
                 onClose={() => setIsColumnSettingsModalOpen(false)}

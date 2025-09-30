@@ -279,9 +279,9 @@ const Step2: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Fu
             <FormRow label="通知管道">
                 <div className="space-y-2">
                     {channels.map(channel => (
-                        <label key={channel.id} className="flex items-center space-x-3 p-2 bg-slate-800/50 rounded-md">
-                            <input type="checkbox" className="form-checkbox h-4 w-4 rounded bg-slate-800 border-slate-600 text-sky-500" />
-                            <span>{channel.name} ({channel.type})</span>
+                        <label key={channel.id} className="flex items-center space-x-3 p-3 bg-slate-800/50 rounded-md hover:bg-slate-800/70 cursor-pointer transition-colors">
+                            <input type="checkbox" className="form-checkbox h-4 w-4 rounded bg-slate-800 border-slate-600 text-sky-500 shrink-0" />
+                            <span className="text-sm">{channel.name} ({channel.type})</span>
                         </label>
                     ))}
                 </div>

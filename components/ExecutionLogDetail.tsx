@@ -61,17 +61,17 @@ const ExecutionLogDetail: React.FC<ExecutionLogDetailProps> = ({ execution }) =>
                 </div>
             )}
             
-            <div className="flex-grow flex flex-col space-y-4">
-                <div className="flex-1 flex flex-col">
-                    <h3 className="font-semibold text-white mb-2 flex items-center"><Icon name="align-left" className="w-4 h-4 mr-2" /> {pageContent.STDOUT}</h3>
-                    <pre className="flex-grow bg-slate-900/70 rounded-md p-3 font-mono text-xs text-slate-300 overflow-y-auto">
+            <div className="flex-grow grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="flex flex-col min-h-0">
+                    <h3 className="font-semibold text-white mb-2 flex items-center"><Icon name="align-left" className="w-4 h-4 mr-2 shrink-0" /> {pageContent.STDOUT}</h3>
+                    <pre className="flex-grow bg-slate-900/70 rounded-md p-3 font-mono text-xs text-slate-300 overflow-y-auto min-h-[200px]">
                         {execution.logs.stdout || pageContent.NO_STDOUT}
                     </pre>
                 </div>
                  {execution.logs.stderr && (
-                     <div className="flex-1 flex flex-col">
-                        <h3 className="font-semibold text-red-400 mb-2 flex items-center"><Icon name="alert-triangle" className="w-4 h-4 mr-2" /> {pageContent.STDERR}</h3>
-                        <pre className="flex-grow bg-red-900/30 rounded-md p-3 font-mono text-xs text-red-300 overflow-y-auto">
+                     <div className="flex flex-col min-h-0">
+                        <h3 className="font-semibold text-red-400 mb-2 flex items-center"><Icon name="alert-triangle" className="w-4 h-4 mr-2 shrink-0" /> {pageContent.STDERR}</h3>
+                        <pre className="flex-grow bg-red-900/30 rounded-md p-3 font-mono text-xs text-red-300 overflow-y-auto min-h-[200px]">
                             {execution.logs.stderr}
                         </pre>
                     </div>

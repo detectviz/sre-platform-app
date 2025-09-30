@@ -172,18 +172,7 @@ const TeamManagementPage: React.FC = () => {
     const renderCellContent = (team: Team, columnKey: string) => {
         switch (columnKey) {
             case 'name':
-                return (
-                    <>
-                        <div className="font-medium text-white flex items-center">
-                            {team.name}
-                            {team.description && (
-                                <span className="ml-1.5 text-slate-400 cursor-help" title={team.description}>
-                                    <Icon name="info" className="w-3.5 h-3.5" />
-                                </span>
-                            )}
-                        </div>
-                    </>
-                );
+                return <div className="font-medium text-white">{team.name}</div>;
             case 'ownerId':
                 return findUserById(team.ownerId)?.name || 'N/A';
             case 'memberIds':

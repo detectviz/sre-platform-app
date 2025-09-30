@@ -13,6 +13,7 @@ import UnifiedSearchModal from '../../../components/UnifiedSearchModal';
 import { exportToCsv } from '../../../services/export';
 import { showToast } from '../../../services/toast';
 import ImportFromCsvModal from '../../../components/ImportFromCsvModal';
+import Pagination from '../../../components/Pagination';
 import ColumnSettingsModal from '../../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 
@@ -39,6 +40,11 @@ const TagManagementPage: React.FC = () => {
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [totalTags, setTotalTags] = useState(0);
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
 
@@ -47,12 +53,18 @@ const TagManagementPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
+            const params = {
+                page: currentPage,
+                page_size: pageSize,
+                ...filters,
+            };
             const [tagsRes, columnConfigRes, allColumnsRes] = await Promise.all([
-                api.get<TagDefinition[]>('/settings/tags'),
+                api.get<{ items: TagDefinition[], total: number }>('/settings/tags', { params }),
                 api.get<string[]>(`/settings/column-config/${pageKey}`),
                 api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
-            setTags(tagsRes.data);
+            setTags(tagsRes.data.items);
+            setTotalTags(tagsRes.data.total);
             if (allColumnsRes.data.length === 0) {
                 throw new Error('欄位定義缺失');
             }
@@ -66,14 +78,57 @@ const TagManagementPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [pageKey]);
+    }, [pageKey, currentPage, pageSize, filters]);
 
     useEffect(() => {
         if (pageKey) {
             fetchTags();
         }
     }, [fetchTags, pageKey]);
-    
+
+    useEffect(() => {
+        setCurrentPage(1);
+        setSelectedIds([]);
+    }, [filters]);
+
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.checked) {
+            setSelectedIds(tags.map(tag => tag.id));
+        } else {
+            setSelectedIds([]);
+        }
+    };
+
+    const handleSelectOne = (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
+        if (e.target.checked) {
+            setSelectedIds(prev => [...prev, id]);
+        } else {
+            setSelectedIds(prev => prev.filter(sid => sid !== id));
+        }
+    };
+
+    const handleBatchDelete = async () => {
+        if (selectedIds.length === 0) {
+            showToast('請先選擇要刪除的標籤。', 'error');
+            return;
+        }
+
+        const confirmed = window.confirm(`您確定要刪除選中的 ${selectedIds.length} 個標籤嗎？此操作無法復原。`);
+        if (!confirmed) return;
+
+        try {
+            await Promise.all(selectedIds.map(id => api.del(`/settings/tags/${id}`)));
+            showToast(`成功刪除 ${selectedIds.length} 個標籤。`, 'success');
+            setSelectedIds([]);
+            fetchTags();
+        } catch (error) {
+            showToast('批次刪除失敗。', 'error');
+        }
+    };
+
+    const isAllSelected = tags.length > 0 && selectedIds.length === tags.length;
+    const isIndeterminate = selectedIds.length > 0 && selectedIds.length < tags.length;
+
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
         if (!pageKey) {
             showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
@@ -94,7 +149,7 @@ const TagManagementPage: React.FC = () => {
         setManagingTag(tag);
         setIsValuesModalOpen(true);
     };
-    
+
     const handleSaveValues = async (tagId: string, newValues: TagValue[]) => {
         try {
             await api.put(`/settings/tags/${tagId}/values`, newValues);
@@ -155,8 +210,6 @@ const TagManagementPage: React.FC = () => {
             const keyword = filters.keyword?.toLowerCase() || '';
             const scopeFilter = filters.scope;
             const kindFilter = filters.kind;
-            const piiLevelFilter = filters.piiLevel;
-            const systemOnly = filters.systemOnly;
 
             const matchesSearch =
                 !keyword ||
@@ -164,10 +217,8 @@ const TagManagementPage: React.FC = () => {
                 (tag.description ?? '').toLowerCase().includes(keyword);
             const matchesScope = !scopeFilter || (tag.scopes || []).includes(scopeFilter);
             const matchesKind = !kindFilter || tag.kind === kindFilter;
-            const matchesPii = !piiLevelFilter || tag.piiLevel === piiLevelFilter;
-            const matchesSystem = !systemOnly || tag.system;
 
-            return matchesSearch && matchesScope && matchesKind && matchesPii && matchesSystem;
+            return matchesSearch && matchesScope && matchesKind;
         });
     }, [tags, filters]);
 
@@ -178,16 +229,14 @@ const TagManagementPage: React.FC = () => {
         }
         exportToCsv({
             filename: `tag-definitions-${new Date().toISOString().split('T')[0]}.csv`,
-            headers: ['key', 'scopes', 'kind', 'piiLevel', 'required', 'uniqueWithinScope', 'writableRoles', 'system'],
+            headers: ['key', 'scopes', 'kind', 'required', 'uniqueWithinScope', 'writableRoles'],
             data: filteredTags.map(tag => ({
                 key: tag.key,
                 scopes: (tag.scopes || []).join('|'),
                 kind: tag.kind,
-                piiLevel: tag.piiLevel,
                 required: tag.required,
                 uniqueWithinScope: tag.uniqueWithinScope,
                 writableRoles: (tag.writableRoles || []).join('|'),
-                system: tag.system,
             })),
         });
     };
@@ -196,17 +245,28 @@ const TagManagementPage: React.FC = () => {
         switch (columnKey) {
             case 'key':
                 return (
-                    <>
-                        <div className="font-medium text-white">{tag.key}</div>
-                        <p className="text-xs text-slate-400 font-normal">{tag.description}</p>
-                    </>
+                    <span className="font-mono font-medium text-white">
+                        {tag.key}
+                        {tag.required && <span className="text-red-400 ml-1">*</span>}
+                    </span>
+                );
+            case 'description':
+                return (
+                    <div className="text-sm text-slate-300 leading-relaxed max-w-md">
+                        {tag.description || <span className="text-slate-500 italic">無說明</span>}
+                    </div>
                 );
             case 'scopes':
+                const scopes = tag.scopes || [];
+                const maxDisplay = 5;
                 return (
-                    <div className="flex flex-wrap gap-1">
-                        {(tag.scopes || []).map(scope => (
+                    <div className="flex flex-wrap gap-1 items-center">
+                        {scopes.slice(0, maxDisplay).map(scope => (
                             <span key={scope} className="px-2 py-0.5 text-xs bg-slate-700/70 text-slate-100 rounded-full font-mono">{scope}</span>
                         ))}
+                        {scopes.length > maxDisplay && (
+                            <span className="px-2 py-0.5 text-xs text-slate-400 font-medium">+{scopes.length - maxDisplay}</span>
+                        )}
                     </div>
                 );
             case 'kind':
@@ -215,18 +275,19 @@ const TagManagementPage: React.FC = () => {
                 return tag.required ? <Icon name="check-circle" className="w-5 h-5 text-green-400" /> : <Icon name="circle" className="w-5 h-5 text-slate-500" />;
             case 'uniqueWithinScope':
                 return tag.uniqueWithinScope ? <Icon name="check-circle" className="w-5 h-5 text-green-400" /> : <Icon name="circle" className="w-5 h-5 text-slate-500" />;
-            case 'piiLevel':
-                return <span className="uppercase tracking-wide text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-200">{tag.piiLevel}</span>;
             case 'writableRoles':
+                const roles = tag.writableRoles || [];
+                const maxRolesDisplay = 3;
                 return (
-                    <div className="flex flex-wrap gap-1">
-                        {(tag.writableRoles || []).map(role => (
+                    <div className="flex flex-wrap gap-1 items-center">
+                        {roles.slice(0, maxRolesDisplay).map(role => (
                             <span key={role} className="px-2 py-0.5 text-xs bg-slate-800 border border-slate-700 rounded-full font-mono text-slate-200">{role}</span>
                         ))}
+                        {roles.length > maxRolesDisplay && (
+                            <span className="px-2 py-0.5 text-xs text-slate-400 font-medium">+{roles.length - maxRolesDisplay}</span>
+                        )}
                     </div>
                 );
-            case 'system':
-                return tag.system ? <span className="text-amber-300 text-xs font-semibold">系統保留</span> : <span className="text-slate-400 text-xs">自訂</span>;
             case 'usageCount':
                 return tag.usageCount;
             case 'allowedValues':
@@ -256,21 +317,39 @@ const TagManagementPage: React.FC = () => {
         </>
     );
 
+    const batchActions = selectedIds.length > 0 ? (
+        <>
+            <ToolbarButton icon="trash-2" text={`刪除 (${selectedIds.length})`} onClick={handleBatchDelete} />
+            <ToolbarButton icon="x" text="取消選擇" onClick={() => setSelectedIds([])} />
+        </>
+    ) : null;
+
     return (
         <div className="h-full flex flex-col">
-            <Toolbar 
+            <Toolbar
                 leftActions={leftActions}
                 rightActions={rightActions}
+                selectedCount={selectedIds.length}
+                onClearSelection={() => setSelectedIds([])}
+                batchActions={batchActions}
             />
             <TableContainer>
                 <div className="flex-1 overflow-y-auto">
                     <table className="w-full text-sm text-left text-slate-300">
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
+                                <th scope="col" className="p-4 w-12">
+                                    <input
+                                        type="checkbox"
+                                        className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded"
+                                        checked={isAllSelected}
+                                        ref={el => { if (el) el.indeterminate = isIndeterminate; }}
+                                        onChange={handleSelectAll}
+                                    />
+                                </th>
                                 {visibleColumns.map(key => (
                                     <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
                                 ))}
-                                <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -279,26 +358,18 @@ const TagManagementPage: React.FC = () => {
                             ) : error ? (
                                 <TableError colSpan={visibleColumns.length + 1} message={error} onRetry={fetchTags} />
                             ) : filteredTags.map((tag) => (
-                                <tr key={tag.id} className="border-b border-slate-800 hover:bg-slate-800/40">
+                                <tr key={tag.id} className={`border-b border-slate-800 hover:bg-slate-800/40 ${selectedIds.includes(tag.id) ? 'bg-sky-900/50' : ''}`}>
+                                    <td className="p-4 w-12" onClick={e => e.stopPropagation()}>
+                                        <input
+                                            type="checkbox"
+                                            className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded"
+                                            checked={selectedIds.includes(tag.id)}
+                                            onChange={(e) => handleSelectOne(e, tag.id)}
+                                        />
+                                    </td>
                                     {visibleColumns.map(key => (
                                         <td key={key} className="px-6 py-4">{renderCellContent(tag, key)}</td>
                                     ))}
-                                    <td className="px-6 py-4 text-center">
-                                        <button
-                                            onClick={() => handleManageValues(tag)}
-                                            className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white disabled:opacity-40"
-                                            title="管理標籤值"
-                                            disabled={tag.kind !== 'enum'}
-                                        >
-                                            <Icon name="tags" className="w-4 h-4" />
-                                        </button>
-                                        <button onClick={() => handleEditTag(tag)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯">
-                                            <Icon name="edit-3" className="w-4 h-4" />
-                                        </button>
-                                         <button onClick={() => handleDeleteTag(tag)} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除">
-                                            <Icon name="trash-2" className="w-4 h-4" />
-                                        </button>
-                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -314,7 +385,7 @@ const TagManagementPage: React.FC = () => {
                 />
             )}
             {isValuesModalOpen && managingTag && (
-                <TagValuesManageModal 
+                <TagValuesManageModal
                     isOpen={isValuesModalOpen}
                     onClose={() => setIsValuesModalOpen(false)}
                     onSave={handleSaveValues}
@@ -353,7 +424,7 @@ const TagManagementPage: React.FC = () => {
                 onImportSuccess={fetchTags}
                 itemName="標籤"
                 importEndpoint="/settings/tags/import"
-                templateHeaders={['key', 'scopes', 'kind', 'piiLevel', 'required', 'uniqueWithinScope', 'writableRoles']}
+                templateHeaders={['key', 'scopes', 'kind', 'required', 'uniqueWithinScope', 'writableRoles']}
                 templateFilename="tags-template.csv"
             />
             <ColumnSettingsModal
@@ -363,6 +434,17 @@ const TagManagementPage: React.FC = () => {
                 allColumns={allColumns}
                 visibleColumnKeys={visibleColumns}
             />
+            {!isLoading && !error && (
+                <div className="mt-6">
+                    <Pagination
+                        total={totalTags}
+                        page={currentPage}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={setPageSize}
+                    />
+                </div>
+            )}
         </div>
     );
 };

@@ -73,7 +73,7 @@ const SilenceRulePage: React.FC = () => {
             fetchRules();
         }
     }, [fetchRules, pageKey]);
-    
+
     useEffect(() => {
         setSelectedIds([]);
     }, [filters]);
@@ -150,11 +150,11 @@ const SilenceRulePage: React.FC = () => {
             alert('Failed to toggle rule status.');
         }
     };
-    
+
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSelectedIds(e.target.checked ? rules.map(r => r.id) : []);
     };
-    
+
     const handleSelectOne = (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
         setSelectedIds(prev => e.target.checked ? [...prev, id] : prev.filter(selectedId => selectedId !== id));
     };
@@ -172,10 +172,10 @@ const SilenceRulePage: React.FC = () => {
             setSelectedIds([]);
         }
     };
-    
+
     const handleAIAnalysis = async () => {
         if (selectedIds.length === 0) {
-            showToast('請先選擇至少一條靜音規則。', 'warning');
+            showToast('請先選擇至少一條靜音規則。', 'error');
             return;
         }
         setIsAnalysisModalOpen(true);
@@ -215,9 +215,9 @@ const SilenceRulePage: React.FC = () => {
             <ToolbarButton icon="download" text="匯出" onClick={handleExport} />
         </>
     );
-    
+
     const renderCellContent = (rule: SilenceRule, columnKey: string) => {
-        switch(columnKey) {
+        switch (columnKey) {
             case 'enabled':
                 return (
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -229,11 +229,11 @@ const SilenceRulePage: React.FC = () => {
             case 'type': return <span className="capitalize">{rule.type}</span>;
             case 'matchers': return <code className="text-xs">{rule.matchers.map(m => `${m.key}${m.operator}"${m.value}"`).join(', ')}</code>;
             case 'schedule':
-                 if (rule.schedule.type === 'single') return `${rule.schedule.startsAt} -> ${rule.schedule.endsAt}`;
-                 if (rule.schedule.type === 'recurring') {
-                     return rule.schedule.cronDescription || rule.schedule.cron || 'N/A';
-                 }
-                 return 'N/A';
+                if (rule.schedule.type === 'single') return `${rule.schedule.startsAt} -> ${rule.schedule.endsAt}`;
+                if (rule.schedule.type === 'recurring') {
+                    return rule.schedule.cronDescription || rule.schedule.cron || 'N/A';
+                }
+                return 'N/A';
             case 'creator': return rule.creator;
             case 'createdAt': return rule.createdAt;
             default:
@@ -268,7 +268,7 @@ const SilenceRulePage: React.FC = () => {
                             <tr>
                                 <th scope="col" className="p-4 w-12">
                                     <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
-                                           checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
+                                        checked={isAllSelected} ref={el => { if (el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
                                 {visibleColumns.map(key => (
                                     <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
@@ -285,7 +285,7 @@ const SilenceRulePage: React.FC = () => {
                                 <tr key={rule.id} className={`border-b border-slate-800 ${selectedIds.includes(rule.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
                                     <td className="p-4 w-12">
                                         <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
-                                               checked={selectedIds.includes(rule.id)} onChange={(e) => handleSelectOne(e, rule.id)} />
+                                            checked={selectedIds.includes(rule.id)} onChange={(e) => handleSelectOne(e, rule.id)} />
                                     </td>
                                     {visibleColumns.map(key => (
                                         <td key={key} className="px-6 py-4">{renderCellContent(rule, key)}</td>
@@ -311,7 +311,7 @@ const SilenceRulePage: React.FC = () => {
                 }}
                 initialFilters={filters}
             />
-             <Modal
+            <Modal
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 title="確認刪除"
@@ -326,7 +326,7 @@ const SilenceRulePage: React.FC = () => {
                 <p>您確定要刪除靜音規則 <strong className="text-amber-400">{deletingRule?.name}</strong> 嗎？</p>
                 <p className="mt-2 text-slate-400">此操作無法復原。</p>
             </Modal>
-             <ColumnSettingsModal
+            <ColumnSettingsModal
                 isOpen={isColumnSettingsModalOpen}
                 onClose={() => setIsColumnSettingsModalOpen(false)}
                 onSave={handleSaveColumnConfig}

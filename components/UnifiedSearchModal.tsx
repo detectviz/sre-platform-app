@@ -2,10 +2,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Modal from './Modal';
 import Icon from './Icon';
 import {
-    Resource, ResourceFilters, AlertRule, Incident, IncidentImpact, IncidentSeverity, IncidentStatus, SilenceRule, TagManagementFilters, User, AuditLogFilters,
-    DashboardFilters, AutomationHistoryFilters, PersonnelFilters, ResourceGroupFilters, AutomationTriggerFilters,
-    NotificationStrategyFilters, NotificationChannelFilters, NotificationHistoryFilters, AutomationPlaybook,
-    LogExplorerFilters
+  Resource, ResourceFilters, AlertRule, Incident, IncidentImpact, IncidentSeverity, IncidentStatus, SilenceRule, TagManagementFilters, User, AuditLogFilters,
+  DashboardFilters, AutomationHistoryFilters, PersonnelFilters, ResourceGroupFilters, AutomationTriggerFilters,
+  NotificationStrategyFilters, NotificationChannelFilters, NotificationHistoryFilters, AutomationPlaybook,
+  LogExplorerFilters
 } from '../types';
 import api from '../services/api';
 import { useOptions } from '../contexts/OptionsContext';
@@ -22,15 +22,15 @@ export interface IncidentFilters {
 }
 
 export interface AlertRuleFilters {
-    keyword?: string;
-    severity?: 'critical' | 'warning' | 'info';
-    enabled?: boolean;
+  keyword?: string;
+  severity?: 'critical' | 'warning' | 'info';
+  enabled?: boolean;
 }
 
 export interface SilenceRuleFilters {
-    keyword?: string;
-    type?: 'single' | 'repeat' | 'condition';
-    enabled?: boolean;
+  keyword?: string;
+  type?: 'single' | 'repeat' | 'condition';
+  enabled?: boolean;
 }
 
 type Filters = IncidentFilters | AlertRuleFilters | SilenceRuleFilters | ResourceFilters | TagManagementFilters | AuditLogFilters | DashboardFilters | AutomationHistoryFilters | PersonnelFilters | ResourceGroupFilters | AutomationTriggerFilters | NotificationStrategyFilters | NotificationChannelFilters | NotificationHistoryFilters | LogExplorerFilters;
@@ -78,9 +78,9 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
   const handleSearch = () => {
     onSearch(filters);
   };
-  
+
   const handleClear = () => {
-      setFilters({});
+    setFilters({});
   }
 
   const modalTitle = content?.TITLE ?? '進階搜尋';
@@ -136,7 +136,7 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
   );
 
   const renderAlertRuleFilters = () => (
-     <>
+    <>
       <FormRow label={content.ALERT_RULES.SEVERITY}>
         <select value={(filters as AlertRuleFilters).severity || ''} onChange={e => setFilters(prev => ({ ...(prev as AlertRuleFilters), severity: e.target.value as AlertRuleFilters['severity'] }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
           <option value="">{content.ALL_SEVERITIES}</option>
@@ -160,7 +160,7 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
           {options?.silenceRules.types.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
         </select>
       </FormRow>
-       <FormRow label={globalContent.STATUS}>
+      <FormRow label={globalContent.STATUS}>
         <select value={(filters as SilenceRuleFilters).enabled === undefined ? '' : String((filters as SilenceRuleFilters).enabled)} onChange={e => setFilters(prev => ({ ...(prev as SilenceRuleFilters), enabled: e.target.value === '' ? undefined : e.target.value === 'true' }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
           <option value="">{globalContent.ALL}</option>
           {options?.silenceRules.statuses.map(opt => <option key={String(opt.value)} value={String(opt.value)}>{opt.label}</option>)}
@@ -220,25 +220,6 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
           {options?.tagManagement.kinds.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
         </select>
       </FormRow>
-      <FormRow label={content.TAG_MANAGEMENT.PII_LEVEL}>
-        <select
-          value={(filters as TagManagementFilters).piiLevel || ''}
-          onChange={e => setFilters(prev => ({ ...(prev as TagManagementFilters), piiLevel: e.target.value as TagManagementFilters['piiLevel'] }))}
-          className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
-        >
-          <option value="">{content.TAG_MANAGEMENT.ALL_PII}</option>
-          {options?.tagManagement.piiLevels.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-        </select>
-      </FormRow>
-      <label className="flex items-center space-x-2 text-sm text-slate-200">
-        <input
-          type="checkbox"
-          className="h-4 w-4 rounded bg-slate-900 border-slate-600 text-sky-500 focus:ring-sky-500"
-          checked={(filters as TagManagementFilters).systemOnly || false}
-          onChange={e => setFilters(prev => ({ ...(prev as TagManagementFilters), systemOnly: e.target.checked }))}
-        />
-        <span>{content.TAG_MANAGEMENT.ONLY_SYSTEM}</span>
-      </label>
     </>
   );
 
@@ -256,7 +237,7 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
           {options?.auditLogs.actionTypes.map(a => <option key={a} value={a}>{a}</option>)}
         </select>
       </FormRow>
-       <div className="col-span-2">
+      <div className="col-span-2">
         <FormRow label={content.AUDIT_LOGS.TIME_RANGE}>
           <div className="flex space-x-2">
             <input type="datetime-local" value={(filters as AuditLogFilters).startDate || ''} onChange={e => setFilters(prev => ({ ...(prev as AuditLogFilters), startDate: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
@@ -266,7 +247,7 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
       </div>
     </>
   );
-  
+
   const renderDashboardFilters = () => (
     <>
       <FormRow label={content.DASHBOARDS.CATEGORY}>
@@ -277,7 +258,7 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
       </FormRow>
     </>
   );
-  
+
   const renderAutomationHistoryFilters = () => (
     <>
       <FormRow label={content.AUTOMATION_HISTORY.PLAYBOOK}>
@@ -331,9 +312,9 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
   const renderLogExplorerFilters = () => (
     <>
       <FormRow label="時間範圍">
-        <select 
-          value={(filters as LogExplorerFilters).timeRange || ''} 
-          onChange={e => setFilters(prev => ({ ...prev, timeRange: e.target.value }))} 
+        <select
+          value={(filters as LogExplorerFilters).timeRange || ''}
+          onChange={e => setFilters(prev => ({ ...prev, timeRange: e.target.value }))}
           className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
         >
           {options?.logs.timeRangeOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
@@ -351,38 +332,38 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
       width="w-1/2 max-w-2xl"
       footer={
         <div className="flex justify-between w-full">
-            <button onClick={handleClear} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md transition-colors">{content.CLEAR_FILTERS}</button>
-            <div className="space-x-2">
-                <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md transition-colors">{globalContent.CANCEL}</button>
-                <button onClick={handleSearch} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md transition-colors">{content.SEARCH}</button>
-            </div>
+          <button onClick={handleClear} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md transition-colors">{content.CLEAR_FILTERS}</button>
+          <div className="space-x-2">
+            <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md transition-colors">{globalContent.CANCEL}</button>
+            <button onClick={handleSearch} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md transition-colors">{content.SEARCH}</button>
+          </div>
         </div>
       }
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="md:col-span-2">
-            <FormRow label={content.KEYWORD_SEARCH}>
-                 <input type="text" placeholder={content.KEYWORD_PLACEHOLDER} value={filters.keyword || ''} onChange={e => setFilters(prev => ({ ...prev, keyword: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
-            </FormRow>
+          <FormRow label={content.KEYWORD_SEARCH}>
+            <input type="text" placeholder={content.KEYWORD_PLACEHOLDER} value={filters.keyword || ''} onChange={e => setFilters(prev => ({ ...prev, keyword: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+          </FormRow>
         </div>
         {isLoadingOptions ? (
-             <div className="md:col-span-2 text-center p-8">
-                <Icon name="loader-circle" className="w-6 h-6 animate-spin inline-block text-slate-400" />
-            </div>
+          <div className="md:col-span-2 text-center p-8">
+            <Icon name="loader-circle" className="w-6 h-6 animate-spin inline-block text-slate-400" />
+          </div>
         ) : (
-            <>
-                {page === 'incidents' && renderIncidentFilters()}
-                {page === 'alert-rules' && renderAlertRuleFilters()}
-                {page === 'silence-rules' && renderSilenceRuleFilters()}
-                {page === 'resources' && renderResourceFilters()}
-                {page === 'tag-management' && renderTagManagementFilters()}
-                {page === 'audit-logs' && renderAuditLogFilters()}
-                {page === 'dashboards' && renderDashboardFilters()}
-                {page === 'automation-history' && renderAutomationHistoryFilters()}
-                {page === 'notification-history' && renderNotificationHistoryFilters()}
-                {page === 'logs' && renderLogExplorerFilters()}
-                {/* No specific filters for personnel, resource-groups, teams, roles, triggers, strategies, channels yet besides keyword */}
-            </>
+          <>
+            {page === 'incidents' && renderIncidentFilters()}
+            {page === 'alert-rules' && renderAlertRuleFilters()}
+            {page === 'silence-rules' && renderSilenceRuleFilters()}
+            {page === 'resources' && renderResourceFilters()}
+            {page === 'tag-management' && renderTagManagementFilters()}
+            {page === 'audit-logs' && renderAuditLogFilters()}
+            {page === 'dashboards' && renderDashboardFilters()}
+            {page === 'automation-history' && renderAutomationHistoryFilters()}
+            {page === 'notification-history' && renderNotificationHistoryFilters()}
+            {page === 'logs' && renderLogExplorerFilters()}
+            {/* No specific filters for personnel, resource-groups, teams, roles, triggers, strategies, channels yet besides keyword */}
+          </>
         )}
       </div>
     </Modal>

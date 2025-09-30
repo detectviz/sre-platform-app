@@ -331,21 +331,21 @@ const AppLayout: React.FC = () => {
                 {isProfileMenuOpen && (
                     <div className="absolute right-0 mt-2 w-64 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 z-50 overflow-hidden animate-fade-in-down">
                         <div className="p-4 border-b border-slate-700/50">
-                            <div className="font-semibold text-white">{currentUser?.name}</div>
-                            <div className="text-sm text-slate-400">{currentUser?.email}</div>
+                            <div className="font-semibold text-white leading-snug">{currentUser?.name}</div>
+                            <div className="text-sm text-slate-400 mt-1 leading-relaxed">{currentUser?.email}</div>
                         </div>
-                        <div className="p-2">
-                            <Link to="/profile" onClick={() => setIsProfileMenuOpen(false)} className="flex items-center w-full px-3 py-2 text-sm rounded-md text-slate-300 hover:bg-slate-700 hover:text-white">
-                                <Icon name="user-cog" className="w-4 h-4 mr-3" />
-                                {appLayoutContent.PROFILE_MENU.SETTINGS}
+                        <div className="py-2">
+                            <Link to="/profile" onClick={() => setIsProfileMenuOpen(false)} className="flex items-center w-full px-4 py-2.5 text-sm rounded-md text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
+                                <Icon name="user-cog" className="w-4 h-4 mr-3 shrink-0" />
+                                <span>{appLayoutContent.PROFILE_MENU.SETTINGS}</span>
                             </Link>
-                             <a href="#" onClick={handleHelp} className="flex items-center w-full px-3 py-2 text-sm rounded-md text-slate-300 hover:bg-slate-700 hover:text-white">
-                                <Icon name="help-circle" className="w-4 h-4 mr-3" />
-                                {appLayoutContent.PROFILE_MENU.HELP_CENTER}
+                             <a href="#" onClick={handleHelp} className="flex items-center w-full px-4 py-2.5 text-sm rounded-md text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
+                                <Icon name="help-circle" className="w-4 h-4 mr-3 shrink-0" />
+                                <span>{appLayoutContent.PROFILE_MENU.HELP_CENTER}</span>
                             </a>
-                            <button onClick={handleLogout} className="flex items-center w-full px-3 py-2 text-sm rounded-md text-slate-300 hover:bg-slate-700 hover:text-white">
-                                <Icon name="log-out" className="w-4 h-4 mr-3" />
-                                {appLayoutContent.PROFILE_MENU.LOGOUT}
+                            <button onClick={handleLogout} className="flex items-center w-full px-4 py-2.5 text-sm rounded-md text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
+                                <Icon name="log-out" className="w-4 h-4 mr-3 shrink-0" />
+                                <span>{appLayoutContent.PROFILE_MENU.LOGOUT}</span>
                             </button>
                         </div>
                     </div>
