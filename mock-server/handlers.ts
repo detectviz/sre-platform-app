@@ -358,7 +358,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         throw { status: 404, message: 'Alert rule not found.' };
                     }
 
-                    const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+                    const timestamp = new Date().toISOString();
                     const newIncidentId = `INC-${uuidv4().slice(0, 8).toUpperCase()}`;
                     const normalizedSeverity = (severity as string)?.charAt(0).toUpperCase() + (severity as string)?.slice(1).toLowerCase();
                     const normalizedImpact = (impact as string)?.charAt(0).toUpperCase() + (impact as string)?.slice(1).toLowerCase();
@@ -396,7 +396,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     if (index === -1) throw { status: 404 };
 
                     const currentUser = DB.users[0];
-                    const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+                    const timestamp = new Date().toISOString();
 
                     if (incidentAction === 'acknowledge') {
                         const oldStatus = DB.incidents[index].status;
@@ -654,7 +654,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         }, 1500);
                         return { success: true, message: 'Test initiated.' };
                     }
-                    const newDs = { ...body, id: `ds-${uuidv4()}`, createdAt: new Date().toISOString().slice(0, 19).replace('T', ' '), status: 'pending' };
+                    const newDs = { ...body, id: `ds-${uuidv4()}`, createdAt: new Date().toISOString(), status: 'pending' };
                     DB.datasources.unshift(newDs);
                     return newDs;
                 }
@@ -668,7 +668,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                             const idx = DB.discoveryJobs.findIndex((j: any) => j.id === jobId);
                             if (idx > -1) {
                                 DB.discoveryJobs[idx].status = Math.random() > 0.2 ? 'success' : 'partial_failure';
-                                DB.discoveryJobs[idx].lastRun = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                                DB.discoveryJobs[idx].lastRun = new Date().toISOString();
                             }
                         }, 3000);
                         return { message: 'Run triggered.' };
@@ -822,6 +822,24 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
             }
             case 'POST /automation': {
                 if (id === 'scripts') {
+                    if (subId === 'batch-actions') {
+                        const { action: batchAction, ids = [] } = body || {};
+                        if (!batchAction || !Array.isArray(ids)) {
+                            throw { status: 400, message: 'Invalid batch action payload for automation scripts.' };
+                        }
+                        let updated = 0;
+                        if (batchAction === 'delete') {
+                            DB.playbooks.forEach((script: any) => {
+                                if (ids.includes(script.id)) {
+                                    script.deleted_at = new Date().toISOString();
+                                    updated += 1;
+                                }
+                            });
+                        } else {
+                            throw { status: 400, message: `Unsupported batch action: ${batchAction}` };
+                        }
+                        return { success: true, updated };
+                    }
                     if (action === 'execute') {
                         const scriptId = subId;
                         if (!scriptId) {
@@ -876,6 +894,25 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     return newExec;
                 }
                 if (id === 'triggers') {
+                    if (subId === 'batch-actions') {
+                        const { action: batchAction, ids = [] } = body || {};
+                        if (!batchAction || !Array.isArray(ids)) {
+                            throw { status: 400, message: 'Invalid batch action payload for automation triggers.' };
+                        }
+                        if (!['enable', 'disable', 'delete'].includes(batchAction)) {
+                            throw { status: 400, message: `Unsupported batch action: ${batchAction}` };
+                        }
+                        let updated = 0;
+                        const now = new Date().toISOString();
+                        DB.automationTriggers.forEach((trigger: any) => {
+                            if (!ids.includes(trigger.id)) return;
+                            if (batchAction === 'enable') trigger.enabled = true;
+                            if (batchAction === 'disable') trigger.enabled = false;
+                            if (batchAction === 'delete') trigger.deleted_at = now;
+                            updated += 1;
+                        });
+                        return { success: true, updated };
+                    }
                     const newTrigger = { ...body, id: `trig-${uuidv4()}` };
                     DB.automationTriggers.unshift(newTrigger);
                     return newTrigger;
@@ -1117,7 +1154,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         const existingLayout = DB.layouts[key as keyof typeof DB.layouts];
                         if (existingLayout) {
                             existingLayout.widgetIds = newLayouts[key].widgetIds;
-                            existingLayout.updatedAt = new Date().toISOString().replace('T', ' ').substring(0, 19);
+                            existingLayout.updatedAt = new Date().toISOString();
                             existingLayout.updatedBy = 'Admin User';
                         }
                     });
@@ -1158,7 +1195,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         throw { status: 404, message: 'Notification channel not found.' };
                     }
                     channel.lastTestResult = 'success';
-                    channel.lastTestedAt = new Date().toISOString().replace('T', ' ').substring(0, 19);
+                    channel.lastTestedAt = new Date().toISOString();
                     return { success: true, message: `測試通知已送出至「${channel.name}」。` };
                 }
                 if (urlParts[1] === 'notification-history' && action === 'resend') {
@@ -1168,7 +1205,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         throw { status: 404, message: 'Notification record not found.' };
                     }
                     record.status = 'success';
-                    record.timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+                    record.timestamp = new Date().toISOString();
                     return { success: true, message: '通知已重新發送。' };
                 }
                 if (id === 'mail' && subId === 'test') {
@@ -1196,7 +1233,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const newStrategy: NotificationStrategy = {
                         ...body,
                         id: `strat-${uuidv4()}`,
-                        lastUpdated: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                        lastUpdated: new Date().toISOString(),
                         creator: 'Admin User',
                         severityLevels,
                         impactLevels,
@@ -1271,7 +1308,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         ...body,
                         severityLevels,
                         impactLevels,
-                        lastUpdated: new Date().toISOString().replace('T', ' ').substring(0, 19)
+                        lastUpdated: new Date().toISOString()
                     };
                     return DB.notificationStrategies[index];
                 }
