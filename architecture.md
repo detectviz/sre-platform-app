@@ -382,10 +382,10 @@ graph LR
 根據藍圖設計文件，SRE平台涉及以下技術棧：
 
 ### 前端技術
-- **React 18**：用於構建互動原型
+- **React 19**：用於構建互動原型
 - **TypeScript**：提供類型安全
-- **Ant Design 5**：UI組件庫
-- **ECharts 5**：數據可視化工具
+- **Tailwind CSS（CDN）+ 客製元件**：透過 CDN 載入 Tailwind 並配合自製元件建立 UI
+- **ECharts 6**：以 `echarts@^6.0.0` 作為主要依賴，並在 `index.html` 保留 5.5.0 CDN 做為備援
 
 ### 前端觀測性
 - **Sentry**：前端錯誤追蹤和性能監控
