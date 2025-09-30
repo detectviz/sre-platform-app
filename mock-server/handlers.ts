@@ -803,27 +803,58 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 }
                 break;
             }
-             case 'POST /automation': {
+            case 'POST /automation': {
                 if (id === 'scripts') {
-                    if (subId === 'execute') {
-                        const scriptId = id;
+                    if (action === 'execute') {
+                        const scriptId = subId;
+                        if (!scriptId) {
+                            throw { status: 400, message: 'Script ID is required to execute an automation playbook.' };
+                        }
                         const script = DB.playbooks.find((p: any) => p.id === scriptId);
-                        if (!script) throw { status: 404 };
-                        const newExec = { id: `exec-${uuidv4()}`, scriptId, scriptName: script.name, status: 'running', triggerSource: 'manual', triggeredBy: 'Admin User', startTime: new Date().toISOString(), parameters: body.parameters, logs: { stdout: 'Execution started...', stderr: '' } };
+                        if (!script) throw { status: 404, message: 'Automation playbook not found.' };
+                        const newExec = {
+                            id: `exec-${uuidv4()}`,
+                            scriptId,
+                            scriptName: script.name,
+                            status: 'running',
+                            triggerSource: 'manual',
+                            triggeredBy: 'Admin User',
+                            startTime: new Date().toISOString(),
+                            parameters: body?.parameters ?? {},
+                            logs: { stdout: 'Execution started...', stderr: '' }
+                        };
                         DB.automationExecutions.unshift(newExec);
-                        setTimeout(() => { const index = DB.automationExecutions.findIndex(e => e.id === newExec.id); if (index > -1) { DB.automationExecutions[index].status = 'success'; DB.automationExecutions[index].endTime = new Date().toISOString(); DB.automationExecutions[index].durationMs = 3000; DB.automationExecutions[index].logs.stdout += '\nExecution finished.'; }}, 3000);
+                        setTimeout(() => {
+                            const index = DB.automationExecutions.findIndex(e => e.id === newExec.id);
+                            if (index > -1) {
+                                DB.automationExecutions[index].status = 'success';
+                                DB.automationExecutions[index].endTime = new Date().toISOString();
+                                DB.automationExecutions[index].durationMs = 3000;
+                                DB.automationExecutions[index].logs.stdout += '\nExecution finished.';
+                            }
+                        }, 3000);
                         return newExec;
                     }
                     const newScript = { ...body, id: `play-${uuidv4()}` };
                     DB.playbooks.unshift(newScript);
                     return newScript;
                 }
-                if (id === 'executions' && subId === 'retry') {
-                    const executionId = urlParts[2];
+                if (id === 'executions' && action === 'retry') {
+                    const executionId = subId;
+                    if (!executionId) {
+                        throw { status: 400, message: 'Execution ID is required to retry automation.' };
+                    }
                     const executionIndex = DB.automationExecutions.findIndex((e: any) => e.id === executionId);
-                    if (executionIndex === -1) throw { status: 404 };
+                    if (executionIndex === -1) throw { status: 404, message: 'Automation execution not found.' };
                     const originalExec = DB.automationExecutions[executionIndex];
-                    const newExec = { ...originalExec, id: `exec-${uuidv4()}`, status: 'pending', startTime: new Date().toISOString(), endTime: undefined, durationMs: undefined };
+                    const newExec = {
+                        ...originalExec,
+                        id: `exec-${uuidv4()}`,
+                        status: 'pending',
+                        startTime: new Date().toISOString(),
+                        endTime: undefined,
+                        durationMs: undefined
+                    };
                     DB.automationExecutions.unshift(newExec);
                     return newExec;
                 }
@@ -1088,12 +1119,26 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 }
                 break;
             }
-             case 'POST /settings': {
-                if (urlParts[1] === 'notification-channels' && subId === 'test') {
-                    return { success: true, message: 'Test initiated.' };
+            case 'POST /settings': {
+                if (urlParts[1] === 'notification-channels' && action === 'test') {
+                    const channelId = subId;
+                    const channel = DB.notificationChannels.find((c: any) => c.id === channelId);
+                    if (!channel) {
+                        throw { status: 404, message: 'Notification channel not found.' };
+                    }
+                    channel.lastTestResult = 'success';
+                    channel.lastTestedAt = new Date().toISOString().replace('T', ' ').substring(0, 19);
+                    return { success: true, message: `測試通知已送出至「${channel.name}」。` };
                 }
-                if (urlParts[1] === 'notification-history' && subId === 'resend') {
-                    return { success: true };
+                if (urlParts[1] === 'notification-history' && action === 'resend') {
+                    const recordId = subId;
+                    const record = DB.notificationHistory.find((r: any) => r.id === recordId);
+                    if (!record) {
+                        throw { status: 404, message: 'Notification record not found.' };
+                    }
+                    record.status = 'success';
+                    record.timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+                    return { success: true, message: '通知已重新發送。' };
                 }
                 if (id === 'mail' && subId === 'test') {
                     return { success: true, message: 'Test email sent successfully.' };
