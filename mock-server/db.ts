@@ -913,7 +913,7 @@ const MOCK_ALL_COLUMNS: Record<string, TableColumn[]> = {
         { key: 'creator', label: '創建者' },
         { key: 'updated_at', label: '最後更新' },
     ],
-    silenceRules: [
+    silence_rules: [
         { key: 'enabled', label: '啟用' },
         { key: 'name', label: '規則名稱' },
         { key: 'type', label: '類型' },
@@ -2493,7 +2493,7 @@ function createInitialDB() {
         alert_rule_default: JSON.parse(JSON.stringify(MOCK_ALERT_RULE_DEFAULT)),
         alert_rules: JSON.parse(JSON.stringify(MOCK_ALERT_RULES)),
         alert_rule_templates: JSON.parse(JSON.stringify(MOCK_ALERT_RULE_TEMPLATES)),
-        silenceRules: JSON.parse(JSON.stringify(MOCK_SILENCE_RULES)),
+        silence_rules: JSON.parse(JSON.stringify(MOCK_SILENCE_RULES)),
         silence_rule_templates: JSON.parse(JSON.stringify(MOCK_SILENCE_RULE_TEMPLATES)),
         silence_rule_options: JSON.parse(JSON.stringify(MOCK_SILENCE_RULE_OPTIONS)),
         resources: JSON.parse(JSON.stringify(MOCK_RESOURCES)),
@@ -2536,7 +2536,7 @@ function createInitialDB() {
             resources: ['status', 'name', 'type', 'provider', 'region', 'owner', 'last_check_in_at'],
             personnel: ['name', 'role', 'team', 'status', 'last_login_at'],
             alert_rules: ['enabled', 'name', 'target', 'conditions_summary', 'severity', 'automation_enabled', 'creator', 'updated_at'],
-            silenceRules: ['enabled', 'name', 'type', 'matchers', 'schedule', 'creator', 'created_at'],
+            silence_rules: ['enabled', 'name', 'type', 'matchers', 'schedule', 'creator', 'created_at'],
             resource_groups: ['name', 'owner_team', 'member_ids', 'status_summary'],
             automation_playbooks: ['name', 'trigger', 'last_run_status', 'last_run_at', 'run_count'],
             automation_history: ['script_name', 'status', 'trigger_source', 'triggered_by', 'start_time', 'duration_ms'],

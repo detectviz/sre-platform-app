@@ -25,7 +25,7 @@ const LogExplorerPage: React.FC = () => {
     
     const [filters, setFilters] = useState<LogExplorerFilters>({
         keyword: queryFromUrl || '',
-        timeRange: '15m',
+        time_range: '15m',
     });
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isLive, setIsLive] = useState(false);

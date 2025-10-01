@@ -186,7 +186,7 @@ const IncidentListPage: React.FC = () => {
 
         try {
             await api.post('/silence-rules', newSilenceRule);
-            await api.post(`/incidents/${id}/actions`, { action: 'silence', durationHours });
+            await api.post(`/incidents/${id}/actions`, { action: 'silence', duration_hours: durationHours });
             showToast(`事件 "${incidentToSilence.summary}" 已成功靜音 ${durationHours} 小時。`, 'success');
             setIsQuickSilenceModalOpen(false);
             fetchIncidents();
@@ -224,7 +224,7 @@ const IncidentListPage: React.FC = () => {
     const handleConfirmAssign = async (assigneeName: string) => {
         if (!assigningIncident) return;
         try {
-            await api.post(`/incidents/${assigningIncident.id}/actions`, { action: 'assign', assigneeName });
+            await api.post(`/incidents/${assigningIncident.id}/actions`, { action: 'assign', assignee_name: assigneeName });
             showToast(`事件已成功指派給 ${assigneeName}。`, 'success');
             setAssigningIncident(null);
             fetchIncidents();

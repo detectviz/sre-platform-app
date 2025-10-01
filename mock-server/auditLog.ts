@@ -3,13 +3,13 @@ import { uuidv4 } from './db';
 
 export interface AuditLogEntry {
   id: string;
-  userId: string;
-  userName: string;
+  user_id: string;
+  user_name: string;
   action: string;
-  entityType: string;
-  entityId: string;
+  entity_type: string;
+  entity_id: string;
   timestamp: string;
-  ipAddress: string;
+  ip_address: string;
   changes: any;
 }
 
@@ -34,13 +34,13 @@ export const auditLogMiddleware = (
   // Create audit log entry
   const log: AuditLogEntry = {
     id: `audit-${uuidv4()}`,
-    userId,
-    userName,
+    user_id: userId,
+    user_name: userName,
     action,
-    entityType,
-    entityId,
+    entity_type: entityType,
+    entity_id: entityId,
     timestamp: new Date().toISOString(),
-    ipAddress: '127.0.0.1', // Mock IP address for the mock server
+    ip_address: '127.0.0.1', // Mock IP address for the mock server
     changes: details || {}
   };
 

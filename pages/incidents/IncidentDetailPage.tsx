@@ -94,7 +94,7 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incident_id, on
 
   const handleConfirmAssign = async (assigneeName: string) => {
     if (!assigningIncident) return;
-    await api.post(`/incidents/${assigningIncident.id}/actions`, { action: 'assign', assigneeName });
+    await api.post(`/incidents/${assigningIncident.id}/actions`, { action: 'assign', assignee_name: assigneeName });
     showToast('事件已成功指派。', 'success');
     setAssigningIncident(null);
     fetchIncident();
