@@ -69,7 +69,7 @@ const RenderIcons = () => {
 };
 
 interface SystemConfig {
-  defaultDashboard?: string;
+  default_dashboard?: string;
 }
 
 const DashboardRedirector: React.FC = () => {
@@ -85,7 +85,7 @@ const DashboardRedirector: React.FC = () => {
         }
 
         const { data } = await api.get<SystemConfig>('/system/config');
-        setDefaultDashboardId(data.defaultDashboard || 'sre-war-room');
+        setDefaultDashboardId(data.default_dashboard || 'sre-war-room');
       } catch (error) {
         setDefaultDashboardId('sre-war-room');
       }

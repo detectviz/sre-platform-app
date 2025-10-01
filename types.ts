@@ -35,6 +35,7 @@ export interface Dashboard {
   grafana_folder_uid?: string;
   layout?: DashboardLayoutItem[];
   deleted_at?: string;
+  /** Identifiers of resources displayed on the dashboard. */
   resource_ids?: string[];
 }
 
@@ -51,6 +52,21 @@ export interface IncidentEvent {
   user: string;
   action: string;
   details?: string;
+}
+
+export interface NotificationRecord {
+  /** Unique identifier for the notification attempt associated with an incident. */
+  id: string;
+  /** Identifier of the notification channel used to deliver the notification. */
+  channel_id: string;
+  /** Identifier of the notification strategy that generated the notification. */
+  strategy_id?: string;
+  /** Delivery status for the notification attempt. */
+  status: 'success' | 'failed';
+  /** ISO 8601 timestamp describing when the notification was sent. */
+  sent_at: string;
+  /** Optional metadata that provides additional delivery details. */
+  metadata?: Record<string, any>;
 }
 
 export interface Recommendation {
@@ -136,9 +152,13 @@ export interface Incident {
   updated_at: string;
   history: IncidentEvent[];
   ai_analysis?: IncidentAnalysis;
+  /** Identifier of the user who silenced the incident. */
   silenced_by?: string;
-  notifications_sent?: any[];
+  /** Records of notifications that have been sent for this incident. */
+  notifications_sent?: NotificationRecord[];
+  /** ISO 8601 timestamp for when the incident was acknowledged. */
   acknowledged_at?: string;
+  /** ISO 8601 timestamp for when the incident was resolved. */
   resolved_at?: string;
   deleted_at?: string;
 }
@@ -176,6 +196,7 @@ export interface Resource {
   deleted_at?: string;
   discovered_by_job_id?: string;
   monitoring_agent?: string;
+  /** Identifier for the datasource linked to the resource. */
   datasource_id?: string;
 }
 
@@ -233,7 +254,9 @@ export interface AutomationExecution {
   id: string;
   script_id: string;
   script_name: string;
+  /** Identifier of the incident that triggered the automation. */
   incident_id?: string;
+  /** Identifier of the alert rule responsible for the automation trigger. */
   alert_rule_id?: string;
   target_resource_id?: string;
   status: 'success' | 'failed' | 'running' | 'pending';
@@ -383,9 +406,12 @@ export interface AlertRule {
   automation?: AutomationSetting;
   test_payload?: Record<string, unknown>;
   deleted_at?: string;
+  /** Identifiers for the resources targeted by the alert rule. */
   target_resource_ids?: string[];
   target_scope?: 'specific' | 'group' | 'tag';
+  /** Number of times the alert rule has triggered. */
   triggered_count?: number;
+  /** Version number for the alert rule configuration. */
   version?: number;
 }
 
@@ -485,6 +511,7 @@ export interface NotificationStrategy {
   created_at: string;
   updated_at: string;
   deleted_at?: string;
+  /** Identifiers of notification channels linked to the strategy. */
   channel_ids?: string[];
 }
 
@@ -497,6 +524,7 @@ export interface NotificationHistoryRecord {
   recipient: string;
   status: 'success' | 'failed';
   content: string;
+  /** Identifier of the incident associated with the notification event. */
   incident_id?: string;
 }
 
