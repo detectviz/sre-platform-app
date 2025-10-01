@@ -200,28 +200,32 @@ targetResourceIds → target_resource_ids
 
 ### 📊 分析報告（背景資料）
 
+所有分析報告已移至 **`docs/analysis/`**：
+
 | 文檔 | 內容 | 生成時間 | 用途 |
 |------|------|----------|------|
 | **platform_functionality_verification.md** | 平台功能完整性驗證 | 初期 | 了解功能缺口 |
 | **database_schema_analysis.md** | 資料庫結構分析 | 初期 | 了解資料模型 |
 | **data_lineage_verification.md** | 數據血緣追蹤驗證 | 初期 | 評估追蹤能力 |
 | **api_consistency_issues.md** | API 一致性問題 | 初期 | 識別不一致處 |
-| **ai_agent_plan.md** | AI Agent 整合計畫 | 用戶提供 | AI 功能規劃 |
 
 ### ✅ 完成報告（實施記錄）
+
+完成報告已移至 **`docs/reports/`**：
 
 | 文檔 | 內容 | 完成日期 | 包含資訊 |
 |------|------|----------|----------|
 | **code_review_report.md** | 程式碼審查報告 | 2025-10-01 | 改進前後對比 |
-| **type_definitions_completion_report.md** | 型別定義補充報告 | 2025-10-01 | 21 個新增欄位 |
 | **naming_unification_report.md** | 命名統一報告 | 2025-10-01 | 250+ 欄位轉換 |
 
 ### 🔧 執行指引（操作手冊）
 
+執行指引已移至 **`docs/guides/`**：
+
 | 文檔 | 用途 | 目標讀者 | 狀態 |
 |------|------|----------|------|
+| **AGENT.md** | AI Agent 執行指引 | AI/開發者 | ✅ 最新 |
 | **ai_prompts_for_improvement.md** | 6 個結構化提示詞 | AI/開發者 | 部分已執行 |
-| **db_update_prompt.md** | db.ts 更新詳細指引 | 其他 AI | 待執行 |
 
 ---
 
@@ -266,47 +270,19 @@ targetResourceIds → target_resource_ids
 
 ---
 
-### 4. platform_functionality_verification.md
-**用途**：平台功能完整性評估
-- 評估結果：65% ✅ / 25% ⚠️ / 10% ❌
-- 識別缺失和不完整的功能
-- 提供功能矩陣
+### 4. AGENT.md ⭐⭐⭐
+**位置**：專案根目錄 `AGENT.md`
+**用途**：AI Agent 執行指引（一站式任務清單）
+- 當前專案狀態（58% 進度）
+- 按優先級排序的任務清單
+- 詳細執行步驟與完成標準
+- 回報格式模板
 
-**適合**：了解平台現狀
-
----
-
-### 5. database_schema_analysis.md
-**用途**：資料庫結構完整分析
-- 23 個實體的詳細欄位列表
-- 關聯關係分析
-- 索引建議
-
-**適合**：資料庫設計參考
+**適合**：AI Agent 執行任務、自動化工具
 
 ---
 
-### 6. data_lineage_verification.md
-**用途**：數據血緣追蹤能力評估
-- 評分：3.7/10 ❌
-- 識別關鍵缺失：AuditLog、外鍵關聯
-- 提供改進建議
-
-**適合**：了解數據流追蹤問題
-
----
-
-### 7. api_consistency_issues.md
-**用途**：API 一致性問題列表
-- 15+ 欄位命名不一致
-- 5 個缺失外鍵驗證
-- 10 個缺失必填欄位驗證
-
-**適合**：了解 API 設計問題
-
----
-
-### 8. ai_agent_plan.md
+### 5. ai_agent_plan.md
 **用途**：AI Agent 整合計畫（用戶提供）
 - AI Copilot 功能規劃
 - MCP 協議整合
@@ -316,59 +292,29 @@ targetResourceIds → target_resource_ids
 
 ---
 
-### 9. code_review_report.md ✅
-**用途**：程式碼審查報告
-- 改進前後對比
-- 已完成改進的詳細說明
-- 仍需改進的項目列表
-- 程式碼品質評分：4.0 → 6.4/10
+### 分析報告（docs/analysis/）
 
-**適合**：了解改進效果
-
----
-
-### 10. type_definitions_completion_report.md ✅
-**用途**：型別定義補充的詳細報告
-- 21 個新增欄位的完整說明
-- 設計決策（snake_case vs camelCase）
-- 數據血緣支援說明
-
-**適合**：了解型別定義變更
+詳細的初期分析文檔：
+- **platform_functionality_verification.md** - 功能評估（65% ✅ / 25% ⚠️ / 10% ❌）
+- **database_schema_analysis.md** - 資料庫結構分析（23 個實體）
+- **data_lineage_verification.md** - 數據血緣評估（3.7/10 → 7.5/10）
+- **api_consistency_issues.md** - API 一致性問題（15+ 欄位不一致）
 
 ---
 
-### 11. naming_unification_report.md ✅
-**用途**：命名統一的完整報告
-- 250+ 欄位的轉換說明
-- 完整的對照表（90+ 欄位）
-- 變更統計
-- 影響範圍分析
+### 完成報告（docs/reports/）
 
-**適合**：了解命名變更細節
+已完成的改進報告：
+- **code_review_report.md** - 程式碼審查（品質 4.0 → 6.4/10）
+- **naming_unification_report.md** - 命名統一（250+ 欄位轉 snake_case）
 
 ---
 
-### 12. ai_prompts_for_improvement.md 🔧
-**用途**：6 個結構化的 AI 提示詞
-- Prompt 1: 完成型別定義（✅ 已執行）
-- Prompt 2: 統一命名規範（✅ 已執行）
-- Prompt 3: 擴展 AuditLog（⏳ 待執行）
-- Prompt 4: 外鍵驗證（⏳ 待執行）
-- Prompt 5: 生成 openapi.yaml（⏳ 待執行）
-- Prompt 6: 生成 db_schema.sql（⏳ 待執行）
+### 執行指引
 
-**適合**：執行剩餘改進任務
-
----
-
-### 13. db_update_prompt.md 🔧
-**用途**：db.ts 更新的詳細指引
-- 完整的欄位對照表（42 個欄位）
-- 執行步驟（5 步驟）
-- 特別注意事項
-- 修改前後範例
-
-**適合**：更新 db.ts 的執行者（其他 AI 或開發者）
+AI 執行提示詞與指引：
+- **AGENT.md** - AI Agent 一站式執行指引（⭐ 推薦起點，專案根目錄）
+- **docs/guides/ai_prompts_for_improvement.md** - 6 個結構化提示詞（Prompt 1-2 已執行，3-6 待執行）
 
 ---
 
@@ -392,32 +338,30 @@ targetResourceIds → target_resource_ids
 
 ### 場景 3：我想了解問題根源
 ```
-1. platform_functionality_verification.md (功能評估)
-2. data_lineage_verification.md (血緣追蹤)
-3. api_consistency_issues.md (API 問題)
-4. database_schema_analysis.md (資料庫結構)
+1. docs/analysis/platform_functionality_verification.md (功能評估)
+2. docs/analysis/data_lineage_verification.md (血緣追蹤)
+3. docs/analysis/api_consistency_issues.md (API 問題)
+4. docs/analysis/database_schema_analysis.md (資料庫結構)
    ↓
 5. improvement_recommendations.md (改進方案)
 ```
 
-### 場景 4：我想執行改進任務
+### 場景 4：我想執行改進任務（AI Agent）
 ```
-1. ai_prompts_for_improvement.md (選擇提示詞)
+1. AGENT.md ⭐ (一站式執行指引 - 根目錄)
    ↓
-2. type_definitions_completion_report.md (參考已完成)
-3. naming_unification_report.md (參考已完成)
+2. docs/guides/ai_prompts_for_improvement.md (選擇提示詞)
    ↓
-4. db_update_prompt.md (執行 db.ts 更新)
+3. docs/reports/naming_unification_report.md (參考已完成範例)
 ```
 
 ### 場景 5：我想了解改進效果
 ```
-1. code_review_report.md (改進前後對比)
+1. docs/reports/code_review_report.md (改進前後對比)
    ↓
-2. type_definitions_completion_report.md (型別定義)
-3. naming_unification_report.md (命名統一)
+2. docs/reports/naming_unification_report.md (命名統一)
    ↓
-4. implementation_progress.md (整體進度)
+3. implementation_progress.md (整體進度)
 ```
 
 ---
@@ -425,7 +369,7 @@ targetResourceIds → target_resource_ids
 ## 📊 文檔生成時間軸
 
 ```
-初期分析階段（Day 1-2）
+初期分析階段（Day 1-2）→ 已整理至 docs/analysis/
 ├─ platform_functionality_verification.md
 ├─ database_schema_analysis.md
 ├─ data_lineage_verification.md
@@ -434,19 +378,16 @@ targetResourceIds → target_resource_ids
 計畫階段（Day 2-3）
 ├─ improvement_recommendations.md
 ├─ ai_agent_plan.md (用戶提供)
-└─ ai_prompts_for_improvement.md
+└─ ai_prompts_for_improvement.md → 已移至 docs/guides/
 
-實施階段（Day 3 - 2025-10-01）
-├─ code_review_report.md (審查實施)
-├─ implementation_progress.md (開始追蹤)
-└─ (用戶開始改進)
+實施階段（Day 3 - 2025-10-01）→ 已整理至 docs/reports/
+├─ code_review_report.md
+└─ naming_unification_report.md
 
 完成階段（2025-10-01 下午）
-├─ type_definitions_completion_report.md (Prompt 1 完成)
-├─ naming_unification_report.md (Prompt 2 完成)
-├─ db_update_prompt.md (準備 Prompt for db.ts)
-├─ implementation_progress.md (更新進度)
-└─ progress_summary.md (生成總覽)
+├─ implementation_progress.md (詳細追蹤)
+├─ progress_summary.md (快速總覽)
+└─ AGENT.md (AI 執行指引 - 根目錄)
 ```
 
 ---
