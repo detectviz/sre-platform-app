@@ -30,7 +30,7 @@ const AutomationPlaybooksPage: React.FC = () => {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
-    
+
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
 
@@ -40,9 +40,9 @@ const AutomationPlaybooksPage: React.FC = () => {
         setError(null);
         try {
             const [playbooksRes, columnConfigRes, allColumnsRes] = await Promise.all([
-                 api.get<AutomationPlaybook[]>('/automation/scripts'),
-                 api.get<string[]>(`/settings/column-config/${pageKey}`),
-                 api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
+                api.get<AutomationPlaybook[]>('/automation/scripts'),
+                api.get<string[]>(`/settings/column-config/${pageKey}`),
+                api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
             if (allColumnsRes.data.length === 0) {
                 throw new Error('欄位定義缺失');
@@ -96,11 +96,11 @@ const AutomationPlaybooksPage: React.FC = () => {
         setEditingPlaybook(playbook);
         setIsEditModalOpen(true);
     };
-    
+
     const handleSavePlaybook = async (playbookData: Partial<AutomationPlaybook>) => {
         try {
             if (editingPlaybook) {
-                 await api.patch(`/automation/scripts/${editingPlaybook.id}`, playbookData);
+                await api.patch(`/automation/scripts/${editingPlaybook.id}`, playbookData);
             } else {
                 await api.post('/automation/scripts', playbookData);
             }
@@ -128,7 +128,7 @@ const AutomationPlaybooksPage: React.FC = () => {
             }
         }
     };
-    
+
     const handleBatchDelete = async () => {
         try {
             await api.post('/automation/scripts/batch-actions', { action: 'delete', ids: selectedIds });
@@ -150,7 +150,7 @@ const AutomationPlaybooksPage: React.FC = () => {
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSelectedIds(e.target.checked ? playbooks.map(p => p.id) : []);
     };
-    
+
     const handleSelectOne = (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
         setSelectedIds(prev => e.target.checked ? [...prev, id] : prev.filter(selectedId => selectedId !== id));
     };
@@ -161,7 +161,7 @@ const AutomationPlaybooksPage: React.FC = () => {
     const batchActions = (
         <ToolbarButton icon="trash-2" text="刪除" danger onClick={handleBatchDelete} />
     );
-    
+
     const renderCellContent = (pb: AutomationPlaybook, columnKey: string) => {
         switch (columnKey) {
             case 'name':
@@ -179,8 +179,8 @@ const AutomationPlaybooksPage: React.FC = () => {
                         {pb.lastRunStatus}
                     </span>
                 );
-            case 'lastRun':
-                return pb.lastRun;
+            case 'lastRunAt':
+                return pb.lastRunAt;
             case 'runCount':
                 return pb.runCount;
             default:
@@ -191,7 +191,7 @@ const AutomationPlaybooksPage: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col">
-            <Toolbar 
+            <Toolbar
                 rightActions={
                     <>
                         <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => setIsColumnSettingsModalOpen(true)} />
@@ -209,7 +209,7 @@ const AutomationPlaybooksPage: React.FC = () => {
                             <tr>
                                 <th scope="col" className="p-4 w-12">
                                     <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
-                                           checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
+                                        checked={isAllSelected} ref={el => { if (el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
                                 {visibleColumns.map(key => (
                                     <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
@@ -224,9 +224,9 @@ const AutomationPlaybooksPage: React.FC = () => {
                                 <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchPlaybooks} />
                             ) : playbooks.map((pb) => (
                                 <tr key={pb.id} className={`border-b border-slate-800 ${selectedIds.includes(pb.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
-                                     <td className="p-4 w-12">
+                                    <td className="p-4 w-12">
                                         <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
-                                               checked={selectedIds.includes(pb.id)} onChange={(e) => handleSelectOne(e, pb.id)} />
+                                            checked={selectedIds.includes(pb.id)} onChange={(e) => handleSelectOne(e, pb.id)} />
                                     </td>
                                     {visibleColumns.map(key => (
                                         <td key={key} className="px-6 py-4">{renderCellContent(pb, key)}</td>
@@ -248,21 +248,21 @@ const AutomationPlaybooksPage: React.FC = () => {
                     </table>
                 </div>
             </TableContainer>
-            <RunPlaybookModal 
-                isOpen={isRunModalOpen} 
+            <RunPlaybookModal
+                isOpen={isRunModalOpen}
                 onClose={() => setIsRunModalOpen(false)}
                 playbook={runningPlaybook}
                 onRunSuccess={fetchPlaybooks}
             />
             {isEditModalOpen && (
-                 <AutomationPlaybookEditModal
+                <AutomationPlaybookEditModal
                     isOpen={isEditModalOpen}
                     onClose={() => setIsEditModalOpen(false)}
                     onSave={handleSavePlaybook}
                     playbook={editingPlaybook}
                 />
             )}
-             <Modal
+            <Modal
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 title="確認刪除"

@@ -280,8 +280,8 @@ const IncidentListPage: React.FC = () => {
                         <Icon name="repeat" className="w-3 h-3 opacity-60 group-hover:opacity-100 text-slate-400 group-hover:text-sky-400 transition-all duration-200 flex-shrink-0" />
                     </button>
                 );
-            case 'occurredAt':
-                return inc.occurredAt;
+            case 'occurred_at':
+                return inc.occurred_at;
             case 'tags':
                 if (!inc.tags || Object.keys(inc.tags).length === 0) {
                     return <span className="text-slate-500 text-xs">無標籤</span>;

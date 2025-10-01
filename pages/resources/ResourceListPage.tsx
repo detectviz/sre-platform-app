@@ -57,7 +57,7 @@ const ResourceListPage: React.FC = () => {
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
     const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
     const [analyzingResources, setAnalyzingResources] = useState<Resource[]>([]);
-    
+
     const { resourceId } = useParams<{ resourceId: string }>();
 
     const { metadata: pageMetadata } = usePageMetadata();
@@ -100,7 +100,7 @@ const ResourceListPage: React.FC = () => {
             setIsLoading(false);
         }
     }, [currentPage, pageSize, filters, pageKey]);
-    
+
     useEffect(() => {
         if (pageKey) {
             fetchResources();
@@ -135,7 +135,7 @@ const ResourceListPage: React.FC = () => {
         setEditingResource(null);
         setIsEditModalOpen(true);
     };
-    
+
     const handleEditResource = (resource: Resource) => {
         setEditingResource(resource);
         setIsEditModalOpen(true);
@@ -156,7 +156,7 @@ const ResourceListPage: React.FC = () => {
             showToast('儲存資源失敗。', 'error');
         }
     };
-    
+
     const handleDeleteResource = (resource: Resource) => {
         setDeletingResource(resource);
         setIsDeleteModalOpen(true);
@@ -192,7 +192,7 @@ const ResourceListPage: React.FC = () => {
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSelectedIds(e.target.checked ? resources.map(r => r.id) : []);
     };
-    
+
     const handleSelectOne = (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
         setSelectedIds(prev => e.target.checked ? [...prev, id] : prev.filter(sid => sid !== id));
     };
@@ -210,7 +210,7 @@ const ResourceListPage: React.FC = () => {
             showToast('批次刪除資源失敗。', 'error');
         }
     };
-    
+
     const handleAIAnalysis = () => {
         const selected = resources.filter(r => selectedIds.includes(r.id));
         if (selected.length > 0) {
@@ -225,19 +225,19 @@ const ResourceListPage: React.FC = () => {
         const dataToExport = selectedIds.length > 0
             ? resources.filter(r => selectedIds.includes(r.id))
             : resources;
-        
+
         if (dataToExport.length === 0) {
             showToast("沒有可匯出的資料。", 'error');
             return;
         }
-        
+
         exportToCsv({
             filename: `resources-${new Date().toISOString().split('T')[0]}.csv`,
             headers: ['id', 'name', 'status', 'type', 'provider', 'region', 'owner', 'lastCheckIn'],
             data: dataToExport,
         });
     };
-    
+
     const getStatusLabel = (status: Resource['status']): string => {
         if (!resourceOptions?.statuses) return status;
         return resourceOptions.statuses.find(s => s.value === status)?.label || status;
@@ -257,16 +257,16 @@ const ResourceListPage: React.FC = () => {
             case 'provider': return res.provider;
             case 'region': return res.region;
             case 'owner': return res.owner;
-            case 'lastCheckIn': return formatRelativeTime(res.lastCheckIn);
+            case 'lastCheckInAt': return formatRelativeTime(res.lastCheckInAt);
             default:
                 return <span className="text-slate-500">--</span>;
         }
     };
 
     const leftActions = (
-         <ToolbarButton icon="search" text="搜索和篩選" onClick={() => setIsSearchModalOpen(true)} />
+        <ToolbarButton icon="search" text="搜索和篩選" onClick={() => setIsSearchModalOpen(true)} />
     );
-    
+
     const batchActions = (
         <>
             <ToolbarButton icon="brain-circuit" text="AI 分析" onClick={handleAIAnalysis} ai />
@@ -278,7 +278,7 @@ const ResourceListPage: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col">
-            <Toolbar 
+            <Toolbar
                 leftActions={leftActions}
                 rightActions={
                     <>
@@ -292,7 +292,7 @@ const ResourceListPage: React.FC = () => {
                 onClearSelection={() => setSelectedIds([])}
                 batchActions={batchActions}
             />
-            
+
             <TableContainer>
                 <div className="h-full overflow-y-auto">
                     <table className="w-full text-sm text-left text-slate-300">
@@ -300,8 +300,8 @@ const ResourceListPage: React.FC = () => {
                             <tr>
                                 <th scope="col" className="p-4 w-12">
                                     <input type="checkbox"
-                                           className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded"
-                                           checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
+                                        className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded"
+                                        checked={isAllSelected} ref={el => { if (el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
                                 {visibleColumns.map(key => (
                                     <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
@@ -318,14 +318,14 @@ const ResourceListPage: React.FC = () => {
                                 <tr key={res.id} className={`border-b border-slate-800 ${selectedIds.includes(res.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
                                     <td className="p-4 w-12">
                                         <input type="checkbox"
-                                               className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded"
-                                               checked={selectedIds.includes(res.id)} onChange={(e) => handleSelectOne(e, res.id)} />
+                                            className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded"
+                                            checked={selectedIds.includes(res.id)} onChange={(e) => handleSelectOne(e, res.id)} />
                                     </td>
                                     {visibleColumns.map(key => (
                                         <td key={key} className="px-6 py-4">{renderCellContent(res, key)}</td>
                                     ))}
                                     <td className="px-6 py-4 text-center space-x-1">
-                                         <button onClick={() => handleViewDetails(res.id)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="查看詳情">
+                                        <button onClick={() => handleViewDetails(res.id)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="查看詳情">
                                             <Icon name="eye" className="w-4 h-4" />
                                         </button>
                                         <button onClick={() => handleEditResource(res)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯">
@@ -340,7 +340,7 @@ const ResourceListPage: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
-                <Pagination 
+                <Pagination
                     total={totalResources}
                     page={currentPage}
                     pageSize={pageSize}

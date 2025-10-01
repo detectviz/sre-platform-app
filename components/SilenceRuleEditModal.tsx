@@ -11,10 +11,10 @@ import { useOptions } from '../contexts/OptionsContext';
 import { useContent } from '../contexts/ContentContext';
 
 interface SilenceRuleEditModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (rule: Partial<SilenceRule>) => void;
-  rule: SilenceRule | null;
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (rule: Partial<SilenceRule>) => void;
+    rule: SilenceRule | null;
 }
 
 const MultiSelectDropdown: React.FC<{
@@ -45,8 +45,8 @@ const MultiSelectDropdown: React.FC<{
 
     return (
         <div ref={dropdownRef} className="relative w-full">
-            <div 
-                onClick={() => setIsOpen(!isOpen)} 
+            <div
+                onClick={() => setIsOpen(!isOpen)}
                 className="w-full bg-slate-700 rounded-md px-3 py-1 text-sm flex items-center flex-wrap gap-1 cursor-pointer min-h-[40px]"
             >
                 {selectedValues.length === 0 && <span className="text-slate-400">{placeholder}</span>}
@@ -92,11 +92,11 @@ const SilenceRuleEditModal: React.FC<SilenceRuleEditModalProps> = ({ isOpen, onC
     const silenceRuleOptions = options?.silenceRules;
     const { content } = useContent();
     const stepTitles = content?.SILENCE_RULE_EDIT_MODAL?.STEP_TITLES || ["Basic Info", "Schedule", "Scope"];
-    
+
     useEffect(() => {
         if (isOpen) {
             if (!silenceRuleOptions) return; // Wait for options
-            
+
             const initialData = rule || {
                 name: '',
                 description: '',
@@ -126,7 +126,7 @@ const SilenceRuleEditModal: React.FC<SilenceRuleEditModalProps> = ({ isOpen, onC
 
     const nextStep = () => setCurrentStep(s => Math.min(s + 1, 3));
     const prevStep = () => setCurrentStep(s => Math.max(s - 1, 1));
-    
+
     const renderStepContent = () => {
         switch (currentStep) {
             case 1: return <Step1 formData={formData} setFormData={setFormData} />;
@@ -135,7 +135,7 @@ const SilenceRuleEditModal: React.FC<SilenceRuleEditModalProps> = ({ isOpen, onC
             default: return <div className="p-4 text-center text-slate-400">尚未選擇步驟。</div>;
         }
     };
-    
+
     return (
         <Modal
             title={rule ? '編輯靜音規則' : '新增靜音規則'}
@@ -147,7 +147,7 @@ const SilenceRuleEditModal: React.FC<SilenceRuleEditModalProps> = ({ isOpen, onC
                     <div>
                         {currentStep > 1 && <button onClick={prevStep} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md transition-colors">上一步</button>}
                     </div>
-                     <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2">
                         <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md transition-colors">取消</button>
                         {currentStep < 3 && <button onClick={nextStep} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md transition-colors">下一步：{stepTitles[currentStep]}</button>}
                         {currentStep === 3 && <button onClick={handleSave} className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors">完成</button>}
@@ -155,9 +155,9 @@ const SilenceRuleEditModal: React.FC<SilenceRuleEditModalProps> = ({ isOpen, onC
                 </div>
             }
         >
-             <div className="flex flex-col h-[60vh]">
-                 <div className="px-4 pb-6 border-b border-slate-700/50">
-                   <Wizard currentStep={currentStep} steps={stepTitles} onStepClick={setCurrentStep} />
+            <div className="flex flex-col h-[60vh]">
+                <div className="px-4 pb-6 border-b border-slate-700/50">
+                    <Wizard currentStep={currentStep} steps={stepTitles} onStepClick={setCurrentStep} />
                 </div>
                 <div className="flex-grow pt-6 overflow-y-auto">
                     {isLoadingOptions ? <div className="text-center p-8"><Icon name="loader-circle" className="animate-spin w-8 h-8" /></div> : renderStepContent()}
@@ -176,7 +176,7 @@ const Step1 = ({ formData, setFormData }: { formData: Partial<SilenceRule>, setF
             .catch(err => console.error("Failed to fetch silence rule templates", err));
     }, []);
 
-     const applyTemplate = (templateData: Partial<SilenceRule>) => {
+    const applyTemplate = (templateData: Partial<SilenceRule>) => {
         setFormData({ ...formData, ...templateData });
     };
     return (
@@ -186,7 +186,7 @@ const Step1 = ({ formData, setFormData }: { formData: Partial<SilenceRule>, setF
                 <div className="flex flex-wrap gap-2">
                     {templates.map(tpl => (
                         <button key={tpl.id} onClick={() => applyTemplate(tpl.data)} className="px-3 py-1.5 text-sm bg-slate-700/50 hover:bg-slate-700 rounded-md flex items-center">
-                           <span className="mr-2">{tpl.emoji}</span> {tpl.name}
+                            {tpl.name}
                         </button>
                     ))}
                 </div>
@@ -227,7 +227,7 @@ const Step2 = ({ formData, setFormData, options }: { formData: Partial<SilenceRu
     return (
         <div className="space-y-4 px-4">
             <FormRow label="排程類型">
-                 <div className="flex space-x-2 rounded-lg bg-slate-800 p-1">
+                <div className="flex space-x-2 rounded-lg bg-slate-800 p-1">
                     <button onClick={() => handleTypeChange('single')} className={`w-full px-3 py-1.5 text-sm font-medium rounded-md ${formData.schedule?.type === 'single' ? 'bg-sky-600 text-white' : 'text-slate-300 hover:bg-slate-700'}`}>單次靜音</button>
                     <button onClick={() => handleTypeChange('recurring')} className={`w-full px-3 py-1.5 text-sm font-medium rounded-md ${formData.schedule?.type === 'recurring' ? 'bg-sky-600 text-white' : 'text-slate-300 hover:bg-slate-700'}`}>週期性靜音</button>
                 </div>
@@ -245,28 +245,28 @@ const Step2 = ({ formData, setFormData, options }: { formData: Partial<SilenceRu
             {formData.schedule?.type === 'recurring' && (
                 <div className="p-4 border border-slate-700 rounded-lg space-y-4 bg-slate-800/20">
                     <div className="grid grid-cols-2 gap-4">
-                         <FormRow label="重複頻率">
-                             <select value={recurrenceType} onChange={e => setRecurrenceType(e.target.value as any)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={!options}>
+                        <FormRow label="重複頻率">
+                            <select value={recurrenceType} onChange={e => setRecurrenceType(e.target.value as any)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={!options}>
                                 {options?.recurrenceTypes.map(opt => (
                                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                                 )) || <option>載入中...</option>}
                             </select>
-                         </FormRow>
-                         <FormRow label="執行時間">
-                            <input type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"/>
-                         </FormRow>
+                        </FormRow>
+                        <FormRow label="執行時間">
+                            <input type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+                        </FormRow>
                     </div>
                     {recurrenceType === 'weekly' && (
-                         <FormRow label="選擇星期">
+                        <FormRow label="選擇星期">
                             <div className="flex space-x-2">
                                 {options?.weekdays.map(day => (
                                     <button key={day.value} className={`w-10 h-10 rounded-full flex items-center justify-center ${weeklyDays.includes(day.value) ? 'bg-sky-500' : 'bg-slate-700'}`}
-                                     onClick={() => setWeeklyDays(days => days.includes(day.value) ? days.filter(d => d !== day.value) : [...days, day.value])}>{day.label}</button>
+                                        onClick={() => setWeeklyDays(days => days.includes(day.value) ? days.filter(d => d !== day.value) : [...days, day.value])}>{day.label}</button>
                                 ))}
                             </div>
-                         </FormRow>
+                        </FormRow>
                     )}
-                     <FormRow label="Cron 表達式">
+                    <FormRow label="Cron 表達式">
                         <input type="text" value={formData.schedule?.cron || ''} onChange={e => handleScheduleChange('cron', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm font-mono" placeholder="* * * * *" />
                         <p className="text-xs text-slate-400 mt-1">範例: '0 2 * * *' 表示每天凌晨 2 點。</p>
                     </FormRow>
@@ -292,7 +292,7 @@ const Step3 = ({ formData, setFormData, options }: { formData: Partial<SilenceRu
         }
         setFormData({ ...formData, matchers: newMatchers });
     };
-    
+
     const addMatcher = () => {
         const newMatchers = [...(formData.matchers || []), { key: '', operator: '=', value: '' }];
         setFormData({ ...formData, matchers: newMatchers });
@@ -321,7 +321,7 @@ const Step3 = ({ formData, setFormData, options }: { formData: Partial<SilenceRu
 
         return () => clearTimeout(handler);
     }, [formData.matchers]);
-    
+
     const renderMatcherValueInput = (matcher: SilenceMatcher, index: number) => {
         const allowedValues = options?.values[matcher.key] || [];
 
@@ -363,7 +363,7 @@ const Step3 = ({ formData, setFormData, options }: { formData: Partial<SilenceRu
             <div className="p-4 border border-slate-700 rounded-lg space-y-3 bg-slate-800/20">
                 {formData.matchers?.map((matcher, index) => (
                     <div key={index} className="flex items-center space-x-2">
-                         <select value={matcher.key} onChange={e => handleMatcherChange(index, 'key', e.target.value)} className="w-1/3 bg-slate-700 rounded-md px-3 py-2 text-sm">
+                        <select value={matcher.key} onChange={e => handleMatcherChange(index, 'key', e.target.value)} className="w-1/3 bg-slate-700 rounded-md px-3 py-2 text-sm">
                             <option value="">選擇標籤鍵...</option>
                             {options?.keys.map(k => <option key={k} value={k}>{k}</option>)}
                         </select>
@@ -376,7 +376,7 @@ const Step3 = ({ formData, setFormData, options }: { formData: Partial<SilenceRu
                         <button onClick={() => removeMatcher(index)} className="p-2 text-slate-400 hover:text-red-400"><Icon name="trash-2" className="w-4 h-4" /></button>
                     </div>
                 ))}
-                 <button onClick={addMatcher} className="text-sm text-sky-400 hover:text-sky-300 flex items-center"><Icon name="plus" className="w-4 h-4 mr-1" /> 新增匹配條件</button>
+                <button onClick={addMatcher} className="text-sm text-sky-400 hover:text-sky-300 flex items-center"><Icon name="plus" className="w-4 h-4 mr-1" /> 新增匹配條件</button>
             </div>
 
             <div className="p-4 border border-slate-700 rounded-lg bg-slate-800/20">
@@ -387,8 +387,8 @@ const Step3 = ({ formData, setFormData, options }: { formData: Partial<SilenceRu
                 </div>
             </div>
 
-             <label className="flex items-center space-x-3 cursor-pointer p-3 bg-slate-800/30 rounded-lg hover:bg-slate-800/50">
-                <input type="checkbox" checked={formData.enabled} onChange={e => setFormData({...formData, enabled: e.target.checked })} className="form-checkbox h-5 w-5 rounded bg-slate-800 border-slate-600 text-sky-500 focus:ring-sky-500" />
+            <label className="flex items-center space-x-3 cursor-pointer p-3 bg-slate-800/30 rounded-lg hover:bg-slate-800/50">
+                <input type="checkbox" checked={formData.enabled} onChange={e => setFormData({ ...formData, enabled: e.target.checked })} className="form-checkbox h-5 w-5 rounded bg-slate-800 border-slate-600 text-sky-500 focus:ring-sky-500" />
                 <span className="text-slate-300 font-semibold">立即啟用此靜音規則</span>
             </label>
         </div>

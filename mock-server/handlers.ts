@@ -1,5 +1,6 @@
 import { DB, uuidv4 } from './db';
-import type { ConnectionStatus, DiscoveryJob, Incident, NotificationStrategy, TabConfigMap, TagDefinition } from '../types';
+import type { ConnectionStatus, DiscoveryJob, Incident, NotificationStrategy, ResourceLink, ConfigVersion, TabConfigMap, TagDefinition, NotificationChannelType } from '../types';
+import { auditLogMiddleware } from './auditLog';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -61,20 +62,30 @@ const autoPopulateReadonlyTags = (entity: any): void => {
     }
 
     // 自動填充 team 標籤
-    if (entity.teamId) {
-        const team = DB.teams.find((t: any) => t.id === entity.teamId);
+    if (entity.team_id) {
+        const team = DB.teams.find((t: any) => t.id === entity.team_id);
         if (team) {
             entity.tags.team = team.name;
         }
     }
 
     // 自動填充 owner 標籤
-    if (entity.ownerId) {
-        const owner = DB.users.find((u: any) => u.id === entity.ownerId);
+    if (entity.owner_id) {
+        const owner = DB.users.find((u: any) => u.id === entity.owner_id);
         if (owner) {
             entity.tags.owner = owner.name;
         }
     }
+};
+
+/**
+ * 獲取當前用戶（模擬認證）
+ * @returns 當前用戶對象
+ */
+const getCurrentUser = () => {
+    // In a real application, this would come from authentication middleware
+    // For now, we'll use the first user as the current user
+    return DB.users[0];
 };
 
 
@@ -103,7 +114,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         const index = DB.discoveredResources.findIndex((res: any) => res.id === resourceId);
                         if (index > -1) {
                             DB.discoveredResources[index].status = 'ignored';
-                            DB.discoveredResources[index].ignoredAt = new Date().toISOString();
+                            DB.discoveredResources[index].ignored_at = new Date().toISOString();
                         }
                     });
                     return { success: true, updated: resourceIds.length };
@@ -298,13 +309,18 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 if (!newDashboardData.path) {
                     newDashboardData.path = `/dashboard/${newDashboardData.id}`;
                 }
+                // 設置創建和更新時間戳
+                const timestamp = new Date().toISOString();
+                newDashboardData.created_at = timestamp;
+                newDashboardData.updated_at = timestamp;
                 DB.dashboards.unshift(newDashboardData);
                 return newDashboardData;
             }
             case 'PATCH /dashboards': {
                 const index = DB.dashboards.findIndex((d: any) => d.id === id);
                 if (index === -1) throw { status: 404 };
-                DB.dashboards[index] = { ...DB.dashboards[index], ...body, updatedAt: new Date().toISOString() };
+                // 更新 updated_at 時間戳
+                DB.dashboards[index] = { ...DB.dashboards[index], ...body, updated_at: new Date().toISOString() };
                 return DB.dashboards[index];
             }
             case 'DELETE /dashboards': {
@@ -345,13 +361,26 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         rules = rules.filter((r: any) =>
                             r.name.toLowerCase().includes(search) ||
                             r.target.toLowerCase().includes(search) ||
-                            r.conditionsSummary.toLowerCase().includes(search)
+                            r.conditions_summary.toLowerCase().includes(search)
                         );
                     }
                     if (params?.sort_by && params?.sort_order) {
                         rules = sortData(rules, params.sort_by, params.sort_order);
                     }
                     return rules;
+                }
+                // 新增反向查詢端點：GET /incidents/{id}/executions
+                if (id && subId === 'executions') {
+                    // 查找與指定事件關聯的自動化執行
+                    const incident = DB.incidents.find((i: any) => i.id === id);
+                    if (!incident) throw { status: 404, message: 'Incident not found.' };
+
+                    // 查找關聯的自動化執行記錄
+                    const executions = DB.automationExecutions.filter((e: any) =>
+                        e.incident_id === id
+                    );
+
+                    return executions;
                 }
                 if (id) {
                     const incident = DB.incidents.find((i: any) => i.id === id);
@@ -369,17 +398,17 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
             }
             case 'POST /incidents': {
                 if (!id) {
-                    const { summary, resourceId, ruleId, severity, impact, assignee } = body || {};
-                    if (!summary || !resourceId || !ruleId || !severity || !impact) {
+                    const { summary, resource_id, rule_id, severity, impact, assignee } = body || {};
+                    if (!summary || !resource_id || !rule_id || !severity || !impact) {
                         throw { status: 400, message: 'Missing required fields for creating an incident.' };
                     }
 
-                    const resource = DB.resources.find((r: any) => r.id === resourceId);
+                    const resource = DB.resources.find((r: any) => r.id === resource_id);
                     if (!resource) {
                         throw { status: 404, message: 'Resource not found.' };
                     }
 
-                    const rule = DB.alertRules.find((r: any) => r.id === ruleId);
+                    const rule = DB.alertRules.find((r: any) => r.id === rule_id);
                     if (!rule) {
                         throw { status: 404, message: 'Alert rule not found.' };
                     }
@@ -392,19 +421,19 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         id: newIncidentId,
                         summary,
                         resource: resource.name,
-                        resourceId,
+                        resource_id,
                         impact: normalizedImpact as Incident['impact'],
                         rule: rule.name,
-                        ruleId,
+                        rule_id,
                         status: 'New',
                         severity: normalizedSeverity as Incident['severity'],
                         assignee: assignee || undefined,
-                        teamId: body.teamId,
-                        ownerId: body.ownerId,
+                        team_id: body.team_id,
+                        owner_id: body.owner_id,
                         tags: body.tags || {},
-                        occurredAt: timestamp,
-                        createdAt: timestamp,
-                        updatedAt: timestamp,
+                        occurred_at: timestamp,
+                        created_at: timestamp,
+                        updated_at: timestamp,
                         history: [
                             {
                                 timestamp,
@@ -419,10 +448,57 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     autoPopulateReadonlyTags(newIncident);
 
                     DB.incidents.unshift(newIncident);
+
+                    // 紀錄審計日誌
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'CREATE',
+                        'Incident',
+                        newIncident.id,
+                        { summary: newIncident.summary, severity: newIncident.severity, resource: newIncident.resource }
+                    );
+
                     return newIncident;
                 }
                 if (id === 'import') {
                     return { message: '成功匯入 12 筆事件。' };
+                }
+                if (id && subId === 'notify') {
+                    // 手動觸發通知發送
+                    const incident = DB.incidents.find((i: any) => i.id === id);
+                    if (!incident) throw { status: 404, message: 'Incident not found' };
+
+                    // 模擬發送通知
+                    const timestamp = new Date().toISOString();
+                    const notificationRecord = {
+                        id: `notif-${uuidv4()}`,
+                        timestamp,
+                        strategy: 'Manual Notification',
+                        channel: 'System',
+                        channel_type: 'System' as NotificationChannelType,
+                        recipient: 'Admin',
+                        status: 'success' as const,
+                        content: `手動觸發通知: ${incident.summary}`
+                    };
+
+                    DB.notificationHistory.unshift(notificationRecord);
+
+                    // 紀錄審計日誌
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'NOTIFY',
+                        'Incident',
+                        id,
+                        { summary: incident.summary }
+                    );
+
+                    return {
+                        success: true,
+                        message: `成功發送通知: ${incident.summary}`,
+                        notificationId: notificationRecord.id
+                    };
                 }
                 if (subId === 'actions') {
                     const { action: incidentAction, assigneeName, durationHours, details } = body;
@@ -462,6 +538,8 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                             (event: any) => !(event.timestamp === noteTimestamp && event.user === currentUser.name)
                         );
                     }
+                    // 更新 updated_at 時間戳
+                    DB.incidents[index].updated_at = timestamp;
                     return DB.incidents[index];
                 }
                 break;
@@ -475,6 +553,19 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         throw { status: 404, message: '找不到告警規則。' };
                     }
                     return rule;
+                }
+                // 新增反向查詢端點：GET /alert-rules/{id}/incidents
+                if (id && subId === 'incidents') {
+                    // 查找與指定告警規則關聯的事件
+                    const rule = DB.alertRules.find((r: any) => r.id === id);
+                    if (!rule) throw { status: 404, message: 'Alert rule not found.' };
+
+                    // 查找關聯的事件記錄
+                    const incidents = DB.incidents.filter((i: any) =>
+                        i.rule_id === id
+                    );
+
+                    return incidents;
                 }
                 if (id === 'templates') {
                     if (subId === 'default') {
@@ -515,6 +606,57 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 if (id === 'import') {
                     return { message: '成功匯入 8 條告警規則。' };
                 }
+                if (id && subId === 'trigger') {
+                    // 手動觸發告警規則（用於測試）
+                    const rule = DB.alertRules.find((r: any) => r.id === id);
+                    if (!rule) throw { status: 404, message: 'Rule not found' };
+
+                    // 模擬觸發告警
+                    const timestamp = new Date().toISOString();
+                    const newIncidentId = `INC-${uuidv4().slice(0, 8).toUpperCase()}`;
+                    const newIncident: Incident = {
+                        id: newIncidentId,
+                        summary: `手動觸發: ${rule.name}`,
+                        resource: 'Test Resource',
+                        resource_id: 'res-test',
+                        impact: 'Low',
+                        rule: rule.name,
+                        rule_id: rule.id,
+                        status: 'New',
+                        severity: rule.severity as Incident['severity'],
+                        assignee: undefined,
+                        tags: {},
+                        occurred_at: timestamp,
+                        created_at: timestamp,
+                        updated_at: timestamp,
+                        history: [
+                            {
+                                timestamp,
+                                user: 'System',
+                                action: 'Created',
+                                details: `Manual trigger of rule "${rule.name}".`,
+                            },
+                        ],
+                    };
+
+                    DB.incidents.unshift(newIncident);
+
+                    // 紀錄審計日誌
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'CREATE',
+                        'Incident',
+                        newIncident.id,
+                        { summary: newIncident.summary, severity: newIncident.severity, resource: newIncident.resource }
+                    );
+
+                    return {
+                        success: true,
+                        message: `成功觸發告警規則: ${rule.name}`,
+                        incidentId: newIncident.id
+                    };
+                }
                 if (subId === 'test') {
                     const ruleId = id;
                     const { payload } = body;
@@ -533,17 +675,63 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         };
                     }
                 }
-                const newRule = { ...body, id: `rule-${uuidv4()}`, automationEnabled: !!body.automation?.enabled };
+                const timestamp1 = new Date().toISOString();
+                const newRule = {
+                    ...body,
+                    id: `rule-${uuidv4()}`,
+                    automation_enabled: !!body.automation?.enabled,
+                    created_at: timestamp1,
+                    updated_at: timestamp1
+                };
                 DB.alertRules.unshift(newRule);
+
+                // 紀錄審計日誌
+                const currentUser1 = getCurrentUser();
+                auditLogMiddleware(
+                    currentUser1.id,
+                    'CREATE',
+                    'AlertRule',
+                    newRule.id,
+                    { name: newRule.name, severity: newRule.severity }
+                );
+
                 return newRule;
             case 'PATCH /alert-rules':
                 const ruleIndex = DB.alertRules.findIndex((r: any) => r.id === id);
                 if (ruleIndex === -1) throw { status: 404 };
-                DB.alertRules[ruleIndex] = { ...DB.alertRules[ruleIndex], ...body, automationEnabled: !!body.automation?.enabled };
+                const oldRule = { ...DB.alertRules[ruleIndex] };
+                // 更新 updated_at 時間戳
+                DB.alertRules[ruleIndex] = { ...DB.alertRules[ruleIndex], ...body, automation_enabled: !!body.automation?.enabled, updated_at: new Date().toISOString() };
+
+                // 紀錄審計日誌
+                const currentUser2 = getCurrentUser();
+                auditLogMiddleware(
+                    currentUser2.id,
+                    'UPDATE',
+                    'AlertRule',
+                    id,
+                    { oldName: oldRule.name, newName: body.name, oldSeverity: oldRule.severity, newSeverity: body.severity }
+                );
+
                 return DB.alertRules[ruleIndex];
-            case 'DELETE /alert-rules':
-                DB.alertRules = DB.alertRules.filter((r: any) => r.id !== id);
+            case 'DELETE /alert-rules': {
+                const ruleIndex = DB.alertRules.findIndex((r: any) => r.id === id);
+                if (ruleIndex > -1) {
+                    const rule = DB.alertRules[ruleIndex];
+                    DB.alertRules[ruleIndex].deleted_at = new Date().toISOString();
+
+                    // 紀錄審計日誌
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'DELETE',
+                        'AlertRule',
+                        id,
+                        { name: rule.name, severity: rule.severity }
+                    );
+                }
                 return {};
+            }
 
             case 'GET /silence-rules': {
                 if (id === 'templates') return DB.silenceRuleTemplates;
@@ -586,17 +774,26 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 if (id === 'import') {
                     return { message: '成功匯入 3 條靜音規則。' };
                 }
-                const newSilenceRule = { ...body, id: `sil-${uuidv4()}` };
+                const timestamp2 = new Date().toISOString();
+                const newSilenceRule = {
+                    ...body,
+                    id: `sil-${uuidv4()}`,
+                    created_at: timestamp2,
+                    updated_at: timestamp2
+                };
                 DB.silenceRules.unshift(newSilenceRule);
                 return newSilenceRule;
             case 'PATCH /silence-rules':
                 const silenceIndex = DB.silenceRules.findIndex((r: any) => r.id === id);
                 if (silenceIndex === -1) throw { status: 404 };
-                DB.silenceRules[silenceIndex] = { ...DB.silenceRules[silenceIndex], ...body };
+                // 更新 updated_at 時間戳
+                DB.silenceRules[silenceIndex] = { ...DB.silenceRules[silenceIndex], ...body, updated_at: new Date().toISOString() };
                 return DB.silenceRules[silenceIndex];
-            case 'DELETE /silence-rules':
-                DB.silenceRules = DB.silenceRules.filter((r: any) => r.id !== id);
+            case 'DELETE /silence-rules': {
+                const ruleIndex = DB.silenceRules.findIndex((r: any) => r.id === id);
+                if (ruleIndex > -1) DB.silenceRules[ruleIndex].deleted_at = new Date().toISOString();
                 return {};
+            }
 
             // Resources
             case 'GET /resources': {
@@ -634,6 +831,21 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const generateMetricData = (base: number, variance: number): [string, number][] => Array.from({ length: 30 }, (_, i) => [new Date(Date.now() - (29 - i) * 60000).toISOString(), Math.max(0, Math.min(100, base + (Math.random() - 0.5) * variance))]);
                     return { cpu: generateMetricData(50, 20), memory: generateMetricData(60, 15) };
                 }
+                // 新增反向查詢端點：GET /resources/{id}/alert-rules
+                if (id && subId === 'alert-rules') {
+                    // 查找與指定資源關聯的告警規則
+                    const resource = DB.resources.find((r: any) => r.id === id);
+                    if (!resource) throw { status: 404, message: 'Resource not found.' };
+
+                    // 查找關聯的告警規則（通過target_resource_ids或target字段）
+                    const rules = DB.alertRules.filter((r: any) =>
+                        r.target_resource_ids?.includes(id) ||
+                        r.target.includes(resource.name) ||
+                        r.target.includes(id)
+                    );
+
+                    return rules;
+                }
                 if (id) {
                     const resourceItem = DB.resources.find((r: any) => r.id === id);
                     if (!resourceItem) throw { status: 404 };
@@ -645,6 +857,22 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     resources = sortData(resources, params.sort_by, params.sort_order);
                 }
                 return paginate(resources, params?.page, params?.page_size);
+            }
+            case 'GET /resource-links': {
+                let links = getActive(DB.resourceLinks);
+                if (params?.source_resource_id) {
+                    links = links.filter((link: any) => link.source_resource_id === params.source_resource_id);
+                }
+                if (params?.target_resource_id) {
+                    links = links.filter((link: any) => link.target_resource_id === params.target_resource_id);
+                }
+                if (params?.link_type) {
+                    links = links.filter((link: any) => link.link_type === params.link_type);
+                }
+                if (params?.sort_by && params?.sort_order) {
+                    links = sortData(links, params.sort_by, params.sort_order);
+                }
+                return paginate(links, params?.page, params?.page_size);
             }
             case 'POST /resources': {
                 if (id === 'batch-tags') {
@@ -692,6 +920,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         const message = success
                             ? `成功連線至 ${url}。`
                             : `無法連線至 ${url}，請檢查設定。`;
+
                         return { success, status, latencyMs, message };
                     }
                     if (subId && action === 'test') {
@@ -708,7 +937,8 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                             : `無法連線至 ${dsName}，請檢查設定。`;
                         return { success, status, latencyMs, message };
                     }
-                    const newDs = { ...body, id: `ds-${uuidv4()}`, createdAt: new Date().toISOString(), status: 'pending' };
+                    const timestamp = new Date().toISOString();
+                    const newDs = { ...body, id: `ds-${uuidv4()}`, created_at: timestamp, status: 'pending' };
                     DB.datasources.unshift(newDs);
                     return newDs;
                 }
@@ -734,21 +964,24 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                             const idx = DB.discoveryJobs.findIndex((j: any) => j.id === jobId);
                             if (idx > -1) {
                                 DB.discoveryJobs[idx].status = Math.random() > 0.2 ? 'success' : 'partial_failure';
-                                DB.discoveryJobs[idx].lastRun = new Date().toISOString();
+                                DB.discoveryJobs[idx].last_run = new Date().toISOString();
                             }
                         }, 3000);
                         return { message: 'Run triggered.' };
                     }
+                    const timestamp = new Date().toISOString();
                     const newJob: DiscoveryJob = {
                         ...body,
                         id: `dj-${uuidv4()}`,
-                        lastRun: 'N/A',
+                        last_run: 'N/A',
                         status: 'success',
                         kind: body?.kind || 'K8s',
-                        targetConfig: body?.targetConfig || {},
-                        exporterBinding: body?.exporterBinding || { templateId: 'node_exporter' },
-                        edgeGateway: body?.edgeGateway || { enabled: false },
+                        target_config: body?.target_config || {},
+                        exporter_binding: body?.exporter_binding || { template_id: 'node_exporter' },
+                        edge_gateway: body?.edge_gateway || { enabled: false },
                         tags: body?.tags || [],
+                        created_at: timestamp,
+                        updated_at: timestamp,
                     };
                     DB.discoveryJobs.unshift(newJob);
                     return newJob;
@@ -767,9 +1000,9 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                                 provider: 'Discovered',
                                 region: 'N/A',
                                 owner: 'Unassigned',
-                                lastCheckIn: new Date().toISOString(),
-                                discoveredByJobId: jobId,
-                                monitoringAgent: deployAgent ? 'node_exporter' : undefined
+                                last_check_in: new Date().toISOString(),
+                                discovered_by_job_id: jobId,
+                                monitoring_agent: deployAgent ? 'node_exporter' : undefined
                             };
                             DB.resources.unshift(newResource);
                         }
@@ -789,17 +1022,46 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 if (id === 'import') {
                     return { message: '成功匯入 15 筆資源。' };
                 } else {
-                    const newResource = { ...body, id: `res-${uuidv4()}` };
+                    const timestamp = new Date().toISOString();
+                    const newResource = {
+                        ...body,
+                        id: `res-${uuidv4()}`,
+                        created_at: timestamp,
+                        updated_at: timestamp
+                    };
                     DB.resources.unshift(newResource);
+
+                    // 紀錄審計日誌
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'CREATE',
+                        'Resource',
+                        newResource.id,
+                        { name: newResource.name, type: newResource.type }
+                    );
+
                     return newResource;
                 }
+            }
+            case 'POST /resource-links': {
+                const timestamp = new Date().toISOString();
+                const newLink: ResourceLink = {
+                    ...body,
+                    id: `rl-${uuidv4()}`,
+                    created_at: timestamp,
+                    updated_at: timestamp
+                };
+                DB.resourceLinks.unshift(newLink);
+                return newLink;
             }
             case 'PATCH /resources': {
                 if (id === 'datasources') {
                     const dsId = subId;
                     const index = DB.datasources.findIndex((d: any) => d.id === dsId);
                     if (index === -1) throw { status: 404 };
-                    DB.datasources[index] = { ...DB.datasources[index], ...body };
+                    // 更新 updated_at 時間戳
+                    DB.datasources[index] = { ...DB.datasources[index], ...body, updated_at: new Date().toISOString() };
                     return DB.datasources[index];
                 }
                 if (id === 'discovery-jobs') {
@@ -807,20 +1069,42 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const index = DB.discoveryJobs.findIndex((j: any) => j.id === jobId);
                     if (index === -1) throw { status: 404 };
                     const existingJob = DB.discoveryJobs[index];
+                    // 更新 updated_at 時間戳
                     DB.discoveryJobs[index] = {
                         ...existingJob,
                         ...body,
-                        targetConfig: body?.targetConfig || existingJob.targetConfig,
-                        exporterBinding: body?.exporterBinding || existingJob.exporterBinding,
-                        edgeGateway: body?.edgeGateway || existingJob.edgeGateway,
+                        target_config: body?.target_config || existingJob.target_config,
+                        exporter_binding: body?.exporter_binding || existingJob.exporter_binding,
+                        edge_gateway: body?.edge_gateway || existingJob.edge_gateway,
                         tags: Array.isArray(body?.tags) ? body.tags : existingJob.tags,
+                        updated_at: new Date().toISOString(),
                     };
                     return DB.discoveryJobs[index];
                 }
                 const resIndex = DB.resources.findIndex((r: any) => r.id === id);
                 if (resIndex === -1) throw { status: 404 };
-                DB.resources[resIndex] = { ...DB.resources[resIndex], ...body };
+                const oldResource = { ...DB.resources[resIndex] };
+                // 更新 updated_at 時間戳
+                DB.resources[resIndex] = { ...DB.resources[resIndex], ...body, updated_at: new Date().toISOString() };
+
+                // 紀錄審計日誌
+                const currentUser = getCurrentUser();
+                auditLogMiddleware(
+                    currentUser.id,
+                    'UPDATE',
+                    'Resource',
+                    id,
+                    { oldName: oldResource.name, newName: body.name, oldType: oldResource.type, newType: body.type }
+                );
+
                 return DB.resources[resIndex];
+            }
+            case 'PATCH /resource-links': {
+                const linkIndex = DB.resourceLinks.findIndex((link: any) => link.id === id);
+                if (linkIndex === -1) throw { status: 404 };
+                // 更新 updated_at 時間戳
+                DB.resourceLinks[linkIndex] = { ...DB.resourceLinks[linkIndex], ...body, updated_at: new Date().toISOString() };
+                return DB.resourceLinks[linkIndex];
             }
             case 'DELETE /resources': {
                 if (id === 'datasources') {
@@ -836,7 +1120,25 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     return {};
                 }
                 const delResIndex = DB.resources.findIndex((r: any) => r.id === id);
-                if (delResIndex > -1) DB.resources[delResIndex].deleted_at = new Date().toISOString();
+                if (delResIndex > -1) {
+                    const resource = DB.resources[delResIndex];
+                    DB.resources[delResIndex].deleted_at = new Date().toISOString();
+
+                    // 紀錄審計日誌
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'DELETE',
+                        'Resource',
+                        id,
+                        { name: resource.name, type: resource.type }
+                    );
+                }
+                return {};
+            }
+            case 'DELETE /resource-links': {
+                const linkIndex = DB.resourceLinks.findIndex((link: any) => link.id === id);
+                if (linkIndex > -1) DB.resourceLinks[linkIndex].deleted_at = new Date().toISOString();
                 return {};
             }
 
@@ -848,13 +1150,20 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 return groups;
             }
             case 'POST /resource-groups':
-                const newGroup = { ...body, id: `rg-${uuidv4()}` };
+                const timestamp = new Date().toISOString();
+                const newGroup = {
+                    ...body,
+                    id: `rg-${uuidv4()}`,
+                    created_at: timestamp,
+                    updated_at: timestamp
+                };
                 DB.resourceGroups.unshift(newGroup);
                 return newGroup;
             case 'PUT /resource-groups':
                 const groupIndex = DB.resourceGroups.findIndex((g: any) => g.id === id);
                 if (groupIndex === -1) throw { status: 404 };
-                DB.resourceGroups[groupIndex] = { ...DB.resourceGroups[groupIndex], ...body };
+                // 更新 updated_at 時間戳
+                DB.resourceGroups[groupIndex] = { ...DB.resourceGroups[groupIndex], ...body, updated_at: new Date().toISOString() };
                 return DB.resourceGroups[groupIndex];
             case 'DELETE /resource-groups':
                 const delGroupIndex = DB.resourceGroups.findIndex((g: any) => g.id === id);
@@ -876,7 +1185,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 if (id === 'executions') {
                     let executions = [...DB.automationExecutions];
                     if (params) {
-                        if (params.playbookId) executions = executions.filter((e: any) => e.scriptId === params.playbookId);
+                        if (params.playbookId) executions = executions.filter((e: any) => e.script_id === params.playbookId);
                         if (params.status) executions = executions.filter((e: any) => e.status === params.status);
                     }
                     if (params?.sort_by && params?.sort_order) {
@@ -915,28 +1224,34 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         if (!script) throw { status: 404, message: 'Automation playbook not found.' };
                         const newExec = {
                             id: `exec-${uuidv4()}`,
-                            scriptId,
-                            scriptName: script.name,
+                            script_id: scriptId,
+                            script_name: script.name,
                             status: 'running',
-                            triggerSource: 'manual',
-                            triggeredBy: 'Admin User',
-                            startTime: new Date().toISOString(),
+                            trigger_source: 'manual',
+                            triggered_by: 'Admin User',
+                            start_time: new Date().toISOString(),
                             parameters: body?.parameters ?? {},
                             logs: { stdout: 'Execution started...', stderr: '' }
                         };
                         DB.automationExecutions.unshift(newExec);
                         setTimeout(() => {
-                            const index = DB.automationExecutions.findIndex(e => e.id === newExec.id);
+                            const index = DB.automationExecutions.findIndex((e: any) => e.id === newExec.id);
                             if (index > -1) {
                                 DB.automationExecutions[index].status = 'success';
-                                DB.automationExecutions[index].endTime = new Date().toISOString();
-                                DB.automationExecutions[index].durationMs = 3000;
+                                DB.automationExecutions[index].end_time = new Date().toISOString();
+                                DB.automationExecutions[index].duration_ms = 3000;
                                 DB.automationExecutions[index].logs.stdout += '\nExecution finished.';
                             }
                         }, 3000);
                         return newExec;
                     }
-                    const newScript = { ...body, id: `play-${uuidv4()}` };
+                    const timestamp = new Date().toISOString();
+                    const newScript = {
+                        ...body,
+                        id: `play-${uuidv4()}`,
+                        created_at: timestamp,
+                        updated_at: timestamp
+                    };
                     DB.playbooks.unshift(newScript);
                     return newScript;
                 }
@@ -952,9 +1267,9 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         ...originalExec,
                         id: `exec-${uuidv4()}`,
                         status: 'pending',
-                        startTime: new Date().toISOString(),
-                        endTime: undefined,
-                        durationMs: undefined
+                        start_time: new Date().toISOString(),
+                        end_time: undefined,
+                        duration_ms: undefined
                     };
                     DB.automationExecutions.unshift(newExec);
                     return newExec;
@@ -979,7 +1294,13 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         });
                         return { success: true, updated };
                     }
-                    const newTrigger = { ...body, id: `trig-${uuidv4()}` };
+                    const timestamp = new Date().toISOString();
+                    const newTrigger = {
+                        ...body,
+                        id: `trig-${uuidv4()}`,
+                        created_at: timestamp,
+                        updated_at: timestamp
+                    };
                     DB.automationTriggers.unshift(newTrigger);
                     return newTrigger;
                 }
@@ -990,14 +1311,16 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const itemId = subId;
                     const index = DB.playbooks.findIndex((p: any) => p.id === itemId);
                     if (index === -1) throw { status: 404 };
-                    DB.playbooks[index] = { ...DB.playbooks[index], ...body };
+                    // 更新 updated_at 時間戳
+                    DB.playbooks[index] = { ...DB.playbooks[index], ...body, updated_at: new Date().toISOString() };
                     return DB.playbooks[index];
                 }
                 if (id === 'triggers') {
                     const itemId = subId;
                     const index = DB.automationTriggers.findIndex((t: any) => t.id === itemId);
                     if (index === -1) throw { status: 404 };
-                    DB.automationTriggers[index] = { ...DB.automationTriggers[index], ...body };
+                    // 更新 updated_at 時間戳
+                    DB.automationTriggers[index] = { ...DB.automationTriggers[index], ...body, updated_at: new Date().toISOString() };
                     return DB.automationTriggers[index];
                 }
                 break;
@@ -1071,9 +1394,9 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                             ...body,
                             id: `usr-${uuidv4()}`,
                             status: body?.status ?? 'invited',
-                            lastLoginAt: body?.lastLoginAt ?? null,
-                            createdAt: timestamp,
-                            updatedAt: timestamp,
+                            last_login_at: body?.last_login_at ?? null,
+                            created_at: timestamp,
+                            updated_at: timestamp,
                         };
                         DB.users.unshift(newUser);
                         return newUser;
@@ -1087,11 +1410,11 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     }
                     const timestamp = new Date().toISOString();
                     const newTeam = {
-                        memberIds: [],
+                        member_ids: [],
                         ...body,
                         id: `team-${uuidv4()}`,
-                        createdAt: body?.createdAt ?? timestamp,
-                        updatedAt: timestamp,
+                        created_at: timestamp,
+                        updated_at: timestamp,
                     };
                     DB.teams.unshift(newTeam);
                     return newTeam;
@@ -1107,10 +1430,10 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         permissions: [],
                         ...body,
                         id: `role-${uuidv4()}`,
-                        userCount: 0,
+                        user_count: 0,
                         enabled: body?.enabled ?? true,
-                        createdAt: body?.createdAt ?? timestamp,
-                        updatedAt: timestamp,
+                        created_at: timestamp,
+                        updated_at: timestamp,
                     };
                     DB.roles.unshift(newRole);
                     return newRole;
@@ -1124,8 +1447,8 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 if (index === -1) throw { status: 404 };
                 const timestamp = new Date().toISOString();
                 const baseUpdate = { ...collection[index], ...body };
-                if ('updatedAt' in baseUpdate) {
-                    baseUpdate.updatedAt = timestamp;
+                if ('updated_at' in baseUpdate) {
+                    baseUpdate.updated_at = timestamp;
                 }
                 collection[index] = baseUpdate;
                 return collection[index];
@@ -1248,9 +1571,9 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     Object.keys(newLayouts).forEach(key => {
                         const existingLayout = DB.layouts[key as keyof typeof DB.layouts];
                         if (existingLayout) {
-                            existingLayout.widgetIds = newLayouts[key].widgetIds;
-                            existingLayout.updatedAt = new Date().toISOString();
-                            existingLayout.updatedBy = 'Admin User';
+                            existingLayout.widget_ids = newLayouts[key].widget_ids;
+                            existingLayout.updated_at = new Date().toISOString();
+                            existingLayout.updated_by = 'Admin User';
                         }
                     });
                     return DB.layouts;
@@ -1274,7 +1597,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     if (tagIndex === -1) {
                         throw { status: 404, message: '標籤不存在。' };
                     }
-                    DB.tagDefinitions[tagIndex].allowedValues = Array.isArray(body) ? body : [];
+                    DB.tagDefinitions[tagIndex].allowed_values = Array.isArray(body) ? body : [];
                     return DB.tagDefinitions[tagIndex];
                 }
                 break;
@@ -1282,7 +1605,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
             case 'POST /settings': {
                 if (id === 'tags') {
                     // 創建新標籤定義
-                    if (!body.key || !body.scopes || !body.writableRoles) {
+                    if (!body.key || !body.scopes || !body.writable_roles) {
                         throw { status: 400, message: '缺少必要欄位。' };
                     }
 
@@ -1298,11 +1621,11 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         description: body.description || '',
                         scopes: body.scopes,
                         required: body.required || false,
-                        writableRoles: body.writableRoles,
-                        allowedValues: Array.isArray(body.allowedValues)
-                            ? body.allowedValues
+                        writable_roles: body.writable_roles,
+                        allowed_values: Array.isArray(body.allowed_values)
+                            ? body.allowed_values
                             : [],
-                        usageCount: 0,
+                        usage_count: 0,
                     };
 
                     DB.tagDefinitions.push(newTag);
@@ -1314,8 +1637,8 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     if (!channel) {
                         throw { status: 404, message: 'Notification channel not found.' };
                     }
-                    channel.lastTestResult = 'success';
-                    channel.lastTestedAt = new Date().toISOString();
+                    channel.last_test_result = 'success';
+                    channel.last_tested_at = new Date().toISOString();
                     return { success: true, message: `測試通知已送出至「${channel.name}」。` };
                 }
                 if (urlParts[1] === 'notification-history' && action === 'resend') {
@@ -1342,40 +1665,51 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     return { success: true, message: '連線成功！偵測到 Grafana v10.1.2。' };
                 }
                 if (id === 'notification-strategies') {
-                    const fallbackOptions = DB.notificationStrategyOptions || { severityLevels: [], impactLevels: [] };
-                    const severityLevels = Array.isArray(body?.severityLevels) && body.severityLevels.length > 0
-                        ? body.severityLevels
-                        : fallbackOptions.severityLevels;
-                    const impactLevels = Array.isArray(body?.impactLevels) && body.impactLevels.length > 0
-                        ? body.impactLevels
-                        : fallbackOptions.impactLevels;
+                    const fallbackOptions = DB.notificationStrategyOptions || { severity_levels: [], impact_levels: [] };
+                    const severityLevels = Array.isArray(body?.severity_levels) && body.severity_levels.length > 0
+                        ? body.severity_levels
+                        : fallbackOptions.severity_levels;
+                    const impactLevels = Array.isArray(body?.impact_levels) && body.impact_levels.length > 0
+                        ? body.impact_levels
+                        : fallbackOptions.impact_levels;
 
+                    const timestamp = new Date().toISOString();
                     const newStrategy: NotificationStrategy = {
                         ...body,
                         id: `strat-${uuidv4()}`,
-                        lastUpdated: new Date().toISOString(),
+                        last_updated: timestamp,
                         creator: 'Admin User',
-                        severityLevels,
-                        impactLevels,
-                        channelCount: body?.channelCount ?? 0,
+                        severity_levels: severityLevels,
+                        impact_levels: impactLevels,
+                        channel_count: body?.channel_count ?? 0,
                         enabled: body?.enabled ?? true,
+                        created_at: timestamp,
+                        updated_at: timestamp,
                     };
                     DB.notificationStrategies.unshift(newStrategy);
                     return newStrategy;
                 }
                 if (id === 'notification-channels') {
-                    const newChannel = { ...body, id: `chan-${uuidv4()}`, lastTestResult: 'pending', lastTestedAt: new Date().toISOString() };
+                    const timestamp = new Date().toISOString();
+                    const newChannel = {
+                        ...body,
+                        id: `chan-${uuidv4()}`,
+                        last_test_result: 'pending',
+                        last_tested_at: timestamp,
+                        created_at: timestamp,
+                        updated_at: timestamp
+                    };
                     DB.notificationChannels.unshift(newChannel);
                     return newChannel;
                 }
                 if (id === 'tags') {
-                    const fallbackRoles = DB.allOptions?.tagManagement?.writableRoles || ['platform_admin'];
+                    const fallbackRoles = DB.allOptions?.tagManagement?.writable_roles || ['platform_admin'];
                     const payload = {
                         id: `tag-${uuidv4()}`,
-                        allowedValues: Array.isArray(body?.allowedValues) ? body.allowedValues : [],
-                        usageCount: 0,
+                        allowed_values: Array.isArray(body?.allowed_values) ? body.allowed_values : [],
+                        usage_count: 0,
                         scopes: Array.isArray(body?.scopes) ? body.scopes : [],
-                        writableRoles: Array.isArray(body?.writableRoles) && body.writableRoles.length > 0 ? body.writableRoles : fallbackRoles,
+                        writable_roles: Array.isArray(body?.writable_roles) && body.writable_roles.length > 0 ? body.writable_roles : fallbackRoles,
                         required: Boolean(body?.required),
                         description: body?.description ?? '',
                         system: Boolean(body?.system),
@@ -1402,26 +1736,29 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const index = DB.notificationStrategies.findIndex((s: any) => s.id === itemId);
                     if (index === -1) throw { status: 404 };
                     const existingStrategy = DB.notificationStrategies[index];
-                    const severityLevels = Array.isArray(body?.severityLevels) && body?.severityLevels.length > 0
-                        ? body.severityLevels
-                        : existingStrategy.severityLevels;
-                    const impactLevels = Array.isArray(body?.impactLevels) && body?.impactLevels.length > 0
-                        ? body.impactLevels
-                        : existingStrategy.impactLevels;
+                    const severityLevels = Array.isArray(body?.severity_levels) && body?.severity_levels.length > 0
+                        ? body.severity_levels
+                        : existingStrategy.severity_levels;
+                    const impactLevels = Array.isArray(body?.impact_levels) && body?.impact_levels.length > 0
+                        ? body.impact_levels
+                        : existingStrategy.impact_levels;
 
+                    const timestamp = new Date().toISOString();
                     DB.notificationStrategies[index] = {
                         ...existingStrategy,
                         ...body,
-                        severityLevels,
-                        impactLevels,
-                        lastUpdated: new Date().toISOString()
+                        severity_levels: severityLevels,
+                        impact_levels: impactLevels,
+                        last_updated: timestamp,
+                        updated_at: timestamp
                     };
                     return DB.notificationStrategies[index];
                 }
                 if (collectionId === 'notification-channels') {
                     const index = DB.notificationChannels.findIndex((c: any) => c.id === itemId);
                     if (index === -1) throw { status: 404 };
-                    DB.notificationChannels[index] = { ...DB.notificationChannels[index], ...body };
+                    // 更新 updated_at 時間戳
+                    DB.notificationChannels[index] = { ...DB.notificationChannels[index], ...body, updated_at: new Date().toISOString() };
                     return DB.notificationChannels[index];
                 }
                 if (collectionId === 'tags') {
@@ -1440,16 +1777,15 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         next.scopes = body.scopes;
                     }
 
-                    if (Array.isArray(body?.writableRoles) && body.writableRoles.length > 0) {
-                        next.writableRoles = body.writableRoles;
+                    if (Array.isArray(body?.writable_roles) && body.writable_roles.length > 0) {
+                        next.writable_roles = body.writable_roles;
                     }
 
-                    if (Array.isArray(body?.allowedValues)) {
-                        next.allowedValues = body.allowedValues;
+                    if (Array.isArray(body?.allowed_values)) {
+                        next.allowed_values = body.allowed_values;
                     }
 
                     DB.tagDefinitions[index] = next;
-                    return next;
                 }
                 break;
             }
@@ -1473,7 +1809,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         if (DB.tagDefinitions[index].system) {
                             throw { status: 400, message: '系統保留標籤不可刪除。' };
                         }
-                        DB.tagDefinitions.splice(index, 1);
+                        DB.tagDefinitions[index].deleted_at = new Date().toISOString();
                     }
                     return {};
                 }
@@ -1485,6 +1821,19 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 }
                 break;
             }
+            case 'GET /config-versions': {
+                let versions = getActive(DB.configVersions);
+                if (params?.entity_type) {
+                    versions = versions.filter((version: any) => version.entity_type === params.entity_type);
+                }
+                if (params?.entity_id) {
+                    versions = versions.filter((version: any) => version.entity_id === params.entity_id);
+                }
+                if (params?.sort_by && params?.sort_order) {
+                    versions = sortData(versions, params.sort_by, params.sort_order);
+                }
+                return paginate(versions, params?.page, params?.page_size);
+            }
             case 'GET /kpi-data': {
                 return DB.kpiData;
             }
@@ -1493,6 +1842,16 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     return DB.notificationOptions;
                 }
                 return DB.notifications;
+            }
+            case 'POST /config-versions': {
+                const timestamp = new Date().toISOString();
+                const newVersion: ConfigVersion = {
+                    ...body,
+                    id: `cv-${uuidv4()}`,
+                    created_at: timestamp
+                };
+                DB.configVersions.unshift(newVersion);
+                return newVersion;
             }
             case 'POST /notifications': {
                 if (id === 'read-all') {

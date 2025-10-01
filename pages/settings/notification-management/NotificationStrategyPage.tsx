@@ -22,7 +22,7 @@ const NotificationStrategyPage: React.FC = () => {
     const [allColumns, setAllColumns] = useState<TableColumn[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingStrategy, setEditingStrategy] = useState<NotificationStrategy | null>(null);
     const [filters, setFilters] = useState<NotificationStrategyFilters>({});
@@ -58,7 +58,7 @@ const NotificationStrategyPage: React.FC = () => {
                 ? columnConfigRes.data
                 : allColumnsRes.data.map(c => c.key);
             setVisibleColumns(resolvedVisibleColumns);
-        } catch(err) {
+        } catch (err) {
             setError('無法獲取通知策略。');
         } finally {
             setIsLoading(false);
@@ -70,7 +70,7 @@ const NotificationStrategyPage: React.FC = () => {
             fetchStrategies();
         }
     }, [fetchStrategies, pageKey]);
-    
+
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
         if (!pageKey) {
             showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
@@ -105,7 +105,7 @@ const NotificationStrategyPage: React.FC = () => {
         } as NotificationStrategy);
         setIsModalOpen(true);
     };
-    
+
     const handleSaveStrategy = async (strategyDataFromModal: NotificationStrategy) => {
         try {
             if (editingStrategy && editingStrategy.id) {
@@ -114,7 +114,7 @@ const NotificationStrategyPage: React.FC = () => {
                 await api.post('/settings/notification-strategies', strategyDataFromModal);
             }
             fetchStrategies();
-        } catch(err) {
+        } catch (err) {
             alert('Failed to save strategy.');
         } finally {
             setIsModalOpen(false);
@@ -140,20 +140,20 @@ const NotificationStrategyPage: React.FC = () => {
             }
         }
     };
-    
+
     const handleToggleEnable = async (strategy: NotificationStrategy) => {
         try {
             await api.patch(`/settings/notification-strategies/${strategy.id}`, { ...strategy, enabled: !strategy.enabled });
             fetchStrategies();
-        } catch(err) {
+        } catch (err) {
             alert('Failed to toggle strategy status.');
         }
     };
-    
+
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSelectedIds(e.target.checked ? strategies.map(s => s.id) : []);
     };
-    
+
     const handleSelectOne = (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
         setSelectedIds(prev => e.target.checked ? [...prev, id] : prev.filter(selectedId => selectedId !== id));
     };
@@ -171,7 +171,7 @@ const NotificationStrategyPage: React.FC = () => {
             setSelectedIds([]);
         }
     };
-    
+
     const batchActions = (
         <>
             <ToolbarButton icon="toggle-right" text="啟用" onClick={() => handleBatchAction('enable')} />
@@ -183,7 +183,7 @@ const NotificationStrategyPage: React.FC = () => {
     const leftActions = (
         <ToolbarButton icon="search" text="搜尋和篩選" onClick={() => setIsSearchModalOpen(true)} />
     );
-    
+
     const getSeverityLabel = (severity: string): string => {
         const descriptor = incidentOptions?.severities.find(s => s.value === severity);
         return descriptor?.label || severity;
@@ -261,7 +261,7 @@ const NotificationStrategyPage: React.FC = () => {
                     </div>
                 );
             case 'creator': return strategy.creator;
-            case 'lastUpdated': return strategy.lastUpdated;
+            case 'updated_at': return strategy.updated_at;
             default:
                 return <span className="text-slate-500">-</span>;
         }
@@ -289,7 +289,7 @@ const NotificationStrategyPage: React.FC = () => {
                             <tr>
                                 <th scope="col" className="p-4 w-12">
                                     <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
-                                           checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
+                                        checked={isAllSelected} ref={el => { if (el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
                                 {visibleColumns.map(key => (
                                     <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
@@ -306,7 +306,7 @@ const NotificationStrategyPage: React.FC = () => {
                                 <tr key={strategy.id} className={`border-b border-slate-800 ${selectedIds.includes(strategy.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
                                     <td className="p-4 w-12">
                                         <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
-                                               checked={selectedIds.includes(strategy.id)} onChange={(e) => handleSelectOne(e, strategy.id)} />
+                                            checked={selectedIds.includes(strategy.id)} onChange={(e) => handleSelectOne(e, strategy.id)} />
                                     </td>
                                     {visibleColumns.map(key => (
                                         <td key={key} className="px-6 py-4">{renderCellContent(strategy, key)}</td>
@@ -323,7 +323,7 @@ const NotificationStrategyPage: React.FC = () => {
                 </div>
             </TableContainer>
             {isModalOpen && (
-                <NotificationStrategyEditModal 
+                <NotificationStrategyEditModal
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
                     onSave={handleSaveStrategy}
@@ -345,7 +345,7 @@ const NotificationStrategyPage: React.FC = () => {
                 <p>您確定要刪除策略 <strong className="text-amber-400">{deletingStrategy?.name}</strong> 嗎？</p>
                 <p className="mt-2 text-slate-400">此操作無法復原。</p>
             </Modal>
-             <UnifiedSearchModal
+            <UnifiedSearchModal
                 page="notification-strategies"
                 isOpen={isSearchModalOpen}
                 onClose={() => setIsSearchModalOpen(false)}

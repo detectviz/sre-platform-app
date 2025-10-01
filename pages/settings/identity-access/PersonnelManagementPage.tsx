@@ -38,12 +38,12 @@ const PersonnelManagementPage: React.FC = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingUser, setDeletingUser] = useState<User | null>(null);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
-    
+
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
-    
+
     const { options } = useOptions();
 
     const { metadata: pageMetadata } = usePageMetadata();
@@ -59,7 +59,7 @@ const PersonnelManagementPage: React.FC = () => {
                 page_size: pageSize,
                 ...filters,
             };
-            
+
             const [usersRes, columnConfigRes, allColumnsRes] = await Promise.all([
                 api.get<{ items: User[], total: number }>('/iam/users', { params }),
                 api.get<string[]>(`/settings/column-config/${pageKey}`),
@@ -167,7 +167,7 @@ const PersonnelManagementPage: React.FC = () => {
             setSelectedIds([]);
         }
     };
-    
+
     const handleSelectOne = (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
         if (e.target.checked) {
             setSelectedIds(prev => [...prev, id]);
@@ -178,7 +178,7 @@ const PersonnelManagementPage: React.FC = () => {
 
     const isAllSelected = users.length > 0 && selectedIds.length === users.length;
     const isIndeterminate = selectedIds.length > 0 && selectedIds.length < users.length;
-    
+
     const handleBatchAction = async (action: 'disable' | 'delete') => {
         try {
             await api.post('/iam/users/batch-actions', { action, ids: selectedIds });
@@ -188,7 +188,7 @@ const PersonnelManagementPage: React.FC = () => {
             alert(`Failed to ${action} selected users.`);
         }
     };
-    
+
     const handleExport = () => {
         const dataToExport = selectedIds.length > 0
             ? users.filter(u => selectedIds.includes(u.id))
@@ -205,7 +205,7 @@ const PersonnelManagementPage: React.FC = () => {
             data: dataToExport,
         });
     };
-    
+
     const renderCellContent = (user: User, columnKey: string) => {
         switch (columnKey) {
             case 'name':
@@ -221,14 +221,14 @@ const PersonnelManagementPage: React.FC = () => {
             case 'role': return user.role;
             case 'team': return user.team;
             case 'status': return <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusPill(user.status)}`}>{getStatusLabel(user.status)}</span>;
-            case 'lastLogin': return user.lastLogin;
+            case 'lastLoginAt': return user.lastLoginAt;
             default:
                 return <span className="text-slate-500">--</span>;
         }
     };
 
     const leftActions = (
-         <ToolbarButton icon="search" text="搜尋和篩選" onClick={() => setIsSearchModalOpen(true)} />
+        <ToolbarButton icon="search" text="搜尋和篩選" onClick={() => setIsSearchModalOpen(true)} />
     );
 
     const batchActions = (
@@ -242,7 +242,7 @@ const PersonnelManagementPage: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col">
-            <Toolbar 
+            <Toolbar
                 leftActions={leftActions}
                 rightActions={
                     <>
@@ -263,11 +263,11 @@ const PersonnelManagementPage: React.FC = () => {
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
                                 <th scope="col" className="p-4 w-12">
-                                     <input type="checkbox"
-                                           className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded text-sky-500 focus:ring-sky-500"
-                                           checked={isAllSelected}
-                                           ref={el => { if (el) el.indeterminate = isIndeterminate; }}
-                                           onChange={handleSelectAll}
+                                    <input type="checkbox"
+                                        className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded text-sky-500 focus:ring-sky-500"
+                                        checked={isAllSelected}
+                                        ref={el => { if (el) el.indeterminate = isIndeterminate; }}
+                                        onChange={handleSelectAll}
                                     />
                                 </th>
                                 {visibleColumns.map(key => (
@@ -285,9 +285,9 @@ const PersonnelManagementPage: React.FC = () => {
                                 <tr key={user.id} className={`border-b border-slate-800 ${selectedIds.includes(user.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
                                     <td className="p-4 w-12">
                                         <input type="checkbox"
-                                               className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded text-sky-500 focus:ring-sky-500"
-                                               checked={selectedIds.includes(user.id)}
-                                               onChange={(e) => handleSelectOne(e, user.id)}
+                                            className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded text-sky-500 focus:ring-sky-500"
+                                            checked={selectedIds.includes(user.id)}
+                                            onChange={(e) => handleSelectOne(e, user.id)}
                                         />
                                     </td>
                                     {visibleColumns.map(key => (
@@ -306,16 +306,16 @@ const PersonnelManagementPage: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
-                 <Pagination 
+                <Pagination
                     total={totalUsers}
                     page={currentPage}
                     pageSize={pageSize}
                     onPageChange={setCurrentPage}
                     onPageSizeChange={setPageSize}
-                 />
+                />
             </TableContainer>
-            <InviteUserModal 
-                isOpen={isInviteModalOpen} 
+            <InviteUserModal
+                isOpen={isInviteModalOpen}
                 onClose={() => setIsInviteModalOpen(false)}
                 onInvite={handleInvite}
             />

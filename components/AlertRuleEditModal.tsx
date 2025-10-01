@@ -12,10 +12,10 @@ import TestRuleModal from './TestRuleModal';
 import KeyValueInput from './KeyValueInput';
 
 interface AlertRuleEditModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (rule: Partial<AlertRule>) => void;
-  rule: AlertRule | null;
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (rule: Partial<AlertRule>) => void;
+    rule: AlertRule | null;
 }
 
 const Step0 = ({ selectedTemplate, setSelectedTemplate }: { selectedTemplate: AlertRuleTemplate | null, setSelectedTemplate: (template: AlertRuleTemplate | null) => void }) => {
@@ -34,13 +34,13 @@ const Step0 = ({ selectedTemplate, setSelectedTemplate }: { selectedTemplate: Al
             setResourceTypes(typesRes.data);
             setTemplates(templatesRes.data);
         }).catch(err => { /* Silent error */ })
-        .finally(() => setIsLoading(false));
+            .finally(() => setIsLoading(false));
     }, []);
 
     const filteredTemplates = useMemo(() => {
         return templates
             .filter(t => selectedType === 'all' || t.resourceType === selectedType)
-            .filter(t => 
+            .filter(t =>
                 searchTerm === '' ||
                 t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 t.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -59,11 +59,10 @@ const Step0 = ({ selectedTemplate, setSelectedTemplate }: { selectedTemplate: Al
                         <li key={rt.id}>
                             <button
                                 onClick={() => setSelectedType(rt.id)}
-                                className={`w-full flex items-center p-2 rounded-md text-sm text-left transition-colors ${
-                                    selectedType === rt.id
+                                className={`w-full flex items-center p-2 rounded-md text-sm text-left transition-colors ${selectedType === rt.id
                                         ? 'bg-sky-500/20 text-sky-300 font-semibold'
                                         : 'text-slate-300 hover:bg-slate-700/50'
-                                }`}
+                                    }`}
                             >
                                 <Icon name={rt.icon} className="w-4 h-4 mr-3" />
                                 {rt.name}
@@ -88,7 +87,7 @@ const Step0 = ({ selectedTemplate, setSelectedTemplate }: { selectedTemplate: Al
                         />
                     </div>
                 </div>
-                
+
                 <div className="flex-grow overflow-y-auto -mr-4 pr-4">
                     {isLoading ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -101,14 +100,12 @@ const Step0 = ({ selectedTemplate, setSelectedTemplate }: { selectedTemplate: Al
                                 <button
                                     key={tpl.id}
                                     onClick={() => setSelectedTemplate(tpl)}
-                                    className={`p-4 rounded-lg border-2 text-left transition-all h-full flex flex-col ${
-                                        selectedTemplate?.id === tpl.id
+                                    className={`p-4 rounded-lg border-2 text-left transition-all h-full flex flex-col ${selectedTemplate?.id === tpl.id
                                             ? 'bg-sky-900/50 border-sky-500 shadow-lg'
                                             : 'bg-slate-800/50 border-slate-700 hover:border-slate-500'
-                                    }`}
+                                        }`}
                                 >
                                     <div className="flex items-center space-x-3">
-                                        <span className="text-2xl">{tpl.emoji}</span>
                                         <h4 className="font-semibold text-white flex-grow">{tpl.name}</h4>
                                     </div>
                                     <p className="text-xs text-slate-400 mt-2 flex-grow">{tpl.description}</p>
@@ -132,17 +129,17 @@ const Step0 = ({ selectedTemplate, setSelectedTemplate }: { selectedTemplate: Al
 const Step1 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFormData: Function }) => {
     type ScopeMode = 'all' | 'group' | 'specific';
     const [scopeMode, setScopeMode] = useState<ScopeMode>('all');
-    
+
     const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
     const [selectedResources, setSelectedResources] = useState<string[]>([]);
     const [filterTags, setFilterTags] = useState<{ id: string; key: string; value: string }[]>([]);
 
     const [resourceGroups, setResourceGroups] = useState<ResourceGroup[]>([]);
     const [allResources, setAllResources] = useState<Resource[]>([]);
-    
+
     const [previewCount, setPreviewCount] = useState<number | null>(null);
     const [isPreviewLoading, setIsPreviewLoading] = useState(false);
-    
+
     useEffect(() => {
         Promise.all([
             api.get<ResourceGroup[]>('/resource-groups'),
@@ -158,7 +155,7 @@ const Step1 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
     const updateTargetString = useCallback(() => {
         const resourceTypeMatch = formData.target?.match(/resource\.type = "([^"]+)"/);
         const resourceTypeString = resourceTypeMatch ? resourceTypeMatch[0] : '';
-        
+
         let baseQuery = '';
         if (scopeMode === 'all') {
             baseQuery = resourceTypeString;
@@ -189,28 +186,28 @@ const Step1 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
         } else if (tagQuery) {
             finalTarget = tagQuery;
         }
-        
+
         setFormData((prev: Partial<AlertRule>) => ({ ...prev, target: finalTarget }));
     }, [scopeMode, selectedGroups, selectedResources, filterTags, formData.target, setFormData]);
 
     useEffect(() => {
         updateTargetString();
     }, [scopeMode, selectedGroups, selectedResources, filterTags, updateTargetString]);
-    
+
     useEffect(() => {
-      const finalTarget = formData.target;
-      if (!finalTarget || finalTarget.trim() === '') {
-        setPreviewCount(null);
-        return;
-      }
-      setIsPreviewLoading(true);
-      const handler = setTimeout(() => {
-        api.get<{ count: number }>('/resources/count', { params: { query: finalTarget } })
-          .then(res => setPreviewCount(res.data.count))
-          .catch(() => setPreviewCount(null))
-          .finally(() => setIsPreviewLoading(false));
-      }, 500);
-      return () => clearTimeout(handler);
+        const finalTarget = formData.target;
+        if (!finalTarget || finalTarget.trim() === '') {
+            setPreviewCount(null);
+            return;
+        }
+        setIsPreviewLoading(true);
+        const handler = setTimeout(() => {
+            api.get<{ count: number }>('/resources/count', { params: { query: finalTarget } })
+                .then(res => setPreviewCount(res.data.count))
+                .catch(() => setPreviewCount(null))
+                .finally(() => setIsPreviewLoading(false));
+        }, 500);
+        return () => clearTimeout(handler);
     }, [formData.target]);
 
     const handleScopeModeChange = (newMode: ScopeMode) => {
@@ -219,12 +216,12 @@ const Step1 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
         setSelectedResources([]);
         setFilterTags([]);
     };
-    
+
     return (
         <div className="space-y-6 px-4">
             <FormRow label="規則名稱 *"><input type="text" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" required /></FormRow>
             <FormRow label="描述"><textarea value={formData.description || ''} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={2} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"></textarea></FormRow>
-            
+
             <div className="space-y-4">
                 <div className="p-4 border border-slate-700 rounded-lg space-y-4 bg-slate-800/20">
                     <h3 className="text-lg font-semibold text-white">監控範圍</h3>
@@ -242,7 +239,7 @@ const Step1 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
                 </div>
 
                 <div className="p-4 border border-slate-700 rounded-lg space-y-4 bg-slate-800/20">
-                     <h3 className="text-lg font-semibold text-white">附加篩選條件 (可選)</h3>
+                    <h3 className="text-lg font-semibold text-white">附加篩選條件 (可選)</h3>
                     <p className="text-sm text-slate-400 -mt-2">在選定的監控範圍內，進一步添加標籤篩選器 (AND 邏輯)。</p>
                     <KeyValueInput
                         values={filterTags}
@@ -251,7 +248,7 @@ const Step1 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
                         valuePlaceholder="標籤值"
                     />
                 </div>
-                
+
                 <div className="p-4 border border-slate-700 rounded-lg bg-slate-800/20">
                     <h3 className="text-lg font-semibold text-white">匹配資源預覽</h3>
                     <div className="flex items-center mt-2">
@@ -293,7 +290,7 @@ const Step2 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
         newGroups[groupIndex].conditions[condIndex][field] = value;
         setFormData({ ...formData, conditionGroups: newGroups });
     };
-    
+
     const addCondition = (groupIndex: number) => {
         const newGroups = JSON.parse(JSON.stringify(formData.conditionGroups || []));
         newGroups[groupIndex].conditions.push({ metric: '', operator: '>', threshold: 0, durationMinutes: 5 });
@@ -315,14 +312,14 @@ const Step2 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
         });
         setFormData({ ...formData, conditionGroups: newGroups });
     };
-    
+
     return (
         <div className="space-y-4 px-4">
             {formData.conditionGroups?.map((group, groupIndex) => (
                 <div key={groupIndex} className="p-4 border border-slate-700 rounded-lg space-y-4 bg-slate-800/20">
                     <div className="flex justify-between items-center">
-                         <h4 className="font-semibold text-white">條件群組 #{groupIndex + 1} (OR)</h4>
-                         <div className="flex items-center space-x-2">
+                        <h4 className="font-semibold text-white">條件群組 #{groupIndex + 1} (OR)</h4>
+                        <div className="flex items-center space-x-2">
                             <span className="text-sm text-slate-400">事件等級:</span>
                             {isLoadingOptions ? <div className="animate-pulse h-8 w-48 bg-slate-700 rounded-md"></div> : severities.map(level => {
                                 const isActive = group.severity === level.value;
@@ -386,7 +383,7 @@ const Step2 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
                     <button onClick={() => addCondition(groupIndex)} className="text-sm text-sky-400 hover:text-sky-300 flex items-center"><Icon name="plus" className="w-4 h-4 mr-1" /> 新增 AND 條件</button>
                 </div>
             ))}
-             <button onClick={addGroup} className="text-sm text-sky-400 hover:text-sky-300 flex items-center"><Icon name="plus-circle" className="w-4 h-4 mr-1" /> 新增 OR 條件群組</button>
+            <button onClick={addGroup} className="text-sm text-sky-400 hover:text-sky-300 flex items-center"><Icon name="plus-circle" className="w-4 h-4 mr-1" /> 新增 OR 條件群組</button>
         </div>
     );
 };
@@ -412,7 +409,7 @@ const Step3 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
             setFormData({ ...formData, contentTemplate: newValue });
         }
     };
-    
+
     const metadataLabels = useMemo(() => {
         const labelMap = new Map<string, string[]>();
         (formData.labels || []).forEach(label => {
@@ -425,7 +422,7 @@ const Step3 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
             }
             labelMap.get(key)!.push(value);
         });
-        
+
         return Array.from(labelMap.entries()).map(([key, values], index) => ({
             id: key + index,
             key: key,
@@ -452,12 +449,12 @@ const Step3 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
                 <textarea ref={contentRef} onFocus={() => setFocusedElement('content')} value={formData.contentTemplate} onChange={e => setFormData({ ...formData, contentTemplate: e.target.value })} rows={5} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm font-mono"></textarea>
             </FormRow>
             <div>
-                 <h3 className="text-sm font-semibold text-slate-300 mb-2">可用的變數</h3>
-                 <div className="flex flex-wrap gap-2">
+                <h3 className="text-sm font-semibold text-slate-300 mb-2">可用的變數</h3>
+                <div className="flex flex-wrap gap-2">
                     {variables.map(v => (
                         <button key={v} onClick={() => insertVariable(v)} className="px-2 py-1 text-xs bg-slate-700 hover:bg-slate-600 rounded-md font-mono">{v}</button>
                     ))}
-                 </div>
+                </div>
             </div>
             <div className="p-4 border border-slate-700 rounded-lg space-y-4 bg-slate-800/20">
                 <h3 className="text-lg font-semibold text-white">規則與事件標籤</h3>
@@ -569,8 +566,8 @@ const Step4 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
                                 {selectedPlaybook.parameters.map(param => {
                                     let inputElement;
                                     const value = formData.automation?.parameters?.[param.name] ?? param.defaultValue ?? '';
-                                    
-                                    switch(param.type) {
+
+                                    switch (param.type) {
                                         case 'boolean':
                                             inputElement = (
                                                 <label className="flex items-center space-x-2">
@@ -626,7 +623,7 @@ const Step1MultiSelectDropdown: React.FC<{
     const handleToggle = (value: string, checked: boolean) => {
         onSelectedChange(checked ? [...selected, value] : selected.filter(v => v !== value));
     };
-    
+
     const selectedLabels = items.filter(i => selected.includes(i.value)).map(i => i.label);
 
     return (
@@ -731,13 +728,13 @@ const AlertRuleEditModal: React.FC<AlertRuleEditModalProps> = ({ isOpen, onClose
             automationEnabled: !!formData.automation?.enabled,
         };
 
-        if(rule?.id) {
+        if (rule?.id) {
             rulePayload.id = rule.id;
         }
 
         onSave(rulePayload);
     };
-    
+
     const handleTestRule = () => {
         setIsTestModalOpen(true);
     };
@@ -750,7 +747,7 @@ const AlertRuleEditModal: React.FC<AlertRuleEditModalProps> = ({ isOpen, onClose
             }
             const firstGroupSeverity = selectedTemplate.data.conditionGroups?.[0]?.severity;
             const defaultTarget = `resource.type = "${selectedTemplate.resourceType}"`;
-            
+
             if (!defaultRuleData) {
                 showToast('預設告警規則尚未載入，請稍候。', 'error');
                 return;
@@ -774,7 +771,7 @@ const AlertRuleEditModal: React.FC<AlertRuleEditModalProps> = ({ isOpen, onClose
         setCurrentStep(s => Math.min(s + 1, 4));
     };
     const prevStep = () => setCurrentStep(s => Math.max(s - 1, isEditMode ? 1 : 0));
-    
+
     // Use dynamic step titles from options or fallback
     const stepTitles = uiOptions?.alertRules?.stepTitles || ["選擇監控目標", "設定基本資訊", "定義觸發條件", "事件定義與通知", "設定自動化響應"];
 
@@ -795,7 +792,7 @@ const AlertRuleEditModal: React.FC<AlertRuleEditModalProps> = ({ isOpen, onClose
                 );
         }
     };
-    
+
     const finalStep = 4;
     const wizardSteps = isEditMode ? stepTitles.slice(1) : stepTitles;
     const wizardCurrentStep = isEditMode ? currentStep : currentStep + 1;
@@ -829,7 +826,7 @@ const AlertRuleEditModal: React.FC<AlertRuleEditModalProps> = ({ isOpen, onClose
             >
                 <div className="flex flex-col h-[65vh]">
                     <div className="px-4 pb-6 border-b border-slate-700/50">
-                       <Wizard currentStep={wizardCurrentStep} steps={wizardSteps} onStepClick={(step) => setCurrentStep(isEditMode ? step : step - 1)} />
+                        <Wizard currentStep={wizardCurrentStep} steps={wizardSteps} onStepClick={(step) => setCurrentStep(isEditMode ? step : step - 1)} />
                     </div>
                     <div className="flex-grow pt-6 overflow-y-auto">
                         {renderStepContent()}
@@ -837,10 +834,10 @@ const AlertRuleEditModal: React.FC<AlertRuleEditModalProps> = ({ isOpen, onClose
                 </div>
             </Modal>
             {isTestModalOpen && rule && (
-                <TestRuleModal 
-                    isOpen={isTestModalOpen} 
-                    onClose={() => setIsTestModalOpen(false)} 
-                    rule={rule} 
+                <TestRuleModal
+                    isOpen={isTestModalOpen}
+                    onClose={() => setIsTestModalOpen(false)}
+                    rule={rule}
                 />
             )}
         </>

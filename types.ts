@@ -24,17 +24,18 @@ export interface Dashboard {
   category: string;
   description: string;
   owner: string;
-  teamId?: string;
-  ownerId?: string;
+  team_id?: string;
+  owner_id?: string;
   tags?: Record<string, string>;
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
   path: string;
-  grafanaUrl?: string;
+  grafana_url?: string;
   grafana_dashboard_uid?: string;
   grafana_folder_uid?: string;
   layout?: DashboardLayoutItem[];
   deleted_at?: string;
+  resource_ids?: string[];
 }
 
 export interface DashboardTemplate {
@@ -120,27 +121,32 @@ export interface Incident {
   id: string;
   summary: string;
   resource: string;
-  resourceId: string;
+  resource_id: string;
   status: IncidentStatus;
   severity: IncidentSeverity;
   impact: IncidentImpact;
   rule: string;
-  ruleId: string;
+  rule_id: string;
   assignee?: string;
-  teamId?: string;
-  ownerId?: string;
+  team_id?: string;
+  owner_id?: string;
   tags?: Record<string, string>;
-  occurredAt: string;
-  createdAt: string;
-  updatedAt: string;
+  occurred_at: string;
+  created_at: string;
+  updated_at: string;
   history: IncidentEvent[];
-  aiAnalysis?: IncidentAnalysis;
+  ai_analysis?: IncidentAnalysis;
+  silenced_by?: string;
+  notifications_sent?: any[];
+  acknowledged_at?: string;
+  resolved_at?: string;
+  deleted_at?: string;
 }
 
 export interface IncidentCreateRequest {
   summary: string;
-  resourceId: string;
-  ruleId: string;
+  resource_id: string;
+  rule_id: string;
   severity: IncidentSeverity;
   impact: IncidentImpact;
   assignee?: string;
@@ -161,15 +167,16 @@ export interface Resource {
   provider: string;
   region: string;
   owner: string;
-  teamId?: string;
-  ownerId?: string;
+  team_id?: string;
+  owner_id?: string;
   tags?: Record<string, string>;
-  lastCheckInAt: string;
-  createdAt: string;
-  updatedAt: string;
-  // New fields for lineage
-  discoveredByJobId?: string;
-  monitoringAgent?: string;
+  last_check_in_at: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string;
+  discovered_by_job_id?: string;
+  monitoring_agent?: string;
+  datasource_id?: string;
 }
 
 export interface ResourceFilters {
@@ -184,15 +191,15 @@ export interface ResourceGroup {
   id: string;
   name: string;
   description: string;
-  ownerTeam: string;
-  memberIds: string[];
-  statusSummary: {
+  owner_team: string;
+  member_ids: string[];
+  status_summary: {
     healthy: number;
     warning: number;
     critical: number;
   };
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
   deleted_at?: string;
 }
 
@@ -201,7 +208,7 @@ export interface ParameterDefinition {
   label: string;
   type: 'string' | 'number' | 'enum' | 'boolean';
   required: boolean;
-  defaultValue?: string | number | boolean;
+  default_value?: string | number | boolean;
   options?: { value: string; label: string }[];
   placeholder?: string;
 }
@@ -213,25 +220,29 @@ export interface AutomationPlaybook {
   trigger: string;
   type: 'shell' | 'python' | 'ansible' | 'terraform';
   content: string;
-  lastRunAt: string;
-  lastRunStatus: 'success' | 'failed' | 'running';
-  runCount: number;
-  createdAt: string;
-  updatedAt: string;
+  last_run_at: string;
+  last_run_status: 'success' | 'failed' | 'running';
+  run_count: number;
+  created_at: string;
+  updated_at: string;
   parameters?: ParameterDefinition[];
   deleted_at?: string;
 }
 
 export interface AutomationExecution {
   id: string;
-  scriptId: string;
-  scriptName: string;
+  script_id: string;
+  script_name: string;
+  incident_id?: string;
+  alert_rule_id?: string;
+  target_resource_id?: string;
   status: 'success' | 'failed' | 'running' | 'pending';
-  triggerSource: 'manual' | 'event' | 'schedule' | 'webhook';
-  triggeredBy: string;
-  startTime: string;
-  endTime?: string;
-  durationMs?: number;
+  trigger_source: 'manual' | 'event' | 'schedule' | 'webhook';
+  triggered_by: string;
+  start_time: string;
+  end_time?: string;
+  duration_ms?: number;
+  resolved_incident?: boolean;
   parameters?: Record<string, any>;
   logs: {
     stdout: string;
@@ -248,38 +259,35 @@ export interface AutomationTrigger {
   description: string;
   type: TriggerType;
   enabled: boolean;
-  targetPlaybookId: string;
+  target_playbook_id: string;
   config: {
-    // Schedule
     cron?: string;
-    cronDescription?: string; // 人類可讀的 cron 描述
-    // Webhook
-    webhookUrl?: string;
-    // Event
-    eventConditions?: string; // Simplified condition string
+    cron_description?: string;
+    webhook_url?: string;
+    event_conditions?: string;
   };
-  lastTriggeredAt: string;
+  last_triggered_at: string;
   creator: string;
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
   deleted_at?: string;
 }
 
 export interface MailSettings {
-  smtpServer: string;
+  smtp_server: string;
   port: number;
   username: string;
-  senderName: string;
-  senderEmail: string;
+  sender_name: string;
+  sender_email: string;
   encryption: 'none' | 'tls' | 'ssl';
-  encryptionModes?: string[];
+  encryption_modes?: string[];
 }
 
 export interface GrafanaSettings {
   enabled: boolean;
   url: string;
-  apiKey: string;
-  orgId: number;
+  api_key: string;
+  org_id: number;
 }
 
 export interface User {
@@ -289,19 +297,20 @@ export interface User {
   role: 'Admin' | 'SRE' | 'Developer' | 'Viewer';
   team: string;
   status: 'active' | 'invited' | 'inactive';
-  lastLoginAt: string | null;
-  createdAt: string;
-  updatedAt: string;
+  last_login_at: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string;
 }
 
 export interface Team {
   id: string;
   name: string;
   description: string;
-  ownerId: string;
-  memberIds: string[];
-  createdAt: string;
-  updatedAt: string;
+  owner_id: string;
+  member_ids: string[];
+  created_at: string;
+  updated_at: string;
   deleted_at?: string;
 }
 
@@ -314,10 +323,10 @@ export interface Role {
   id: string;
   name: string;
   description: string;
-  userCount: number;
-  enabled: boolean; // 改用 enabled 替代 status
-  createdAt: string;
-  updatedAt: string;
+  user_count: number;
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
   permissions: RolePermission[];
   deleted_at?: string;
 }
@@ -348,7 +357,7 @@ export interface ConditionGroup {
 
 export interface AutomationSetting {
   enabled: boolean;
-  scriptId?: string;
+  script_id?: string;
   parameters?: Record<string, any>;
 }
 
@@ -358,22 +367,26 @@ export interface AlertRule {
   description: string;
   enabled: boolean;
   target: string;
-  conditionsSummary: string;
+  conditions_summary: string;
   severity: 'critical' | 'warning' | 'info';
-  automationEnabled: boolean;
+  automation_enabled: boolean;
   creator: string;
-  teamId?: string;
-  ownerId?: string;
+  team_id?: string;
+  owner_id?: string;
   tags?: Record<string, string>;
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
   labels?: string[];
-  conditionGroups?: ConditionGroup[];
-  titleTemplate?: string;
-  contentTemplate?: string;
+  condition_groups?: ConditionGroup[];
+  title_template?: string;
+  content_template?: string;
   automation?: AutomationSetting;
-  testPayload?: Record<string, unknown>;
+  test_payload?: Record<string, unknown>;
   deleted_at?: string;
+  target_resource_ids?: string[];
+  target_scope?: 'specific' | 'group' | 'tag';
+  triggered_count?: number;
+  version?: number;
 }
 
 export interface MetricMetadata {
@@ -406,9 +419,9 @@ export interface SilenceRule {
   matchers: SilenceMatcher[];
   schedule: SilenceSchedule;
   creator: string;
-  createdAt: string;
-  updatedAt: string;
-  deleted_at?: string;
+  created_at: string;
+  updated_at: string;
+  deletedAt?: string;
 }
 
 export interface ResourceType {
@@ -420,7 +433,6 @@ export interface ResourceType {
 export interface AlertRuleTemplate {
   id: string;
   name: string;
-  emoji: string;
   description: string;
   resourceType: string;
   data: Partial<AlertRule>;
@@ -434,7 +446,6 @@ export interface AlertRuleTemplate {
 export interface SilenceRuleTemplate {
   id: string;
   name: string;
-  emoji: string;
   data: Partial<SilenceRule>;
 }
 
@@ -446,25 +457,19 @@ export interface NotificationChannel {
   type: NotificationChannelType;
   enabled: boolean;
   config: {
-    // Email
     to?: string;
     cc?: string;
     bcc?: string;
-    // Webhook (通用) & Slack
-    webhookUrl?: string;
-    // Webhook (通用) only
-    httpMethod?: 'POST' | 'PUT' | 'GET';
-    // Slack only
+    webhook_url?: string;
+    http_method?: 'POST' | 'PUT' | 'GET';
     mention?: string;
-    // LINE Notify
-    accessToken?: string;
-    // SMS
-    phoneNumber?: string;
+    access_token?: string;
+    phone_number?: string;
   };
-  lastTestResult: 'success' | 'failed' | 'pending';
-  lastTestedAt: string;
-  createdAt: string;
-  updatedAt: string;
+  last_test_result: 'success' | 'failed' | 'pending';
+  last_tested_at: string;
+  created_at: string;
+  updated_at: string;
   deleted_at?: string;
 }
 
@@ -472,14 +477,15 @@ export interface NotificationStrategy {
   id: string;
   name: string;
   enabled: boolean;
-  triggerCondition: string;
-  channelCount: number;
-  severityLevels: IncidentSeverity[];
-  impactLevels: IncidentImpact[];
+  trigger_condition: string;
+  channel_count: number;
+  severity_levels: IncidentSeverity[];
+  impact_levels: IncidentImpact[];
   creator: string;
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
   deleted_at?: string;
+  channel_ids?: string[];
 }
 
 export interface NotificationHistoryRecord {
@@ -487,10 +493,11 @@ export interface NotificationHistoryRecord {
   timestamp: string;
   strategy: string;
   channel: string;
-  channelType: NotificationChannelType;
+  channel_type: NotificationChannelType;
   recipient: string;
   status: 'success' | 'failed';
   content: string;
+  incident_id?: string;
 }
 
 export interface LoginHistoryRecord {
@@ -505,19 +512,19 @@ export interface UserPreferences {
   theme: 'dark' | 'light' | 'system';
   language: 'en' | 'zh-TW';
   timezone: string;
-  defaultPage: string;
+  default_page: string;
 }
 
 export interface AuthSettings {
   provider: 'Keycloak' | 'Auth0' | 'Google' | 'Custom';
   enabled: boolean;
-  clientId: string;
-  clientSecret: string;
+  client_id: string;
+  client_secret: string;
   realm: string;
-  authUrl: string;
-  tokenUrl: string;
-  userInfoUrl: string;
-  idpAdminUrl: string;
+  auth_url: string;
+  token_url: string;
+  user_info_url: string;
+  idp_admin_url: string;
 }
 
 export type TagScope =
@@ -540,7 +547,7 @@ export interface TagValue {
   id: string;
   value: string;
   description?: string;
-  usageCount: number;
+  usage_count: number;
 }
 
 export interface TagRegistryEntry {
@@ -548,15 +555,15 @@ export interface TagRegistryEntry {
   description: string;
   scopes: TagScope[];
   required: boolean;
-  writableRoles: string[];
-  readonly?: boolean; // 標記為唯讀（自動填充）
-  linkToEntity?: string; // 關聯實體類型（用於跳轉）
+  writable_roles: string[];
+  readonly?: boolean;
+  link_to_entity?: string;
 }
 
 export interface TagDefinition extends TagRegistryEntry {
   id: string;
-  allowedValues: TagValue[];
-  usageCount: number;
+  allowed_values: TagValue[];
+  usage_count: number;
   deleted_at?: string;
 }
 
@@ -569,8 +576,8 @@ export interface AuditLogFilters {
   keyword?: string;
   user?: string;
   action?: string;
-  startDate?: string;
-  endDate?: string;
+  start_date?: string;
+  end_date?: string;
 }
 
 export interface DashboardFilters {
@@ -580,10 +587,10 @@ export interface DashboardFilters {
 
 export interface AutomationHistoryFilters {
   keyword?: string;
-  playbookId?: string;
+  playbook_id?: string;
   status?: AutomationExecution['status'];
-  startDate?: string;
-  endDate?: string;
+  start_date?: string;
+  end_date?: string;
 }
 
 export interface PersonnelFilters {
@@ -609,9 +616,9 @@ export interface NotificationChannelFilters {
 export interface NotificationHistoryFilters {
   keyword?: string;
   status?: NotificationHistoryRecord['status'];
-  channelType?: NotificationChannelType;
-  startDate?: string;
-  endDate?: string;
+  channel_type?: NotificationChannelType;
+  start_date?: string;
+  end_date?: string;
 }
 
 export interface NotificationItem {
@@ -620,8 +627,8 @@ export interface NotificationItem {
   description: string;
   severity: 'critical' | 'warning' | 'info' | 'success';
   status: 'unread' | 'read';
-  createdAt: string; // ISO string
-  linkUrl?: string;
+  created_at: string;
+  link_url?: string;
 }
 
 export type LogLevel = 'info' | 'warning' | 'error' | 'debug';
@@ -1005,16 +1012,40 @@ export interface KeyValueTag {
   value: string;
 }
 
+// 新增 ResourceLink 接口定義
+export interface ResourceLink {
+  id: string;
+  source_resource_id: string;      // 來源資源 ID
+  target_resource_id: string;      // 目標資源 ID
+  link_type: 'depends_on' | 'connects_to' | 'includes' | 'manages' | 'monitors';
+  metadata?: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+  deletedAt?: string;
+}
+
+// 新增 ConfigVersion 接口定義
+export interface ConfigVersion<T = any> {
+  id: string;
+  entity_type: 'AlertRule' | 'AutomationPlaybook' | 'Dashboard' | 'NotificationStrategy' | 'SilenceRule' | 'Resource' | 'Team' | 'User';
+  entity_id: string;
+  version: number;
+  config_snapshot: T;
+  change_summary?: string;
+  changed_by: string;  // User ID
+  created_at: string;
+}
+
 export interface Datasource {
   id: string;
   name: string;
   type: DatasourceType;
   status: ConnectionStatus;
-  createdAt: string;
+  created_at: string;
   url: string;
   authMethod: AuthMethod;
   tags: KeyValueTag[];
-  deleted_at?: string;
+  deletedAt?: string;
 }
 
 export type DiscoveryJobKind = 'K8s' | 'SNMP' | 'Cloud Provider' | 'Static Range' | 'Custom Script';
@@ -1023,14 +1054,14 @@ export type DiscoveryJobStatus = 'success' | 'partial_failure' | 'failed' | 'run
 export type ExporterTemplateId = 'none' | 'node_exporter' | 'snmp_exporter' | 'modbus_exporter' | 'ipmi_exporter';
 
 export interface DiscoveryJobExporterBinding {
-  templateId: ExporterTemplateId;
-  overridesYaml?: string;
-  mibProfileId?: string;
+  template_id: ExporterTemplateId;
+  overrides_yaml?: string;
+  mib_profile_id?: string;
 }
 
 export interface DiscoveryJobEdgeGateway {
   enabled: boolean;
-  gatewayId?: string;
+  gateway_id?: string;
 }
 
 export interface DiscoveryJob {
@@ -1038,20 +1069,20 @@ export interface DiscoveryJob {
   name: string;
   kind: DiscoveryJobKind;
   schedule: string;
-  lastRunAt: string;
+  last_run_at: string;
   status: DiscoveryJobStatus;
-  targetConfig: Record<string, any>;
-  exporterBinding?: DiscoveryJobExporterBinding | null;
-  edgeGateway?: DiscoveryJobEdgeGateway | null;
+  target_config: Record<string, any>;
+  exporter_binding?: DiscoveryJobExporterBinding | null;
+  edge_gateway?: DiscoveryJobEdgeGateway | null;
   tags: KeyValueTag[];
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
   deleted_at?: string;
 }
 
 export interface DiscoveryTestResponse {
   success: boolean;
-  discoveredCount: number;
+  discovered_count: number;
   message: string;
   warnings?: string[];
 }
@@ -1076,61 +1107,61 @@ export interface DiscoveredResource {
   type: string;
   tags: KeyValueTag[];
   status: DiscoveredResourceStatus;
-  ignoredAt?: string;
+  ignored_at?: string;
 }
 
 export interface ResourceOverviewData {
-  distributionByType: { value: number; name: string }[];
-  distributionByProvider: { provider: string; count: number }[];
-  recentlyDiscovered: { id: string; name: string; type: string; discoveredAt: string; jobId: string }[];
-  groupsWithMostAlerts: { id: string; name: string; criticals: number; warnings: number }[];
+  distribution_by_type: { value: number; name: string }[];
+  distribution_by_provider: { provider: string; count: number }[];
+  recently_discovered: { id: string; name: string; type: string; discovered_at: string; job_id: string }[];
+  groups_with_most_alerts: { id: string; name: string; criticals: number; warnings: number }[];
 }
 // --- AI Resource Analysis Types ---
 export interface ResourceRisk {
-  resourceId: string;
-  resourceName: string;
-  riskLevel: 'High' | 'Medium' | 'Low';
+  resource_id: string;
+  resource_name: string;
+  risk_level: 'High' | 'Medium' | 'Low';
   reason: string;
   recommendation: string;
 }
 
 export interface OptimizationSuggestion {
-  resourceId: string;
-  resourceName: string;
+  resource_id: string;
+  resource_name: string;
   suggestion: string;
   type: 'Cost' | 'Performance' | 'Security';
 }
 
 export interface ResourceAnalysis {
   summary: string;
-  riskAnalysis: ResourceRisk[];
-  optimizationSuggestions: OptimizationSuggestion[];
+  risk_analysis: ResourceRisk[];
+  optimization_suggestions: OptimizationSuggestion[];
 }
 // ------------------------------------
 
 export interface LicenseInfo {
   status: "valid" | "invalid";
-  expiresAt?: string;
+  expires_at?: string;
 }
 
 export interface DatasourceOptions {
   types: DatasourceType[];
-  authMethods: AuthMethod[];
+  auth_methods: AuthMethod[];
 }
 
 export interface ExporterTemplateOption {
   id: ExporterTemplateId;
   name: string;
   description?: string;
-  supportsMibProfile?: boolean;
-  supportsOverrides?: boolean;
+  supports_mib_profile?: boolean;
+  supports_overrides?: boolean;
 }
 
 export interface MibProfileOption {
   id: string;
   name: string;
   description?: string;
-  templateId: ExporterTemplateId;
+  template_id: ExporterTemplateId;
 }
 
 export interface EdgeGatewayOption {
@@ -1141,10 +1172,10 @@ export interface EdgeGatewayOption {
 }
 
 export interface AutoDiscoveryOptions {
-  jobKinds: DiscoveryJobKind[];
-  exporterTemplates: ExporterTemplateOption[];
-  mibProfiles: MibProfileOption[];
-  edgeGateways: EdgeGatewayOption[];
+  job_kinds: DiscoveryJobKind[];
+  exporter_templates: ExporterTemplateOption[];
+  mib_profiles: MibProfileOption[];
+  edge_gateways: EdgeGatewayOption[];
 }
 
 export interface AllOptions {

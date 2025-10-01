@@ -11,9 +11,12 @@ const ALLOWED_METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const distDir = path.join(__dirname, 'dist');
-const compiledHandlerPath = path.join(distDir, 'mock-server', 'handlers.js');
-const compiledDbPath = path.join(distDir, 'mock-server', 'db.js');
+const mockServerDistDir = path.join(distDir, 'mock-server');
+const compiledAuditLogPath = path.join(mockServerDistDir, 'auditLog.js');
+const compiledHandlerPath = path.join(mockServerDistDir, 'handlers.js');
+const compiledDbPath = path.join(mockServerDistDir, 'db.js');
 const compiledTagRegistryPath = path.join(distDir, 'tag-registry.js');
+const sourceAuditLogPath = path.join(__dirname, 'auditLog.ts');
 const sourceHandlerPath = path.join(__dirname, 'handlers.ts');
 const sourceDbPath = path.join(__dirname, 'db.ts');
 const sourceTagRegistryPath = path.join(__dirname, '..', 'tag-registry.ts');
@@ -57,6 +60,7 @@ const isOutdated = (compiledPath, sourcePath) => {
 
 const needsBuild = () => {
   return (
+    isOutdated(compiledAuditLogPath, sourceAuditLogPath) ||
     isOutdated(compiledHandlerPath, sourceHandlerPath) ||
     isOutdated(compiledDbPath, sourceDbPath) ||
     isOutdated(compiledTagRegistryPath, sourceTagRegistryPath)
@@ -70,20 +74,8 @@ const buildSources = () => {
     process.execPath,
     [
       tscPath,
-      sourceHandlerPath,
-      sourceDbPath,
-      sourceTagRegistryPath,
-      '--outDir',
-      distDir,
-      '--module',
-      'ESNext',
-      '--target',
-      'ES2020',
-      '--moduleResolution',
-      'node',
-      '--esModuleInterop',
-      '--noEmit',
-      'false'
+      '--project',
+      path.join(__dirname, 'tsconfig.json')
     ],
     { stdio: 'inherit' }
   );
@@ -94,22 +86,37 @@ const buildSources = () => {
   }
 
   // Patch handler imports
-  const handlerContent = fs.readFileSync(compiledHandlerPath, 'utf8');
-  const patchedHandlerContent = handlerContent
-    .replace("from './db'", "from './db.js'")
-    .replace("from '../tag-registry'", "from '../tag-registry.js'")
-    .replace("from '../../types'", "from '../../types.js'");
-  if (patchedHandlerContent !== handlerContent) {
-    fs.writeFileSync(compiledHandlerPath, patchedHandlerContent);
+  if (fs.existsSync(compiledHandlerPath)) {
+    const handlerContent = fs.readFileSync(compiledHandlerPath, 'utf8');
+    const patchedHandlerContent = handlerContent
+      .replace("from './auditLog'", "from './auditLog.js'")
+      .replace("from './db'", "from './db.js'")
+      .replace("from '../tag-registry'", "from '../tag-registry.js'")
+      .replace("from '../../types'", "from '../types.js'");
+    if (patchedHandlerContent !== handlerContent) {
+      fs.writeFileSync(compiledHandlerPath, patchedHandlerContent);
+    }
   }
 
   // Patch db imports
-  const dbContent = fs.readFileSync(compiledDbPath, 'utf8');
-  const patchedDbContent = dbContent
-    .replace("from '../tag-registry'", "from '../tag-registry.js'")
-    .replace("from '../types'", "from '../types.js'");
-  if (patchedDbContent !== dbContent) {
-    fs.writeFileSync(compiledDbPath, patchedDbContent);
+  if (fs.existsSync(compiledDbPath)) {
+    const dbContent = fs.readFileSync(compiledDbPath, 'utf8');
+    const patchedDbContent = dbContent
+      .replace("from './tag-registry.js'", "from '../tag-registry.js'")
+      .replace("from '../types'", "from '../types.js'");
+    if (patchedDbContent !== dbContent) {
+      fs.writeFileSync(compiledDbPath, patchedDbContent);
+    }
+  }
+
+  // Patch tag-registry imports
+  if (fs.existsSync(compiledTagRegistryPath)) {
+    const tagRegistryContent = fs.readFileSync(compiledTagRegistryPath, 'utf8');
+    const patchedTagRegistryContent = tagRegistryContent
+      .replace("from './types'", "from './types.js'");
+    if (patchedTagRegistryContent !== tagRegistryContent) {
+      fs.writeFileSync(compiledTagRegistryPath, patchedTagRegistryContent);
+    }
   }
 };
 

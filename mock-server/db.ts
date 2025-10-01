@@ -51,7 +51,9 @@ import {
     AutoDiscoveryOptions,
     TableColumn,
     StyleDescriptor,
-    ChartTheme
+    ChartTheme,
+    ResourceLink,
+    ConfigVersion
 } from '../types';
 import { TAG_SCOPE_OPTIONS, createTagDefinitions, getEnumValuesForTag } from '../tag-registry';
 
@@ -480,6 +482,9 @@ const PAGE_CONTENT = {
         DELETE_ERROR: 'Failed to delete dashboard.',
         UPDATE_ERROR: 'Failed to update dashboard.',
         BATCH_DELETE_ERROR: 'Failed to delete selected dashboards.',
+        COLUMN_CONFIG_SAVE_SUCCESS: '欄位設定已儲存。',
+        COLUMN_CONFIG_SAVE_ERROR: '無法儲存欄位設定。',
+        COLUMN_CONFIG_MISSING_ERROR: '無法儲存欄位設定：頁面設定遺失。',
     },
     ADD_DASHBOARD_MODAL: {
         STEP1_TITLE: '選擇儀表板類型',
@@ -667,7 +672,7 @@ const PAGE_CONTENT = {
             TITLE: '静音條件',
             DESCRIPTION: '定義符合哪些條件的事件將會被靜音。',
             ADD_MATCHER: '新增匹配條件',
-            ENABLE_RULE: '立即啟用此静音規則',
+            ENABLE_RULE: '立即啟用此靜音規則',
             SELECT_KEY: '選擇標籤鍵...',
             SELECT_VALUE: '選擇值...',
             VALUE_PLACEHOLDER: '標籤值（例如：api-service）',
@@ -877,7 +882,7 @@ const MOCK_ALL_COLUMNS: Record<string, TableColumn[]> = {
         { key: 'resource', label: '資源' },
         { key: 'assignee', label: '處理人' },
         { key: 'tags', label: '標籤' },
-        { key: 'occurredAt', label: '發生時間' },
+        { key: 'occurred_at', label: '發生時間' },
     ],
     resources: [
         { key: 'status', label: '狀態' },
@@ -886,7 +891,7 @@ const MOCK_ALL_COLUMNS: Record<string, TableColumn[]> = {
         { key: 'provider', label: '供應商' },
         { key: 'region', label: '地區' },
         { key: 'owner', label: '擁有者' },
-        { key: 'lastCheckIn', label: '最後簽入' },
+        { key: 'lastCheckInAt', label: '最後簽入' },
     ],
     resource_groups: [
         { key: 'name', label: '群組名稱' },
@@ -902,7 +907,7 @@ const MOCK_ALL_COLUMNS: Record<string, TableColumn[]> = {
         { key: 'severity', label: '嚴重程度' },
         { key: 'automationEnabled', label: '自動化' },
         { key: 'creator', label: '創建者' },
-        { key: 'lastUpdated', label: '最後更新' },
+        { key: 'updated_at', label: '最後更新' },
     ],
     silence_rules: [
         { key: 'enabled', label: '啟用' },
@@ -911,13 +916,13 @@ const MOCK_ALL_COLUMNS: Record<string, TableColumn[]> = {
         { key: 'matchers', label: '靜音條件' },
         { key: 'schedule', label: '排程' },
         { key: 'creator', label: '創建者' },
-        { key: 'createdAt', label: '創建時間' },
+        { key: 'created_at', label: '創建時間' },
     ],
     automation_playbooks: [
         { key: 'name', label: '腳本名稱' },
         { key: 'trigger', label: '觸發器' },
         { key: 'lastRunStatus', label: '上次運行狀態' },
-        { key: 'lastRun', label: '上次運行時間' },
+        { key: 'lastRunAt', label: '上次運行時間' },
         { key: 'runCount', label: '運行次數' },
     ],
     automation_triggers: [
@@ -925,7 +930,7 @@ const MOCK_ALL_COLUMNS: Record<string, TableColumn[]> = {
         { key: 'name', label: '名稱' },
         { key: 'type', label: '類型' },
         { key: 'targetPlaybookId', label: '目標腳本' },
-        { key: 'lastTriggered', label: '上次觸發' },
+        { key: 'lastTriggeredAt', label: '上次觸發' },
     ],
     automation_history: [
         { key: 'scriptName', label: '腳本名稱' },
@@ -940,19 +945,19 @@ const MOCK_ALL_COLUMNS: Record<string, TableColumn[]> = {
         { key: 'role', label: '角色' },
         { key: 'team', label: '團隊' },
         { key: 'status', label: '狀態' },
-        { key: 'lastLogin', label: '上次登入' },
+        { key: 'lastLoginAt', label: '上次登入' },
     ],
     teams: [
         { key: 'name', label: '團隊名稱' },
         { key: 'ownerId', label: '擁有者' },
         { key: 'memberIds', label: '成員數' },
-        { key: 'createdAt', label: '創建時間' },
+        { key: 'created_at', label: '創建時間' },
     ],
     roles: [
         { key: 'enabled', label: '啟用' },
         { key: 'name', label: '角色名稱' },
         { key: 'userCount', label: '使用者數量' },
-        { key: 'createdAt', label: '創建時間' },
+        { key: 'created_at', label: '創建時間' },
     ],
     audit_logs: [
         { key: 'timestamp', label: '時間' },
@@ -970,7 +975,7 @@ const MOCK_ALL_COLUMNS: Record<string, TableColumn[]> = {
         { key: 'severityLevels', label: '嚴重程度' },
         { key: 'impactLevels', label: '影響範圍' },
         { key: 'creator', label: '創建者' },
-        { key: 'lastUpdated', label: '最後更新' },
+        { key: 'updated_at', label: '最後更新' },
     ],
     notification_channels: [
         { key: 'enabled', label: '啟用' },
@@ -995,12 +1000,30 @@ const MOCK_ALL_COLUMNS: Record<string, TableColumn[]> = {
         { key: 'scopes', label: '適用範圍' },
         { key: 'writableRoles', label: '可寫入角色' },
     ],
+    datasources: [
+        { key: 'name', label: '資料來源名稱' },
+        { key: 'type', label: '類型' },
+        { key: 'status', label: '狀態' },
+        { key: 'url', label: '連接位址' },
+        { key: 'created_at', label: '建立時間' },
+        { key: 'updated_at', label: '最後更新' },
+    ],
+    autodiscovery: [
+        { key: 'name', label: '任務名稱' },
+        { key: 'kind', label: '類型' },
+        { key: 'status', label: '狀態' },
+        { key: 'schedule', label: '排程' },
+        { key: 'lastRunAt', label: '最後執行' },
+        { key: 'created_at', label: '建立時間' },
+    ],
 };
 
 const MOCK_PAGE_METADATA: Record<string, { columnConfigKey: string }> = {
     'dashboards': { columnConfigKey: 'dashboards' },
     'incidents': { columnConfigKey: 'incidents' },
     'resources': { columnConfigKey: 'resources' },
+    'datasources': { columnConfigKey: 'datasources' },
+    'autodiscovery': { columnConfigKey: 'autodiscovery' },
     'personnel': { columnConfigKey: 'personnel' },
     'alert_rules': { columnConfigKey: 'alert_rules' },
     'silence_rules': { columnConfigKey: 'silence_rules' },
@@ -1115,8 +1138,8 @@ const MOCK_NAV_ITEMS: NavItem[] = [
     },
 ];
 const MOCK_DASHBOARDS: Dashboard[] = [
-    { id: 'sre-war-room', name: 'SRE 戰情室', type: 'built-in', category: '業務與 SLA', description: '跨團隊即時戰情看板，聚焦重大事件與 SLA 指標。', owner: '事件指揮中心', createdAt: '2025-09-18T17:15:00Z', updatedAt: '2025-09-18T17:15:00Z', path: '/sre-war-room' },
-    { id: 'infrastructure-insights', name: '基礎設施洞察', type: 'built-in', category: '基礎設施', description: '整合多雲與多中心資源健康狀態。', owner: 'SRE 平台團隊', createdAt: '2025-09-18T16:30:00Z', updatedAt: '2025-09-18T16:30:00Z', path: '/dashboard/infrastructure-insights' },
+    { id: 'sre-war-room', name: 'SRE 戰情室', type: 'built-in', category: '業務與 SLA', description: '跨團隊即時戰情看板，聚焦重大事件與 SLA 指標。', owner: '事件指揮中心', created_at: '2025-09-18T17:15:00Z', updated_at: '2025-09-18T17:15:00Z', path: '/sre-war-room' },
+    { id: 'infrastructure-insights', name: '基礎設施洞察', type: 'built-in', category: '基礎設施', description: '整合多雲與多中心資源健康狀態。', owner: 'SRE 平台團隊', created_at: '2025-09-18T16:30:00Z', updated_at: '2025-09-18T16:30:00Z', path: '/dashboard/infrastructure-insights' },
     {
         id: 'resource-overview',
         name: '資源總覽儀表板',
@@ -1124,12 +1147,12 @@ const MOCK_DASHBOARDS: Dashboard[] = [
         category: '基礎設施',
         description: '提供所有已納管資源的宏觀視圖，包含類型分佈、提供商分佈等關鍵指標。',
         owner: 'SRE 平台團隊',
-        createdAt: '2025-09-27T10:00:00Z',
-        updatedAt: '2025-09-27T10:00:00Z',
+        created_at: '2025-09-27T10:00:00Z',
+        updated_at: '2025-09-27T10:00:00Z',
         path: '/dashboard/resource-overview'
     },
-    { id: 'api-service-status', name: 'API 服務狀態', type: 'grafana', category: '業務與 SLA', description: 'API 響應時間、錯誤率、吞吐量等服務指標。', owner: 'SRE 平台團隊', createdAt: '2025-09-18T16:45:00Z', updatedAt: '2025-09-18T16:45:00Z', path: '/dashboard/api-service-status', grafanaUrl: `${DEFAULT_GRAFANA_BASE_URL}/d/aead3d54-423b-4a91-b91c-dbdf40d7fff5`, grafana_dashboard_uid: 'aead3d54-423b-4a91-b91c-dbdf40d7fff5', grafana_folder_uid: 'biz-folder' },
-    { id: 'user-experience-monitoring', name: '用戶體驗監控', type: 'grafana', category: '營運與容量', description: '頁面載入時間、用戶行為分析、錯誤追蹤。', owner: '前端團隊', createdAt: '2025-09-18T17:00:00Z', updatedAt: '2025-09-18T17:00:00Z', path: '/dashboard/user-experience-monitoring', grafanaUrl: `${DEFAULT_GRAFANA_BASE_URL}/d/another-dashboard-id-for-ux`, grafana_dashboard_uid: 'another-dashboard-id-for-ux', grafana_folder_uid: 'ux-folder' },
+    { id: 'api-service-status', name: 'API 服務狀態', type: 'grafana', category: '業務與 SLA', description: 'API 響應時間、錯誤率、吞吐量等服務指標。', owner: 'SRE 平台團隊', created_at: '2025-09-18T16:45:00Z', updated_at: '2025-09-18T16:45:00Z', path: '/dashboard/api-service-status', grafanaUrl: `${DEFAULT_GRAFANA_BASE_URL}/d/aead3d54-423b-4a91-b91c-dbdf40d7fff5`, grafana_dashboard_uid: 'aead3d54-423b-4a91-b91c-dbdf40d7fff5', grafana_folder_uid: 'biz-folder' },
+    { id: 'user-experience-monitoring', name: '用戶體驗監控', type: 'grafana', category: '營運與容量', description: '頁面載入時間、用戶行為分析、錯誤追蹤。', owner: '前端團隊', created_at: '2025-09-18T17:00:00Z', updated_at: '2025-09-18T17:00:00Z', path: '/dashboard/user-experience-monitoring', grafanaUrl: `${DEFAULT_GRAFANA_BASE_URL}/d/another-dashboard-id-for-ux`, grafana_dashboard_uid: 'another-dashboard-id-for-ux', grafana_folder_uid: 'ux-folder' },
     {
         id: 'custom-built-in-1',
         name: 'My Custom Dashboard',
@@ -1137,8 +1160,8 @@ const MOCK_DASHBOARDS: Dashboard[] = [
         category: '團隊自訂',
         description: 'A custom dashboard created by a user.',
         owner: 'Admin User',
-        createdAt: '2025-09-20T11:00:00Z',
-        updatedAt: '2025-09-20T11:00:00Z',
+        created_at: '2025-09-20T11:00:00Z',
+        updated_at: '2025-09-20T11:00:00Z',
         path: '/dashboard/custom-built-in-1',
         layout: [
             { i: 'sre_pending_incidents', x: 0, y: 0, w: 4, h: 2 },
@@ -1157,9 +1180,9 @@ const MOCK_DASHBOARD_TEMPLATES: DashboardTemplate[] = [
     { id: 'tpl-002', name: '業務 KPI 總覽', description: '追蹤關鍵業務指標，如用戶註冊數、營收、轉換率等。適用於產品經理、業務團隊使用。', icon: 'briefcase', category: '業務' },
 ];
 const MOCK_INCIDENTS: Incident[] = [
-    { id: 'INC-001', summary: 'API 延遲超過閾值', resource: 'api-server-01', resourceId: 'res-001', impact: 'High', rule: 'API 延遲規則', ruleId: 'rule-002', status: 'New', severity: 'Warning', assignee: '張三', teamId: 'team-001', ownerId: 'usr-001', tags: { team: 'SRE Platform', owner: 'Alice Chen', env: 'production', service: 'api-gateway' }, occurredAt: '2024-01-15T10:30:00Z', createdAt: '2024-01-15T10:30:00Z', updatedAt: '2024-01-15T10:30:00Z', history: [{ timestamp: '2024-01-15T10:30:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "API 延遲規則".' }] },
-    { id: 'INC-002', summary: '資料庫連接超時', resource: 'db-primary', resourceId: 'res-002', impact: 'High', rule: '資料庫連接規則', ruleId: 'rule-db-conn', status: 'Acknowledged', severity: 'Critical', assignee: '李四', teamId: 'team-002', ownerId: 'usr-002', tags: { team: 'Core Infrastructure', owner: 'Bob Lee', env: 'production', service: 'database' }, occurredAt: '2024-01-15T10:15:00Z', createdAt: '2024-01-15T10:15:00Z', updatedAt: '2024-01-15T10:15:00Z', history: [{ timestamp: '2024-01-15T10:15:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "資料庫連接規則".' }] },
-    { id: 'INC-003', summary: 'CPU 使用率異常', resource: 'web-prod-12', resourceId: 'res-004', impact: 'Medium', rule: 'CPU 使用率規則', ruleId: 'rule-cpu', status: 'Resolved', severity: 'Warning', assignee: '王五', teamId: 'team-003', ownerId: 'usr-003', tags: { team: 'API Services', owner: 'Charlie Wu', env: 'production' }, occurredAt: '2024-01-15T09:45:00Z', createdAt: '2024-01-15T09:45:00Z', updatedAt: '2024-01-15T09:45:00Z', history: [{ timestamp: '2024-01-15T09:45:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "CPU 使用率規則".' }] },
+    { id: 'INC-001', summary: 'API 延遲超過閾值', resource: 'api-server-01', resource_id: 'res-001', impact: 'High', rule: 'API 延遲規則', rule_id: 'rule-002', status: 'New', severity: 'Warning', assignee: '張三', team_id: 'team-001', owner_id: 'usr-001', tags: { team: 'SRE Platform', owner: 'Alice Chen', env: 'production', service: 'api-gateway' }, occurred_at: '2024-01-15T10:30:00Z', created_at: '2024-01-15T10:30:00Z', updated_at: '2024-01-15T10:30:00Z', history: [{ timestamp: '2024-01-15T10:30:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "API 延遲規則".' }] },
+    { id: 'INC-002', summary: '資料庫連接超時', resource: 'db-primary', resource_id: 'res-002', impact: 'High', rule: '資料庫連接規則', rule_id: 'rule-db-conn', status: 'Acknowledged', severity: 'Critical', assignee: '李四', team_id: 'team-002', owner_id: 'usr-002', tags: { team: 'Core Infrastructure', owner: 'Bob Lee', env: 'production', service: 'database' }, occurred_at: '2024-01-15T10:15:00Z', created_at: '2024-01-15T10:15:00Z', updated_at: '2024-01-15T10:15:00Z', history: [{ timestamp: '2024-01-15T10:15:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "資料庫連接規則".' }] },
+    { id: 'INC-003', summary: 'CPU 使用率異常', resource: 'web-prod-12', resource_id: 'res-004', impact: 'Medium', rule: 'CPU 使用率規則', rule_id: 'rule-cpu', status: 'Resolved', severity: 'Warning', assignee: '王五', team_id: 'team-003', owner_id: 'usr-003', tags: { team: 'API Services', owner: 'Charlie Wu', env: 'production' }, occurred_at: '2024-01-15T09:45:00Z', created_at: '2024-01-15T09:45:00Z', updated_at: '2024-01-15T09:45:00Z', history: [{ timestamp: '2024-01-15T09:45:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "CPU 使用率規則".' }] },
 ];
 const MOCK_QUICK_SILENCE_DURATIONS = [1, 2, 4, 8, 12, 24]; // hours
 const MOCK_ALERT_RULE_DEFAULT: Partial<AlertRule> = {
@@ -1168,9 +1191,9 @@ const MOCK_ALERT_RULE_DEFAULT: Partial<AlertRule> = {
     target: '',
     enabled: true,
     severity: 'warning',
-    automationEnabled: false,
+    automation_enabled: false,
     labels: [],
-    conditionGroups: [
+    condition_groups: [
         {
             logic: 'OR',
             severity: 'warning',
@@ -1184,8 +1207,8 @@ const MOCK_ALERT_RULE_DEFAULT: Partial<AlertRule> = {
             ],
         },
     ],
-    titleTemplate: '🚨 [{{severity}}] {{resource.name}} is in trouble',
-    contentTemplate: 'The metric {{metric}} reached {{value}} which is above the threshold of {{threshold}}.',
+    title_template: '[{{severity}}] {{resource.name}} is in trouble',
+    content_template: 'The metric {{metric}} reached {{value}} which is above the threshold of {{threshold}}.',
     automation: {
         enabled: false,
         parameters: {},
@@ -1199,18 +1222,20 @@ const MOCK_ALERT_RULES: AlertRule[] = [
         description: '當任何伺服器的 CPU 使用率連續 5 分鐘超過 90% 時觸發。',
         enabled: true,
         target: '所有伺服器',
-        conditionsSummary: 'CPU > 90% for 5m',
+        conditions_summary: 'CPU > 90% for 5m',
         severity: 'critical',
-        automationEnabled: true,
+        automation_enabled: true,
         creator: 'Admin User',
-        createdAt: '2025-09-20T10:00:00Z',
-        updatedAt: '2025-09-22T10:00:00Z',
-        automation: { enabled: true, scriptId: 'play-002', parameters: { namespace: 'production' } },
-        testPayload: {
+        created_at: '2025-09-20T10:00:00Z',
+        updated_at: '2025-09-22T10:00:00Z',
+        automation: { enabled: true, script_id: 'play-002', parameters: { namespace: 'production' } },
+        test_payload: {
             metric: 'cpu_usage_percent',
             value: 94,
             resource: 'web-prod-12',
         },
+        target_resource_ids: ['res-001', 'res-003', 'res-004'],  // 新增：關聯的資源 ID
+        targetScope: 'specific'  // 新增：目標範圍
     },
     {
         id: 'rule-002',
@@ -1218,84 +1243,83 @@ const MOCK_ALERT_RULES: AlertRule[] = [
         description: 'API Gateway 的 p95 延遲超過 500ms。',
         enabled: true,
         target: 'api-gateway-prod',
-        conditionsSummary: 'Latency > 500ms',
+        conditions_summary: 'Latency > 500ms',
         severity: 'warning',
-        automationEnabled: false,
+        automation_enabled: false,
         creator: 'Emily White',
-        createdAt: '2025-09-21T15:30:00Z',
-        updatedAt: '2025-09-21T15:30:00Z',
+        created_at: '2025-09-21T15:30:00Z',
+        updated_at: '2025-09-21T15:30:00Z',
         automation: { enabled: false },
-        testPayload: {
+        test_payload: {
             metric: 'http_request_duration_seconds_p95',
             value: 620,
             resource: 'api-gateway-prod',
         },
+        target_resource_ids: ['res-001'],  // 新增：關聯的資源 ID
+        targetScope: 'specific'  // 新增：目標範圍
     },
 ];
 const MOCK_ALERT_RULE_TEMPLATES: AlertRuleTemplate[] = [
     {
         id: 'art-001',
         name: 'High CPU Usage',
-        emoji: '🔥',
         description: 'Monitors CPU usage and alerts when it exceeds a threshold for a specified duration.',
         resourceType: 'host',
         data: {
             name: 'High CPU Usage on Prod Hosts',
             description: 'Monitors CPU usage on production hosts and alerts when it exceeds 90% for 5 minutes.',
-            conditionGroups: [{ logic: 'OR', severity: 'warning', conditions: [{ metric: 'cpu_usage_percent', operator: '>', threshold: 90, durationMinutes: 5 }] }],
-            titleTemplate: '🔥 [{{severity}}] High CPU on {{resource.name}}',
-            contentTemplate: 'CPU usage is at {{value}}%, exceeding the threshold of {{threshold}}% for {{duration}} minutes.',
-            automation: { enabled: true, scriptId: 'play-002' }
+            condition_groups: [{ logic: 'OR', severity: 'warning', conditions: [{ metric: 'cpu_usage_percent', operator: '>', threshold: 90, durationMinutes: 5 }] }],
+            title_template: '[{{severity}}] High CPU on {{resource.name}}',
+            content_template: 'CPU usage is at {{value}}%, exceeding the threshold of {{threshold}}% for {{duration}} minutes.',
+            automation: { enabled: true, script_id: 'play-002' }
         },
         preview: {
             conditions: ['cpu_usage_percent > 90% for 5m'],
-            notification: '🔥 [warning] High CPU on {{resource.name}}',
+            notification: '[warning] High CPU on {{resource.name}}',
             automation: 'Run Playbook: 擴展 Web 層'
         }
     },
     {
         id: 'art-002',
         name: 'Low Disk Space',
-        emoji: '💾',
         description: 'Alerts when available disk space is critically low.',
         resourceType: 'host',
         data: {
             name: 'Low Disk Space',
             description: 'Alerts when disk space is critically low.',
-            conditionGroups: [{ logic: 'OR', severity: 'critical', conditions: [{ metric: 'disk_free_percent', operator: '<', threshold: 10, durationMinutes: 15 }] }],
-            titleTemplate: '💾 [{{severity}}] Low Disk Space on {{resource.name}}',
-            contentTemplate: 'Disk space is at {{value}}%, which is below the threshold of {{threshold}}%.'
+            condition_groups: [{ logic: 'OR', severity: 'critical', conditions: [{ metric: 'disk_free_percent', operator: '<', threshold: 10, durationMinutes: 15 }] }],
+            title_template: '[{{severity}}] Low Disk Space on {{resource.name}}',
+            content_template: 'Disk space is at {{value}}%, which is below the threshold of {{threshold}}%.'
         },
         preview: {
             conditions: ['disk_free_percent < 10% for 15m'],
-            notification: '💾 [critical] Low Disk Space on {{resource.name}}',
+            notification: '[critical] Low Disk Space on {{resource.name}}',
         }
     },
     {
         id: 'art-003',
         name: 'DB Connection Error',
-        emoji: '🔌',
         description: 'Alerts when database connection attempts are failing.',
         resourceType: 'database',
         data: {
             name: 'Database Connection Failures',
             description: 'Triggers when the rate of DB connection failures exceeds 5%.',
-            conditionGroups: [{ logic: 'OR', severity: 'critical', conditions: [{ metric: 'db_connection_error_rate', operator: '>', threshold: 5, durationMinutes: 2 }] }],
-            titleTemplate: '🔌 [{{severity}}] DB Connection Errors on {{resource.name}}',
-            contentTemplate: 'Database connection error rate is at {{value}}%, exceeding the threshold of {{threshold}}%.'
+            condition_groups: [{ logic: 'OR', severity: 'critical', conditions: [{ metric: 'db_connection_error_rate', operator: '>', threshold: 5, durationMinutes: 2 }] }],
+            title_template: '[{{severity}}] DB Connection Errors on {{resource.name}}',
+            content_template: 'Database connection error rate is at {{value}}%, exceeding the threshold of {{threshold}}%.'
         },
         preview: {
             conditions: ['db_connection_error_rate > 5% for 2m'],
-            notification: '🔌 [critical] DB Connection Errors on {{resource.name}}'
+            notification: '[critical] DB Connection Errors on {{resource.name}}'
         }
     }
 ];
 const MOCK_SILENCE_RULES: SilenceRule[] = [
-    { id: 'sil-001', name: '週末維護窗口', description: '週末例行維護期間静音所有 staging 環境的告警。', enabled: true, type: 'repeat', matchers: [{ key: 'env', operator: '=', value: 'staging' }], schedule: { type: 'recurring', cron: '0 22 * * 5', cronDescription: '每週五 22:00', timezone: 'Asia/Taipei' }, creator: 'Admin User', createdAt: '2025-09-20T18:00:00Z', updatedAt: '2025-09-20T18:00:00Z' },
+    { id: 'sil-001', name: '週末維護窗口', description: '週末例行維護期間静音所有 staging 環境的告警。', enabled: true, type: 'repeat', matchers: [{ key: 'env', operator: '=', value: 'staging' }], schedule: { type: 'recurring', cron: '0 22 * * 5', cron_description: '每週五 22:00', timezone: 'Asia/Taipei' }, creator: 'Admin User', created_at: '2025-09-20T18:00:00Z', updated_at: '2025-09-20T18:00:00Z' },
 ];
 const MOCK_SILENCE_RULE_TEMPLATES: SilenceRuleTemplate[] = [
-    { id: 'srt-001', name: 'Staging Maintenance', emoji: '🚧', data: { description: 'Silence all alerts from the staging environment.', matchers: [{ key: 'env', operator: '=', value: 'staging' }] } },
-    { id: 'srt-002', name: 'Weekend Silence', emoji: '😴', data: { description: 'Silence non-critical alerts over the weekend.', matchers: [{ key: 'severity', operator: '!=', value: 'critical' }], schedule: { type: 'recurring', cron: '0 0 * * 6' } } },
+    { id: 'srt-001', name: 'Staging Maintenance', data: { description: 'Silence all alerts from the staging environment.', matchers: [{ key: 'env', operator: '=', value: 'staging' }] } },
+    { id: 'srt-002', name: 'Weekend Silence', data: { description: 'Silence non-critical alerts over the weekend.', matchers: [{ key: 'severity', operator: '!=', value: 'critical' }], schedule: { type: 'recurring', cron: '0 0 * * 6' } } },
 ];
 const MOCK_SILENCE_RULE_OPTIONS: SilenceRuleOptions = {
     keys: ['severity', 'env', 'service', 'resource_type'],
@@ -1326,16 +1350,16 @@ const MOCK_SILENCE_RULE_OPTIONS: SilenceRuleOptions = {
     ],
 };
 const MOCK_RESOURCES: Resource[] = [
-    { id: 'res-001', name: 'api-gateway-prod-01', status: 'healthy', type: 'API Gateway', provider: 'AWS', region: 'us-east-1', owner: 'SRE Team', lastCheckInAt: new Date(Date.now() - 30 * 1000).toISOString(), createdAt: '2024-01-10T10:00:00Z', updatedAt: '2024-01-15T11:00:00Z' },
-    { id: 'res-002', name: 'rds-prod-main', status: 'critical', type: 'RDS Database', provider: 'AWS', region: 'us-east-1', owner: 'DBA Team', lastCheckInAt: new Date(Date.now() - 2 * 60 * 1000).toISOString(), createdAt: '2024-01-10T10:00:00Z', updatedAt: '2024-01-15T11:00:00Z' },
-    { id: 'res-003', name: 'k8s-prod-cluster', status: 'healthy', type: 'EKS Cluster', provider: 'AWS', region: 'us-west-2', owner: 'SRE Team', lastCheckInAt: new Date(Date.now() - 60 * 1000).toISOString(), createdAt: '2024-01-10T10:00:00Z', updatedAt: '2024-01-15T11:00:00Z' },
-    { id: 'res-004', name: 'web-prod-12', status: 'healthy', type: 'EC2 Instance', provider: 'AWS', region: 'us-west-2', owner: 'Web Team', lastCheckInAt: new Date(Date.now() - 45 * 1000).toISOString(), createdAt: '2024-01-10T10:00:00Z', updatedAt: '2024-01-15T11:00:00Z' },
-    { id: 'res-007', name: 'api-service', status: 'warning', type: 'Kubernetes Service', provider: 'AWS', region: 'us-east-1', owner: 'API Services', lastCheckInAt: new Date(Date.now() - 60 * 1000).toISOString(), createdAt: '2024-01-10T10:00:00Z', updatedAt: '2024-01-15T11:00:00Z' },
+    { id: 'res-001', name: 'api-gateway-prod-01', status: 'healthy', type: 'API Gateway', provider: 'AWS', region: 'us-east-1', owner: 'SRE Team', last_check_in_at: new Date(Date.now() - 30 * 1000).toISOString(), created_at: '2024-01-10T10:00:00Z', updated_at: '2024-01-15T11:00:00Z' },
+    { id: 'res-002', name: 'rds-prod-main', status: 'critical', type: 'RDS Database', provider: 'AWS', region: 'us-east-1', owner: 'DBA Team', last_check_in_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(), created_at: '2024-01-10T10:00:00Z', updated_at: '2024-01-15T11:00:00Z' },
+    { id: 'res-003', name: 'k8s-prod-cluster', status: 'healthy', type: 'EKS Cluster', provider: 'AWS', region: 'us-west-2', owner: 'SRE Team', last_check_in_at: new Date(Date.now() - 60 * 1000).toISOString(), created_at: '2024-01-10T10:00:00Z', updated_at: '2024-01-15T11:00:00Z' },
+    { id: 'res-004', name: 'web-prod-12', status: 'healthy', type: 'EC2 Instance', provider: 'AWS', region: 'us-west-2', owner: 'Web Team', last_check_in_at: new Date(Date.now() - 45 * 1000).toISOString(), created_at: '2024-01-10T10:00:00Z', updated_at: '2024-01-15T11:00:00Z' },
+    { id: 'res-007', name: 'api-service', status: 'warning', type: 'Kubernetes Service', provider: 'AWS', region: 'us-east-1', owner: 'API Services', last_check_in_at: new Date(Date.now() - 60 * 1000).toISOString(), created_at: '2024-01-10T10:00:00Z', updated_at: '2024-01-15T11:00:00Z' },
 ];
 const MOCK_RESOURCE_GROUPS: ResourceGroup[] = [
-    { id: 'rg-001', name: '正式環境 Web 伺服器', description: '所有面向正式環境的 Web 伺服器', ownerTeam: 'Web Team', memberIds: ['res-004'], statusSummary: { healthy: 12, warning: 1, critical: 0 }, createdAt: '2024-01-12T10:00:00Z', updatedAt: '2024-01-12T10:00:00Z' },
-    { id: 'rg-002', name: '核心資料庫', description: '核心服務的主資料庫與副本資料庫', ownerTeam: 'DBA Team', memberIds: ['res-002'], statusSummary: { healthy: 8, warning: 0, critical: 1 }, createdAt: '2024-01-12T10:00:00Z', updatedAt: '2024-01-12T10:00:00Z' },
-    { id: 'rg-003', name: 'API 服務', description: '主要 API 的所有微服務', ownerTeam: 'API Team', memberIds: ['res-007'], statusSummary: { healthy: 25, warning: 3, critical: 2 }, createdAt: '2024-01-12T10:00:00Z', updatedAt: '2024-01-12T10:00:00Z' },
+    { id: 'rg-001', name: '正式環境 Web 伺服器', description: '所有面向正式環境的 Web 伺服器', ownerTeam: 'Web Team', member_ids: ['res-004'], statusSummary: { healthy: 12, warning: 1, critical: 0 }, created_at: '2024-01-12T10:00:00Z', updated_at: '2024-01-12T10:00:00Z' },
+    { id: 'rg-002', name: '核心資料庫', description: '核心服務的主資料庫與副本資料庫', ownerTeam: 'DBA Team', member_ids: ['res-002'], statusSummary: { healthy: 8, warning: 0, critical: 1 }, created_at: '2024-01-12T10:00:00Z', updated_at: '2024-01-12T10:00:00Z' },
+    { id: 'rg-003', name: 'API 服務', description: '主要 API 的所有微服務', ownerTeam: 'API Team', member_ids: ['res-007'], statusSummary: { healthy: 25, warning: 3, critical: 2 }, created_at: '2024-01-12T10:00:00Z', updated_at: '2024-01-12T10:00:00Z' },
 ];
 const MOCK_RESOURCE_OVERVIEW_DATA: ResourceOverviewData = {
     distributionByType: [
@@ -1361,31 +1385,46 @@ const MOCK_RESOURCE_OVERVIEW_DATA: ResourceOverviewData = {
     ]
 };
 const MOCK_PLAYBOOKS: AutomationPlaybook[] = [
-    { id: 'play-001', name: '重啟故障 Pod', description: '自動重啟處於 CrashLoopBackOff 狀態的 Pod。', trigger: 'K8s 告警', lastRunAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(), lastRunStatus: 'success', runCount: 12, type: 'shell', content: '#!/bin/bash...', parameters: [{ name: 'namespace', label: '命名空間', type: 'string', required: true }], createdAt: '2025-09-20T10:00:00Z', updatedAt: '2025-09-23T12:00:00Z' },
-    { id: 'play-002', name: '擴展 Web 層', description: '向 Web 伺服器自動擴展組增加更多 EC2 實例。', trigger: '高 CPU', lastRunAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(), lastRunStatus: 'success', runCount: 3, type: 'python', content: 'import boto3...', parameters: [{ name: 'instance_count', label: '實例數量', type: 'number', required: true, defaultValue: 2 }], createdAt: '2025-09-21T11:00:00Z', updatedAt: '2025-09-22T13:00:00Z' },
+    { id: 'play-001', name: '重啟故障 Pod', description: '自動重啟處於 CrashLoopBackOff 狀態的 Pod。', trigger: 'K8s 告警', last_run_at: new Date(Date.now() - 5 * 60 * 1000).toISOString(), last_run_status: 'success', run_count: 12, type: 'shell', content: '#!/bin/bash...', parameters: [{ name: 'namespace', label: '命名空間', type: 'string', required: true }], created_at: '2025-09-20T10:00:00Z', updated_at: '2025-09-23T12:00:00Z' },
+    { id: 'play-002', name: '擴展 Web 層', description: '向 Web 伺服器自動擴展組增加更多 EC2 實例。', trigger: '高 CPU', last_run_at: new Date(Date.now() - 60 * 60 * 1000).toISOString(), last_run_status: 'success', run_count: 3, type: 'python', content: 'import boto3...', parameters: [{ name: 'instance_count', label: '實例數量', type: 'number', required: true, defaultValue: 2 }], created_at: '2025-09-21T11:00:00Z', updated_at: '2025-09-22T13:00:00Z' },
 ];
 const MOCK_AUTOMATION_EXECUTIONS: AutomationExecution[] = [
-    { id: 'exec-001', scriptId: 'play-001', scriptName: '重啟故障 Pod', status: 'success', triggerSource: 'event', triggeredBy: 'Alert Rule: K8s 告警', startTime: '2025-09-23T14:05:10Z', endTime: '2025-09-23T14:05:15Z', durationMs: 5000, parameters: { namespace: 'production' }, logs: { stdout: 'Successfully restarted pod.', stderr: '' } },
+    {
+        id: 'exec-001',
+        script_id: 'play-001',
+        script_name: '重啟故障 Pod',
+        status: 'success',
+        trigger_source: 'event',
+        triggered_by: 'Alert Rule: K8s 告警',
+        start_time: '2025-09-23T14:05:10Z',
+        end_time: '2025-09-23T14:05:15Z',
+        duration_ms: 5000,
+        parameters: { namespace: 'production' },
+        logs: { stdout: 'Successfully restarted pod.', stderr: '' },
+        incident_id: 'INC-002',           // 新增：關聯事件 ID
+        triggeredByRuleId: 'rule-002',   // 新增：關聯規則 ID
+        targetResourceId: 'res-002'      // 新增：關聯資源 ID
+    },
 ];
 const MOCK_AUTOMATION_TRIGGERS: AutomationTrigger[] = [
-    { id: 'trig-001', name: '每日日誌歸檔', description: '在每天凌晨 3 點運行「歸檔舊日誌」腳本。', type: 'Schedule', enabled: true, targetPlaybookId: 'play-005', config: { cron: '0 3 * * *', cronDescription: '每日 03:00' }, lastTriggeredAt: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(), creator: 'Admin User', createdAt: '2025-09-19T08:00:00Z', updatedAt: '2025-09-19T08:00:00Z' },
+    { id: 'trig-001', name: '每日日誌歸檔', description: '在每天凌晨 3 點運行「歸檔舊日誌」腳本。', type: 'Schedule', enabled: true, target_playbook_id: 'play-005', config: { cron: '0 3 * * *', cron_description: '每日 03:00' }, last_triggered_at: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(), creator: 'Admin User', created_at: '2025-09-19T08:00:00Z', updated_at: '2025-09-19T08:00:00Z' },
 ];
 const MOCK_USERS: User[] = [
-    { id: 'usr-001', name: 'Admin User', email: 'admin@sre.platform', role: 'Admin', team: 'SRE Platform', status: 'active', lastLoginAt: new Date(Date.now() - 2 * 60 * 1000).toISOString(), createdAt: '2024-01-01T09:00:00Z', updatedAt: '2024-01-15T10:00:00Z' },
-    { id: 'usr-002', name: 'Emily White', email: 'emily.w@example.com', role: 'SRE', team: 'Core Infrastructure', status: 'active', lastLoginAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(), createdAt: '2024-01-02T09:00:00Z', updatedAt: '2024-01-14T10:00:00Z' },
-    { id: 'usr-003', name: 'John Doe', email: 'john.d@example.com', role: 'Developer', team: 'API Services', status: 'active', lastLoginAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), createdAt: '2024-01-03T09:00:00Z', updatedAt: '2024-01-13T10:00:00Z' },
-    { id: 'usr-004', name: 'Sarah Connor', email: 'sarah.c@example.com', role: 'Viewer', team: 'Marketing', status: 'inactive', lastLoginAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), createdAt: '2024-01-04T09:00:00Z', updatedAt: '2024-01-12T10:00:00Z' },
-    { id: 'usr-005', name: 'pending.invite@example.com', email: 'pending.invite@example.com', role: 'Developer', team: 'API Services', status: 'invited', lastLoginAt: null, createdAt: '2024-01-15T09:00:00Z', updatedAt: '2024-01-15T09:00:00Z' },
+    { id: 'usr-001', name: 'Admin User', email: 'admin@sre.platform', role: 'Admin', team: 'SRE Platform', status: 'active', last_login_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(), created_at: '2024-01-01T09:00:00Z', updated_at: '2024-01-15T10:00:00Z' },
+    { id: 'usr-002', name: 'Emily White', email: 'emily.w@example.com', role: 'SRE', team: 'Core Infrastructure', status: 'active', last_login_at: new Date(Date.now() - 60 * 60 * 1000).toISOString(), created_at: '2024-01-02T09:00:00Z', updated_at: '2024-01-14T10:00:00Z' },
+    { id: 'usr-003', name: 'John Doe', email: 'john.d@example.com', role: 'Developer', team: 'API Services', status: 'active', last_login_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), created_at: '2024-01-03T09:00:00Z', updated_at: '2024-01-13T10:00:00Z' },
+    { id: 'usr-004', name: 'Sarah Connor', email: 'sarah.c@example.com', role: 'Viewer', team: 'Marketing', status: 'inactive', last_login_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), created_at: '2024-01-04T09:00:00Z', updated_at: '2024-01-12T10:00:00Z' },
+    { id: 'usr-005', name: 'pending.invite@example.com', email: 'pending.invite@example.com', role: 'Developer', team: 'API Services', status: 'invited', last_login_at: null, created_at: '2024-01-15T09:00:00Z', updated_at: '2024-01-15T09:00:00Z' },
 ];
 const MOCK_USER_STATUSES: User['status'][] = ['active', 'invited', 'inactive'];
 const MOCK_TEAMS: Team[] = [
-    { id: 'team-001', name: 'SRE Platform', description: 'Manages the SRE platform itself.', ownerId: 'usr-001', memberIds: ['usr-001'], createdAt: '2024-01-01T10:00:00Z', updatedAt: '2024-01-01T10:00:00Z' },
-    { id: 'team-002', name: 'Core Infrastructure', description: 'Maintains core infrastructure services.', ownerId: 'usr-002', memberIds: ['usr-002'], createdAt: '2024-01-02T11:00:00Z', updatedAt: '2024-01-02T11:00:00Z' },
-    { id: 'team-003', name: 'API Services', description: 'Develops and maintains all public APIs.', ownerId: 'usr-003', memberIds: ['usr-003', 'usr-005'], createdAt: '2024-01-03T12:00:00Z', updatedAt: '2024-01-03T12:00:00Z' },
+    { id: 'team-001', name: 'SRE Platform', description: 'Manages the SRE platform itself.', owner_id: 'usr-001', member_ids: ['usr-001'], created_at: '2024-01-01T10:00:00Z', updated_at: '2024-01-01T10:00:00Z' },
+    { id: 'team-002', name: 'Core Infrastructure', description: 'Maintains core infrastructure services.', owner_id: 'usr-002', member_ids: ['usr-002'], created_at: '2024-01-02T11:00:00Z', updated_at: '2024-01-02T11:00:00Z' },
+    { id: 'team-003', name: 'API Services', description: 'Develops and maintains all public APIs.', owner_id: 'usr-003', member_ids: ['usr-003', 'usr-005'], created_at: '2024-01-03T12:00:00Z', updated_at: '2024-01-03T12:00:00Z' },
 ];
 const MOCK_ROLES: Role[] = [
     {
-        id: 'role-001', name: 'Administrator', description: '擁有所有權限', userCount: 1, enabled: true, createdAt: '2024-01-01T09:00:00Z', updatedAt: '2024-01-01T09:00:00Z', permissions: [
+        id: 'role-001', name: 'Administrator', description: '擁有所有權限', userCount: 1, enabled: true, created_at: '2024-01-01T09:00:00Z', updated_at: '2024-01-01T09:00:00Z', permissions: [
             { module: 'Incidents', actions: ['read', 'create', 'update', 'delete'] },
             { module: 'Resources', actions: ['read', 'create', 'update', 'delete'] },
             { module: 'Automation', actions: ['read', 'create', 'update', 'delete', 'execute'] },
@@ -1393,14 +1432,14 @@ const MOCK_ROLES: Role[] = [
         ]
     },
     {
-        id: 'role-002', name: 'SRE Engineer', description: '擁有事件、資源、自動化管理權限', userCount: 1, enabled: true, createdAt: '2024-01-01T09:00:00Z', updatedAt: '2024-01-01T09:00:00Z', permissions: [
+        id: 'role-002', name: 'SRE Engineer', description: '擁有事件、資源、自動化管理權限', userCount: 1, enabled: true, created_at: '2024-01-01T09:00:00Z', updated_at: '2024-01-01T09:00:00Z', permissions: [
             { module: 'Incidents', actions: ['read', 'update'] },
             { module: 'Resources', actions: ['read', 'update'] },
             { module: 'Automation', actions: ['read', 'execute'] },
         ]
     },
     {
-        id: 'role-003', name: 'Developer', description: '擁有應用程式開發相關權限', userCount: 2, enabled: true, createdAt: '2024-01-01T09:00:00Z', updatedAt: '2024-01-01T09:00:00Z', permissions: [
+        id: 'role-003', name: 'Developer', description: '擁有應用程式開發相關權限', userCount: 2, enabled: true, created_at: '2024-01-01T09:00:00Z', updated_at: '2024-01-01T09:00:00Z', permissions: [
             { module: 'Incidents', actions: ['read'] },
             { module: 'Resources', actions: ['read'] },
         ]
@@ -1417,7 +1456,7 @@ const MOCK_AUDIT_LOGS: AuditLog[] = [
 ];
 const MOCK_TAG_DEFINITIONS: TagDefinition[] = createTagDefinitions();
 const MOCK_NOTIFICATIONS: NotificationItem[] = [
-    { id: 'notif-1', title: 'Critical: DB CPU > 95%', description: 'The production database is under heavy load.', severity: 'critical', status: 'unread', createdAt: new Date(Date.now() - 60000 * 5).toISOString(), linkUrl: '/incidents/INC-002' },
+    { id: 'notif-1', title: 'Critical: DB CPU > 95%', description: 'The production database is under heavy load.', severity: 'critical', status: 'unread', created_at: new Date(Date.now() - 60000 * 5).toISOString(), linkUrl: '/incidents/INC-002' },
 ];
 const MOCK_NOTIFICATION_STRATEGIES: NotificationStrategy[] = [
     {
@@ -1429,8 +1468,8 @@ const MOCK_NOTIFICATION_STRATEGIES: NotificationStrategy[] = [
         severityLevels: ['Critical'],
         impactLevels: ['High'],
         creator: 'Admin',
-        createdAt: '2025-09-20T10:00:00Z',
-        updatedAt: '2025-09-20T10:00:00Z'
+        created_at: '2025-09-20T10:00:00Z',
+        updated_at: '2025-09-20T10:00:00Z'
     }
 ];
 const MOCK_NOTIFICATION_STRATEGY_OPTIONS: NotificationStrategyOptions = {
@@ -1461,9 +1500,9 @@ const MOCK_NOTIFICATION_CHANNELS: NotificationChannel[] = [
             bcc: 'audit@example.com'
         },
         lastTestResult: 'success',
-        lastTestedAt: '2025-09-22T11:00:00Z',
-        createdAt: '2025-09-21T09:00:00Z',
-        updatedAt: '2025-09-22T11:00:00Z'
+        last_tested_at: '2025-09-22T11:00:00Z',
+        created_at: '2025-09-21T09:00:00Z',
+        updated_at: '2025-09-22T11:00:00Z'
     },
 ];
 const MOCK_NOTIFICATION_OPTIONS: NotificationOptions = {
@@ -1568,19 +1607,19 @@ const LAYOUT_WIDGETS: LayoutWidget[] = [
     { id: 'profile_last_password_change', name: '上次密碼變更', description: '您的密碼上次更新的時間。', supportedPages: ['個人設定'] },
     { id: 'profile_mfa_status', name: 'MFA 狀態', description: '多因素驗證 (MFA) 的啟用狀態。', supportedPages: ['個人設定'] },
 ];
-const DEFAULT_LAYOUTS: Record<string, { widgetIds: string[]; updatedAt: string; updatedBy: string; }> = {
-    "SREWarRoom": { widgetIds: ['sre_pending_incidents', 'sre_in_progress', 'sre_resolved_today', 'sre_automation_rate'], updatedAt: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
-    "InfrastructureInsights": { widgetIds: ['infra_total_resources', 'infra_running', 'infra_anomalies', 'infra_offline'], updatedAt: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
-    "事件": { widgetIds: ['incident_pending_count', 'incident_in_progress', 'incident_resolved_today'], updatedAt: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
-    "資源": { widgetIds: ['resource_total_count', 'resource_health_rate', 'resource_alerting'], updatedAt: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
-    "ResourceOverview": { widgetIds: ['resource_total_count', 'resource_health_rate', 'resource_alerting', 'resource_group_count'], updatedAt: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
-    "儀表板": { widgetIds: ['dashboard_total_count', 'dashboard_custom_count', 'dashboard_grafana_count'], updatedAt: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
-    "智慧排查": { widgetIds: ['analysis_critical_anomalies', 'analysis_log_volume', 'analysis_trace_errors'], updatedAt: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
-    "自動化": { widgetIds: ['automation_runs_today', 'automation_success_rate', 'automation_suppressed_alerts'], updatedAt: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
-    "身份與存取管理": { widgetIds: ['iam_total_users', 'iam_active_users', 'iam_login_failures'], updatedAt: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
-    "通知": { widgetIds: ['notification_sent_today', 'notification_failure_rate', 'notification_channels'], updatedAt: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
-    "平台": { widgetIds: ['platform_tags_defined', 'platform_auth_provider', 'platform_mail_status'], updatedAt: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
-    "profile": { widgetIds: ['profile_login_count_7d', 'profile_last_password_change', 'profile_mfa_status'], updatedAt: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
+const DEFAULT_LAYOUTS: Record<string, { widgetIds: string[]; updated_at: string; updatedBy: string; }> = {
+    "SREWarRoom": { widgetIds: ['sre_pending_incidents', 'sre_in_progress', 'sre_resolved_today', 'sre_automation_rate'], updated_at: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
+    "InfrastructureInsights": { widgetIds: ['infra_total_resources', 'infra_running', 'infra_anomalies', 'infra_offline'], updated_at: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
+    "事件": { widgetIds: ['incident_pending_count', 'incident_in_progress', 'incident_resolved_today'], updated_at: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
+    "資源": { widgetIds: ['resource_total_count', 'resource_health_rate', 'resource_alerting'], updated_at: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
+    "ResourceOverview": { widgetIds: ['resource_total_count', 'resource_health_rate', 'resource_alerting', 'resource_group_count'], updated_at: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
+    "儀表板": { widgetIds: ['dashboard_total_count', 'dashboard_custom_count', 'dashboard_grafana_count'], updated_at: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
+    "智慧排查": { widgetIds: ['analysis_critical_anomalies', 'analysis_log_volume', 'analysis_trace_errors'], updated_at: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
+    "自動化": { widgetIds: ['automation_runs_today', 'automation_success_rate', 'automation_suppressed_alerts'], updated_at: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
+    "身份與存取管理": { widgetIds: ['iam_total_users', 'iam_active_users', 'iam_login_failures'], updated_at: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
+    "通知": { widgetIds: ['notification_sent_today', 'notification_failure_rate', 'notification_channels'], updated_at: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
+    "平台": { widgetIds: ['platform_tags_defined', 'platform_auth_provider', 'platform_mail_status'], updated_at: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
+    "profile": { widgetIds: ['profile_login_count_7d', 'profile_last_password_change', 'profile_mfa_status'], updated_at: '2025-09-24T10:30:00Z', updatedBy: 'Admin User' },
 };
 const KPI_DATA: Record<string, any> = {
     'incident_pending_count': { value: '5', description: '2 嚴重', icon: 'shield-alert', iconBgColor: 'bg-red-500' },
@@ -1636,6 +1675,70 @@ const MOCK_AI_BRIEFING = {
     "recommendation": { "action_text": "由於錯誤率上升，建議立即檢視支付 API 的日誌以找出根本原因。", "button_text": "查看日誌", "button_link": "/analyzing/logs" }
 };
 const MOCK_LINKS = [{ source: 'res-001', target: 'res-003' }];
+
+// 新增 ResourceLink 和 ConfigVersion 的 mock 數據
+const MOCK_RESOURCE_LINKS: ResourceLink[] = [
+    {
+        id: 'rl-001',
+        source_resource_id: 'res-001',  // api-gateway-prod-01
+        target_resource_id: 'res-003',  // k8s-prod-cluster
+        link_type: 'connects_to',
+        metadata: { protocol: 'HTTP', port: 8080 },
+        created_at: '2025-09-20T10:00:00Z',
+        updated_at: '2025-09-20T10:00:00Z'
+    },
+    {
+        id: 'rl-002',
+        source_resource_id: 'res-003',  // k8s-prod-cluster
+        target_resource_id: 'res-002',  // rds-prod-main
+        link_type: 'depends_on',
+        metadata: { connection_type: 'JDBC', timeout: 30 },
+        created_at: '2025-09-21T11:00:00Z',
+        updated_at: '2025-09-21T11:00:00Z'
+    },
+    {
+        id: 'rl-003',
+        source_resource_id: 'res-007',  // api-service
+        target_resource_id: 'res-003',  // k8s-prod-cluster
+        link_type: 'manages',
+        metadata: { namespace: 'production', deployment: 'api-service-deployment' },
+        created_at: '2025-09-22T12:00:00Z',
+        updated_at: '2025-09-22T12:00:00Z'
+    }
+];
+
+const MOCK_CONFIG_VERSIONS: ConfigVersion[] = [
+    {
+        id: 'cv-001',
+        entity_type: 'AlertRule',
+        entity_id: 'rule-001',
+        version: 1,
+        config_snapshot: MOCK_ALERT_RULES[0],
+        change_summary: 'Initial creation of CPU usage alert rule',
+        changed_by: 'usr-001',
+        created_at: '2025-09-20T10:00:00Z'
+    },
+    {
+        id: 'cv-002',
+        entity_type: 'AlertRule',
+        entity_id: 'rule-001',
+        version: 2,
+        config_snapshot: { ...MOCK_ALERT_RULES[0], threshold: 95 },
+        change_summary: 'Increased threshold to 95%',
+        changed_by: 'usr-002',
+        created_at: '2025-09-22T14:00:00Z'
+    },
+    {
+        id: 'cv-003',
+        entity_type: 'AutomationPlaybook',
+        entity_id: 'play-001',
+        version: 1,
+        config_snapshot: MOCK_PLAYBOOKS[0],
+        change_summary: 'Initial creation of pod restart playbook',
+        changed_by: 'usr-001',
+        created_at: '2025-09-20T10:00:00Z'
+    }
+];
 const MOCK_USER_PREFERENCES: UserPreferences = { theme: 'dark', language: 'zh-TW', timezone: 'Asia/Taipei', defaultPage: 'sre-war-room' };
 
 // New AI Mock Data
@@ -1773,14 +1876,14 @@ const MOCK_RESOURCE_ANALYSIS: ResourceAnalysis = {
     summary: '對選定的 5 個資源進行分析後，發現 2 個高風險資源，主要與潛在的容量瓶頸和過時的配置有關。此外，有 1 個資源存在成本優化機會。',
     riskAnalysis: [
         {
-            resourceId: 'res-002',
+            resource_id: 'res-002',
             resourceName: 'rds-prod-main',
             riskLevel: 'High',
             reason: '記憶體使用率連續 3 天超過 90%，且慢查詢日誌數量增加。',
             recommendation: '建議立即升級資料庫實例類型，並分析慢查詢。'
         },
         {
-            resourceId: 'res-007',
+            resource_id: 'res-007',
             resourceName: 'api-service',
             riskLevel: 'Medium',
             reason: '副本數 (3) 在流量高峰期可能不足，CPU Throttling 指標上升。',
@@ -1789,7 +1892,7 @@ const MOCK_RESOURCE_ANALYSIS: ResourceAnalysis = {
     ],
     optimizationSuggestions: [
         {
-            resourceId: 'res-004',
+            resource_id: 'res-004',
             resourceName: 'web-prod-12',
             suggestion: '此 EC2 實例的平均 CPU 使用率低於 10%。建議將實例類型從 `t3.large` 降級為 `t3.medium` 以節省成本。',
             type: 'Cost'
@@ -1826,7 +1929,7 @@ const MOCK_CAPACITY_SUGGESTIONS = [
         effort: '中' as const,
         details: '`k8s-prod-cluster` 的 CPU 預計在 15 天內達到 95%。建議增加 2 個節點以避免效能下降。',
         detectedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-        resourceId: 'res-1001',
+        resource_id: 'res-1001',
     },
     {
         id: 'cap-sug-002',
@@ -1835,7 +1938,7 @@ const MOCK_CAPACITY_SUGGESTIONS = [
         effort: '高' as const,
         details: '`rds-prod-main` 的記憶體使用率持續增長。建議從 `db.t3.large` 升級至 `db.t3.xlarge`。',
         detectedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        resourceId: 'res-1024',
+        resource_id: 'res-1024',
     },
     {
         id: 'cap-sug-003',
@@ -1844,13 +1947,13 @@ const MOCK_CAPACITY_SUGGESTIONS = [
         effort: '低' as const,
         details: '`s3-log-archive` 儲存桶已超過 5TB。建議設定生命週期規則以降低成本。',
         detectedAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-        resourceId: 'res-1077',
+        resource_id: 'res-1077',
     },
 ];
 const MOCK_CAPACITY_RESOURCE_ANALYSIS = [
     {
         id: 'cap-resource-001',
-        resourceId: 'res-201',
+        resource_id: 'res-201',
         resourceName: 'api-gateway-prod-01',
         currentUtilization: 55,
         forecastUtilization: 75,
@@ -1868,7 +1971,7 @@ const MOCK_CAPACITY_RESOURCE_ANALYSIS = [
     },
     {
         id: 'cap-resource-002',
-        resourceId: 'res-305',
+        resource_id: 'res-305',
         resourceName: 'rds-prod-main',
         currentUtilization: 62,
         forecastUtilization: 68,
@@ -1886,7 +1989,7 @@ const MOCK_CAPACITY_RESOURCE_ANALYSIS = [
     },
     {
         id: 'cap-resource-003',
-        resourceId: 'res-415',
+        resource_id: 'res-415',
         resourceName: 'k8s-prod-cluster-node-1',
         currentUtilization: 85,
         forecastUtilization: 98,
@@ -1904,7 +2007,7 @@ const MOCK_CAPACITY_RESOURCE_ANALYSIS = [
     },
     {
         id: 'cap-resource-004',
-        resourceId: 'res-522',
+        resource_id: 'res-522',
         resourceName: 'elasticache-prod-03',
         currentUtilization: 40,
         forecastUtilization: 45,
@@ -2167,8 +2270,8 @@ const MOCK_AUTOMATION_TRIGGER_OPTIONS: AutomationTriggerOptions = {
     severityOptions: MOCK_AUTOMATION_TRIGGER_SEVERITY_OPTIONS,
     defaultConfigs: {
         'Schedule': { cron: '0 * * * *' },
-        'Webhook': { webhookUrl: 'https://sre.platform/api/v1/webhooks/hook-generated-id' },
-        'Event': { eventConditions: `severity = ${MOCK_AUTOMATION_TRIGGER_SEVERITY_OPTIONS[0]?.value ?? 'critical'}` }
+        'Webhook': { webhook_url: 'https://sre.platform/api/v1/webhooks/hook-generated-id' },
+        'Event': { event_conditions: `severity = ${MOCK_AUTOMATION_TRIGGER_SEVERITY_OPTIONS[0]?.value ?? 'critical'}` }
     }
 };
 
@@ -2286,7 +2389,7 @@ const MOCK_DATASOURCES: Datasource[] = [
         name: 'Prometheus-A',
         type: 'Prometheus',
         status: 'ok',
-        createdAt: '2025-09-01T12:30:00Z',
+        created_at: '2025-09-01T12:30:00Z',
         url: 'http://prometheus-a.internal:9090',
         authMethod: 'None',
         tags: [{ id: 'tag-1', key: 'env', value: 'production' }]
@@ -2296,7 +2399,7 @@ const MOCK_DATASOURCES: Datasource[] = [
         name: 'VM-Cluster-1',
         type: 'VictoriaMetrics',
         status: 'error',
-        createdAt: '2025-09-10T09:22:00Z',
+        created_at: '2025-09-10T09:22:00Z',
         url: 'http://vm-cluster-1.internal:8428',
         authMethod: 'Token',
         tags: [{ id: 'tag-2', key: 'env', value: 'production' }, { id: 'tag-3', key: 'cluster', value: '1' }]
@@ -2306,7 +2409,7 @@ const MOCK_DATASOURCES: Datasource[] = [
         name: 'Main Grafana',
         type: 'Grafana',
         status: 'pending',
-        createdAt: '2025-09-11T15:00:00Z',
+        created_at: '2025-09-11T15:00:00Z',
         url: 'http://grafana.internal',
         authMethod: 'Keycloak Integration',
         tags: []
@@ -2319,42 +2422,42 @@ const MOCK_DISCOVERY_JOBS: DiscoveryJob[] = [
         name: 'K8s Cluster A',
         kind: 'K8s',
         schedule: '0 9 * * *', // 每天 09:00
-        lastRunAt: '2025-09-23T09:00:15Z',
+        last_run_at: '2025-09-23T09:00:15Z',
         status: 'success',
         targetConfig: { kubeconfig: '...' },
         exporterBinding: { templateId: 'node_exporter' },
         edgeGateway: { enabled: false },
         tags: [{ id: 'tag-4', key: 'cluster', value: 'A' }],
-        createdAt: '2025-09-01T09:00:00Z',
-        updatedAt: '2025-09-23T09:00:15Z',
+        created_at: '2025-09-01T09:00:00Z',
+        updated_at: '2025-09-23T09:00:15Z',
     },
     {
         id: 'dj-002',
         name: 'IDC-SNMP-Scan',
         kind: 'SNMP',
         schedule: '30 * * * *', // 每小時 30 分
-        lastRunAt: '2025-09-23T10:30:05Z',
+        last_run_at: '2025-09-23T10:30:05Z',
         status: 'partial_failure',
         targetConfig: { community: 'public', ipRange: '10.1.1.1/24' },
         exporterBinding: { templateId: 'snmp_exporter', mibProfileId: 'snmp-default' },
         edgeGateway: { enabled: true, gatewayId: 'edge-gw-1' },
         tags: [{ id: 'tag-5', key: 'datacenter', value: 'IDC-1' }],
-        createdAt: '2025-09-02T10:00:00Z',
-        updatedAt: '2025-09-23T10:30:05Z',
+        created_at: '2025-09-02T10:00:00Z',
+        updated_at: '2025-09-23T10:30:05Z',
     },
     {
         id: 'dj-003',
         name: 'Cloud Provider Sync',
         kind: 'Cloud Provider',
         schedule: '0 0 * * *', // 每天
-        lastRunAt: '2025-09-23T00:00:10Z',
+        last_run_at: '2025-09-23T00:00:10Z',
         status: 'running',
         targetConfig: { apiKey: '***masked***' },
         exporterBinding: { templateId: 'node_exporter' },
         edgeGateway: { enabled: false },
         tags: [],
-        createdAt: '2025-09-03T11:00:00Z',
-        updatedAt: '2025-09-23T00:00:10Z',
+        created_at: '2025-09-03T11:00:00Z',
+        updated_at: '2025-09-23T00:00:10Z',
     }
 ];
 
@@ -2391,7 +2494,8 @@ function createInitialDB() {
         silenceRuleOptions: JSON.parse(JSON.stringify(MOCK_SILENCE_RULE_OPTIONS)),
         resources: JSON.parse(JSON.stringify(MOCK_RESOURCES)),
         resourceGroups: JSON.parse(JSON.stringify(MOCK_RESOURCE_GROUPS)),
-        resourceLinks: JSON.parse(JSON.stringify(MOCK_LINKS)),
+        resourceLinks: JSON.parse(JSON.stringify(MOCK_RESOURCE_LINKS)),
+        configVersions: JSON.parse(JSON.stringify(MOCK_CONFIG_VERSIONS)),
         resourceOverviewData: JSON.parse(JSON.stringify(MOCK_RESOURCE_OVERVIEW_DATA)),
         playbooks: JSON.parse(JSON.stringify(MOCK_PLAYBOOKS)),
         automationExecutions: JSON.parse(JSON.stringify(MOCK_AUTOMATION_EXECUTIONS)),
@@ -2423,21 +2527,23 @@ function createInitialDB() {
         kpiData: JSON.parse(JSON.stringify(KPI_DATA)),
         allColumns: JSON.parse(JSON.stringify(MOCK_ALL_COLUMNS)),
         columnConfigs: {
-            dashboards: ['name', 'type', 'category', 'owner', 'updatedAt'],
-            incidents: ['summary', 'status', 'severity', 'impact', 'resource', 'assignee', 'occurredAt'],
-            resources: ['status', 'name', 'type', 'provider', 'region', 'owner', 'lastCheckIn'],
-            personnel: ['name', 'role', 'team', 'status', 'lastLogin'],
-            alert_rules: ['enabled', 'name', 'target', 'conditionsSummary', 'severity', 'automationEnabled', 'creator', 'lastUpdated'],
-            silence_rules: ['enabled', 'name', 'type', 'matchers', 'schedule', 'creator', 'createdAt'],
+            dashboards: ['name', 'type', 'category', 'owner', 'updated_at'],
+            incidents: ['summary', 'status', 'severity', 'impact', 'resource', 'assignee', 'occurred_at'],
+            resources: ['status', 'name', 'type', 'provider', 'region', 'owner', 'lastCheckInAt'],
+            personnel: ['name', 'role', 'team', 'status', 'lastLoginAt'],
+            alert_rules: ['enabled', 'name', 'target', 'conditionsSummary', 'severity', 'automationEnabled', 'creator', 'updated_at'],
+            silence_rules: ['enabled', 'name', 'type', 'matchers', 'schedule', 'creator', 'created_at'],
             resource_groups: ['name', 'ownerTeam', 'memberIds', 'statusSummary'],
-            automation_playbooks: ['name', 'trigger', 'lastRunStatus', 'lastRun', 'runCount'],
+            automation_playbooks: ['name', 'trigger', 'lastRunStatus', 'lastRunAt', 'runCount'],
             automation_history: ['scriptName', 'status', 'triggerSource', 'triggeredBy', 'startTime', 'durationMs'],
-            automation_triggers: ['enabled', 'name', 'type', 'targetPlaybookId', 'lastTriggered'],
-            teams: ['name', 'ownerId', 'memberIds', 'createdAt'],
-            roles: ['enabled', 'name', 'userCount', 'createdAt'],
+            automation_triggers: ['enabled', 'name', 'type', 'targetPlaybookId', 'lastTriggeredAt'],
+            teams: ['name', 'ownerId', 'memberIds', 'created_at'],
+            roles: ['enabled', 'name', 'userCount', 'created_at'],
             audit_logs: ['timestamp', 'user', 'action', 'target', 'result'],
             tag_management: ['key', 'description', 'enumValues', 'required', 'writableRoles'],
-            notification_strategies: ['enabled', 'name', 'triggerCondition', 'channelCount', 'severityLevels', 'impactLevels', 'creator', 'lastUpdated'],
+            notification_strategies: ['enabled', 'name', 'triggerCondition', 'channelCount', 'severityLevels', 'impactLevels', 'creator', 'updated_at'],
+            datasources: ['name', 'type', 'status', 'url', 'created_at', 'updated_at'],
+            autodiscovery: ['name', 'kind', 'status', 'schedule', 'lastRunAt', 'created_at'],
             notification_channels: ['enabled', 'name', 'type', 'lastTestResult', 'lastTestedAt'],
             notification_history: ['timestamp', 'strategy', 'channel', 'recipient', 'status', 'content'],
         },

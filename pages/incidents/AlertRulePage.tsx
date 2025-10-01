@@ -250,7 +250,7 @@ const AlertRulePage: React.FC = () => {
             }
             case 'automationEnabled': return rule.automationEnabled ? <Icon name="check-circle" className="w-5 h-5 text-green-400" /> : <Icon name="x-circle" className="w-5 h-5 text-slate-500" />;
             case 'creator': return rule.creator;
-            case 'lastUpdated': return rule.updatedAt;
+            case 'updated_at': return rule.updated_at;
             default:
                 return (
                     <div className="text-center text-slate-500 py-6">

@@ -35,7 +35,7 @@ const AutomationTriggersPage: React.FC = () => {
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
-    
+
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
 
@@ -82,7 +82,7 @@ const AutomationTriggersPage: React.FC = () => {
     const playbookNameMap = useMemo(() => {
         return new Map(playbooks.map(p => [p.id, p.name]));
     }, [playbooks]);
-    
+
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
         if (!pageKey) {
             showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
@@ -123,7 +123,7 @@ const AutomationTriggersPage: React.FC = () => {
             setIsModalOpen(false);
         }
     };
-    
+
     const handleDeleteClick = (trigger: AutomationTrigger) => {
         setDeletingTrigger(trigger);
         setIsDeleteModalOpen(true);
@@ -142,7 +142,7 @@ const AutomationTriggersPage: React.FC = () => {
             }
         }
     };
-    
+
     const handleToggleEnable = async (trigger: AutomationTrigger) => {
         try {
             await api.patch(`/automation/triggers/${trigger.id}`, { ...trigger, enabled: !trigger.enabled });
@@ -151,18 +151,18 @@ const AutomationTriggersPage: React.FC = () => {
             alert('Failed to toggle trigger status.');
         }
     };
-    
+
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSelectedIds(e.target.checked ? triggers.map(t => t.id) : []);
     };
-    
+
     const handleSelectOne = (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
         setSelectedIds(prev => e.target.checked ? [...prev, id] : prev.filter(selectedId => selectedId !== id));
     };
 
     const isAllSelected = triggers.length > 0 && selectedIds.length === triggers.length;
     const isIndeterminate = selectedIds.length > 0 && selectedIds.length < triggers.length;
-    
+
     const handleBatchAction = async (action: 'enable' | 'disable' | 'delete') => {
         try {
             await api.post('/automation/triggers/batch-actions', { action, ids: selectedIds });
@@ -173,7 +173,7 @@ const AutomationTriggersPage: React.FC = () => {
             setSelectedIds([]);
         }
     };
-    
+
     const batchActions = (
         <>
             <ToolbarButton icon="toggle-right" text="啟用" onClick={() => handleBatchAction('enable')} />
@@ -189,9 +189,9 @@ const AutomationTriggersPage: React.FC = () => {
             case 'Event': return 'bg-amber-500/20 text-amber-300';
         }
     };
-    
+
     const findPlaybookName = (playbookId: string) => playbookNameMap.get(playbookId) || 'Unknown Playbook';
-    
+
     const renderCellContent = (trigger: AutomationTrigger, columnKey: string) => {
         switch (columnKey) {
             case 'enabled':
@@ -212,8 +212,8 @@ const AutomationTriggersPage: React.FC = () => {
                 );
             case 'targetPlaybookId':
                 return findPlaybookName(trigger.targetPlaybookId);
-            case 'lastTriggered':
-                return trigger.lastTriggered;
+            case 'lastTriggeredAt':
+                return trigger.lastTriggeredAt;
             default:
                 return <span className="text-slate-500">--</span>;
         }
@@ -240,7 +240,7 @@ const AutomationTriggersPage: React.FC = () => {
                             <tr>
                                 <th scope="col" className="p-4 w-12">
                                     <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
-                                           checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
+                                        checked={isAllSelected} ref={el => { if (el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
                                 {visibleColumns.map(key => (
                                     <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
@@ -257,7 +257,7 @@ const AutomationTriggersPage: React.FC = () => {
                                 <tr key={trigger.id} className={`border-b border-slate-800 ${selectedIds.includes(trigger.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
                                     <td className="p-4 w-12">
                                         <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
-                                               checked={selectedIds.includes(trigger.id)} onChange={(e) => handleSelectOne(e, trigger.id)} />
+                                            checked={selectedIds.includes(trigger.id)} onChange={(e) => handleSelectOne(e, trigger.id)} />
                                     </td>
                                     {visibleColumns.map(key => (
                                         <td key={key} className="px-6 py-4">{renderCellContent(trigger, key)}</td>
@@ -271,7 +271,7 @@ const AutomationTriggersPage: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
-                <Pagination 
+                <Pagination
                     total={total}
                     page={currentPage}
                     pageSize={pageSize}
@@ -302,7 +302,7 @@ const AutomationTriggersPage: React.FC = () => {
                 <p>您確定要刪除觸發器 <strong className="text-amber-400">{deletingTrigger?.name}</strong> 嗎？</p>
                 <p className="mt-2 text-slate-400">此操作無法復原。</p>
             </Modal>
-             <UnifiedSearchModal
+            <UnifiedSearchModal
                 page="automation-triggers"
                 isOpen={isSearchModalOpen}
                 onClose={() => setIsSearchModalOpen(false)}

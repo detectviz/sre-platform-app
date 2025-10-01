@@ -45,9 +45,9 @@ const RoleManagementPage: React.FC = () => {
         try {
             const params = { page: currentPage, page_size: pageSize, ...filters };
             const [rolesRes, columnConfigRes, allColumnsRes] = await Promise.all([
-                 api.get<{ items: Role[], total: number }>('/iam/roles', { params }),
-                 api.get<string[]>(`/settings/column-config/${pageKey}`),
-                 api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
+                api.get<{ items: Role[], total: number }>('/iam/roles', { params }),
+                api.get<string[]>(`/settings/column-config/${pageKey}`),
+                api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
             setRoles(rolesRes.data.items);
             setTotalRoles(rolesRes.data.total);
@@ -71,7 +71,7 @@ const RoleManagementPage: React.FC = () => {
             fetchRoles();
         }
     }, [fetchRoles, pageKey]);
-    
+
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
         if (!pageKey) {
             showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
@@ -112,7 +112,7 @@ const RoleManagementPage: React.FC = () => {
             setIsModalOpen(false);
         }
     };
-    
+
     const handleDeleteClick = (role: Role) => {
         setDeletingRole(role);
         setIsDeleteModalOpen(true);
@@ -131,7 +131,7 @@ const RoleManagementPage: React.FC = () => {
             }
         }
     };
-    
+
     const handleBatchDelete = async () => {
         try {
             await api.post('/iam/roles/batch-actions', { action: 'delete', ids: selectedIds });
@@ -154,7 +154,7 @@ const RoleManagementPage: React.FC = () => {
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSelectedIds(e.target.checked ? roles.map(r => r.id) : []);
     };
-    
+
     const handleSelectOne = (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
         setSelectedIds(prev => e.target.checked ? [...prev, id] : prev.filter(selectedId => selectedId !== id));
     };
@@ -184,8 +184,8 @@ const RoleManagementPage: React.FC = () => {
                 );
             case 'userCount':
                 return role.userCount;
-            case 'createdAt':
-                return role.createdAt;
+            case 'created_at':
+                return role.created_at;
             default:
                 return <span className="text-slate-500">--</span>;
         }
@@ -193,7 +193,7 @@ const RoleManagementPage: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col">
-            <Toolbar 
+            <Toolbar
                 leftActions={<ToolbarButton icon="search" text="搜尋和篩選" onClick={() => setIsSearchModalOpen(true)} />}
                 rightActions={
                     <>
@@ -213,7 +213,7 @@ const RoleManagementPage: React.FC = () => {
                             <tr>
                                 <th scope="col" className="p-4 w-12">
                                     <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
-                                           checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
+                                        checked={isAllSelected} ref={el => { if (el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
                                 {visibleColumns.map(key => (
                                     <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
@@ -228,16 +228,16 @@ const RoleManagementPage: React.FC = () => {
                                 <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchRoles} />
                             ) : roles.map((role) => (
                                 <tr key={role.id} className={`border-b border-slate-800 ${selectedIds.includes(role.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
-                                     <td className="p-4 w-12">
+                                    <td className="p-4 w-12">
                                         <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
-                                               checked={selectedIds.includes(role.id)} onChange={(e) => handleSelectOne(e, role.id)} />
+                                            checked={selectedIds.includes(role.id)} onChange={(e) => handleSelectOne(e, role.id)} />
                                     </td>
                                     {visibleColumns.map(key => (
                                         <td key={key} className="px-6 py-4">{renderCellContent(role, key)}</td>
                                     ))}
                                     <td className="px-6 py-4 text-center">
-                                         <button onClick={() => handleEditRole(role)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯"><Icon name="edit-3" className="w-4 h-4" /></button>
-                                         <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(role); }} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除"><Icon name="trash-2" className="w-4 h-4" /></button>
+                                        <button onClick={() => handleEditRole(role)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯"><Icon name="edit-3" className="w-4 h-4" /></button>
+                                        <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(role); }} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除"><Icon name="trash-2" className="w-4 h-4" /></button>
                                     </td>
                                 </tr>
                             ))}
@@ -246,9 +246,9 @@ const RoleManagementPage: React.FC = () => {
                 </div>
                 <Pagination total={totalRoles} page={currentPage} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
             </TableContainer>
-            {isModalOpen && 
+            {isModalOpen &&
                 <RoleEditModal
-                    isOpen={isModalOpen} 
+                    isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
                     onSave={handleSaveRole}
                     role={editingRole}

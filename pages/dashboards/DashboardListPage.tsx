@@ -28,16 +28,16 @@ const DashboardListPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [totalDashboards, setTotalDashboards] = useState(0);
     const [allColumns, setAllColumns] = useState<TableColumn[]>([]);
-    
+
     const { options, isLoading: isLoadingOptions } = useOptions();
     const { content } = useContent();
     const pageContent = content?.DASHBOARD_LIST;
     const globalContent = content?.GLOBAL;
-    
+
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [filters, setFilters] = useState<DashboardFilters>({});
-    
+
     const [defaultDashboard, setDefaultDashboard] = useState<string>('');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const navigate = useNavigate();
@@ -60,18 +60,18 @@ const DashboardListPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const params: any = { 
-                page: currentPage, 
+            const params: any = {
+                page: currentPage,
                 page_size: pageSize,
                 ...filters
             };
-            
+
             const [dashboardsRes, columnsRes, allColumnsRes] = await Promise.all([
-                 api.get<{ items: Dashboard[], total: number }>('/dashboards', { params }),
-                 api.get<string[]>(`/settings/column-config/${pageKey}`),
-                 api.get<TableColumn[]>(`/pages/columns/${pageKey}`),
+                api.get<{ items: Dashboard[], total: number }>('/dashboards', { params }),
+                api.get<string[]>(`/settings/column-config/${pageKey}`),
+                api.get<TableColumn[]>(`/pages/columns/${pageKey}`),
             ]);
-            
+
             setAllColumns(allColumnsRes.data);
             setDashboards(dashboardsRes.data.items);
             setTotalDashboards(dashboardsRes.data.total);
@@ -172,11 +172,11 @@ const DashboardListPage: React.FC = () => {
             showToast(pageContent?.UPDATE_ERROR || 'Failed to update dashboard.', 'error');
         }
     };
-    
+
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSelectedIds(e.target.checked ? dashboards.map(d => d.id) : []);
     };
-    
+
     const handleSelectOne = (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
         setSelectedIds(prev => e.target.checked ? [...prev, id] : prev.filter(selectedId => selectedId !== id));
     };
@@ -198,12 +198,12 @@ const DashboardListPage: React.FC = () => {
         const dataToExport = selectedIds.length > 0
             ? dashboards.filter(d => selectedIds.includes(d.id))
             : dashboards;
-        
+
         if (dataToExport.length === 0) {
             showToast(globalContent?.NO_DATA_TO_EXPORT || "沒有可匯出的資料。", 'error');
             return;
         }
-        
+
         exportToCsv({
             filename: `dashboards-${new Date().toISOString().split('T')[0]}.csv`,
             headers: ['id', 'name', 'type', 'category', 'description', 'owner', 'updatedAt', 'path'],
@@ -236,8 +236,8 @@ const DashboardListPage: React.FC = () => {
                 return dashboard.category;
             case 'owner':
                 return dashboard.owner;
-            case 'updatedAt':
-                return dashboard.updatedAt;
+            case 'updated_at':
+                return dashboard.updated_at;
             default:
                 return <span className="text-slate-500">--</span>;
         }
@@ -250,7 +250,7 @@ const DashboardListPage: React.FC = () => {
     const leftActions = (
         <ToolbarButton icon="search" text={pageContent.SEARCH_PLACEHOLDER} onClick={() => setIsSearchModalOpen(true)} />
     );
-    
+
     const rightActions = (
         <>
             <ToolbarButton icon="upload" text={globalContent.IMPORT} onClick={() => setIsImportModalOpen(true)} />
@@ -259,7 +259,7 @@ const DashboardListPage: React.FC = () => {
             <ToolbarButton icon="plus" text={pageContent.ADD_DASHBOARD} primary onClick={() => setIsAddModalOpen(true)} />
         </>
     );
-    
+
     const batchActions = (
         <ToolbarButton icon="trash-2" text={globalContent.DELETE} danger onClick={handleBatchDelete} />
     );
@@ -280,7 +280,7 @@ const DashboardListPage: React.FC = () => {
                             <tr>
                                 <th scope="col" className="p-4 w-12">
                                     <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
-                                           checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
+                                        checked={isAllSelected} ref={el => { if (el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
                                 {visibleColumns.map(key => (
                                     <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
@@ -289,7 +289,7 @@ const DashboardListPage: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                           {isLoading ? (
+                            {isLoading ? (
                                 <TableLoader colSpan={visibleColumns.length + 2} />
                             ) : error ? (
                                 <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchDashboards} />
@@ -297,7 +297,7 @@ const DashboardListPage: React.FC = () => {
                                 <tr key={d.id} className={`border-b border-slate-800 ${selectedIds.includes(d.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
                                     <td className="p-4 w-12">
                                         <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
-                                               checked={selectedIds.includes(d.id)} onChange={(e) => handleSelectOne(e, d.id)} />
+                                            checked={selectedIds.includes(d.id)} onChange={(e) => handleSelectOne(e, d.id)} />
                                     </td>
                                     {visibleColumns.map(key => (
                                         <td key={key} className="px-6 py-4" onClick={() => key === 'name' && handleRowClick(d)}>
@@ -325,7 +325,7 @@ const DashboardListPage: React.FC = () => {
             <AddDashboardModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onSave={handleSaveDashboard} />
             <DashboardEditModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} onSave={handleUpdateDashboard} dashboard={editingDashboard} />
             <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title={pageContent.DELETE_MODAL_TITLE} width="w-1/3"
-                   footer={<><button onClick={() => setIsDeleteModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 rounded-md">{globalContent.CANCEL}</button><button onClick={handleConfirmDelete} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md">{globalContent.DELETE}</button></>}>
+                footer={<><button onClick={() => setIsDeleteModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 rounded-md">{globalContent.CANCEL}</button><button onClick={handleConfirmDelete} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md">{globalContent.DELETE}</button></>}>
                 <p>{pageContent.DELETE_MODAL_MESSAGE.replace('{name}', deletingDashboard?.name || '')}</p>
                 <p className="mt-2 text-slate-400">{globalContent.CONFIRM_DELETE_MESSAGE}</p>
             </Modal>
@@ -347,7 +347,7 @@ const DashboardListPage: React.FC = () => {
                 }}
                 initialFilters={filters}
             />
-             <ImportFromCsvModal
+            <ImportFromCsvModal
                 isOpen={isImportModalOpen}
                 onClose={() => setIsImportModalOpen(false)}
                 onImportSuccess={fetchDashboards}

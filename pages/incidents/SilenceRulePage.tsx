@@ -235,7 +235,7 @@ const SilenceRulePage: React.FC = () => {
                 }
                 return 'N/A';
             case 'creator': return rule.creator;
-            case 'createdAt': return rule.createdAt;
+            case 'created_at': return rule.created_at;
             default:
                 return (
                     <div className="text-center text-slate-500 py-6">
