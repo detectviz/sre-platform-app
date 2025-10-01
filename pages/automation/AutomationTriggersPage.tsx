@@ -210,7 +210,7 @@ const AutomationTriggersPage: React.FC = () => {
                         {typeLabel}
                     </span>
                 );
-            case 'targetPlaybookId':
+            case 'target_playbook_id':
                 return findPlaybookName(trigger.target_playbook_id);
             case 'last_triggered_at':
                 return trigger.last_triggered_at;

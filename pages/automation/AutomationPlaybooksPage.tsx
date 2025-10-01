@@ -173,7 +173,7 @@ const AutomationPlaybooksPage: React.FC = () => {
                 );
             case 'trigger':
                 return pb.trigger;
-            case 'lastRunStatus':
+            case 'last_run_status':
                 return (
                     <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusPill(pb.last_run_status)}`}>
                         {pb.last_run_status}
@@ -181,7 +181,7 @@ const AutomationPlaybooksPage: React.FC = () => {
                 );
             case 'last_run_at':
                 return pb.last_run_at;
-            case 'runCount':
+            case 'run_count':
                 return pb.run_count;
             default:
                 return <span className="text-slate-500">--</span>;

@@ -235,11 +235,11 @@ const TagManagementPage: React.FC = () => {
         }
         exportToCsv({
             filename: `tag-definitions-${new Date().toISOString().split('T')[0]}.csv`,
-            headers: ['key', 'scopes', 'enumValues', 'required'],
+            headers: ['key', 'scopes', 'enum_values', 'required'],
             data: filteredTags.map(tag => ({
                 key: tag.key,
                 scopes: (tag.scopes || []).join('|'),
-                enumValues: (tag.allowed_values || []).map(v => v.value).join('|'),
+                enum_values: (tag.allowed_values || []).map(v => v.value).join('|'),
                 required: tag.required,
             })),
         });
@@ -274,7 +274,7 @@ const TagManagementPage: React.FC = () => {
                         )}
                     </div>
                 );
-            case 'enumValues':
+            case 'enum_values':
                 const values = tag.allowed_values || [];
                 if (values.length === 0) {
                     return <span className="text-slate-500 text-xs italic">未定義值</span>;
@@ -492,7 +492,7 @@ const TagManagementPage: React.FC = () => {
                 onImportSuccess={fetchTags}
                 itemName="標籤"
                 importEndpoint="/settings/tags/import"
-                templateHeaders={['key', 'scopes', 'enumValues', 'required']}
+                templateHeaders={['key', 'scopes', 'enum_values', 'required']}
                 templateFilename="tags-template.csv"
             />
             <ColumnSettingsModal
