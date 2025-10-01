@@ -413,9 +413,23 @@ const PAGE_CONTENT = {
     CAPACITY_PLANNING: {
         TIME_RANGE_LABEL: '時間範圍',
         TRIGGER_AI_ANALYSIS: '觸發 AI 分析',
+        EXPORT_REPORT: '匯出報表',
         TRENDS_CHART_TITLE: '資源使用趨勢 (含預測)',
         FORECAST_CHART_TITLE: 'CPU 容量預測模型',
+        SERIES_LABELS: {
+            CPU: 'CPU',
+            CPU_FORECAST: 'CPU 預測',
+            MEMORY: '記憶體',
+            MEMORY_FORECAST: '記憶體預測',
+            STORAGE: '儲存',
+            STORAGE_FORECAST: '儲存預測',
+        },
+        FORECAST_MODEL_LEGEND: {
+            PREDICTION: '預測',
+            CONFIDENCE_BAND: '信賴區間',
+        },
         AI_SUGGESTIONS_TITLE: 'AI 優化建議',
+        SUGGESTION_DETECTED_AT_LABEL: '建議產生時間',
         DETAILED_ANALYSIS_TITLE: '詳細分析',
         TABLE_HEADERS: {
             RESOURCE_NAME: '資源名稱',
@@ -426,7 +440,20 @@ const PAGE_CONTENT = {
         },
         IMPACT: '影響',
         EFFORT: '投入',
+        RECOMMENDATION_SEVERITY_LABELS: {
+            critical: '緊急',
+            warning: '注意',
+            info: '建議',
+        },
+        RECOMMENDATION_ACTION_LABELS: {
+            scale_up: '擴展',
+            monitor: '觀察',
+            optimize: '最佳化',
+        },
+        LAST_EVALUATED_AT_LABEL: '最後評估時間',
         FETCH_ERROR: '無法獲取容量規劃資料。',
+        EXPORT_EMPTY_WARNING: '沒有可匯出的資料。',
+        RETRY_BUTTON: '重試',
     },
     DASHBOARD_LIST: {
         SEARCH_PLACEHOLDER: '搜尋儀表板...',
@@ -1348,7 +1375,7 @@ const MOCK_USERS: User[] = [
     { id: 'usr-002', name: 'Emily White', email: 'emily.w@example.com', role: 'SRE', team: 'Core Infrastructure', status: 'active', lastLoginAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(), createdAt: '2024-01-02T09:00:00Z', updatedAt: '2024-01-14T10:00:00Z' },
     { id: 'usr-003', name: 'John Doe', email: 'john.d@example.com', role: 'Developer', team: 'API Services', status: 'active', lastLoginAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), createdAt: '2024-01-03T09:00:00Z', updatedAt: '2024-01-13T10:00:00Z' },
     { id: 'usr-004', name: 'Sarah Connor', email: 'sarah.c@example.com', role: 'Viewer', team: 'Marketing', status: 'inactive', lastLoginAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), createdAt: '2024-01-04T09:00:00Z', updatedAt: '2024-01-12T10:00:00Z' },
-    { id: 'usr-005', name: 'pending.invite@example.com', email: 'pending.invite@example.com', role: 'Developer', team: 'API Services', status: 'invited', lastLoginAt: 'N/A', createdAt: '2024-01-15T09:00:00Z', updatedAt: '2024-01-15T09:00:00Z' },
+    { id: 'usr-005', name: 'pending.invite@example.com', email: 'pending.invite@example.com', role: 'Developer', team: 'API Services', status: 'invited', lastLoginAt: null, createdAt: '2024-01-15T09:00:00Z', updatedAt: '2024-01-15T09:00:00Z' },
 ];
 const MOCK_USER_STATUSES: User['status'][] = ['active', 'invited', 'inactive'];
 const MOCK_TEAMS: Team[] = [
@@ -1792,20 +1819,112 @@ const MOCK_EVENT_CORRELATION_DATA = {
     ],
 };
 const MOCK_CAPACITY_SUGGESTIONS = [
-    { title: '擴展 Kubernetes 生產集群', impact: '高' as '高', effort: '中' as '中', details: '`k8s-prod-cluster` 的 CPU 預計在 15 天内達到 95%。建議增加 2 個節點以避免效能下降。' },
-    { title: '升級 RDS 資料庫實例類型', impact: '中' as '中', effort: '高' as '高', details: '`rds-prod-main` 的記憶體使用率持續增長。建議從 `db.t3.large` 升級至 `db.t3.xlarge`。' },
-    { title: '清理舊的 S3 儲存桶日誌', impact: '低' as '低', effort: '低' as '低', details: '`s3-log-archive` 儲存桶已超過 5TB。建議設定生命週期規則以降低成本。' },
+    {
+        id: 'cap-sug-001',
+        title: '擴展 Kubernetes 生產集群',
+        impact: '高' as const,
+        effort: '中' as const,
+        details: '`k8s-prod-cluster` 的 CPU 預計在 15 天內達到 95%。建議增加 2 個節點以避免效能下降。',
+        detectedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+        resourceId: 'res-1001',
+    },
+    {
+        id: 'cap-sug-002',
+        title: '升級 RDS 資料庫實例類型',
+        impact: '中' as const,
+        effort: '高' as const,
+        details: '`rds-prod-main` 的記憶體使用率持續增長。建議從 `db.t3.large` 升級至 `db.t3.xlarge`。',
+        detectedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        resourceId: 'res-1024',
+    },
+    {
+        id: 'cap-sug-003',
+        title: '清理舊的 S3 儲存桶日誌',
+        impact: '低' as const,
+        effort: '低' as const,
+        details: '`s3-log-archive` 儲存桶已超過 5TB。建議設定生命週期規則以降低成本。',
+        detectedAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+        resourceId: 'res-1077',
+    },
 ];
 const MOCK_CAPACITY_RESOURCE_ANALYSIS = [
-    { name: 'api-gateway-prod-01', current: '55%', predicted: '75%', recommended: '擴展', cost: '+$150/月' },
-    { name: 'rds-prod-main', current: '62%', predicted: '68%', recommended: '觀察', cost: '-' },
-    { name: 'k8s-prod-cluster-node-1', current: '85%', predicted: '98%', recommended: '緊急擴展', cost: '+$200/月' },
-    { name: 'elasticache-prod-03', current: '40%', predicted: '45%', recommended: '觀察', cost: '-' },
+    {
+        id: 'cap-resource-001',
+        resourceId: 'res-201',
+        resourceName: 'api-gateway-prod-01',
+        currentUtilization: 55,
+        forecastUtilization: 75,
+        recommendation: {
+            label: '擴展',
+            action: 'scale_up' as const,
+            severity: 'warning' as const,
+        },
+        costImpact: {
+            label: '+$150/月',
+            monthlyDelta: 150,
+            currency: 'USD',
+        },
+        lastEvaluatedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    },
+    {
+        id: 'cap-resource-002',
+        resourceId: 'res-305',
+        resourceName: 'rds-prod-main',
+        currentUtilization: 62,
+        forecastUtilization: 68,
+        recommendation: {
+            label: '觀察',
+            action: 'monitor' as const,
+            severity: 'info' as const,
+        },
+        costImpact: {
+            label: '-',
+            monthlyDelta: null,
+            currency: null,
+        },
+        lastEvaluatedAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+    },
+    {
+        id: 'cap-resource-003',
+        resourceId: 'res-415',
+        resourceName: 'k8s-prod-cluster-node-1',
+        currentUtilization: 85,
+        forecastUtilization: 98,
+        recommendation: {
+            label: '緊急擴展',
+            action: 'scale_up' as const,
+            severity: 'critical' as const,
+        },
+        costImpact: {
+            label: '+$200/月',
+            monthlyDelta: 200,
+            currency: 'USD',
+        },
+        lastEvaluatedAt: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
+    },
+    {
+        id: 'cap-resource-004',
+        resourceId: 'res-522',
+        resourceName: 'elasticache-prod-03',
+        currentUtilization: 40,
+        forecastUtilization: 45,
+        recommendation: {
+            label: '觀察',
+            action: 'monitor' as const,
+            severity: 'info' as const,
+        },
+        costImpact: {
+            label: '-',
+            monthlyDelta: null,
+            currency: null,
+        },
+        lastEvaluatedAt: new Date(Date.now() - 90 * 60 * 1000).toISOString(),
+    },
 ];
 const MOCK_CAPACITY_TIME_OPTIONS = [
-    { label: '最近 30 天 + 預測 15 天', value: '30_15' },
-    { label: '最近 60 天 + 預測 30 天', value: '60_30' },
-    { label: '最近 90 天 + 預測 45 天', value: '90_45' },
+    { label: '最近 30 天 + 預測 15 天', value: '30_15', default: false },
+    { label: '最近 60 天 + 預測 30 天', value: '60_30', default: true },
+    { label: '最近 90 天 + 預測 45 天', value: '90_45', default: false },
 ];
 const MOCK_SERVICE_HEALTH_DATA = {
     heatmap_data: [

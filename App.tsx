@@ -38,7 +38,6 @@ import LogExplorerPage from './pages/analysis/LogExplorerPage';
 import DashboardTemplatesPage from './pages/dashboards/DashboardTemplatesPage';
 import DashboardEditorPage from './pages/dashboards/DashboardEditorPage';
 import CapacityPlanningPage from './pages/analysis/CapacityPlanningPage';
-import AIInsightsPage from './pages/analysis/AIInsightsPage';
 import InfrastructureInsightsPage from './pages/dashboards/InfrastructureInsightsPage';
 import api from './services/api';
 import Icon from './components/Icon';
