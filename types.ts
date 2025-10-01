@@ -289,7 +289,7 @@ export interface User {
   role: 'Admin' | 'SRE' | 'Developer' | 'Viewer';
   team: string;
   status: 'active' | 'invited' | 'inactive';
-  lastLoginAt: string;
+  lastLoginAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -712,22 +712,50 @@ export interface CapacityPlanningData {
     prediction: TimeSeriesData;
     confidence_band: [TimeSeriesData, TimeSeriesData];
   };
-  suggestions: {
-    title: string;
-    impact: '高' | '中' | '低';
-    effort: '高' | '中' | '低';
-    details: string;
-  }[];
-  resource_analysis: {
-    name: string;
-    current: string;
-    predicted: string;
-    recommended: string;
-    cost: string;
-  }[];
+  suggestions: CapacityPlanningSuggestion[];
+  resource_analysis: CapacityPlanningResourceInsight[];
   options: {
-    timeRangeOptions: { label: string; value: string }[];
+    timeRangeOptions: CapacityPlanningTimeRangeOption[];
   };
+}
+
+export type CapacityPlanningImpactLevel = '高' | '中' | '低';
+export type CapacityPlanningRecommendationSeverity = 'critical' | 'warning' | 'info';
+export type CapacityPlanningRecommendationAction = 'scale_up' | 'monitor' | 'optimize';
+
+export interface CapacityPlanningSuggestion {
+  id: string;
+  title: string;
+  impact: CapacityPlanningImpactLevel;
+  effort: CapacityPlanningImpactLevel;
+  details: string;
+  detectedAt: string;
+  resourceId?: string;
+}
+
+export interface CapacityPlanningResourceInsight {
+  id: string;
+  resourceId: string;
+  resourceName: string;
+  currentUtilization: number;
+  forecastUtilization: number;
+  recommendation: {
+    label: string;
+    action: CapacityPlanningRecommendationAction;
+    severity: CapacityPlanningRecommendationSeverity;
+  };
+  costImpact: {
+    label: string;
+    monthlyDelta: number | null;
+    currency: string | null;
+  };
+  lastEvaluatedAt: string;
+}
+
+export interface CapacityPlanningTimeRangeOption {
+  label: string;
+  value: string;
+  default?: boolean;
 }
 
 export interface PageMetadata {

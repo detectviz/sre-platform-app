@@ -44,9 +44,8 @@
 
 以下檔案在元件邏輯中直接寫死了顏色碼 (`#...`)，尤其是在 ECharts 圖表設定中。這些顏色應改為由後端 API 提供的 `appConfig` 或 `entityOptions` 中的樣式設定來驅動。
 
-- `pages/analysis/AIInsightsPage.tsx`
 - `pages/analysis/AnalysisOverviewPage.tsx`
-- `pages/analysis/CapacityPlanningPage.tsx`
+- ~~`pages/analysis/CapacityPlanningPage.tsx`~~（已改為使用 `ChartThemeContext` 及 `/ui/content` 的字串配置）
 - `pages/analysis/LogExplorerPage.tsx`
 - `pages/dashboards/InfrastructureInsightsPage.tsx`
 - `pages/resources/ResourceDetailPage.tsx`
@@ -60,7 +59,8 @@
 以下檔案的邏輯中包含了對硬編碼字串（例如：`'健康'`）的判斷，這使得程式碼非常脆弱，一旦字串變更就會導致邏輯失效。應改為使用後端 API 提供的枚舉值或 ID 進行判斷。
 
 - `pages/SREWarRoomPage.tsx`: `(s.name === '健康' ? ...)`
-- `pages/analysis/AIInsightsPage.tsx`
+
+- 更新：`pages/analysis/AIInsightsPage.tsx` 已於 2025 年的 mock server 重構中移除，不再列入靜態資料稽核範圍。
 
 ---
 

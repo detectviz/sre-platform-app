@@ -1066,7 +1066,15 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     if (subId === 'import') {
                         return { message: '成功匯入 25 位人員。' };
                     } else {
-                        const newUser = { ...body, id: `usr-${uuidv4()}`, status: 'invited', lastLogin: 'N/A' };
+                        const timestamp = new Date().toISOString();
+                        const newUser = {
+                            ...body,
+                            id: `usr-${uuidv4()}`,
+                            status: body?.status ?? 'invited',
+                            lastLoginAt: body?.lastLoginAt ?? null,
+                            createdAt: timestamp,
+                            updatedAt: timestamp,
+                        };
                         DB.users.unshift(newUser);
                         return newUser;
                     }
@@ -1077,7 +1085,14 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         if (batchAction === 'delete') DB.teams.forEach((t: any) => { if (ids.includes(t.id)) t.deleted_at = new Date().toISOString(); });
                         return { success: true };
                     }
-                    const newTeam = { ...body, id: `team-${uuidv4()}` };
+                    const timestamp = new Date().toISOString();
+                    const newTeam = {
+                        memberIds: [],
+                        ...body,
+                        id: `team-${uuidv4()}`,
+                        createdAt: body?.createdAt ?? timestamp,
+                        updatedAt: timestamp,
+                    };
                     DB.teams.unshift(newTeam);
                     return newTeam;
                 }
@@ -1087,7 +1102,16 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         if (batchAction === 'delete') DB.roles.forEach((r: any) => { if (ids.includes(r.id)) r.deleted_at = new Date().toISOString(); });
                         return { success: true };
                     }
-                    const newRole = { ...body, id: `role-${uuidv4()}`, userCount: 0, status: 'active', createdAt: new Date().toISOString() };
+                    const timestamp = new Date().toISOString();
+                    const newRole = {
+                        permissions: [],
+                        ...body,
+                        id: `role-${uuidv4()}`,
+                        userCount: 0,
+                        enabled: body?.enabled ?? true,
+                        createdAt: body?.createdAt ?? timestamp,
+                        updatedAt: timestamp,
+                    };
                     DB.roles.unshift(newRole);
                     return newRole;
                 }
@@ -1098,11 +1122,16 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 const itemId = subId;
                 const index = collection.findIndex((item: any) => item.id === itemId);
                 if (index === -1) throw { status: 404 };
-                collection[index] = { ...collection[index], ...body };
+                const timestamp = new Date().toISOString();
+                const baseUpdate = { ...collection[index], ...body };
+                if ('updatedAt' in baseUpdate) {
+                    baseUpdate.updatedAt = timestamp;
+                }
+                collection[index] = baseUpdate;
                 return collection[index];
             }
             case 'DELETE /iam': {
-                const collection = id === 'users' ? DB.users : id === 'teams' ? DB.roles : DB.teams;
+                const collection = id === 'users' ? DB.users : id === 'teams' ? DB.teams : DB.roles;
                 const itemId = subId;
                 const index = collection.findIndex((item: any) => item.id === itemId);
                 if (index > -1) (collection[index] as any).deleted_at = new Date().toISOString();

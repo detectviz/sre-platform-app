@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import EChartsReact from '../../components/EChartsReact';
 import Icon from '../../components/Icon';
@@ -8,15 +7,27 @@ import { exportToCsv } from '../../services/export';
 import { CapacityPlanningData } from '../../types';
 import api from '../../services/api';
 import { useChartTheme } from '../../contexts/ChartThemeContext';
+import { useContentSection } from '../../contexts/ContentContext';
 
 const CapacityPlanningPage: React.FC = () => {
     const [data, setData] = useState<CapacityPlanningData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [timeRange, setTimeRange] = useState('60_30');
+    const [timeRange, setTimeRange] = useState('');
 
     const { theme: chartTheme } = useChartTheme();
+    const content = useContentSection('CAPACITY_PLANNING');
+
+    const formatUtilization = useCallback((value: number) => `${Math.round(value)}%`, []);
+    const severityBadgeClasses = useMemo(
+        () => ({
+            critical: 'bg-red-500/30 text-red-300',
+            warning: 'bg-yellow-500/30 text-yellow-300',
+            info: 'bg-sky-500/20 text-sky-300',
+        }),
+        [],
+    );
 
     const toRgba = useCallback((hex: string, alpha: number) => {
         const sanitized = hex.replace('#', '');
@@ -34,79 +45,129 @@ const CapacityPlanningPage: React.FC = () => {
         try {
             const response = await api.get<CapacityPlanningData>('/analysis/capacity-planning');
             setData(response.data);
-            if (response.data.options?.timeRangeOptions?.length) {
-                 const defaultOption = response.data.options.timeRangeOptions.find(o => o.value === '60_30') || response.data.options.timeRangeOptions[0];
-                 setTimeRange(defaultOption.value);
+            if (!isRefresh && response.data.options?.timeRangeOptions?.length) {
+                const defaultOption =
+                    response.data.options.timeRangeOptions.find(option => option.default) ||
+                    response.data.options.timeRangeOptions[0];
+                if (defaultOption) {
+                    setTimeRange(defaultOption.value);
+                }
             }
         } catch (err) {
-            setError('無法獲取容量規劃資料。');
+            setError(content?.FETCH_ERROR ?? '無法獲取容量規劃資料。');
         } finally {
             if (isRefresh) setIsRefreshing(false);
             else setIsLoading(false);
         }
-    }, []);
+    }, [content]);
 
     useEffect(() => {
         fetchData();
     }, [fetchData]);
 
-    const trendOption = useMemo(() => ({
-        tooltip: { trigger: 'axis' },
-        legend: { data: ['CPU', 'Memory', 'Storage'], textStyle: { color: chartTheme.text.primary } },
-        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-        xAxis: { type: 'time', axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
-        yAxis: {
-            type: 'value',
-            min: 0,
-            max: 100,
-            axisLabel: { formatter: '{value} %' },
-            splitLine: { lineStyle: { color: chartTheme.grid.splitLine } },
-        },
-        series: [
-            { name: 'CPU', type: 'line', data: data?.trends.cpu.historical, showSymbol: false, lineStyle: { color: chartTheme.capacityPlanning.cpu } },
-            { name: 'CPU Forecast', type: 'line', data: data?.trends.cpu.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: chartTheme.capacityPlanning.cpu } },
-            { name: 'Memory', type: 'line', data: data?.trends.memory.historical, showSymbol: false, lineStyle: { color: chartTheme.capacityPlanning.memory } },
-            { name: 'Memory Forecast', type: 'line', data: data?.trends.memory.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: chartTheme.capacityPlanning.memory } },
-            { name: 'Storage', type: 'line', data: data?.trends.storage.historical, showSymbol: false, lineStyle: { color: chartTheme.capacityPlanning.storage } },
-            { name: 'Storage Forecast', type: 'line', data: data?.trends.storage.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: chartTheme.capacityPlanning.storage } },
-        ]
-    }), [chartTheme, data]);
+    const seriesLabels = useMemo(
+        () => ({
+            cpu: content?.SERIES_LABELS?.CPU ?? 'CPU',
+            cpuForecast: content?.SERIES_LABELS?.CPU_FORECAST ?? 'CPU Forecast',
+            memory: content?.SERIES_LABELS?.MEMORY ?? 'Memory',
+            memoryForecast: content?.SERIES_LABELS?.MEMORY_FORECAST ?? 'Memory Forecast',
+            storage: content?.SERIES_LABELS?.STORAGE ?? 'Storage',
+            storageForecast: content?.SERIES_LABELS?.STORAGE_FORECAST ?? 'Storage Forecast',
+        }),
+        [content],
+    );
 
-    const forecastModelOption = useMemo(() => ({
-        tooltip: { trigger: 'axis' },
-        legend: { data: ['預測', '信賴區間'], textStyle: { color: chartTheme.text.primary } },
-        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-        xAxis: { type: 'time', axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
-        yAxis: {
-            type: 'value',
-            min: 0,
-            max: 100,
-            axisLabel: { formatter: '{value} %' },
-            splitLine: { lineStyle: { color: chartTheme.grid.splitLine } },
-        },
-        series: [
-            { name: '預測', type: 'line', data: data?.forecast_model.prediction, showSymbol: false, lineStyle: { color: chartTheme.capacityPlanning.forecast } },
-            { name: '信賴區間', type: 'line', data: data?.forecast_model.confidence_band[0], lineStyle: { opacity: 0 }, stack: 'confidence-band', symbol: 'none' },
-            {
-                name: '信賴區間',
-                type: 'line',
-                data: data ? data.forecast_model.confidence_band[1].map((point, i) => [point[0], point[1] - data.forecast_model.confidence_band[0][i][1]]) : [],
-                lineStyle: { opacity: 0 },
-                areaStyle: { color: toRgba(chartTheme.capacityPlanning.forecast, 0.2) },
-                stack: 'confidence-band',
-                symbol: 'none'
-            }
-        ]
-    }), [chartTheme, data, toRgba]);
+    const trendOption = useMemo(
+        () => ({
+            tooltip: { trigger: 'axis' },
+            legend: {
+                data: [
+                    seriesLabels.cpu,
+                    seriesLabels.cpuForecast,
+                    seriesLabels.memory,
+                    seriesLabels.memoryForecast,
+                    seriesLabels.storage,
+                    seriesLabels.storageForecast,
+                ],
+                textStyle: { color: chartTheme.text.primary },
+            },
+            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+            xAxis: { type: 'time', axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
+            yAxis: {
+                type: 'value',
+                min: 0,
+                max: 100,
+                axisLabel: { formatter: '{value} %' },
+                splitLine: { lineStyle: { color: chartTheme.grid.splitLine } },
+            },
+            series: [
+                { name: seriesLabels.cpu, type: 'line', data: data?.trends.cpu.historical, showSymbol: false, lineStyle: { color: chartTheme.capacityPlanning.cpu } },
+                { name: seriesLabels.cpuForecast, type: 'line', data: data?.trends.cpu.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: chartTheme.capacityPlanning.cpu } },
+                { name: seriesLabels.memory, type: 'line', data: data?.trends.memory.historical, showSymbol: false, lineStyle: { color: chartTheme.capacityPlanning.memory } },
+                { name: seriesLabels.memoryForecast, type: 'line', data: data?.trends.memory.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: chartTheme.capacityPlanning.memory } },
+                { name: seriesLabels.storage, type: 'line', data: data?.trends.storage.historical, showSymbol: false, lineStyle: { color: chartTheme.capacityPlanning.storage } },
+                { name: seriesLabels.storageForecast, type: 'line', data: data?.trends.storage.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: chartTheme.capacityPlanning.storage } },
+            ],
+        }),
+        [chartTheme, data, seriesLabels],
+    );
+
+    const forecastModelLegend = useMemo(
+        () => ({
+            prediction: content?.FORECAST_MODEL_LEGEND?.PREDICTION ?? '預測',
+            confidenceBand: content?.FORECAST_MODEL_LEGEND?.CONFIDENCE_BAND ?? '信賴區間',
+        }),
+        [content],
+    );
+
+    const forecastModelOption = useMemo(
+        () => ({
+            tooltip: { trigger: 'axis' },
+            legend: { data: [forecastModelLegend.prediction, forecastModelLegend.confidenceBand], textStyle: { color: chartTheme.text.primary } },
+            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+            xAxis: { type: 'time', axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
+            yAxis: {
+                type: 'value',
+                min: 0,
+                max: 100,
+                axisLabel: { formatter: '{value} %' },
+                splitLine: { lineStyle: { color: chartTheme.grid.splitLine } },
+            },
+            series: [
+                { name: forecastModelLegend.prediction, type: 'line', data: data?.forecast_model.prediction, showSymbol: false, lineStyle: { color: chartTheme.capacityPlanning.forecast } },
+                { name: forecastModelLegend.confidenceBand, type: 'line', data: data?.forecast_model.confidence_band[0], lineStyle: { opacity: 0 }, stack: 'confidence-band', symbol: 'none' },
+                {
+                    name: forecastModelLegend.confidenceBand,
+                    type: 'line',
+                    data: data
+                        ? data.forecast_model.confidence_band[1].map((point, i) => [point[0], point[1] - data.forecast_model.confidence_band[0][i][1]])
+                        : [],
+                    lineStyle: { opacity: 0 },
+                    areaStyle: { color: toRgba(chartTheme.capacityPlanning.forecast, 0.2) },
+                    stack: 'confidence-band',
+                    symbol: 'none',
+                },
+            ],
+        }),
+        [chartTheme, data, toRgba, forecastModelLegend],
+    );
 
     const handleExport = () => {
         if (!data?.resource_analysis || data.resource_analysis.length === 0) {
-            alert("沒有可匯出的資料。");
+            alert(content?.EXPORT_EMPTY_WARNING ?? '沒有可匯出的資料。');
             return;
         }
         exportToCsv({
             filename: `capacity-planning-${new Date().toISOString().split('T')[0]}.csv`,
-            data: data.resource_analysis,
+            data: data.resource_analysis.map(item => ({
+                resourceName: item.resourceName,
+                currentUtilization: formatUtilization(item.currentUtilization),
+                forecastUtilization: formatUtilization(item.forecastUtilization),
+                recommendation: item.recommendation.label,
+                recommendationSeverity: item.recommendation.severity,
+                costImpact: item.costImpact.label,
+                lastEvaluatedAt: item.lastEvaluatedAt,
+            })),
         });
     };
 
@@ -124,28 +185,37 @@ const CapacityPlanningPage: React.FC = () => {
                 <Icon name="alert-circle" className="w-12 h-12 mb-4" />
                 <h2 className="text-xl font-bold">{error}</h2>
                 <button onClick={() => fetchData()} className="mt-4 px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md">
-                    重試
+                    {content?.RETRY_BUTTON ?? '重試'}
                 </button>
             </div>
         );
     }
-    
+
+    const timeRangeOptions = data?.options?.timeRangeOptions || [];
+    const dropdownValue = timeRange || timeRangeOptions[0]?.value || '';
+
     return (
         <div className="space-y-6">
             <Toolbar
                 leftActions={
                     <Dropdown
-                        label="時間範圍"
-                        options={data?.options?.timeRangeOptions || []}
-                        value={timeRange}
+                        label={content?.TIME_RANGE_LABEL ?? '時間範圍'}
+                        options={timeRangeOptions}
+                        value={dropdownValue}
                         onChange={setTimeRange}
                         minWidth="w-64"
                     />
                 }
                 rightActions={
                     <>
-                        <ToolbarButton icon="brain-circuit" text="觸發 AI 分析" onClick={() => fetchData(true)} disabled={isRefreshing} ai />
-                        <ToolbarButton icon="download" text="匯出報表" onClick={handleExport} />
+                        <ToolbarButton
+                            icon="brain-circuit"
+                            text={content?.TRIGGER_AI_ANALYSIS ?? '觸發 AI 分析'}
+                            onClick={() => fetchData(true)}
+                            disabled={isRefreshing}
+                            ai
+                        />
+                        <ToolbarButton icon="download" text={content?.EXPORT_REPORT ?? '匯出報表'} onClick={handleExport} />
                     </>
                 }
             />
@@ -153,59 +223,75 @@ const CapacityPlanningPage: React.FC = () => {
                 <>
                     <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
                         <div className="lg:col-span-3 glass-card rounded-xl p-6">
-                            <h2 className="text-xl font-bold mb-4">資源使用趨勢 (含預測)</h2>
+                            <h2 className="text-xl font-bold mb-4">{content?.TRENDS_CHART_TITLE ?? '資源使用趨勢 (含預測)'}</h2>
                             <div className="h-80">
                                 <EChartsReact option={trendOption} />
                             </div>
                         </div>
                         <div className="lg:col-span-2 glass-card rounded-xl p-6">
-                             <h2 className="text-xl font-bold mb-4">CPU 容量預測模型</h2>
-                             <div className="h-80">
+                            <h2 className="text-xl font-bold mb-4">{content?.FORECAST_CHART_TITLE ?? 'CPU 容量預測模型'}</h2>
+                            <div className="h-80">
                                 <EChartsReact option={forecastModelOption} />
-                             </div>
+                            </div>
                         </div>
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div className="glass-card rounded-xl p-6">
-                            <h2 className="text-xl font-bold mb-4">AI 優化建議</h2>
+                            <h2 className="text-xl font-bold mb-4">{content?.AI_SUGGESTIONS_TITLE ?? 'AI 優化建議'}</h2>
                             <div className="space-y-4">
-                                {data.suggestions.map((s, i) => (
-                                    <div key={i} className="p-3 bg-slate-800/50 rounded-lg">
+                                {data.suggestions.map(s => (
+                                    <div key={s.id} className="p-3 bg-slate-800/50 rounded-lg">
                                         <div className="flex justify-between items-start">
                                             <h3 className="font-semibold text-white">{s.title}</h3>
                                             <div className="flex space-x-2 text-xs">
-                                                <span className="px-2 py-0.5 bg-red-500/30 text-red-300 rounded-full">{s.impact} 影響</span>
-                                                <span className="px-2 py-0.5 bg-yellow-500/30 text-yellow-300 rounded-full">{s.effort} 投入</span>
+                                                <span className="px-2 py-0.5 bg-red-500/30 text-red-300 rounded-full">{`${content?.IMPACT ?? '影響'}: ${s.impact}`}</span>
+                                                <span className="px-2 py-0.5 bg-yellow-500/30 text-yellow-300 rounded-full">{`${content?.EFFORT ?? '投入'}: ${s.effort}`}</span>
                                             </div>
                                         </div>
                                         <p className="text-sm text-slate-400 mt-1">{s.details}</p>
+                                        <p className="text-xs text-slate-500 mt-2">{`${content?.SUGGESTION_DETECTED_AT_LABEL ?? '建議產生時間'}: ${new Date(s.detectedAt).toLocaleString()}`}</p>
                                     </div>
                                 ))}
                             </div>
                         </div>
                         <div className="glass-card rounded-xl p-6 flex flex-col">
-                            <h2 className="text-xl font-bold mb-4">詳細分析</h2>
+                            <h2 className="text-xl font-bold mb-4">{content?.DETAILED_ANALYSIS_TITLE ?? '詳細分析'}</h2>
                             <div className="flex-grow overflow-y-auto">
                                 <table className="w-full text-sm text-left text-slate-300">
                                     <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0">
                                         <tr>
-                                            <th className="px-4 py-2">資源名稱</th>
-                                            <th className="px-4 py-2">目前用量</th>
-                                            <th className="px-4 py-2">30 天預測</th>
-                                            <th className="px-4 py-2">建議</th>
-                                            <th className="px-4 py-2">成本估算</th>
+                                            <th className="px-4 py-2">{content?.TABLE_HEADERS?.RESOURCE_NAME ?? '資源名稱'}</th>
+                                            <th className="px-4 py-2">{content?.TABLE_HEADERS?.CURRENT_USAGE ?? '目前用量'}</th>
+                                            <th className="px-4 py-2">{content?.TABLE_HEADERS?.FORECAST_30D ?? '30 天預測'}</th>
+                                            <th className="px-4 py-2">{content?.TABLE_HEADERS?.RECOMMENDATION ?? '建議'}</th>
+                                            <th className="px-4 py-2">{content?.TABLE_HEADERS?.COST_ESTIMATE ?? '成本估算'}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-800">
-                                        {data.resource_analysis.map(r => (
-                                            <tr key={r.name}>
-                                                <td className="px-4 py-3 font-medium">{r.name}</td>
-                                                <td className="px-4 py-3">{r.current}</td>
-                                                <td className="px-4 py-3">{r.predicted}</td>
-                                                <td className={`px-4 py-3 font-semibold ${r.recommended.includes('緊急') ? 'text-red-400' : r.recommended.includes('擴展') ? 'text-yellow-400' : ''}`}>{r.recommended}</td>
-                                                <td className="px-4 py-3">{r.cost}</td>
-                                            </tr>
-                                        ))}
+                                        {data.resource_analysis.map(r => {
+                                            const recommendationLabel = content?.RECOMMENDATION_ACTION_LABELS?.[r.recommendation.action] ?? r.recommendation.label;
+                                            const severityLabel = content?.RECOMMENDATION_SEVERITY_LABELS?.[r.recommendation.severity] ?? r.recommendation.severity;
+                                            const badgeClass = severityBadgeClasses[r.recommendation.severity] ?? 'bg-slate-700 text-slate-200';
+                                            return (
+                                                <tr key={r.id}>
+                                                    <td className="px-4 py-3 font-medium">
+                                                        <div className="flex flex-col">
+                                                            <span>{r.resourceName}</span>
+                                                            <span className="text-xs text-slate-500">{`${content?.LAST_EVALUATED_AT_LABEL ?? '最後評估時間'}: ${new Date(r.lastEvaluatedAt).toLocaleString()}`}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-3">{formatUtilization(r.currentUtilization)}</td>
+                                                    <td className="px-4 py-3">{formatUtilization(r.forecastUtilization)}</td>
+                                                    <td className="px-4 py-3">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-semibold">{recommendationLabel}</span>
+                                                            <span className={`px-2 py-0.5 text-xs rounded-full ${badgeClass}`}>{severityLabel}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-3">{r.costImpact.label}</td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
