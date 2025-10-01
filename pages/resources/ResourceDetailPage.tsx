@@ -11,10 +11,10 @@ interface ResourceDetailPageProps {
 }
 
 const InfoItem = ({ label, children }: { label: string; children?: React.ReactNode }) => (
-    <div>
-        <dt className="text-sm text-slate-400">{label}</dt>
-        <dd className="mt-1 text-base text-white">{children}</dd>
-    </div>
+  <div>
+    <dt className="text-sm text-slate-400">{label}</dt>
+    <dd className="mt-1 text-base text-white">{children}</dd>
+  </div>
 );
 
 const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resourceId }) => {
@@ -34,10 +34,10 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resourceId }) =
       const resourceData = (await api.get<Resource>(`/resources/${resourceId}`)).data;
 
       const [incidentsRes, metricsRes] = await Promise.all([
-          api.get<{ items: Incident[] }>('/incidents', { params: { resource_name: resourceData.name, page_size: 3 } }),
-          api.get<MetricsData>(`/resources/${resourceId}/metrics`)
+        api.get<{ items: Incident[] }>('/incidents', { params: { resource_name: resourceData.name, page_size: 3 } }),
+        api.get<MetricsData>(`/resources/${resourceId}/metrics`)
       ]);
-      
+
       setResource(resourceData);
       setRelatedIncidents(incidentsRes.data.items);
       setMetrics(metricsRes.data);
@@ -73,10 +73,10 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resourceId }) =
 
   const getStatusPill = (status: Resource['status']) => {
     switch (status) {
-        case 'healthy': return 'bg-green-500/20 text-green-400';
-        case 'warning': return 'bg-yellow-500/20 text-yellow-400';
-        case 'critical': return 'bg-red-500/20 text-red-400';
-        case 'offline': return 'bg-slate-500/20 text-slate-400';
+      case 'healthy': return 'bg-green-500/20 text-green-400';
+      case 'warning': return 'bg-yellow-500/20 text-yellow-400';
+      case 'critical': return 'bg-red-500/20 text-red-400';
+      case 'offline': return 'bg-slate-500/20 text-slate-400';
     }
   };
 
@@ -109,9 +109,9 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resourceId }) =
     grid: { left: '10%', right: '5%', top: '15%', bottom: '15%' },
   }), [toRgba]);
 
-  const cpuOption = useMemo(() => getMetricOption('CPU Usage', metrics?.cpu, chartTheme.capacityPlanning.cpu), [chartTheme.capacityPlanning.cpu, getMetricOption, metrics?.cpu]);
-  const memoryOption = useMemo(() => getMetricOption('Memory Usage', metrics?.memory, chartTheme.capacityPlanning.memory), [chartTheme.capacityPlanning.memory, getMetricOption, metrics?.memory]);
-  
+  const cpuOption = useMemo(() => getMetricOption('CPU Usage', metrics?.cpu, chartTheme.capacity_planning.cpu), [chartTheme.capacity_planning.cpu, getMetricOption, metrics?.cpu]);
+  const memoryOption = useMemo(() => getMetricOption('Memory Usage', metrics?.memory, chartTheme.capacity_planning.memory), [chartTheme.capacity_planning.memory, getMetricOption, metrics?.memory]);
+
   return (
     <div className="flex flex-col h-full space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 glass-card rounded-xl p-4">
@@ -122,7 +122,7 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resourceId }) =
         <InfoItem label="提供商 / 區域">{resource.provider} / {resource.region}</InfoItem>
         <InfoItem label="擁有者">{resource.owner}</InfoItem>
       </div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="glass-card rounded-xl p-4">
           <h3 className="font-semibold text-white mb-2">CPU Usage (last 30min)</h3>
@@ -143,7 +143,7 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resourceId }) =
                 <div className="glass-card rounded-lg p-3 flex justify-between items-center hover:bg-slate-700/50 transition-colors">
                   <div>
                     <p className="font-semibold text-white">{inc.summary}</p>
-                    <p className="text-xs text-slate-400">{inc.occurredAt}</p>
+                    <p className="text-xs text-slate-400">{inc.occurred_at}</p>
                   </div>
                   <span className={`px-2 py-1 text-xs font-semibold rounded-full capitalize ${inc.status === 'New' ? 'text-orange-400' : 'text-slate-400'}`}>{inc.status}</span>
                 </div>

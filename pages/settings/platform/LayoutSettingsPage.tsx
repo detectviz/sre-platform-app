@@ -27,7 +27,7 @@ const ListItem: React.FC<ListItemProps> = ({ widget, onAction, actionIcon, onMov
                     <button onClick={onMoveDown} disabled={!onMoveDown} className="p-1 rounded-full text-slate-400 hover:bg-slate-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"><Icon name="arrow-down" className="w-4 h-4" /></button>
                 </>
             )}
-             <button onClick={onAction} className="p-1 rounded-full text-slate-400 hover:bg-slate-600 hover:text-white"><Icon name={actionIcon} className="w-4 h-4" /></button>
+            <button onClick={onAction} className="p-1 rounded-full text-slate-400 hover:bg-slate-600 hover:text-white"><Icon name={actionIcon} className="w-4 h-4" /></button>
         </div>
     </div>
 );
@@ -143,15 +143,15 @@ const AccordionItem: React.FC<AccordionItemProps> = ({ pageName, layouts, handle
                             )}
                         </div>
                         <button onClick={() => handleEditClick(pageName)} className="flex items-center text-sm text-sky-400 hover:text-sky-300 px-3 py-1 rounded-md hover:bg-sky-500/20">
-                            <Icon name="edit-3" className="w-4 h-4 mr-1"/>{pageContent.EDIT_BUTTON}
+                            <Icon name="edit-3" className="w-4 h-4 mr-1" />{pageContent.EDIT_BUTTON}
                         </button>
                     </div>
-                     <p className="text-xs text-slate-500 mt-4">{pageContent.LAST_UPDATED?.replace('{date}', pageLayout?.updatedAt || 'N/A').replace('{by}', pageLayout?.updatedBy || 'N/A')}</p>
+                    <p className="text-xs text-slate-500 mt-4">{pageContent.LAST_UPDATED?.replace('{date}', pageLayout?.updated_at || 'N/A').replace('{by}', pageLayout?.updated_by || 'N/A')}</p>
                 </div>
             )}
         </div>
     );
-  };
+};
 
 // Main Page Component
 const LayoutSettingsPage: React.FC = () => {
@@ -199,13 +199,13 @@ const LayoutSettingsPage: React.FC = () => {
         setModalWidgets(selected);
         setIsModalOpen(true);
     };
-  
+
     const handleSaveLayout = async () => {
         if (editingPage) {
             const newSelectedIds = modalWidgets.map(w => w.id);
             const currentLayoutConfig = layouts[editingPage] || { widgetIds: [], updatedAt: '', updatedBy: '' };
             const updatedLayouts = { ...layouts, [editingPage]: { ...currentLayoutConfig, widgetIds: newSelectedIds } };
-            
+
             try {
                 const { data: savedLayouts } = await api.put<LayoutsData>('/settings/layouts', updatedLayouts);
                 setLayouts(savedLayouts);
@@ -221,9 +221,9 @@ const LayoutSettingsPage: React.FC = () => {
         }
     };
 
-    const availableWidgetsForModal = allWidgets.filter(w => 
+    const availableWidgetsForModal = allWidgets.filter(w =>
         !modalWidgets.some(selected => selected.id === w.id) &&
-        w.supportedPages.includes(editingPage || '')
+        w.supported_pages.includes(editingPage || '')
     );
 
     if (isLoading || !pageContent || !globalContent) {
@@ -254,7 +254,7 @@ const LayoutSettingsPage: React.FC = () => {
             </div>
 
             <div className="glass-card rounded-xl">
-                {Object.keys(layouts).map(pageName => <AccordionItem key={pageName} pageName={pageName} layouts={layouts} handleEditClick={handleEditClick} allWidgets={allWidgets}/>)}
+                {Object.keys(layouts).map(pageName => <AccordionItem key={pageName} pageName={pageName} layouts={layouts} handleEditClick={handleEditClick} allWidgets={allWidgets} />)}
             </div>
 
             <Modal

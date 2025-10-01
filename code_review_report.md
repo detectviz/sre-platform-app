@@ -42,7 +42,7 @@
 
 **改進內容**：
 - ✅ 統一使用 `created_at`, `updated_at`（snake_case）
-- ✅ 軟刪除統一使用 `deletedAt`（保持 camelCase，與現有前端一致）
+- ✅ 軟刪除統一使用 `deleted_at`（保持 camelCase，與現有前端一致）
 - ✅ POST 端點自動設定 `created_at` 和 `updated_at`
 - ✅ PATCH 端點自動更新 `updated_at`
 
@@ -64,7 +64,7 @@ DB.dashboards[index] = {
 **一致性問題**：
 ⚠️ 發現混用情況：
 - `created_at`, `updated_at` → snake_case
-- `deletedAt`, `occurredAt`, `lastLoginAt` → camelCase
+- `deleted_at`, `occurredAt`, `lastLoginAt` → camelCase
 
 **建議**：選擇一種命名規範並全面統一。
 
@@ -86,12 +86,12 @@ const getActive = (collection: any[] | undefined) => {
     if (!collection) {
         return [];
     }
-    return collection.filter(item => !item.deletedAt);
+    return collection.filter(item => !item.deleted_at);
 }
 ```
 
 **建議**：
-- ⚠️ 需要在 types.ts 中為所有實體補充 `deletedAt?: string` 欄位定義
+- ⚠️ 需要在 types.ts 中為所有實體補充 `deleted_at?: string` 欄位定義
 
 ---
 
@@ -211,7 +211,7 @@ resourceIds?: string[];
 
 **混用情況**：
 - ✅ `created_at`, `updated_at` - snake_case
-- ⚠️ `deletedAt`, `occurredAt`, `lastLoginAt` - camelCase
+- ⚠️ `deleted_at`, `occurredAt`, `lastLoginAt` - camelCase
 
 **建議方案 A（推薦）**：全部改為 snake_case
 ```typescript
@@ -226,7 +226,7 @@ last_login_at
 ```typescript
 createdAt
 updatedAt
-deletedAt
+deleted_at
 occurredAt
 lastLoginAt
 ```

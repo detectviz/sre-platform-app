@@ -89,7 +89,7 @@ const SilenceRuleEditModal: React.FC<SilenceRuleEditModalProps> = ({ isOpen, onC
     const [formData, setFormData] = useState<Partial<SilenceRule>>({});
     const { currentUser } = useUser();
     const { options, isLoading: isLoadingOptions } = useOptions();
-    const silenceRuleOptions = options?.silenceRules;
+    const silenceRuleOptions = options?.silence_rules;
     const { content } = useContent();
     const stepTitles = content?.SILENCE_RULE_EDIT_MODAL?.STEP_TITLES || ["Basic Info", "Schedule", "Scope"];
 
@@ -102,8 +102,8 @@ const SilenceRuleEditModal: React.FC<SilenceRuleEditModalProps> = ({ isOpen, onC
                 description: '',
                 enabled: true,
                 type: 'single',
-                matchers: [silenceRuleOptions.defaultMatcher],
-                schedule: { type: 'single', startsAt: new Date().toISOString().slice(0, 16), endsAt: new Date(Date.now() + 3600 * 1000).toISOString().slice(0, 16) }
+                matchers: [silenceRuleOptions.default_matcher],
+                schedule: { type: 'single', starts_at: new Date().toISOString().slice(0, 16), ends_at: new Date(Date.now() + 3600 * 1000).toISOString().slice(0, 16) }
             };
             setFormData(initialData);
             setCurrentStep(1);
@@ -214,11 +214,11 @@ const Step2 = ({ formData, setFormData, options }: { formData: Partial<SilenceRu
         const newSchedule = { ...(formData.schedule || {}), type: newType };
         if (newType === 'single') {
             delete newSchedule.cron;
-            if (!newSchedule.startsAt) newSchedule.startsAt = new Date().toISOString().slice(0, 16);
-            if (!newSchedule.endsAt) newSchedule.endsAt = new Date(Date.now() + 3600 * 1000).toISOString().slice(0, 16);
+            if (!newSchedule.starts_at) newSchedule.starts_at = new Date().toISOString().slice(0, 16);
+            if (!newSchedule.ends_at) newSchedule.ends_at = new Date(Date.now() + 3600 * 1000).toISOString().slice(0, 16);
         } else {
-            delete newSchedule.startsAt;
-            delete newSchedule.endsAt;
+            delete newSchedule.starts_at;
+            delete newSchedule.ends_at;
             if (!newSchedule.cron) newSchedule.cron = '0 2 * * *'; // Default daily at 2 AM
         }
         setFormData({ ...formData, schedule: newSchedule });
@@ -235,10 +235,10 @@ const Step2 = ({ formData, setFormData, options }: { formData: Partial<SilenceRu
             {formData.schedule?.type === 'single' && (
                 <div className="grid grid-cols-2 gap-4">
                     <FormRow label="開始時間">
-                        <input type="datetime-local" value={formData.schedule?.startsAt || ''} onChange={e => handleScheduleChange('startsAt', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+                        <input type="datetime-local" value={formData.schedule?.starts_at || ''} onChange={e => handleScheduleChange('starts_at', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
                     </FormRow>
                     <FormRow label="結束時間">
-                        <input type="datetime-local" value={formData.schedule?.endsAt || ''} onChange={e => handleScheduleChange('endsAt', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+                        <input type="datetime-local" value={formData.schedule?.ends_at || ''} onChange={e => handleScheduleChange('ends_at', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
                     </FormRow>
                 </div>
             )}
@@ -247,7 +247,7 @@ const Step2 = ({ formData, setFormData, options }: { formData: Partial<SilenceRu
                     <div className="grid grid-cols-2 gap-4">
                         <FormRow label="重複頻率">
                             <select value={recurrenceType} onChange={e => setRecurrenceType(e.target.value as any)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={!options}>
-                                {options?.recurrenceTypes.map(opt => (
+                                {options?.recurrence_types.map(opt => (
                                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                                 )) || <option>載入中...</option>}
                             </select>

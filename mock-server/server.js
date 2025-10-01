@@ -98,11 +98,21 @@ const buildSources = () => {
     }
   }
 
+  // Patch auditLog imports
+  if (fs.existsSync(compiledAuditLogPath)) {
+    const auditLogContent = fs.readFileSync(compiledAuditLogPath, 'utf8');
+    const patchedAuditLogContent = auditLogContent
+      .replace(/from '\.\/db'/g, "from './db.js'");
+    if (patchedAuditLogContent !== auditLogContent) {
+      fs.writeFileSync(compiledAuditLogPath, patchedAuditLogContent);
+    }
+  }
+
   // Patch db imports
   if (fs.existsSync(compiledDbPath)) {
     const dbContent = fs.readFileSync(compiledDbPath, 'utf8');
     const patchedDbContent = dbContent
-      .replace("from './tag-registry.js'", "from '../tag-registry.js'")
+      .replace("from '../tag-registry'", "from '../tag-registry.js'")
       .replace("from '../types'", "from '../types.js'");
     if (patchedDbContent !== dbContent) {
       fs.writeFileSync(compiledDbPath, patchedDbContent);

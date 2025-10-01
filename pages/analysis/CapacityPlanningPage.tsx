@@ -45,10 +45,10 @@ const CapacityPlanningPage: React.FC = () => {
         try {
             const response = await api.get<CapacityPlanningData>('/analysis/capacity-planning');
             setData(response.data);
-            if (!isRefresh && response.data.options?.timeRangeOptions?.length) {
+            if (!isRefresh && response.data.options?.time_range_options?.length) {
                 const defaultOption =
-                    response.data.options.timeRangeOptions.find(option => option.default) ||
-                    response.data.options.timeRangeOptions[0];
+                    response.data.options.time_range_options.find(option => option.default) ||
+                    response.data.options.time_range_options[0];
                 if (defaultOption) {
                     setTimeRange(defaultOption.value);
                 }
@@ -98,15 +98,15 @@ const CapacityPlanningPage: React.FC = () => {
                 min: 0,
                 max: 100,
                 axisLabel: { formatter: '{value} %' },
-                splitLine: { lineStyle: { color: chartTheme.grid.splitLine } },
+                splitLine: { lineStyle: { color: chartTheme.grid.split_line } },
             },
             series: [
-                { name: seriesLabels.cpu, type: 'line', data: data?.trends.cpu.historical, showSymbol: false, lineStyle: { color: chartTheme.capacityPlanning.cpu } },
-                { name: seriesLabels.cpuForecast, type: 'line', data: data?.trends.cpu.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: chartTheme.capacityPlanning.cpu } },
-                { name: seriesLabels.memory, type: 'line', data: data?.trends.memory.historical, showSymbol: false, lineStyle: { color: chartTheme.capacityPlanning.memory } },
-                { name: seriesLabels.memoryForecast, type: 'line', data: data?.trends.memory.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: chartTheme.capacityPlanning.memory } },
-                { name: seriesLabels.storage, type: 'line', data: data?.trends.storage.historical, showSymbol: false, lineStyle: { color: chartTheme.capacityPlanning.storage } },
-                { name: seriesLabels.storageForecast, type: 'line', data: data?.trends.storage.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: chartTheme.capacityPlanning.storage } },
+                { name: seriesLabels.cpu, type: 'line', data: data?.trends.cpu.historical, showSymbol: false, lineStyle: { color: chartTheme.capacity_planning.cpu } },
+                { name: seriesLabels.cpuForecast, type: 'line', data: data?.trends.cpu.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: chartTheme.capacity_planning.cpu } },
+                { name: seriesLabels.memory, type: 'line', data: data?.trends.memory.historical, showSymbol: false, lineStyle: { color: chartTheme.capacity_planning.memory } },
+                { name: seriesLabels.memoryForecast, type: 'line', data: data?.trends.memory.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: chartTheme.capacity_planning.memory } },
+                { name: seriesLabels.storage, type: 'line', data: data?.trends.storage.historical, showSymbol: false, lineStyle: { color: chartTheme.capacity_planning.storage } },
+                { name: seriesLabels.storageForecast, type: 'line', data: data?.trends.storage.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: chartTheme.capacity_planning.storage } },
             ],
         }),
         [chartTheme, data, seriesLabels],
@@ -131,10 +131,10 @@ const CapacityPlanningPage: React.FC = () => {
                 min: 0,
                 max: 100,
                 axisLabel: { formatter: '{value} %' },
-                splitLine: { lineStyle: { color: chartTheme.grid.splitLine } },
+                splitLine: { lineStyle: { color: chartTheme.grid.split_line } },
             },
             series: [
-                { name: forecastModelLegend.prediction, type: 'line', data: data?.forecast_model.prediction, showSymbol: false, lineStyle: { color: chartTheme.capacityPlanning.forecast } },
+                { name: forecastModelLegend.prediction, type: 'line', data: data?.forecast_model.prediction, showSymbol: false, lineStyle: { color: chartTheme.capacity_planning.forecast } },
                 { name: forecastModelLegend.confidenceBand, type: 'line', data: data?.forecast_model.confidence_band[0], lineStyle: { opacity: 0 }, stack: 'confidence-band', symbol: 'none' },
                 {
                     name: forecastModelLegend.confidenceBand,
@@ -143,7 +143,7 @@ const CapacityPlanningPage: React.FC = () => {
                         ? data.forecast_model.confidence_band[1].map((point, i) => [point[0], point[1] - data.forecast_model.confidence_band[0][i][1]])
                         : [],
                     lineStyle: { opacity: 0 },
-                    areaStyle: { color: toRgba(chartTheme.capacityPlanning.forecast, 0.2) },
+                    areaStyle: { color: toRgba(chartTheme.capacity_planning.forecast, 0.2) },
                     stack: 'confidence-band',
                     symbol: 'none',
                 },
@@ -160,13 +160,13 @@ const CapacityPlanningPage: React.FC = () => {
         exportToCsv({
             filename: `capacity-planning-${new Date().toISOString().split('T')[0]}.csv`,
             data: data.resource_analysis.map(item => ({
-                resourceName: item.resourceName,
-                currentUtilization: formatUtilization(item.currentUtilization),
-                forecastUtilization: formatUtilization(item.forecastUtilization),
+                resourceName: item.resource_name,
+                currentUtilization: formatUtilization(item.current_utilization),
+                forecastUtilization: formatUtilization(item.forecast_utilization),
                 recommendation: item.recommendation.label,
                 recommendationSeverity: item.recommendation.severity,
-                costImpact: item.costImpact.label,
-                lastEvaluatedAt: item.lastEvaluatedAt,
+                costImpact: item.cost_impact.label,
+                lastEvaluatedAt: item.last_evaluated_at,
             })),
         });
     };
@@ -191,7 +191,7 @@ const CapacityPlanningPage: React.FC = () => {
         );
     }
 
-    const timeRangeOptions = data?.options?.timeRangeOptions || [];
+    const timeRangeOptions = data?.options?.time_range_options || [];
     const dropdownValue = timeRange || timeRangeOptions[0]?.value || '';
 
     return (
@@ -249,7 +249,7 @@ const CapacityPlanningPage: React.FC = () => {
                                             </div>
                                         </div>
                                         <p className="text-sm text-slate-400 mt-1">{s.details}</p>
-                                        <p className="text-xs text-slate-500 mt-2">{`${content?.SUGGESTION_DETECTED_AT_LABEL ?? '建議產生時間'}: ${new Date(s.detectedAt).toLocaleString()}`}</p>
+                                        <p className="text-xs text-slate-500 mt-2">{`${content?.SUGGESTION_DETECTED_AT_LABEL ?? '建議產生時間'}: ${new Date(s.detected_at).toLocaleString()}`}</p>
                                     </div>
                                 ))}
                             </div>
@@ -276,19 +276,19 @@ const CapacityPlanningPage: React.FC = () => {
                                                 <tr key={r.id}>
                                                     <td className="px-4 py-3 font-medium">
                                                         <div className="flex flex-col">
-                                                            <span>{r.resourceName}</span>
-                                                            <span className="text-xs text-slate-500">{`${content?.LAST_EVALUATED_AT_LABEL ?? '最後評估時間'}: ${new Date(r.lastEvaluatedAt).toLocaleString()}`}</span>
+                                                            <span>{r.resource_name}</span>
+                                                            <span className="text-xs text-slate-500">{`${content?.LAST_EVALUATED_AT_LABEL ?? '最後評估時間'}: ${new Date(r.last_evaluated_at).toLocaleString()}`}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-4 py-3">{formatUtilization(r.currentUtilization)}</td>
-                                                    <td className="px-4 py-3">{formatUtilization(r.forecastUtilization)}</td>
+                                                    <td className="px-4 py-3">{formatUtilization(r.current_utilization)}</td>
+                                                    <td className="px-4 py-3">{formatUtilization(r.forecast_utilization)}</td>
                                                     <td className="px-4 py-3">
                                                         <div className="flex items-center gap-2">
                                                             <span className="font-semibold">{recommendationLabel}</span>
                                                             <span className={`px-2 py-0.5 text-xs rounded-full ${badgeClass}`}>{severityLabel}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-4 py-3">{r.costImpact.label}</td>
+                                                    <td className="px-4 py-3">{r.cost_impact.label}</td>
                                                 </tr>
                                             );
                                         })}

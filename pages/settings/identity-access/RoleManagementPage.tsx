@@ -36,7 +36,7 @@ const RoleManagementPage: React.FC = () => {
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
     const { metadata: pageMetadata } = usePageMetadata();
-    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
 
     const fetchRoles = useCallback(async () => {
         if (!pageKey) return;
@@ -182,8 +182,8 @@ const RoleManagementPage: React.FC = () => {
                         <p className="text-xs text-slate-400 font-normal">{role.description}</p>
                     </>
                 );
-            case 'userCount':
-                return role.userCount;
+            case 'user_count':
+                return role.user_count;
             case 'created_at':
                 return role.created_at;
             default:

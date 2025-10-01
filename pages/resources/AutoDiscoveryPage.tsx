@@ -17,7 +17,7 @@ const AutoDiscoveryPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [filters, setFilters] = useState<DiscoveryJobFilters>({});
-    
+
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingJob, setEditingJob] = useState<DiscoveryJob | null>(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -28,8 +28,8 @@ const AutoDiscoveryPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const { data } = await api.get<DiscoveryJob[]>('/resources/discovery-jobs', { params: filters });
-            setJobs(data);
+            const { data } = await api.get<{ items: DiscoveryJob[], total: number }>('/resources/discovery-jobs', { params: filters });
+            setJobs(data.items);
         } catch (err) {
             setError('無法獲取自動掃描任務列表。');
         } finally {
@@ -87,7 +87,7 @@ const AutoDiscoveryPage: React.FC = () => {
             setIsEditModalOpen(false);
         }
     };
-    
+
     const handleManualRun = async (jobId: string) => {
         showToast('手動執行已觸發...', 'success');
         try {
@@ -97,11 +97,11 @@ const AutoDiscoveryPage: React.FC = () => {
             showToast('手動執行失敗。', 'error');
         }
     };
-    
+
     const handleViewResults = (job: DiscoveryJob) => {
         setViewingResultsForJob(job);
     };
-    
+
     const getStatusIndicator = (status: DiscoveryJob['status']) => {
         switch (status) {
             case 'success': return <div className="flex items-center text-green-400"><Icon name="check-circle" className="w-4 h-4 mr-2" /> 成功</div>;
@@ -113,7 +113,7 @@ const AutoDiscoveryPage: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col">
-            <Toolbar 
+            <Toolbar
                 rightActions={
                     <ToolbarButton icon="plus" text="新增掃描" primary onClick={handleNew} />
                 }
@@ -156,7 +156,7 @@ const AutoDiscoveryPage: React.FC = () => {
                 </div>
             </TableContainer>
             {isEditModalOpen && (
-                <AutoDiscoveryEditModal 
+                <AutoDiscoveryEditModal
                     isOpen={isEditModalOpen}
                     onClose={() => setIsEditModalOpen(false)}
                     onSave={handleSave}

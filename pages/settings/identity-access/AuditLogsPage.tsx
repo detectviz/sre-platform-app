@@ -34,7 +34,7 @@ const AuditLogsPage: React.FC = () => {
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'timestamp', direction: 'desc' });
     
     const { metadata: pageMetadata } = usePageMetadata();
-    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
 
     const fetchAuditLogs = useCallback(async () => {
         if (!pageKey) return;

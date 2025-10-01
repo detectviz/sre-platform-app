@@ -11,7 +11,7 @@ interface TestRuleModalProps {
 }
 
 const buildFallbackPayload = (targetRule: AlertRule): Record<string, unknown> | undefined => {
-    const firstCondition = targetRule.conditionGroups?.[0]?.conditions?.[0];
+    const firstCondition = targetRule.condition_groups?.[0]?.conditions?.[0];
     if (!firstCondition) {
         return undefined;
     }
@@ -57,8 +57,8 @@ const TestRuleModal: React.FC<TestRuleModalProps> = ({ isOpen, onClose, rule }) 
                 if (!isMounted) {
                     return;
                 }
-                if (data.testPayload) {
-                    setPayload(JSON.stringify(data.testPayload, null, 2));
+                if (data.test_payload) {
+                    setPayload(JSON.stringify(data.test_payload, null, 2));
                     return;
                 }
 

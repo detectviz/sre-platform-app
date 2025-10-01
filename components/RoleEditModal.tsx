@@ -13,10 +13,10 @@ interface AvailablePermission {
 }
 
 interface RoleEditModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (role: Role) => void;
-  role: Role | null;
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (role: Role) => void;
+    role: Role | null;
 }
 
 const RoleEditModal: React.FC<RoleEditModalProps> = ({ isOpen, onClose, onSave, role }) => {
@@ -31,9 +31,9 @@ const RoleEditModal: React.FC<RoleEditModalProps> = ({ isOpen, onClose, onSave, 
     const modalTitle = role ? (content?.EDIT_TITLE ?? '編輯角色') : (content?.ADD_TITLE ?? '新增角色');
     const cancelLabel = globalContent?.CANCEL ?? '取消';
     const saveLabel = globalContent?.SAVE ?? '儲存';
-    
+
     useEffect(() => {
-        if(isOpen) {
+        if (isOpen) {
             api.get<AvailablePermission[]>('/iam/permissions')
                 .then(res => {
                     setAvailablePermissions(res.data);
@@ -57,9 +57,10 @@ const RoleEditModal: React.FC<RoleEditModalProps> = ({ isOpen, onClose, onSave, 
             name,
             description,
             permissions,
-            status: role?.status || 'active',
-            userCount: role?.userCount || 0,
-            createdAt: role?.createdAt || '',
+            enabled: role?.enabled ?? true,
+            user_count: role?.user_count || 0,
+            created_at: role?.created_at || '',
+            updated_at: new Date().toISOString(),
         };
         onSave(savedRole);
     };
@@ -77,7 +78,7 @@ const RoleEditModal: React.FC<RoleEditModalProps> = ({ isOpen, onClose, onSave, 
             return p;
         }));
     };
-    
+
     const handleSelectAll = (module: string, allActions: RolePermission['actions'], checked: boolean) => {
         setPermissions(prev => prev.map(p => {
             if (p.module === module) {
@@ -123,7 +124,7 @@ const RoleEditModal: React.FC<RoleEditModalProps> = ({ isOpen, onClose, onSave, 
                 <FormRow label={globalContent.DESCRIPTION}>
                     <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"></textarea>
                 </FormRow>
-                
+
                 <div className="flex-grow overflow-y-auto pr-2 -mr-4">
                     <h3 className="text-lg font-semibold text-white mb-2">{content.PERMISSION_SETTINGS}</h3>
                     <div className="space-y-2">
@@ -150,7 +151,7 @@ const RoleEditModal: React.FC<RoleEditModalProps> = ({ isOpen, onClose, onSave, 
                                                     <span>{content.SELECT_ALL}</span>
                                                 </label>
                                                 {permModule.actions.map(action => (
-                                                     <label key={action.key} className="flex items-center space-x-2 p-2 rounded-md hover:bg-slate-700/50">
+                                                    <label key={action.key} className="flex items-center space-x-2 p-2 rounded-md hover:bg-slate-700/50">
                                                         <input type="checkbox" checked={rolePerm?.actions.includes(action.key)} onChange={e => handlePermissionChange(permModule.module, action.key, e.target.checked)} className="form-checkbox h-4 w-4 rounded bg-slate-800 border-slate-600 text-sky-500" />
                                                         <span>{action.label}</span>
                                                     </label>

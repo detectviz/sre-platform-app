@@ -59,14 +59,14 @@ const RuleAnalysisDisplay: React.FC<RuleAnalysisDisplayProps> = ({ report, isLoa
                 <p className="leading-relaxed">{report.summary}</p>
             </section>
 
-            {report.evaluatedRules.length > 0 && (
+            {report.evaluated_rules.length > 0 && (
                 <section>
                     <h3 className="text-lg font-semibold text-purple-300 mb-2 flex items-center">
                         <Icon name="list-checks" className="w-5 h-5 mr-2" />
                         分析範圍
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {report.evaluatedRules.map(rule => (
+                        {report.evaluated_rules.map(rule => (
                             <div key={rule.id} className="glass-card border border-slate-700/60 rounded-lg p-3">
                                 <p className="text-sm font-semibold text-white">{rule.name}</p>
                                 <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-300">

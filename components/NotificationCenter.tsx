@@ -108,7 +108,7 @@ const NotificationCenter: React.FC = () => {
 
     if (!content) {
         return (
-             <div className="relative">
+            <div className="relative">
                 <button className="relative p-2 rounded-full hover:bg-slate-700/50">
                     <Icon name="bell" className="w-5 h-5" />
                 </button>
@@ -142,13 +142,13 @@ const NotificationCenter: React.FC = () => {
                                 {notifications.map(n => {
                                     const style = getSeverityStyle(n.severity);
                                     return (
-                                        <div key={n.id} className={`p-4 border-l-4 ${style?.className || 'border-slate-600'} ${n.status === 'unread' ? 'bg-slate-700/30' : ''}`}>
+                                        <div key={n.id} className={`p-4 border-l-4 ${style?.class_name || 'border-slate-600'} ${n.status === 'unread' ? 'bg-slate-700/30' : ''}`}>
                                             <div className="flex justify-between items-start">
                                                 <div className="flex-grow">
-                                                    <p className={`font-semibold ${style?.className?.replace(/bg-\w+-\d+\/\d+/, '').replace(/border-\w+-\d+/, '')}`}>{n.title}</p>
+                                                    <p className={`font-semibold ${style?.class_name?.replace(/bg-\w+-\d+\/\d+/, '').replace(/border-\w+-\d+/, '')}`}>{n.title}</p>
                                                     <p className="text-sm text-slate-300 mt-1">{n.description}</p>
                                                     <div className="text-xs text-slate-500 mt-2 flex items-center">
-                                                        <span>{timeSince(n.createdAt)}</span>
+                                                        <span>{timeSince(n.created_at)}</span>
                                                         {n.linkUrl && <Link to={n.linkUrl} className="ml-2 text-sky-400 hover:underline">{content.VIEW_DETAILS}</Link>}
                                                     </div>
                                                 </div>

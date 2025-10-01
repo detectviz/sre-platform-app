@@ -98,138 +98,138 @@ const DashboardRedirector: React.FC = () => {
 };
 
 const AppRoutes: React.FC = () => {
-    const { tabConfigs, isLoading: isNavLoading, error: navError } = useUIConfig();
-    const { isLoading: isContentLoading, error: contentError } = useContent();
-    const pageLayouts = useContentSection('PAGE_LAYOUTS');
-    const appContent = useContentSection('APP');
+  const { tabConfigs, isLoading: isNavLoading, error: navError } = useUIConfig();
+  const { isLoading: isContentLoading, error: contentError } = useContent();
+  const pageLayouts = useContentSection('PAGE_LAYOUTS');
+  const appContent = useContentSection('APP');
 
-    const error = navError || contentError;
-    const isLoading = isNavLoading || isContentLoading;
+  const error = navError || contentError;
+  const isLoading = isNavLoading || isContentLoading;
 
-    if (error) {
-        return (
-            <div className="flex flex-col items-center justify-center h-screen text-red-400">
-                <Icon name="server-crash" className="w-16 h-16 mb-4" />
-                <h1 className="text-3xl font-bold text-slate-100">{appContent?.LOAD_ERROR_TITLE || 'Application Load Error'}</h1>
-                <p className="mt-2 text-slate-400">{error}</p>
-                <button 
-                    onClick={() => window.location.reload()}
-                    className="mt-6 px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md flex items-center"
-                >
-                    <Icon name="refresh-cw" className="w-4 h-4 mr-2" />
-                    {appContent?.RELOAD_BUTTON || 'Reload Page'}
-                </button>
-            </div>
-        );
-    }
-    
-    if (isLoading || !pageLayouts) {
-        return (
-            <div className="flex items-center justify-center h-screen">
-                <Icon name="loader-circle" className="w-12 h-12 animate-spin text-slate-500" />
-            </div>
-        );
-    }
-    
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen text-red-400">
+        <Icon name="server-crash" className="w-16 h-16 mb-4" />
+        <h1 className="text-3xl font-bold text-slate-100">{appContent?.LOAD_ERROR_TITLE || 'Application Load Error'}</h1>
+        <p className="mt-2 text-slate-400">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-6 px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md flex items-center"
+        >
+          <Icon name="refresh-cw" className="w-4 h-4 mr-2" />
+          {appContent?.RELOAD_BUTTON || 'Reload Page'}
+        </button>
+      </div>
+    );
+  }
+
+  if (isLoading || !pageLayouts) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Icon name="loader-circle" className="w-12 h-12 animate-spin text-slate-500" />
+      </div>
+    );
+  }
+
   return (
     <HashRouter>
-        <RenderIcons />
-        <Routes>
-          <Route path="/" element={<AppLayout />}>
-            <Route index element={<Navigate to={`/home`} replace />} />
-            <Route path="home" element={<DashboardRedirector />} />
-            <Route path="dashboard/infrastructure-insights" element={<InfrastructureInsightsPage />} />
-            <Route path="dashboard/resource-overview" element={<ResourceOverviewPage />} />
-            <Route path="dashboard/:dashboardId" element={<DashboardViewPage />} />
-            <Route path="sre-war-room" element={<SREWarRoomPage />} />
-            
-            <Route path="incidents" element={<PageWithTabsLayout title={pageLayouts.incidents.title} description={pageLayouts.incidents.description} kpiPageName={pageLayouts.incidents.kpiPageName} tabs={tabConfigs?.incidents || []} showRefresh />}>
-               <Route index element={<IncidentListPage />} />
-               <Route path="rules" element={<AlertRulePage />} />
-               <Route path="silence" element={<SilenceRulePage />} />
-               <Route path=":incidentId" element={<IncidentListPage />} />
-            </Route>
-            
-            <Route path="resources" element={<PageWithTabsLayout title={pageLayouts.resources.title} description={pageLayouts.resources.description} kpiPageName={pageLayouts.resources.kpiPageName} tabs={tabConfigs?.resources || []} />}>
-              <Route index element={<Navigate to="/resources/list" replace />} />
-              <Route path="list" element={<ResourceListPage />} />
-              <Route path="list/:resourceId" element={<ResourceListPage />} />
-              <Route path="groups" element={<ResourceGroupPage />} />
-              <Route path="datasources" element={<DatasourceManagementPage />} />
-              <Route path="discovery" element={<AutoDiscoveryPage />} />
-              <Route path="topology" element={<ResourceTopologyPage />} />
-            </Route>
-  
-            <Route path="dashboards" element={<PageWithTabsLayout title={pageLayouts.dashboards.title} description={pageLayouts.dashboards.description} kpiPageName={pageLayouts.dashboards.kpiPageName} tabs={tabConfigs?.dashboards || []} />}>
-              <Route index element={<DashboardListPage />} />
-              <Route path="templates" element={<DashboardTemplatesPage />} />
-              <Route path="new" element={<DashboardEditorPage />} />
-              <Route path=":dashboardId/edit" element={<DashboardEditorPage />} />
-            </Route>
-            
-            <Route path="analyzing" element={<PageWithTabsLayout title={pageLayouts.analysis.title} description={pageLayouts.analysis.description} kpiPageName={pageLayouts.analysis.kpiPageName} tabs={tabConfigs?.analysis || []} />}>
-              <Route index element={<AnalysisOverviewPage />} />
-              <Route path="logs" element={<LogExplorerPage />} />
-              <Route path="capacity" element={<CapacityPlanningPage />} />
-            </Route>
-            
-            <Route path="automation" element={<PageWithTabsLayout title={pageLayouts.automation.title} description={pageLayouts.automation.description} kpiPageName={pageLayouts.automation.kpiPageName} tabs={tabConfigs?.automation || []} />}>
-              <Route index element={<AutomationPlaybooksPage />} />
-              <Route path="history" element={<AutomationHistoryPage />} />
-              <Route path="triggers" element={<AutomationTriggersPage />} />
-            </Route>
-            
-            <Route path="settings">
-              <Route index element={<Navigate to="identity-access-management" replace />} />
-              <Route path="identity-access-management" element={<PageWithTabsLayout title={pageLayouts.iam.title} description={pageLayouts.iam.description} kpiPageName={pageLayouts.iam.kpiPageName} tabs={tabConfigs?.iam || []} />}>
-                <Route index element={<PersonnelManagementPage />} />
-                <Route path="teams" element={<TeamManagementPage />} />
-                <Route path="roles" element={<RoleManagementPage />} />
-                <Route path="audit-logs" element={<AuditLogsPage />} />
-              </Route>
-              <Route path="notification-management" element={<PageWithTabsLayout title={pageLayouts.notification.title} description={pageLayouts.notification.description} kpiPageName={pageLayouts.notification.kpiPageName} tabs={tabConfigs?.notification || []} />}>
-                <Route index element={<NotificationStrategyPage />} />
-                <Route path="channels" element={<NotificationChannelPage />} />
-                <Route path="history" element={<NotificationHistoryPage />} />
-              </Route>
-              <Route path="platform-settings" element={<PageWithTabsLayout title={pageLayouts.platformSettings.title} description={pageLayouts.platformSettings.description} kpiPageName={pageLayouts.platformSettings.kpiPageName} tabs={tabConfigs?.platformSettings || []} />}>
-                  <Route index element={<TagManagementPage />} />
-                  <Route path="mail" element={<MailSettingsPage />} />
-                  <Route path="auth" element={<AuthSettingsPage />} />
-                  <Route path="layout" element={<LayoutSettingsPage />} />
-                  <Route path="grafana" element={<GrafanaSettingsPage />} />
-                  <Route path="license" element={<LicensePage />} />
-              </Route>
-            </Route>
-            <Route path="profile" element={<PageWithTabsLayout title={pageLayouts.profile.title} description={pageLayouts.profile.description} kpiPageName="profile" tabs={tabConfigs?.profile || []} />}>
-                <Route index element={<PersonalInfoPage />} />
-                <Route path="security" element={<SecuritySettingsPage />} />
-                <Route path="preferences" element={<PreferenceSettingsPage />} />
-            </Route>
-            
+      <RenderIcons />
+      <Routes>
+        <Route path="/" element={<AppLayout />}>
+          <Route index element={<Navigate to={`/home`} replace />} />
+          <Route path="home" element={<DashboardRedirector />} />
+          <Route path="dashboard/infrastructure-insights" element={<InfrastructureInsightsPage />} />
+          <Route path="dashboard/resource-overview" element={<ResourceOverviewPage />} />
+          <Route path="dashboard/:dashboardId" element={<DashboardViewPage />} />
+          <Route path="sre-war-room" element={<SREWarRoomPage />} />
+
+          <Route path="incidents" element={<PageWithTabsLayout title={pageLayouts.incidents.title} description={pageLayouts.incidents.description} kpi_page_name={pageLayouts.incidents.kpi_page_name} tabs={tabConfigs?.incidents || []} showRefresh />}>
+            <Route index element={<IncidentListPage />} />
+            <Route path="rules" element={<AlertRulePage />} />
+            <Route path="silence" element={<SilenceRulePage />} />
+            <Route path=":incidentId" element={<IncidentListPage />} />
           </Route>
-        </Routes>
+
+          <Route path="resources" element={<PageWithTabsLayout title={pageLayouts.resources.title} description={pageLayouts.resources.description} kpi_page_name={pageLayouts.resources.kpi_page_name} tabs={tabConfigs?.resources || []} />}>
+            <Route index element={<Navigate to="/resources/list" replace />} />
+            <Route path="list" element={<ResourceListPage />} />
+            <Route path="list/:resourceId" element={<ResourceListPage />} />
+            <Route path="groups" element={<ResourceGroupPage />} />
+            <Route path="datasources" element={<DatasourceManagementPage />} />
+            <Route path="discovery" element={<AutoDiscoveryPage />} />
+            <Route path="topology" element={<ResourceTopologyPage />} />
+          </Route>
+
+          <Route path="dashboards" element={<PageWithTabsLayout title={pageLayouts.dashboards.title} description={pageLayouts.dashboards.description} kpi_page_name={pageLayouts.dashboards.kpi_page_name} tabs={tabConfigs?.dashboards || []} />}>
+            <Route index element={<DashboardListPage />} />
+            <Route path="templates" element={<DashboardTemplatesPage />} />
+            <Route path="new" element={<DashboardEditorPage />} />
+            <Route path=":dashboardId/edit" element={<DashboardEditorPage />} />
+          </Route>
+
+          <Route path="analyzing" element={<PageWithTabsLayout title={pageLayouts.analysis.title} description={pageLayouts.analysis.description} kpi_page_name={pageLayouts.analysis.kpi_page_name} tabs={tabConfigs?.analysis || []} />}>
+            <Route index element={<AnalysisOverviewPage />} />
+            <Route path="logs" element={<LogExplorerPage />} />
+            <Route path="capacity" element={<CapacityPlanningPage />} />
+          </Route>
+
+          <Route path="automation" element={<PageWithTabsLayout title={pageLayouts.automation.title} description={pageLayouts.automation.description} kpi_page_name={pageLayouts.automation.kpi_page_name} tabs={tabConfigs?.automation || []} />}>
+            <Route index element={<AutomationPlaybooksPage />} />
+            <Route path="history" element={<AutomationHistoryPage />} />
+            <Route path="triggers" element={<AutomationTriggersPage />} />
+          </Route>
+
+          <Route path="settings">
+            <Route index element={<Navigate to="identity-access-management" replace />} />
+            <Route path="identity-access-management" element={<PageWithTabsLayout title={pageLayouts.iam.title} description={pageLayouts.iam.description} kpi_page_name={pageLayouts.iam.kpi_page_name} tabs={tabConfigs?.iam || []} />}>
+              <Route index element={<PersonnelManagementPage />} />
+              <Route path="teams" element={<TeamManagementPage />} />
+              <Route path="roles" element={<RoleManagementPage />} />
+              <Route path="audit-logs" element={<AuditLogsPage />} />
+            </Route>
+            <Route path="notification-management" element={<PageWithTabsLayout title={pageLayouts.notification.title} description={pageLayouts.notification.description} kpi_page_name={pageLayouts.notification.kpi_page_name} tabs={tabConfigs?.notification || []} />}>
+              <Route index element={<NotificationStrategyPage />} />
+              <Route path="channels" element={<NotificationChannelPage />} />
+              <Route path="history" element={<NotificationHistoryPage />} />
+            </Route>
+            <Route path="platform-settings" element={<PageWithTabsLayout title={pageLayouts.platform_settings.title} description={pageLayouts.platform_settings.description} kpi_page_name={pageLayouts.platform_settings.kpi_page_name} tabs={tabConfigs?.platform_settings || []} />}>
+              <Route index element={<TagManagementPage />} />
+              <Route path="mail" element={<MailSettingsPage />} />
+              <Route path="auth" element={<AuthSettingsPage />} />
+              <Route path="layout" element={<LayoutSettingsPage />} />
+              <Route path="grafana" element={<GrafanaSettingsPage />} />
+              <Route path="license" element={<LicensePage />} />
+            </Route>
+          </Route>
+          <Route path="profile" element={<PageWithTabsLayout title={pageLayouts.profile.title} description={pageLayouts.profile.description} kpi_page_name="profile" tabs={tabConfigs?.profile || []} />}>
+            <Route index element={<PersonalInfoPage />} />
+            <Route path="security" element={<SecuritySettingsPage />} />
+            <Route path="preferences" element={<PreferenceSettingsPage />} />
+          </Route>
+
+        </Route>
+      </Routes>
     </HashRouter>
   );
 };
 
 const App: React.FC = () => {
   return (
-      <UIConfigProvider>
-          <UserProvider>
-            <OptionsProvider>
-                <PageMetadataProvider>
-                    <ContentProvider>
-                        <ChartThemeProvider>
-                            <ThemeProvider>
-                                <AppRoutes />
-                            </ThemeProvider>
-                        </ChartThemeProvider>
-                    </ContentProvider>
-                </PageMetadataProvider>
-            </OptionsProvider>
-          </UserProvider>
-      </UIConfigProvider>
+    <UIConfigProvider>
+      <UserProvider>
+        <OptionsProvider>
+          <PageMetadataProvider>
+            <ContentProvider>
+              <ChartThemeProvider>
+                <ThemeProvider>
+                  <AppRoutes />
+                </ThemeProvider>
+              </ChartThemeProvider>
+            </ContentProvider>
+          </PageMetadataProvider>
+        </OptionsProvider>
+      </UserProvider>
+    </UIConfigProvider>
   )
 }
 

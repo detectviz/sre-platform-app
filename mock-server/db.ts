@@ -331,6 +331,8 @@ const PAGE_CONTENT = {
         INVALID_FILE_ERROR: '請上傳有效的 CSV 檔案。',
         IMPORT_SUCCESS_TEMPLATE: '{itemName} 已成功匯入。',
         IMPORT_ERROR_TEMPLATE: '無法匯入 {itemName}。請檢查檔案格式並再試一次。',
+        START_IMPORT: '開始匯入',
+        IMPORTING: '匯入中...',
         INSTRUCTIONS_STEPS: [
             '下載 CSV 範本檔案',
             '根據範本格式填寫您的資料。',
@@ -859,6 +861,8 @@ const MOCK_IMPORT_MODAL_CONTENT = {
     INVALID_FILE_ERROR: '請上傳有效的 CSV 檔案。',
     IMPORT_SUCCESS_TEMPLATE: '{itemName} 已成功匯入。',
     IMPORT_ERROR_TEMPLATE: '無法匯入 {itemName}。請檢查檔案格式並再試一次。',
+    START_IMPORT: '開始匯入',
+    IMPORTING: '匯入中...',
     INSTRUCTIONS_STEPS: [
         '下載 CSV 範本檔案',
         '根據範本格式填寫您的資料。',
@@ -909,7 +913,7 @@ const MOCK_ALL_COLUMNS: Record<string, TableColumn[]> = {
         { key: 'creator', label: '創建者' },
         { key: 'updated_at', label: '最後更新' },
     ],
-    silence_rules: [
+    silenceRules: [
         { key: 'enabled', label: '啟用' },
         { key: 'name', label: '規則名稱' },
         { key: 'type', label: '類型' },
@@ -1180,9 +1184,9 @@ const MOCK_DASHBOARD_TEMPLATES: DashboardTemplate[] = [
     { id: 'tpl-002', name: '業務 KPI 總覽', description: '追蹤關鍵業務指標，如用戶註冊數、營收、轉換率等。適用於產品經理、業務團隊使用。', icon: 'briefcase', category: '業務' },
 ];
 const MOCK_INCIDENTS: Incident[] = [
-    { id: 'INC-001', summary: 'API 延遲超過閾值', resource: 'api-server-01', resource_id: 'res-001', impact: 'High', rule: 'API 延遲規則', rule_id: 'rule-002', status: 'New', severity: 'Warning', assignee: '張三', team_id: 'team-001', owner_id: 'usr-001', tags: { team: 'SRE Platform', owner: 'Alice Chen', env: 'production', service: 'api-gateway' }, occurred_at: '2024-01-15T10:30:00Z', created_at: '2024-01-15T10:30:00Z', updated_at: '2024-01-15T10:30:00Z', history: [{ timestamp: '2024-01-15T10:30:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "API 延遲規則".' }] },
-    { id: 'INC-002', summary: '資料庫連接超時', resource: 'db-primary', resource_id: 'res-002', impact: 'High', rule: '資料庫連接規則', rule_id: 'rule-db-conn', status: 'Acknowledged', severity: 'Critical', assignee: '李四', team_id: 'team-002', owner_id: 'usr-002', tags: { team: 'Core Infrastructure', owner: 'Bob Lee', env: 'production', service: 'database' }, occurred_at: '2024-01-15T10:15:00Z', created_at: '2024-01-15T10:15:00Z', updated_at: '2024-01-15T10:15:00Z', history: [{ timestamp: '2024-01-15T10:15:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "資料庫連接規則".' }] },
-    { id: 'INC-003', summary: 'CPU 使用率異常', resource: 'web-prod-12', resource_id: 'res-004', impact: 'Medium', rule: 'CPU 使用率規則', rule_id: 'rule-cpu', status: 'Resolved', severity: 'Warning', assignee: '王五', team_id: 'team-003', owner_id: 'usr-003', tags: { team: 'API Services', owner: 'Charlie Wu', env: 'production' }, occurred_at: '2024-01-15T09:45:00Z', created_at: '2024-01-15T09:45:00Z', updated_at: '2024-01-15T09:45:00Z', history: [{ timestamp: '2024-01-15T09:45:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "CPU 使用率規則".' }] },
+    { id: 'INC-001', summary: 'API 延遲超過閾值', resource: 'api-server-01', resource_id: 'res-001', impact: 'High', rule: 'API 延遲規則', rule_id: 'rule-002', status: 'New', severity: 'Warning', assignee: '張三', team_id: 'team-001', owner_id: 'usr-001', tags: { team: 'SRE Platform', owner: 'Alice Chen', env: 'production', service: 'api-gateway' }, occurred_at: '2024-01-15T10:30:00Z', created_at: '2024-01-15T10:30:00Z', updated_at: '2024-01-15T10:30:00Z', acknowledged_at: undefined, resolved_at: undefined, silenced_by: undefined, notifications_sent: undefined, history: [{ timestamp: '2024-01-15T10:30:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "API 延遲規則".' }] },
+    { id: 'INC-002', summary: '資料庫連接超時', resource: 'db-primary', resource_id: 'res-002', impact: 'High', rule: '資料庫連接規則', rule_id: 'rule-db-conn', status: 'Acknowledged', severity: 'Critical', assignee: '李四', team_id: 'team-002', owner_id: 'usr-002', tags: { team: 'Core Infrastructure', owner: 'Bob Lee', env: 'production', service: 'database' }, occurred_at: '2024-01-15T10:15:00Z', created_at: '2024-01-15T10:15:00Z', updated_at: '2024-01-15T10:15:00Z', acknowledged_at: '2024-01-15T10:20:00Z', resolved_at: undefined, silenced_by: undefined, notifications_sent: undefined, history: [{ timestamp: '2024-01-15T10:15:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "資料庫連接規則".' }] },
+    { id: 'INC-003', summary: 'CPU 使用率異常', resource: 'web-prod-12', resource_id: 'res-004', impact: 'Medium', rule: 'CPU 使用率規則', rule_id: 'rule-cpu', status: 'Resolved', severity: 'Warning', assignee: '王五', team_id: 'team-003', owner_id: 'usr-003', tags: { team: 'API Services', owner: 'Charlie Wu', env: 'production' }, occurred_at: '2024-01-15T09:45:00Z', created_at: '2024-01-15T09:45:00Z', updated_at: '2024-01-15T09:45:00Z', acknowledged_at: '2024-01-15T10:00:00Z', resolved_at: '2024-01-15T10:05:00Z', silenced_by: undefined, notifications_sent: undefined, history: [{ timestamp: '2024-01-15T09:45:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "CPU 使用率規則".' }] },
 ];
 const MOCK_QUICK_SILENCE_DURATIONS = [1, 2, 4, 8, 12, 24]; // hours
 const MOCK_ALERT_RULE_DEFAULT: Partial<AlertRule> = {
@@ -2151,11 +2155,11 @@ const INCIDENT_IMPACT_STYLES: Record<string, { label: string; class_name: string
     Low: { label: '低', class_name: 'bg-yellow-950/40 border border-yellow-500/40 text-yellow-300 backdrop-blur-sm shadow-sm' },
 };
 
-const buildIncidentStyleOptions = <T extends string>(values: T[], style_map: Record<string, { label: string; class_name: string }>): StyleDescriptor<T>[] =>
+const buildIncidentStyleOptions = <T extends string>(values: T[], styleMap: Record<string, { label: string; class_name: string }>): StyleDescriptor<T>[] =>
     values.map((value: T) => ({
         value,
         label: styleMap[value]?.label ?? value,
-        class_name: styleMap[value]?.className ?? 'bg-slate-800/60 border border-slate-600 text-slate-200',
+        class_name: styleMap[value]?.class_name ?? 'bg-slate-800/60 border border-slate-600 text-slate-200',
     }));
 
 const MOCK_INCIDENT_OPTIONS: IncidentOptions = {
@@ -2182,7 +2186,7 @@ const MOCK_ALERT_RULE_OPTIONS: AlertRuleOptions = {
     severities: (['critical', 'warning', 'info'] as AlertRule['severity'][]).map(value => ({
         value,
         label: ALERT_RULE_SEVERITY_DESCRIPTORS[value].label,
-        class_name: ALERT_RULE_SEVERITY_DESCRIPTORS[value].className,
+        class_name: ALERT_RULE_SEVERITY_DESCRIPTORS[value].class_name,
     })),
     statuses: [
         { value: true, label: 'Enabled' },
@@ -2297,15 +2301,15 @@ const MOCK_LOG_OPTIONS: LogOptions = {
 };
 
 const MOCK_INFRA_INSIGHTS_OPTIONS: InfraInsightsOptions = {
-    time_options: MOCK_GRAFANA_OPTIONS.timeOptions,
+    time_options: MOCK_GRAFANA_OPTIONS.time_options,
     risk_levels: [
         { value: 'high', label: 'High', color: '#dc2626' },
         { value: 'medium', label: 'Medium', color: '#f97316' },
         { value: 'low', label: 'Low', color: '#10b981' },
     ],
-    refresh_options: MOCK_GRAFANA_OPTIONS.refreshOptions,
-    tv_mode_options: MOCK_GRAFANA_OPTIONS.tvModeOptions,
-    theme_options: MOCK_GRAFANA_OPTIONS.themeOptions,
+    refresh_options: MOCK_GRAFANA_OPTIONS.refresh_options,
+    tv_mode_options: MOCK_GRAFANA_OPTIONS.tv_mode_options,
+    theme_options: MOCK_GRAFANA_OPTIONS.theme_options,
 };
 
 const MOCK_TAG_MANAGEMENT_OPTIONS: TagManagementOptions = {
@@ -2489,7 +2493,7 @@ function createInitialDB() {
         alert_rule_default: JSON.parse(JSON.stringify(MOCK_ALERT_RULE_DEFAULT)),
         alert_rules: JSON.parse(JSON.stringify(MOCK_ALERT_RULES)),
         alert_rule_templates: JSON.parse(JSON.stringify(MOCK_ALERT_RULE_TEMPLATES)),
-        silence_rules: JSON.parse(JSON.stringify(MOCK_SILENCE_RULES)),
+        silenceRules: JSON.parse(JSON.stringify(MOCK_SILENCE_RULES)),
         silence_rule_templates: JSON.parse(JSON.stringify(MOCK_SILENCE_RULE_TEMPLATES)),
         silence_rule_options: JSON.parse(JSON.stringify(MOCK_SILENCE_RULE_OPTIONS)),
         resources: JSON.parse(JSON.stringify(MOCK_RESOURCES)),
@@ -2532,7 +2536,7 @@ function createInitialDB() {
             resources: ['status', 'name', 'type', 'provider', 'region', 'owner', 'last_check_in_at'],
             personnel: ['name', 'role', 'team', 'status', 'last_login_at'],
             alert_rules: ['enabled', 'name', 'target', 'conditions_summary', 'severity', 'automation_enabled', 'creator', 'updated_at'],
-            silence_rules: ['enabled', 'name', 'type', 'matchers', 'schedule', 'creator', 'created_at'],
+            silenceRules: ['enabled', 'name', 'type', 'matchers', 'schedule', 'creator', 'created_at'],
             resource_groups: ['name', 'owner_team', 'member_ids', 'status_summary'],
             automation_playbooks: ['name', 'trigger', 'last_run_status', 'last_run_at', 'run_count'],
             automation_history: ['script_name', 'status', 'trigger_source', 'triggered_by', 'start_time', 'duration_ms'],

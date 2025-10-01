@@ -15,7 +15,7 @@ interface AutoDiscoveryEditModalProps {
   job: DiscoveryJob | null;
 }
 
-const getDefaultTemplateForKind = (kind: DiscoveryJobKind): DiscoveryJobExporterBinding['templateId'] => {
+const getDefaultTemplateForKind = (kind: DiscoveryJobKind): DiscoveryJobExporterBinding['template_id'] => {
   switch (kind) {
     case 'SNMP':
       return 'snmp_exporter';
@@ -34,21 +34,21 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
   const [isTesting, setIsTesting] = useState(false);
   const kubeconfigInputRef = useRef<HTMLInputElement>(null);
   const { options, isLoading: isLoadingOptions } = useOptions();
-  const autoDiscoveryOptions = options?.autoDiscovery;
-  const exporterTemplates = autoDiscoveryOptions?.exporterTemplates || [];
-  const mibProfiles = autoDiscoveryOptions?.mibProfiles || [];
-  const edgeGateways = autoDiscoveryOptions?.edgeGateways || [];
+  const autoDiscoveryOptions = options?.auto_discovery;
+  const exporterTemplates = autoDiscoveryOptions?.exporter_templates || [];
+  const mibProfiles = autoDiscoveryOptions?.mib_profiles || [];
+  const edgeGateways = autoDiscoveryOptions?.edge_gateways || [];
 
   useEffect(() => {
     if (isOpen && autoDiscoveryOptions) {
-      const defaultKind = (job?.kind as DiscoveryJobKind) || autoDiscoveryOptions.jobKinds[0] || 'K8s';
-      const defaultTemplate = job?.exporterBinding?.templateId || getDefaultTemplateForKind(defaultKind);
+      const defaultKind = (job?.kind as DiscoveryJobKind) || autoDiscoveryOptions.job_kinds[0] || 'K8s';
+      const defaultTemplate = job?.exporterBinding?.template_id || getDefaultTemplateForKind(defaultKind);
       const initialData: Partial<DiscoveryJob> = job
         ? {
             ...job,
             kind: job.kind,
             targetConfig: job.targetConfig || {},
-            exporterBinding: job.exporterBinding || { templateId: defaultTemplate },
+            exporterBinding: job.exporterBinding || { template_id: defaultTemplate },
             edgeGateway: job.edgeGateway || { enabled: false },
             tags: job.tags || []
           }
@@ -57,7 +57,7 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
             kind: defaultKind,
             schedule: '0 * * * *',
             targetConfig: {},
-            exporterBinding: { templateId: defaultTemplate },
+            exporterBinding: { template_id: defaultTemplate },
             edgeGateway: { enabled: false },
             tags: []
           };
@@ -69,12 +69,12 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
   }, [isOpen, job, autoDiscoveryOptions]);
 
   const handleKindChange = (kind: DiscoveryJobKind) => {
-    const templateId = getDefaultTemplateForKind(kind);
+    const template_id = getDefaultTemplateForKind(kind);
     setFormData((prev) => ({
       ...prev,
       kind,
       targetConfig: {},
-      exporterBinding: { templateId },
+      exporterBinding: { template_id },
     }));
   };
 
@@ -95,11 +95,11 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
 
   const handleExporterBindingChange = (updates: Partial<DiscoveryJobExporterBinding>) => {
     setFormData((prev) => {
-      const current = prev.exporterBinding || { templateId: getDefaultTemplateForKind((prev.kind as DiscoveryJobKind) || 'K8s') };
+      const current = prev.exporterBinding || { template_id: getDefaultTemplateForKind((prev.kind as DiscoveryJobKind) || 'K8s') };
       const nextBinding: DiscoveryJobExporterBinding = { ...current, ...updates };
-      if (updates.templateId) {
-        delete nextBinding.overridesYaml;
-        delete nextBinding.mibProfileId;
+      if (updates.template_id) {
+        delete nextBinding.overrides_yaml;
+        delete nextBinding.mib_profile_id;
       }
       return { ...prev, exporterBinding: nextBinding };
     });
@@ -139,7 +139,7 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
   };
 
   const handleSave = () => {
-    const exporterBinding: DiscoveryJobExporterBinding = formData.exporterBinding || { templateId: getDefaultTemplateForKind((formData.kind as DiscoveryJobKind) || 'K8s') };
+    const exporterBinding: DiscoveryJobExporterBinding = formData.exporterBinding || { template_id: getDefaultTemplateForKind((formData.kind as DiscoveryJobKind) || 'K8s') };
     const payload: Partial<DiscoveryJob> = {
       ...formData,
       targetConfig: formData.targetConfig || {},
@@ -168,7 +168,7 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
       };
       const { data } = await api.post<DiscoveryTestResponse>('/resources/discovery-jobs/test', payload);
       const warnings = data.warnings?.length ? ` 注意事項：${data.warnings.join('；')}` : '';
-      const countInfo = data.success ? ` 預估可發現 ${data.discoveredCount} 個資源。` : '';
+      const countInfo = data.success ? ` 預估可發現 ${data.discovered_count} 個資源。` : '';
       showToast(`${data.message}${countInfo}${warnings}`, data.success ? 'success' : 'error');
     } catch (err: any) {
       const message = err?.response?.data?.message || '測試掃描失敗，請稍後再試。';
@@ -264,16 +264,16 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
   };
 
   const renderExporterBindingSection = () => {
-    const currentTemplateId = formData.exporterBinding?.templateId || 'none';
+    const currentTemplateId = formData.exporterBinding?.template_id || 'none';
     const templateMeta = exporterTemplates.find((tpl) => tpl.id === currentTemplateId);
-    const availableProfiles = mibProfiles.filter((profile) => profile.templateId === currentTemplateId);
+    const availableProfiles = mibProfiles.filter((profile) => profile.template_id === currentTemplateId);
 
     return (
       <div className="space-y-4">
         <FormRow label="Exporter 模板">
           <select
             value={currentTemplateId}
-            onChange={(e) => handleExporterBindingChange({ templateId: e.target.value as DiscoveryJobExporterBinding['templateId'] })}
+            onChange={(e) => handleExporterBindingChange({ template_id: e.target.value as DiscoveryJobExporterBinding['template_id'] })}
             className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
             disabled={isLoadingOptions}
           >
@@ -286,11 +286,11 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
           </select>
           {templateMeta?.description && <p className="mt-1 text-xs text-slate-400">{templateMeta.description}</p>}
         </FormRow>
-        {templateMeta?.supportsMibProfile && (
+        {templateMeta?.supports_mib_profile && (
           <FormRow label="MIB Profile">
             <select
-              value={formData.exporterBinding?.mibProfileId || ''}
-              onChange={(e) => handleExporterBindingChange({ mibProfileId: e.target.value || undefined })}
+              value={formData.exporterBinding?.mib_profile_id || ''}
+              onChange={(e) => handleExporterBindingChange({ mib_profile_id: e.target.value || undefined })}
               className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
             >
               <option value="">選擇 Profile (可選)</option>
@@ -305,12 +305,12 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
             )}
           </FormRow>
         )}
-        {templateMeta?.supportsOverrides && (
+        {templateMeta?.supports_overrides && (
           <FormRow label="自訂覆寫 YAML">
             <textarea
               rows={5}
-              value={formData.exporterBinding?.overridesYaml || ''}
-              onChange={(e) => handleExporterBindingChange({ overridesYaml: e.target.value })}
+              value={formData.exporterBinding?.overrides_yaml || ''}
+              onChange={(e) => handleExporterBindingChange({ overrides_yaml: e.target.value })}
               className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm font-mono"
               placeholder="可自訂 exporter 設定，例如額外的 metric_endpoints。"
             />
@@ -401,7 +401,7 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
                 disabled={isLoadingOptions}
               >
                 {isLoadingOptions && <option>載入中...</option>}
-                {(autoDiscoveryOptions?.jobKinds || ['K8s', 'SNMP']).map((kind) => (
+                {(autoDiscoveryOptions?.job_kinds || ['K8s', 'SNMP']).map((kind) => (
                   <option key={kind} value={kind}>
                     {kind}
                   </option>

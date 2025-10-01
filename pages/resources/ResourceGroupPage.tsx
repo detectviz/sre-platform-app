@@ -26,9 +26,9 @@ const ResourceGroupPage: React.FC = () => {
     const [editingGroup, setEditingGroup] = useState<ResourceGroup | null>(null);
     const location = useLocation();
     const navigate = useNavigate();
-    
+
     const [filters, setFilters] = useState<ResourceGroupFilters>({ keyword: location.state?.initialSearchTerm || '' });
-    
+
     useEffect(() => {
         if (location.state?.initialSearchTerm) {
             navigate(location.pathname, { replace: true, state: {} });
@@ -42,7 +42,7 @@ const ResourceGroupPage: React.FC = () => {
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
 
     const { metadata: pageMetadata } = usePageMetadata();
-    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
 
 
     const fetchGroups = useCallback(async () => {
@@ -51,16 +51,16 @@ const ResourceGroupPage: React.FC = () => {
         setError(null);
         try {
             const [groupsRes, columnConfigRes, allColumnsRes] = await Promise.all([
-                 api.get<ResourceGroup[]>('/resource-groups', { params: filters }),
-                 api.get<string[]>(`/settings/column-config/${pageKey}`),
-                 api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
+                api.get<{ items: ResourceGroup[], total: number }>('/resource-groups', { params: filters }),
+                api.get<string[]>(`/settings/column-config/${pageKey}`),
+                api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
 
             if (allColumnsRes.data.length === 0) {
                 throw new Error('欄位定義缺失');
             }
 
-            setGroups(groupsRes.data);
+            setGroups(groupsRes.data.items);
             setAllColumns(allColumnsRes.data);
             const resolvedVisibleColumns = columnConfigRes.data.length > 0
                 ? columnConfigRes.data
@@ -143,7 +143,7 @@ const ResourceGroupPage: React.FC = () => {
             }
         }
     };
-    
+
     const renderCellContent = (group: ResourceGroup, columnKey: string) => {
         switch (columnKey) {
             case 'name':
@@ -153,16 +153,16 @@ const ResourceGroupPage: React.FC = () => {
                         <p className="text-xs text-slate-400 font-normal">{group.description}</p>
                     </>
                 );
-            case 'ownerTeam':
-                return group.ownerTeam;
-            case 'memberIds':
-                return group.memberIds.length;
-            case 'statusSummary':
+            case 'owner_team':
+                return group.owner_team;
+            case 'member_ids':
+                return group.member_ids.length;
+            case 'status_summary':
                 return (
                     <div className="flex items-center space-x-2">
-                        <span className="flex items-center text-xs text-green-400"><span className="w-2 h-2 mr-1.5 rounded-full bg-green-400"></span>{group.statusSummary.healthy}</span>
-                        <span className="flex items-center text-xs text-yellow-400"><span className="w-2 h-2 mr-1.5 rounded-full bg-yellow-400"></span>{group.statusSummary.warning}</span>
-                        <span className="flex items-center text-xs text-red-400"><span className="w-2 h-2 mr-1.5 rounded-full bg-red-400"></span>{group.statusSummary.critical}</span>
+                        <span className="flex items-center text-xs text-green-400"><span className="w-2 h-2 mr-1.5 rounded-full bg-green-400"></span>{group.status_summary.healthy}</span>
+                        <span className="flex items-center text-xs text-yellow-400"><span className="w-2 h-2 mr-1.5 rounded-full bg-yellow-400"></span>{group.status_summary.warning}</span>
+                        <span className="flex items-center text-xs text-red-400"><span className="w-2 h-2 mr-1.5 rounded-full bg-red-400"></span>{group.status_summary.critical}</span>
                     </div>
                 );
             default:
@@ -183,11 +183,11 @@ const ResourceGroupPage: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col">
-            <Toolbar 
+            <Toolbar
                 leftActions={leftActions}
                 rightActions={rightActions}
             />
-            
+
             <TableContainer>
                 <div className="h-full overflow-y-auto">
                     <table className="w-full text-sm text-left text-slate-300">
@@ -200,7 +200,7 @@ const ResourceGroupPage: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                             {isLoading ? (
+                            {isLoading ? (
                                 <TableLoader colSpan={visibleColumns.length + 1} />
                             ) : error ? (
                                 <TableError colSpan={visibleColumns.length + 1} message={error} onRetry={fetchGroups} />
@@ -213,7 +213,7 @@ const ResourceGroupPage: React.FC = () => {
                                         <button onClick={() => handleEditGroup(group)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯">
                                             <Icon name="edit-3" className="w-4 h-4" />
                                         </button>
-                                         <button onClick={() => handleDeleteClick(group)} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除">
+                                        <button onClick={() => handleDeleteClick(group)} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除">
                                             <Icon name="trash-2" className="w-4 h-4" />
                                         </button>
                                     </td>
@@ -247,7 +247,7 @@ const ResourceGroupPage: React.FC = () => {
                 <p>您確定要刪除資源群組 <strong className="text-amber-400">{deletingGroup?.name}</strong> 嗎？</p>
                 <p className="mt-2 text-slate-400">此操作無法復原。</p>
             </Modal>
-             <UnifiedSearchModal
+            <UnifiedSearchModal
                 page="resource-groups"
                 isOpen={isSearchModalOpen}
                 onClose={() => setIsSearchModalOpen(false)}

@@ -53,7 +53,7 @@ const DashboardListPage: React.FC = () => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
     const { metadata: pageMetadata } = usePageMetadata();
-    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
 
     const fetchDashboards = useCallback(async () => {
         if (!pageKey || !pageContent) return;

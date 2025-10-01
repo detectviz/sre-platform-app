@@ -24,9 +24,9 @@ const DiscoveryJobResultDrawer: React.FC<DiscoveryJobResultDrawerProps> = ({ job
     const [isProcessing, setIsProcessing] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const { options } = useOptions();
-    const autoDiscoveryOptions = options?.autoDiscovery;
-    const exporterTemplates = autoDiscoveryOptions?.exporterTemplates || [];
-    const edgeGateways = autoDiscoveryOptions?.edgeGateways || [];
+    const autoDiscoveryOptions = options?.auto_discovery;
+    const exporterTemplates = autoDiscoveryOptions?.exporter_templates || [];
+    const edgeGateways = autoDiscoveryOptions?.edge_gateways || [];
 
     const fetchResults = useCallback(async () => {
         if (!job) return;
@@ -144,7 +144,7 @@ const DiscoveryJobResultDrawer: React.FC<DiscoveryJobResultDrawerProps> = ({ job
         );
     }
 
-    const templateMeta = exporterTemplates.find((tpl) => tpl.id === job.exporterBinding?.templateId);
+    const templateMeta = exporterTemplates.find((tpl) => tpl.id === job.exporterBinding?.template_id);
     const gatewayLabel = job.edgeGateway?.enabled
         ? edgeGateways.find((gw) => gw.id === job.edgeGateway?.gatewayId)?.name || job.edgeGateway?.gatewayId || '未指定'
         : '未啟用';
@@ -160,7 +160,7 @@ const DiscoveryJobResultDrawer: React.FC<DiscoveryJobResultDrawerProps> = ({ job
                 </div>
                 <div className="bg-slate-800/40 border border-slate-700 rounded-lg p-4">
                     <h4 className="text-xs uppercase text-slate-400">Exporter 模板</h4>
-                    <p className="mt-1 text-sm text-white font-medium">{templateMeta?.name || job.exporterBinding?.templateId || '未設定'}</p>
+                    <p className="mt-1 text-sm text-white font-medium">{templateMeta?.name || job.exporterBinding?.template_id || '未設定'}</p>
                 </div>
                 <div className="bg-slate-800/40 border border-slate-700 rounded-lg p-4">
                     <h4 className="text-xs uppercase text-slate-400">Edge Gateway</h4>

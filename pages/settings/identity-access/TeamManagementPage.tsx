@@ -37,7 +37,7 @@ const TeamManagementPage: React.FC = () => {
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
     const { metadata: pageMetadata } = usePageMetadata();
-    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
 
     const fetchTeamsAndUsers = useCallback(async () => {
         if (!pageKey) return;
@@ -173,10 +173,10 @@ const TeamManagementPage: React.FC = () => {
         switch (columnKey) {
             case 'name':
                 return <div className="font-medium text-white">{team.name}</div>;
-            case 'ownerId':
-                return findUserById(team.ownerId)?.name || 'N/A';
-            case 'memberIds':
-                return team.memberIds.length;
+            case 'owner_id':
+                return findUserById(team.owner_id)?.name || 'N/A';
+            case 'member_ids':
+                return team.member_ids.length;
             case 'created_at':
                 return team.created_at;
             default:

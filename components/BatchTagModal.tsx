@@ -36,7 +36,7 @@ const BatchTagModal: React.FC<BatchTagModalProps> = ({ isOpen, onClose, onSubmit
             .forEach(input => {
                 const key = input.key.trim();
                 input.value.split(',').map(v => v.trim()).filter(Boolean).forEach(value => {
-                    tags.push({ key, value });
+                    tags.push({ id: `${key}-${value}`, key, value });
                 });
             });
 

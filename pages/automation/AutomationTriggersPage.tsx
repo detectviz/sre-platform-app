@@ -37,7 +37,7 @@ const AutomationTriggersPage: React.FC = () => {
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
 
     const { metadata: pageMetadata } = usePageMetadata();
-    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
 
     const fetchTriggersAndPlaybooks = useCallback(async () => {
         if (!pageKey) return;
@@ -51,13 +51,13 @@ const AutomationTriggersPage: React.FC = () => {
             };
             const [triggersRes, playbooksRes, columnConfigRes, allColumnsRes] = await Promise.all([
                 api.get<{ items: AutomationTrigger[], total: number }>('/automation/triggers', { params }),
-                api.get<AutomationPlaybook[]>('/automation/scripts'),
+                api.get<{ items: AutomationPlaybook[], total: number }>('/automation/scripts'),
                 api.get<string[]>(`/settings/column-config/${pageKey}`),
                 api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
             setTriggers(triggersRes.data.items);
             setTotal(triggersRes.data.total);
-            setPlaybooks(playbooksRes.data);
+            setPlaybooks(playbooksRes.data.items);
             if (allColumnsRes.data.length === 0) {
                 throw new Error('欄位定義缺失');
             }
@@ -211,9 +211,9 @@ const AutomationTriggersPage: React.FC = () => {
                     </span>
                 );
             case 'targetPlaybookId':
-                return findPlaybookName(trigger.targetPlaybookId);
+                return findPlaybookName(trigger.target_playbook_id);
             case 'lastTriggeredAt':
-                return trigger.lastTriggeredAt;
+                return trigger.last_triggered_at;
             default:
                 return <span className="text-slate-500">--</span>;
         }

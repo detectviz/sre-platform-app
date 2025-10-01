@@ -24,7 +24,7 @@ const RunPlaybookModal: React.FC<RunPlaybookModalProps> = ({ isOpen, onClose, pl
             setIsLoading(false);
             if (playbook?.parameters) {
                 const initialParams = playbook.parameters.reduce((acc, param) => {
-                    acc[param.name] = param.defaultValue ?? (param.type === 'boolean' ? false : '');
+                    acc[param.name] = param.default_value ?? (param.type === 'boolean' ? false : '');
                     return acc;
                 }, {} as Record<string, any>);
                 setParamValues(initialParams);

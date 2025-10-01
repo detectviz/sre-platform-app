@@ -96,7 +96,7 @@ export interface AutomationExecution {
   startTime: string;
   endTime?: string;
   durationMs?: number;
-  deletedAt?: string;
+  deleted_at?: string;
 }
 
 // 變更後
@@ -133,7 +133,7 @@ export interface AlertRule {
   titleTemplate?: string;
   contentTemplate?: string;
   testPayload?: Record<string, unknown>;
-  deletedAt?: string;
+  deleted_at?: string;
 }
 
 // 變更後
@@ -440,7 +440,7 @@ grep -n "Id:\|At:\|Url:\|Count:" types.ts
 | `ownerId` | `owner_id` |
 | `createdAt` | `created_at` |
 | `updatedAt` | `updated_at` |
-| `deletedAt` | `deleted_at` |
+| `deleted_at` | `deleted_at` |
 | `occurredAt` | `occurred_at` |
 | `lastLoginAt` | `last_login_at` |
 | `lastCheckInAt` | `last_check_in_at` |

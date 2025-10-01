@@ -11,6 +11,16 @@ const getActive = (collection: any[] | undefined) => {
     return collection.filter(item => !item.deleted_at);
 }
 
+const validateEnum = <T>(value: any, allowedValues: T[], fieldName: string): T => {
+    if (!allowedValues.includes(value as T)) {
+        throw {
+            status: 400,
+            message: `Invalid ${fieldName}. Allowed values: ${allowedValues.join(', ')}`
+        };
+    }
+    return value as T;
+};
+
 const paginate = (array: any[], page: any, pageSize: any) => {
     const pageNum = Number(page) || 1;
     const size = Number(pageSize) || 10;
@@ -102,22 +112,22 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
         switch (`${method} /${resource}`) {
             // Navigation
             case 'GET /navigation': {
-                return DB.navItems;
+                return DB.nav_items;
             }
             case 'POST /discovery': {
                 if (id === 'batch-ignore') {
-                    const { resourceIds = [] } = body || {};
-                    if (!Array.isArray(resourceIds)) {
-                        throw { status: 400, message: 'Invalid payload for batch ignore.' };
+                    const { action, ids = [] } = body || {};
+                    if (!action || action !== 'ignore' || !Array.isArray(ids)) {
+                        throw { status: 400, message: 'Invalid payload for batch actions.' };
                     }
-                    resourceIds.forEach((resourceId: string) => {
-                        const index = DB.discoveredResources.findIndex((res: any) => res.id === resourceId);
+                    ids.forEach((resourceId: string) => {
+                        const index = DB.discovered_resources.findIndex((res: any) => res.id === resourceId);
                         if (index > -1) {
-                            DB.discoveredResources[index].status = 'ignored';
-                            DB.discoveredResources[index].ignored_at = new Date().toISOString();
+                            DB.discovered_resources[index].status = 'ignored';
+                            DB.discovered_resources[index].ignored_at = new Date().toISOString();
                         }
                     });
-                    return { success: true, updated: resourceIds.length };
+                    return { success: true, updated: ids.length };
                 }
                 break;
             }
@@ -128,30 +138,30 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
             // Page Metadata
             case 'GET /pages': {
                 if (id === 'metadata') {
-                    return DB.pageMetadata;
+                    return DB.page_metadata;
                 }
                 if (id === 'columns' && subId) {
-                    const pageKey = subId as keyof typeof DB.allColumns;
-                    return DB.allColumns[pageKey] || [];
+                    const pageKey = subId as keyof typeof DB.all_columns;
+                    return DB.all_columns[pageKey] || [];
                 }
                 break;
             }
             // UI Configs
             case 'GET /ui': {
                 if (id === 'options') {
-                    return DB.allOptions;
+                    return DB.all_options;
                 }
-                if (id === 'themes' && subId === 'charts') return DB.chartColors;
+                if (id === 'themes' && subId === 'charts') return DB.chart_colors;
                 if (id === 'content') {
-                    if (action === 'command-palette') return DB.commandPaletteContent;
-                    if (action === 'execution-log-detail') return DB.executionLogDetailContent;
-                    if (action === 'import-modal') return DB.importModalContent;
-                    return DB.pageContent;
+                    if (action === 'command-palette') return DB.command_palette_content;
+                    if (action === 'execution-log-detail') return DB.execution_log_detail_content;
+                    if (action === 'import-modal') return DB.import_modal_content;
+                    return DB.page_content;
                 }
-                if (id === 'icons') return DB.iconMap;
+                if (id === 'icons') return DB.icon_map;
                 if (id === 'tabs') {
                     const edition = process.env.SRE_PLATFORM_EDITION ?? 'community';
-                    let tabsConfig = JSON.parse(JSON.stringify(DB.tabConfigs)) as TabConfigMap;
+                    let tabsConfig = JSON.parse(JSON.stringify(DB.tab_configs)) as TabConfigMap;
                     if (edition === 'community') {
                         const platformSettingsTabs = tabsConfig.platformSettings;
                         if (platformSettingsTabs) {
@@ -163,23 +173,23 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     }
                     return tabsConfig;
                 }
-                if (id === 'icons-config') return DB.notificationChannelIcons;
+                if (id === 'icons-config') return DB.notification_channel_icons;
                 break;
             }
             // Me / Profile
             case 'GET /me': {
                 if (id === 'login-history') {
-                    return paginate(DB.loginHistory, params.page, params.page_size);
+                    return paginate(DB.login_history, params.page, params.page_size);
                 }
                 if (id === 'preferences') {
-                    return DB.userPreferences;
+                    return DB.user_preferences;
                 }
                 return DB.users[0];
             }
             case 'PUT /me': {
                 if (id === 'preferences') {
-                    DB.userPreferences = { ...DB.userPreferences, ...body };
-                    return DB.userPreferences;
+                    DB.user_preferences = { ...DB.user_preferences, ...body };
+                    return DB.user_preferences;
                 }
                 break;
             }
@@ -201,22 +211,22 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
 
             // AI Copilot
             case 'GET /ai': {
-                if (id === 'briefing') return DB.aiBriefing;
-                if (id === 'infra' && subId === 'risk-prediction') return DB.aiRiskPrediction;
+                if (id === 'briefing') return DB.ai_briefing;
+                if (id === 'infra' && subId === 'risk-prediction') return DB.ai_risk_prediction;
                 break;
             }
             case 'POST /ai': {
-                if (id === 'briefing' && subId === 'generate') return DB.aiBriefing;
+                if (id === 'briefing' && subId === 'generate') return DB.ai_briefing;
                 if (id === 'incidents' && subId === 'analyze') {
                     const { incident_ids } = body;
-                    return incident_ids.length > 1 ? DB.multiIncidentAnalysis : DB.singleIncidentAnalysis;
+                    return incident_ids.length > 1 ? DB.multi_incident_analysis : DB.single_incident_analysis;
                 }
                 if (id === 'alert-rules' && subId === 'analyze') {
                     const ruleIds = Array.isArray(body?.rule_ids) ? body.rule_ids : [];
                     if (ruleIds.length === 0) {
                         throw { status: 400, message: '請至少選擇一項告警規則進行分析。' };
                     }
-                    const selectedRules = DB.alertRules.filter((rule: any) => ruleIds.includes(rule.id));
+                    const selectedRules = DB.alert_rules.filter((rule: any) => ruleIds.includes(rule.id));
                     if (selectedRules.length === 0) {
                         throw { status: 404, message: '找不到對應的告警規則。' };
                     }
@@ -225,8 +235,8 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         warning: 'medium',
                         info: 'low',
                     };
-                    const analysis = JSON.parse(JSON.stringify(DB.alertRuleAnalysis));
-                    analysis.evaluatedRules = selectedRules.map((rule: any) => ({
+                    const analysis = JSON.parse(JSON.stringify(DB.alert_rule_analysis));
+                    analysis.evaluated_rules = selectedRules.map((rule: any) => ({
                         id: rule.id,
                         name: rule.name,
                         status: rule.enabled ? '已啟用' : '已停用',
@@ -246,8 +256,8 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     if (selectedRules.length === 0) {
                         throw { status: 404, message: '找不到對應的靜音規則。' };
                     }
-                    const analysis = JSON.parse(JSON.stringify(DB.silenceRuleAnalysis));
-                    analysis.evaluatedRules = selectedRules.map((rule: any) => ({
+                    const analysis = JSON.parse(JSON.stringify(DB.silence_rule_analysis));
+                    analysis.evaluated_rules = selectedRules.map((rule: any) => ({
                         id: rule.id,
                         name: rule.name,
                         status: rule.enabled ? '已啟用' : '已停用',
@@ -258,14 +268,14 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     }
                     return analysis;
                 }
-                if (id === 'automation' && subId === 'generate-script') return DB.generatedPlaybook;
+                if (id === 'automation' && subId === 'generate-script') return DB.generated_playbook;
                 if (id === 'logs' && subId === 'summarize') {
-                    return DB.logAnalysis;
+                    return DB.log_analysis;
                 }
                 if (id === 'resources' && subId === 'analyze') {
                     const { resourceIds } = body;
                     // Mock: just return the same analysis regardless of input ids
-                    return DB.resourceAnalysis;
+                    return DB.resource_analysis;
                 }
                 break;
             }
@@ -273,17 +283,17 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
             // Dashboards
             case 'GET /dashboards': {
                 if (id === 'sre-war-room') {
-                    if (subId === 'service-health') return DB.serviceHealthData;
-                    if (subId === 'resource-group-status') return DB.resourceGroupStatusData;
+                    if (subId === 'service-health') return DB.service_health_data;
+                    if (subId === 'resource-group-status') return DB.resource_group_status_data;
                 }
                 if (id === 'infrastructure-insights' && subId === 'options') {
-                    return DB.allOptions.infraInsights;
+                    return DB.all_options.infraInsights;
                 }
                 if (id === 'available-grafana') {
-                    const linkedUids = getActive(DB.dashboards).filter((d: any) => d.type === 'grafana' && d.grafana_dashboard_uid).map((d: any) => d.grafana_dashboard_uid);
-                    return DB.availableGrafanaDashboards.filter((d: any) => !linkedUids.includes(d.uid));
+                    const linkedUids = getActive(DB.dashboards).filter((d: any) => d.type === 'grafana' && d.grafanaDashboardUid).map((d: any) => d.grafanaDashboardUid);
+                    return DB.available_grafana_dashboards.filter((d: any) => !linkedUids.includes(d.uid));
                 }
-                if (id === 'templates') return DB.dashboardTemplates;
+                if (id === 'templates') return DB.dashboard_templates;
                 if (id) {
                     const dashboard = DB.dashboards.find((d: any) => d.id === id);
                     if (!dashboard) throw { status: 404 };
@@ -305,27 +315,82 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     if (action === 'delete') DB.dashboards.forEach((d: any) => { if (ids.includes(d.id)) d.deleted_at = new Date().toISOString(); });
                     return { success: true };
                 }
+                // 驗證必填欄位
+                const { name, type, category } = body;
+                if (!name || !type || !category) {
+                    throw { status: 400, message: 'Missing required fields: name, type, category' };
+                }
+
                 const newDashboardData = { ...body, id: `db-${uuidv4()}` };
                 if (!newDashboardData.path) {
                     newDashboardData.path = `/dashboard/${newDashboardData.id}`;
                 }
+
+                // 驗證外鍵
+                if (newDashboardData.team_id) {
+                    const team = DB.teams.find(t => t.id === newDashboardData.team_id && !t.deleted_at);
+                    if (!team) {
+                        throw { status: 404, message: 'Team not found.' };
+                    }
+                }
+                if (newDashboardData.owner_id) {
+                    const owner = DB.users.find(u => u.id === newDashboardData.owner_id && !u.deleted_at);
+                    if (!owner) {
+                        throw { status: 404, message: 'Owner (user) not found.' };
+                    }
+                }
+
                 // 設置創建和更新時間戳
                 const timestamp = new Date().toISOString();
                 newDashboardData.created_at = timestamp;
                 newDashboardData.updated_at = timestamp;
                 DB.dashboards.unshift(newDashboardData);
+                // 自動填充唯讀標籤
+                autoPopulateReadonlyTags(newDashboardData);
+                // Audit log for dashboard creation
+                const currentUser = getCurrentUser();
+                auditLogMiddleware(
+                    currentUser.id,
+                    'CREATE',
+                    'Dashboard',
+                    newDashboardData.id,
+                    { name: newDashboardData.name, owner: newDashboardData.owner }
+                );
                 return newDashboardData;
             }
             case 'PATCH /dashboards': {
                 const index = DB.dashboards.findIndex((d: any) => d.id === id);
                 if (index === -1) throw { status: 404 };
+                const existing = DB.dashboards[index];
                 // 更新 updated_at 時間戳
-                DB.dashboards[index] = { ...DB.dashboards[index], ...body, updated_at: new Date().toISOString() };
-                return DB.dashboards[index];
+                const updated = { ...existing, ...body, updated_at: new Date().toISOString() };
+                DB.dashboards[index] = updated;
+                // Audit log for dashboard update
+                const currentUser = getCurrentUser();
+                auditLogMiddleware(
+                    currentUser.id,
+                    'UPDATE',
+                    'Dashboard',
+                    id,
+                    { old_name: existing.name, new_name: updated.name }
+                );
+                return updated;
             }
             case 'DELETE /dashboards': {
                 const index = DB.dashboards.findIndex((d: any) => d.id === id);
-                if (index > -1) DB.dashboards[index].deleted_at = new Date().toISOString();
+                if (index > -1) {
+                    const dashboard = DB.dashboards[index];
+                    DB.dashboards[index].deleted_at = new Date().toISOString();
+                    // Audit log for dashboard deletion
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'DELETE',
+                        'Dashboard',
+                        id,
+                        { name: dashboard.name, owner: dashboard.owner }
+                    );
+                }
                 return {};
             }
 
@@ -333,12 +398,12 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
             case 'GET /incidents': {
                 if (id === 'alert-rules') {
                     // Redirect /incidents/alert-rules to the alert-rules handler
-                    if (subId === 'templates') return DB.alertRuleTemplates;
-                    if (subId === 'resource-types') return DB.resourceTypes;
-                    if (subId === 'exporter-types') return DB.exporterTypes;
-                    if (subId === 'metrics') return DB.metricMetadata;
+                    if (subId === 'templates') return DB.alert_rule_templates;
+                    if (subId === 'resource-types') return DB.resource_types;
+                    if (subId === 'exporter-types') return DB.exporter_types;
+                    if (subId === 'metrics') return DB.metric_metadata;
                     if (subId === 'count') {
-                        let rules = getActive(DB.alertRules);
+                        let rules = getActive(DB.alert_rules);
                         if (params?.matchers) {
                             const matchers = JSON.parse(params.matchers);
                             matchers.forEach((matcher: any) => {
@@ -349,7 +414,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         }
                         return { count: rules.length };
                     }
-                    let rules = getActive(DB.alertRules);
+                    let rules = getActive(DB.alert_rules);
                     if (params?.severity) {
                         rules = rules.filter((r: any) => r.severity === params.severity);
                     }
@@ -376,7 +441,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     if (!incident) throw { status: 404, message: 'Incident not found.' };
 
                     // 查找關聯的自動化執行記錄
-                    const executions = DB.automationExecutions.filter((e: any) =>
+                    const executions = DB.automation_executions.filter((e: any) =>
                         e.incident_id === id
                     );
 
@@ -403,12 +468,16 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         throw { status: 400, message: 'Missing required fields for creating an incident.' };
                     }
 
+                    // 驗證枚舉值
+                    validateEnum(severity, ['Critical', 'Warning', 'Info'], 'severity');
+                    validateEnum(impact, ['High', 'Medium', 'Low'], 'impact');
+
                     const resource = DB.resources.find((r: any) => r.id === resource_id);
                     if (!resource) {
                         throw { status: 404, message: 'Resource not found.' };
                     }
 
-                    const rule = DB.alertRules.find((r: any) => r.id === rule_id);
+                    const rule = DB.alert_rules.find((r: any) => r.id === rule_id);
                     if (!rule) {
                         throw { status: 404, message: 'Alert rule not found.' };
                     }
@@ -482,7 +551,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         content: `手動觸發通知: ${incident.summary}`
                     };
 
-                    DB.notificationHistory.unshift(notificationRecord);
+                    DB.notification_history.unshift(notificationRecord);
 
                     // 紀錄審計日誌
                     const currentUser = getCurrentUser();
@@ -548,7 +617,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
             case 'GET /alert-rules': {
                 const specialIds = new Set(['templates', 'resource-types', 'exporter-types', 'metrics', 'count']);
                 if (id && !specialIds.has(id)) {
-                    const rule = DB.alertRules.find((r: any) => r.id === id);
+                    const rule = DB.alert_rules.find((r: any) => r.id === id);
                     if (!rule) {
                         throw { status: 404, message: '找不到告警規則。' };
                     }
@@ -557,7 +626,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 // 新增反向查詢端點：GET /alert-rules/{id}/incidents
                 if (id && subId === 'incidents') {
                     // 查找與指定告警規則關聯的事件
-                    const rule = DB.alertRules.find((r: any) => r.id === id);
+                    const rule = DB.alert_rules.find((r: any) => r.id === id);
                     if (!rule) throw { status: 404, message: 'Alert rule not found.' };
 
                     // 查找關聯的事件記錄
@@ -569,15 +638,15 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 }
                 if (id === 'templates') {
                     if (subId === 'default') {
-                        return DB.alertRuleDefault;
+                        return DB.alert_rule_default;
                     }
-                    return DB.alertRuleTemplates;
+                    return DB.alert_rule_templates;
                 }
-                if (id === 'resource-types') return DB.resourceTypes;
-                if (id === 'exporter-types') return DB.exporterTypes;
-                if (id === 'metrics') return DB.metricMetadata;
+                if (id === 'resource-types') return DB.resource_types;
+                if (id === 'exporter-types') return DB.exporter_types;
+                if (id === 'metrics') return DB.metric_metadata;
                 if (id === 'count') {
-                    let rules = getActive(DB.alertRules);
+                    let rules = getActive(DB.alert_rules);
                     if (params?.matchers) {
                         const matchers = JSON.parse(params.matchers);
                         matchers.forEach((matcher: any) => {
@@ -591,7 +660,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     }
                     return { count: rules.length };
                 }
-                let rules = getActive(DB.alertRules);
+                let rules = getActive(DB.alert_rules);
                 if (params) {
                     if (params.keyword) rules = rules.filter((r: any) => r.name.toLowerCase().includes(params.keyword.toLowerCase()));
                     if (params.severity) rules = rules.filter((r: any) => r.severity === params.severity);
@@ -600,15 +669,49 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 if (params?.sort_by && params?.sort_order) {
                     rules = sortData(rules, params.sort_by, params.sort_order);
                 }
-                return rules;
+                return paginate(rules, params?.page, params?.page_size);
             }
             case 'POST /alert-rules':
+                if (id === 'batch-actions') {
+                    const { action, ids = [] } = body || {};
+                    if (!action || !Array.isArray(ids)) {
+                        throw { status: 400, message: 'Invalid payload for batch actions.' };
+                    }
+                    let updated = 0;
+                    if (action === 'delete') {
+                        DB.alert_rules.forEach((rule: any) => {
+                            if (ids.includes(rule.id)) {
+                                rule.deleted_at = new Date().toISOString();
+                                updated += 1;
+                            }
+                        });
+                    } else if (action === 'enable') {
+                        DB.alert_rules.forEach((rule: any) => {
+                            if (ids.includes(rule.id)) {
+                                rule.enabled = true;
+                                rule.updated_at = new Date().toISOString();
+                                updated += 1;
+                            }
+                        });
+                    } else if (action === 'disable') {
+                        DB.alert_rules.forEach((rule: any) => {
+                            if (ids.includes(rule.id)) {
+                                rule.enabled = false;
+                                rule.updated_at = new Date().toISOString();
+                                updated += 1;
+                            }
+                        });
+                    } else {
+                        throw { status: 400, message: `Unsupported batch action: ${action}` };
+                    }
+                    return { success: true, updated };
+                }
                 if (id === 'import') {
                     return { message: '成功匯入 8 條告警規則。' };
                 }
                 if (id && subId === 'trigger') {
                     // 手動觸發告警規則（用於測試）
-                    const rule = DB.alertRules.find((r: any) => r.id === id);
+                    const rule = DB.alert_rules.find((r: any) => r.id === id);
                     if (!rule) throw { status: 404, message: 'Rule not found' };
 
                     // 模擬觸發告警
@@ -660,7 +763,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 if (subId === 'test') {
                     const ruleId = id;
                     const { payload } = body;
-                    const rule = DB.alertRules.find((r: any) => r.id === ruleId);
+                    const rule = DB.alert_rules.find((r: any) => r.id === ruleId);
                     if (!rule) throw { status: 404, message: 'Rule not found' };
                     const condition = rule.conditionGroups?.[0]?.conditions?.[0];
                     if (condition && payload.metric === condition.metric && payload.value > condition.threshold) {
@@ -675,6 +778,32 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         };
                     }
                 }
+
+                // 驗證必填欄位
+                const { name: alertRuleName, enabled: alertRuleEnabled, severity: alertRuleSeverity } = body;
+                if (!alertRuleName || alertRuleEnabled === undefined || !alertRuleSeverity) {
+                    throw { status: 400, message: 'Missing required fields for alert rule' };
+                }
+                if (!['critical', 'warning', 'info'].includes(alertRuleSeverity)) {
+                    throw { status: 400, message: 'Invalid severity value' };
+                }
+
+                // 驗證外鍵
+                if (body.team_id) {
+                    const team = DB.teams.find(t => t.id === body.team_id && !t.deleted_at);
+                    if (!team) throw { status: 404, message: 'Team not found.' };
+                }
+                if (body.owner_id) {
+                    const owner = DB.users.find(u => u.id === body.owner_id && !u.deleted_at);
+                    if (!owner) throw { status: 404, message: 'Owner not found.' };
+                }
+                if (body.automation?.enabled && body.automation?.playbook_id) {
+                    const playbook = DB.playbooks.find(p => p.id === body.automation.playbook_id && !p.deleted_at);
+                    if (!playbook) {
+                        throw { status: 404, message: 'Automation playbook not found.' };
+                    }
+                }
+
                 const timestamp1 = new Date().toISOString();
                 const newRule = {
                     ...body,
@@ -683,12 +812,14 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     created_at: timestamp1,
                     updated_at: timestamp1
                 };
-                DB.alertRules.unshift(newRule);
+                DB.alert_rules.unshift(newRule);
+                // 自動填充唯讀標籤
+                autoPopulateReadonlyTags(newRule);
 
                 // 紀錄審計日誌
-                const currentUser1 = getCurrentUser();
+                const currentUser3 = getCurrentUser();
                 auditLogMiddleware(
-                    currentUser1.id,
+                    currentUser3.id,
                     'CREATE',
                     'AlertRule',
                     newRule.id,
@@ -697,11 +828,11 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
 
                 return newRule;
             case 'PATCH /alert-rules':
-                const ruleIndex = DB.alertRules.findIndex((r: any) => r.id === id);
+                const ruleIndex = DB.alert_rules.findIndex((r: any) => r.id === id);
                 if (ruleIndex === -1) throw { status: 404 };
-                const oldRule = { ...DB.alertRules[ruleIndex] };
+                const oldRule = { ...DB.alert_rules[ruleIndex] };
                 // 更新 updated_at 時間戳
-                DB.alertRules[ruleIndex] = { ...DB.alertRules[ruleIndex], ...body, automation_enabled: !!body.automation?.enabled, updated_at: new Date().toISOString() };
+                DB.alert_rules[ruleIndex] = { ...DB.alert_rules[ruleIndex], ...body, automation_enabled: !!body.automation?.enabled, updated_at: new Date().toISOString() };
 
                 // 紀錄審計日誌
                 const currentUser2 = getCurrentUser();
@@ -713,12 +844,12 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     { oldName: oldRule.name, newName: body.name, oldSeverity: oldRule.severity, newSeverity: body.severity }
                 );
 
-                return DB.alertRules[ruleIndex];
+                return DB.alert_rules[ruleIndex];
             case 'DELETE /alert-rules': {
-                const ruleIndex = DB.alertRules.findIndex((r: any) => r.id === id);
+                const ruleIndex = DB.alert_rules.findIndex((r: any) => r.id === id);
                 if (ruleIndex > -1) {
-                    const rule = DB.alertRules[ruleIndex];
-                    DB.alertRules[ruleIndex].deleted_at = new Date().toISOString();
+                    const rule = DB.alert_rules[ruleIndex];
+                    DB.alert_rules[ruleIndex].deleted_at = new Date().toISOString();
 
                     // 紀錄審計日誌
                     const currentUser = getCurrentUser();
@@ -734,7 +865,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
             }
 
             case 'GET /silence-rules': {
-                if (id === 'templates') return DB.silenceRuleTemplates;
+                if (id === 'templates') return DB.silence_rule_templates;
                 let rules = getActive(DB.silenceRules);
                 if (params) {
                     if (params.keyword) rules = rules.filter((r: any) => r.name.toLowerCase().includes(params.keyword.toLowerCase()));
@@ -744,11 +875,11 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 if (params?.sort_by && params?.sort_order) {
                     rules = sortData(rules, params.sort_by, params.sort_order);
                 }
-                return rules;
+                return paginate(rules, params?.page, params?.page_size);
             }
             case 'GET /system': {
                 if (id === 'config') {
-                    return DB.systemConfig;
+                    return DB.system_config;
                 }
                 break;
             }
@@ -774,6 +905,16 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 if (id === 'import') {
                     return { message: '成功匯入 3 條靜音規則。' };
                 }
+
+                // 驗證必填欄位
+                const { name: silenceRuleName, enabled: silenceRuleEnabled, type: silenceRuleType, matchers: silenceRuleMatchers, schedule: silenceRuleSchedule } = body;
+                if (!silenceRuleName || silenceRuleEnabled === undefined || !silenceRuleType || !silenceRuleMatchers || !silenceRuleSchedule) {
+                    throw { status: 400, message: 'Missing required fields for silence rule' };
+                }
+                if (!['single', 'repeat', 'condition'].includes(silenceRuleType)) {
+                    throw { status: 400, message: 'Invalid type value' };
+                }
+
                 const timestamp2 = new Date().toISOString();
                 const newSilenceRule = {
                     ...body,
@@ -782,16 +923,48 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     updated_at: timestamp2
                 };
                 DB.silenceRules.unshift(newSilenceRule);
+                // Audit log for silence rule creation
+                const currentUser = getCurrentUser();
+                auditLogMiddleware(
+                    currentUser.id,
+                    'CREATE',
+                    'SilenceRule',
+                    newSilenceRule.id,
+                    { name: newSilenceRule.name, enabled: newSilenceRule.enabled }
+                );
                 return newSilenceRule;
             case 'PATCH /silence-rules':
                 const silenceIndex = DB.silenceRules.findIndex((r: any) => r.id === id);
                 if (silenceIndex === -1) throw { status: 404 };
+                const existingSilenceRule = DB.silenceRules[silenceIndex];
                 // 更新 updated_at 時間戳
-                DB.silenceRules[silenceIndex] = { ...DB.silenceRules[silenceIndex], ...body, updated_at: new Date().toISOString() };
-                return DB.silenceRules[silenceIndex];
+                const updatedSilenceRule = { ...existingSilenceRule, ...body, updated_at: new Date().toISOString() };
+                DB.silenceRules[silenceIndex] = updatedSilenceRule;
+                // Audit log for silence rule update
+                const currentUser4 = getCurrentUser();
+                auditLogMiddleware(
+                    currentUser4.id,
+                    'UPDATE',
+                    'SilenceRule',
+                    id,
+                    { old_name: existingSilenceRule.name, new_name: updatedSilenceRule.name, old_enabled: existingSilenceRule.enabled, new_enabled: updatedSilenceRule.enabled }
+                );
+                return updatedSilenceRule;
             case 'DELETE /silence-rules': {
                 const ruleIndex = DB.silenceRules.findIndex((r: any) => r.id === id);
-                if (ruleIndex > -1) DB.silenceRules[ruleIndex].deleted_at = new Date().toISOString();
+                if (ruleIndex > -1) {
+                    const rule = DB.silenceRules[ruleIndex];
+                    DB.silenceRules[ruleIndex].deleted_at = new Date().toISOString();
+                    // Audit log for silence rule deletion
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'DELETE',
+                        'SilenceRule',
+                        id,
+                        { name: rule.name, enabled: rule.enabled }
+                    );
+                }
                 return {};
             }
 
@@ -802,20 +975,20 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     if (params?.sort_by && params?.sort_order) {
                         datasources = sortData(datasources, params.sort_by, params.sort_order);
                     }
-                    return datasources;
+                    return paginate(datasources, params?.page, params?.page_size);
                 }
                 if (id === 'discovery-jobs') {
                     if (subId && action === 'results') {
-                        return DB.discoveredResources;
+                        return DB.discovered_resources;
                     }
-                    let jobs = getActive(DB.discoveryJobs);
+                    let jobs = getActive(DB.discovery_jobs);
                     if (params?.sort_by && params?.sort_order) {
                         jobs = sortData(jobs, params.sort_by, params.sort_order);
                     }
-                    return jobs;
+                    return paginate(jobs, params?.page, params?.page_size);
                 }
                 if (id === 'overview') {
-                    return DB.resourceOverviewData;
+                    return DB.resource_overview_data;
                 }
                 if (id === 'count') {
                     const query = params.query || '';
@@ -824,8 +997,8 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     return { count: randomCount };
                 }
                 if (id === 'topology') {
-                    if (subId === 'options') return DB.allOptions.topology;
-                    return { nodes: DB.resources, links: DB.resourceLinks };
+                    if (subId === 'options') return DB.all_options.topology;
+                    return { nodes: DB.resources, links: DB.resource_links };
                 }
                 if (id && subId === 'metrics') {
                     const generateMetricData = (base: number, variance: number): [string, number][] => Array.from({ length: 30 }, (_, i) => [new Date(Date.now() - (29 - i) * 60000).toISOString(), Math.max(0, Math.min(100, base + (Math.random() - 0.5) * variance))]);
@@ -838,7 +1011,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     if (!resource) throw { status: 404, message: 'Resource not found.' };
 
                     // 查找關聯的告警規則（通過target_resource_ids或target字段）
-                    const rules = DB.alertRules.filter((r: any) =>
+                    const rules = DB.alert_rules.filter((r: any) =>
                         r.target_resource_ids?.includes(id) ||
                         r.target.includes(resource.name) ||
                         r.target.includes(id)
@@ -859,7 +1032,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 return paginate(resources, params?.page, params?.page_size);
             }
             case 'GET /resource-links': {
-                let links = getActive(DB.resourceLinks);
+                let links = getActive(DB.resource_links);
                 if (params?.source_resource_id) {
                     links = links.filter((link: any) => link.source_resource_id === params.source_resource_id);
                 }
@@ -875,6 +1048,42 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 return paginate(links, params?.page, params?.page_size);
             }
             case 'POST /resources': {
+                if (id === 'datasources' && subId === 'batch-actions') {
+                    const { action, ids = [] } = body || {};
+                    if (!action || !Array.isArray(ids)) {
+                        throw { status: 400, message: 'Invalid payload for batch actions.' };
+                    }
+                    let updated = 0;
+                    if (action === 'delete') {
+                        DB.datasources.forEach((ds: any) => {
+                            if (ids.includes(ds.id)) {
+                                ds.deleted_at = new Date().toISOString();
+                                updated += 1;
+                            }
+                        });
+                    } else {
+                        throw { status: 400, message: `Unsupported batch action: ${action}` };
+                    }
+                    return { success: true, updated };
+                }
+                if (id === 'discovery-jobs' && subId === 'batch-actions') {
+                    const { action, ids = [] } = body || {};
+                    if (!action || !Array.isArray(ids)) {
+                        throw { status: 400, message: 'Invalid payload for batch actions.' };
+                    }
+                    let updated = 0;
+                    if (action === 'delete') {
+                        DB.discovery_jobs.forEach((job: any) => {
+                            if (ids.includes(job.id)) {
+                                job.deleted_at = new Date().toISOString();
+                                updated += 1;
+                            }
+                        });
+                    } else {
+                        throw { status: 400, message: `Unsupported batch action: ${action}` };
+                    }
+                    return { success: true, updated };
+                }
                 if (id === 'batch-tags') {
                     const { resourceIds = [], tags = [] } = body || {};
                     if (!Array.isArray(resourceIds) || !Array.isArray(tags)) {
@@ -892,12 +1101,12 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                                 }
                             });
                         }
-                        const discoveryIndex = DB.discoveredResources.findIndex((res: any) => res.id === resourceId);
+                        const discoveryIndex = DB.discovered_resources.findIndex((res: any) => res.id === resourceId);
                         if (discoveryIndex > -1) {
                             cleanedTags.forEach((tag: any) => {
-                                const duplicate = DB.discoveredResources[discoveryIndex].tags.some((existing: any) => existing.key === tag.key && existing.value === tag.value);
+                                const duplicate = DB.discovered_resources[discoveryIndex].tags.some((existing: any) => existing.key === tag.key && existing.value === tag.value);
                                 if (!duplicate) {
-                                    DB.discoveredResources[discoveryIndex].tags.push({ id: `tag-${uuidv4()}`, key: tag.key, value: tag.value });
+                                    DB.discovered_resources[discoveryIndex].tags.push({ id: `tag-${uuidv4()}`, key: tag.key, value: tag.value });
                                 }
                             });
                         }
@@ -908,7 +1117,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     if (subId === 'test' && !action) {
                         const { url, id: payloadId } = body || {};
                         if (!url) throw { status: 400, message: '缺少測試連線所需的 URL。' };
-                        const latencyMs = Math.floor(50 + Math.random() * 200);
+                        const latency_ms = Math.floor(50 + Math.random() * 200);
                         const success = Math.random() > 0.2;
                         const status: ConnectionStatus = success ? 'ok' : 'error';
                         if (payloadId) {
@@ -921,13 +1130,13 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                             ? `成功連線至 ${url}。`
                             : `無法連線至 ${url}，請檢查設定。`;
 
-                        return { success, status, latencyMs, message };
+                        return { success, status, latency_ms, message };
                     }
                     if (subId && action === 'test') {
                         const dsId = subId;
                         const index = DB.datasources.findIndex((d: any) => d.id === dsId);
                         if (index === -1) throw { status: 404, message: '找不到指定的 Datasource。' };
-                        const latencyMs = Math.floor(50 + Math.random() * 200);
+                        const latency_ms = Math.floor(50 + Math.random() * 200);
                         const success = Math.random() > 0.2;
                         const status: ConnectionStatus = success ? 'ok' : 'error';
                         DB.datasources[index].status = status;
@@ -935,8 +1144,15 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         const message = success
                             ? `成功連線至 ${dsName}。`
                             : `無法連線至 ${dsName}，請檢查設定。`;
-                        return { success, status, latencyMs, message };
+                        return { success, status, latency_ms, message };
                     }
+
+                    // 驗證必填欄位
+                    const { name, type, url, auth_method } = body;
+                    if (!name || !type || !url || !auth_method) {
+                        throw { status: 400, message: 'Missing required fields: name, type, url, auth_method' };
+                    }
+
                     const timestamp = new Date().toISOString();
                     const newDs = { ...body, id: `ds-${uuidv4()}`, created_at: timestamp, status: 'pending' };
                     DB.datasources.unshift(newDs);
@@ -957,18 +1173,25 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     }
                     if (subId && action === 'run') {
                         const jobId = subId;
-                        const jobIndex = DB.discoveryJobs.findIndex((j: any) => j.id === jobId);
+                        const jobIndex = DB.discovery_jobs.findIndex((j: any) => j.id === jobId);
                         if (jobIndex === -1) throw { status: 404 };
-                        DB.discoveryJobs[jobIndex].status = 'running';
+                        DB.discovery_jobs[jobIndex].status = 'running';
                         setTimeout(() => {
-                            const idx = DB.discoveryJobs.findIndex((j: any) => j.id === jobId);
+                            const idx = DB.discovery_jobs.findIndex((j: any) => j.id === jobId);
                             if (idx > -1) {
-                                DB.discoveryJobs[idx].status = Math.random() > 0.2 ? 'success' : 'partial_failure';
-                                DB.discoveryJobs[idx].last_run = new Date().toISOString();
+                                DB.discovery_jobs[idx].status = Math.random() > 0.2 ? 'success' : 'partial_failure';
+                                DB.discovery_jobs[idx].last_run = new Date().toISOString();
                             }
                         }, 3000);
                         return { message: 'Run triggered.' };
                     }
+
+                    // 驗證必填欄位
+                    const { name, kind, schedule } = body;
+                    if (!name || !kind || !schedule) {
+                        throw { status: 400, message: 'Missing required fields: name, kind, schedule' };
+                    }
+
                     const timestamp = new Date().toISOString();
                     const newJob: DiscoveryJob = {
                         ...body,
@@ -983,20 +1206,20 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         created_at: timestamp,
                         updated_at: timestamp,
                     };
-                    DB.discoveryJobs.unshift(newJob);
+                    DB.discovery_jobs.unshift(newJob);
                     return newJob;
                 }
                 if (id === 'import-discovered') {
                     const { discoveredResourceIds, jobId, deployAgent } = body;
                     discoveredResourceIds.forEach((resId: string) => {
-                        const resIndex = DB.discoveredResources.findIndex((r: any) => r.id === resId);
+                        const resIndex = DB.discovered_resources.findIndex((r: any) => r.id === resId);
                         if (resIndex > -1) {
-                            DB.discoveredResources[resIndex].status = 'imported';
+                            DB.discovered_resources[resIndex].status = 'imported';
                             const newResource = {
                                 id: `res-${uuidv4()}`,
-                                name: DB.discoveredResources[resIndex].name,
+                                name: DB.discovered_resources[resIndex].name,
                                 status: 'healthy',
-                                type: DB.discoveredResources[resIndex].type,
+                                type: DB.discovered_resources[resIndex].type,
                                 provider: 'Discovered',
                                 region: 'N/A',
                                 owner: 'Unassigned',
@@ -1022,6 +1245,25 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 if (id === 'import') {
                     return { message: '成功匯入 15 筆資源。' };
                 } else {
+                    // 驗證外鍵
+                    if (body.team_id) {
+                        const team = DB.teams.find(t => t.id === body.team_id && !t.deleted_at);
+                        if (!team) throw { status: 404, message: 'Team not found.' };
+                    }
+                    if (body.owner_id) {
+                        const owner = DB.users.find(u => u.id === body.owner_id && !u.deleted_at);
+                        if (!owner) throw { status: 404, message: 'Owner not found.' };
+                    }
+                    if (body.datasource_id) {
+                        const datasource = DB.datasources.find(d => d.id === body.datasource_id && !d.deleted_at);
+                        if (!datasource) throw { status: 404, message: 'Datasource not found.' };
+                    }
+
+                    // 驗證枚舉值
+                    if (body.status) {
+                        validateEnum(body.status, ['healthy', 'warning', 'critical', 'offline'], 'status');
+                    }
+
                     const timestamp = new Date().toISOString();
                     const newResource = {
                         ...body,
@@ -1030,6 +1272,8 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         updated_at: timestamp
                     };
                     DB.resources.unshift(newResource);
+                    // 自動填充唯讀標籤
+                    autoPopulateReadonlyTags(newResource);
 
                     // 紀錄審計日誌
                     const currentUser = getCurrentUser();
@@ -1052,7 +1296,16 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     created_at: timestamp,
                     updated_at: timestamp
                 };
-                DB.resourceLinks.unshift(newLink);
+                DB.resource_links.unshift(newLink);
+                // Audit log for resource link creation
+                const currentUser = getCurrentUser();
+                auditLogMiddleware(
+                    currentUser.id,
+                    'CREATE',
+                    'ResourceLink',
+                    newLink.id,
+                    { source_resource_id: newLink.source_resource_id, target_resource_id: newLink.target_resource_id, link_type: newLink.link_type }
+                );
                 return newLink;
             }
             case 'PATCH /resources': {
@@ -1066,11 +1319,11 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 }
                 if (id === 'discovery-jobs') {
                     const jobId = subId;
-                    const index = DB.discoveryJobs.findIndex((j: any) => j.id === jobId);
+                    const index = DB.discovery_jobs.findIndex((j: any) => j.id === jobId);
                     if (index === -1) throw { status: 404 };
-                    const existingJob = DB.discoveryJobs[index];
+                    const existingJob = DB.discovery_jobs[index];
                     // 更新 updated_at 時間戳
-                    DB.discoveryJobs[index] = {
+                    DB.discovery_jobs[index] = {
                         ...existingJob,
                         ...body,
                         target_config: body?.target_config || existingJob.target_config,
@@ -1079,7 +1332,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         tags: Array.isArray(body?.tags) ? body.tags : existingJob.tags,
                         updated_at: new Date().toISOString(),
                     };
-                    return DB.discoveryJobs[index];
+                    return DB.discovery_jobs[index];
                 }
                 const resIndex = DB.resources.findIndex((r: any) => r.id === id);
                 if (resIndex === -1) throw { status: 404 };
@@ -1100,11 +1353,26 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 return DB.resources[resIndex];
             }
             case 'PATCH /resource-links': {
-                const linkIndex = DB.resourceLinks.findIndex((link: any) => link.id === id);
+                const linkIndex = DB.resource_links.findIndex((link: any) => link.id === id);
                 if (linkIndex === -1) throw { status: 404 };
+                const existingLink = DB.resource_links[linkIndex];
                 // 更新 updated_at 時間戳
-                DB.resourceLinks[linkIndex] = { ...DB.resourceLinks[linkIndex], ...body, updated_at: new Date().toISOString() };
-                return DB.resourceLinks[linkIndex];
+                DB.resource_links[linkIndex] = { ...existingLink, ...body, updated_at: new Date().toISOString() };
+                // Audit log for resource link update
+                const currentUser = getCurrentUser();
+                auditLogMiddleware(
+                    currentUser.id,
+                    'UPDATE',
+                    'ResourceLink',
+                    id,
+                    {
+                        old_link_type: existingLink.link_type,
+                        new_link_type: body.link_type || existingLink.link_type,
+                        source_resource_id: existingLink.source_resource_id,
+                        target_resource_id: existingLink.target_resource_id
+                    }
+                );
+                return DB.resource_links[linkIndex];
             }
             case 'DELETE /resources': {
                 if (id === 'datasources') {
@@ -1115,8 +1383,8 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 }
                 if (id === 'discovery-jobs') {
                     const jobId = subId;
-                    const index = DB.discoveryJobs.findIndex((j: any) => j.id === jobId);
-                    if (index > -1) (DB.discoveryJobs[index] as any).deleted_at = new Date().toISOString();
+                    const index = DB.discovery_jobs.findIndex((j: any) => j.id === jobId);
+                    if (index > -1) (DB.discovery_jobs[index] as any).deleted_at = new Date().toISOString();
                     return {};
                 }
                 const delResIndex = DB.resources.findIndex((r: any) => r.id === id);
@@ -1137,19 +1405,59 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 return {};
             }
             case 'DELETE /resource-links': {
-                const linkIndex = DB.resourceLinks.findIndex((link: any) => link.id === id);
-                if (linkIndex > -1) DB.resourceLinks[linkIndex].deleted_at = new Date().toISOString();
+                const linkIndex = DB.resource_links.findIndex((link: any) => link.id === id);
+                if (linkIndex > -1) {
+                    const link = DB.resource_links[linkIndex];
+                    DB.resource_links[linkIndex].deleted_at = new Date().toISOString();
+                    // Audit log for resource link deletion
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'DELETE',
+                        'ResourceLink',
+                        id,
+                        {
+                            source_resource_id: link.source_resource_id,
+                            target_resource_id: link.target_resource_id,
+                            link_type: link.link_type
+                        }
+                    );
+                }
                 return {};
             }
 
             case 'GET /resource-groups': {
-                let groups = getActive(DB.resourceGroups);
+                let groups = getActive(DB.resource_groups);
                 if (params?.sort_by && params?.sort_order) {
                     groups = sortData(groups, params.sort_by, params.sort_order);
                 }
-                return groups;
+                return paginate(groups, params?.page, params?.page_size);
             }
             case 'POST /resource-groups':
+                if (id === 'batch-actions') {
+                    const { action, ids = [] } = body || {};
+                    if (!action || !Array.isArray(ids)) {
+                        throw { status: 400, message: 'Invalid payload for batch actions.' };
+                    }
+                    let updated = 0;
+                    if (action === 'delete') {
+                        DB.resource_groups.forEach((group: any) => {
+                            if (ids.includes(group.id)) {
+                                group.deleted_at = new Date().toISOString();
+                                updated += 1;
+                            }
+                        });
+                    } else {
+                        throw { status: 400, message: `Unsupported batch action: ${action}` };
+                    }
+                    return { success: true, updated };
+                }
+                // 驗證必填欄位
+                const { name: resourceGroupName, owner_team, member_ids } = body;
+                if (!resourceGroupName || !owner_team || !Array.isArray(member_ids)) {
+                    throw { status: 400, message: 'Missing required fields: name, owner_team, member_ids' };
+                }
+
                 const timestamp = new Date().toISOString();
                 const newGroup = {
                     ...body,
@@ -1157,33 +1465,72 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     created_at: timestamp,
                     updated_at: timestamp
                 };
-                DB.resourceGroups.unshift(newGroup);
+                DB.resource_groups.unshift(newGroup);
+                // Audit log for resource group creation
+                const currentUser5 = getCurrentUser();
+                auditLogMiddleware(
+                    currentUser5.id,
+                    'CREATE',
+                    'ResourceGroup',
+                    newGroup.id,
+                    { name: newGroup.name, type: newGroup.type }
+                );
                 return newGroup;
             case 'PUT /resource-groups':
-                const groupIndex = DB.resourceGroups.findIndex((g: any) => g.id === id);
+                const groupIndex = DB.resource_groups.findIndex((g: any) => g.id === id);
                 if (groupIndex === -1) throw { status: 404 };
+                const existingGroup = DB.resource_groups[groupIndex];
                 // 更新 updated_at 時間戳
-                DB.resourceGroups[groupIndex] = { ...DB.resourceGroups[groupIndex], ...body, updated_at: new Date().toISOString() };
-                return DB.resourceGroups[groupIndex];
+                const updatedGroup = { ...existingGroup, ...body, updated_at: new Date().toISOString() };
+                DB.resource_groups[groupIndex] = updatedGroup;
+                // Audit log for resource group update
+                const currentUser6 = getCurrentUser();
+                auditLogMiddleware(
+                    currentUser6.id,
+                    'UPDATE',
+                    'ResourceGroup',
+                    id,
+                    { old_name: existingGroup.name, new_name: updatedGroup.name, old_type: existingGroup.type, new_type: updatedGroup.type }
+                );
+                return updatedGroup;
             case 'DELETE /resource-groups':
-                const delGroupIndex = DB.resourceGroups.findIndex((g: any) => g.id === id);
-                if (delGroupIndex > -1) DB.resourceGroups[delGroupIndex].deleted_at = new Date().toISOString();
+                const delGroupIndex = DB.resource_groups.findIndex((g: any) => g.id === id);
+                if (delGroupIndex > -1) {
+                    const group = DB.resource_groups[delGroupIndex];
+                    DB.resource_groups[delGroupIndex].deleted_at = new Date().toISOString();
+                    // Audit log for resource group deletion
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'DELETE',
+                        'ResourceGroup',
+                        id,
+                        { name: group.name, type: group.type }
+                    );
+                }
                 return {};
 
             // Automation
             case 'GET /automation': {
                 if (id === 'scripts') {
-                    return getActive(DB.playbooks);
+                    let scripts = getActive(DB.playbooks);
+                    if (params?.sort_by && params?.sort_order) {
+                        scripts = sortData(scripts, params.sort_by, params.sort_order);
+                    }
+                    return paginate(scripts, params?.page, params?.page_size);
                 }
                 if (id === 'triggers') {
-                    let triggers = getActive(DB.automationTriggers);
+                    let triggers = getActive(DB.automation_triggers);
                     if (params?.keyword) {
                         triggers = triggers.filter((t: any) => t.name.toLowerCase().includes(params.keyword.toLowerCase()));
+                    }
+                    if (params?.sort_by && params?.sort_order) {
+                        triggers = sortData(triggers, params.sort_by, params.sort_order);
                     }
                     return paginate(triggers, params?.page, params?.page_size);
                 }
                 if (id === 'executions') {
-                    let executions = [...DB.automationExecutions];
+                    let executions = getActive(DB.automation_executions);
                     if (params) {
                         if (params.playbookId) executions = executions.filter((e: any) => e.script_id === params.playbookId);
                         if (params.status) executions = executions.filter((e: any) => e.status === params.status);
@@ -1233,18 +1580,28 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                             parameters: body?.parameters ?? {},
                             logs: { stdout: 'Execution started...', stderr: '' }
                         };
-                        DB.automationExecutions.unshift(newExec);
+                        DB.automation_executions.unshift(newExec);
                         setTimeout(() => {
-                            const index = DB.automationExecutions.findIndex((e: any) => e.id === newExec.id);
+                            const index = DB.automation_executions.findIndex((e: any) => e.id === newExec.id);
                             if (index > -1) {
-                                DB.automationExecutions[index].status = 'success';
-                                DB.automationExecutions[index].end_time = new Date().toISOString();
-                                DB.automationExecutions[index].duration_ms = 3000;
-                                DB.automationExecutions[index].logs.stdout += '\nExecution finished.';
+                                DB.automation_executions[index].status = 'success';
+                                DB.automation_executions[index].end_time = new Date().toISOString();
+                                DB.automation_executions[index].duration_ms = 3000;
+                                DB.automation_executions[index].logs.stdout += '\nExecution finished.';
                             }
                         }, 3000);
                         return newExec;
                     }
+
+                    // 驗證必填欄位
+                    const { name, type, content } = body;
+                    if (!name || !type || !content) {
+                        throw { status: 400, message: 'Missing required fields: name, type, content' };
+                    }
+                    if (!['shell', 'python', 'ansible', 'terraform'].includes(type)) {
+                        throw { status: 400, message: 'Invalid playbook type' };
+                    }
+
                     const timestamp = new Date().toISOString();
                     const newScript = {
                         ...body,
@@ -1253,6 +1610,15 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         updated_at: timestamp
                     };
                     DB.playbooks.unshift(newScript);
+                    // Audit log for automation playbook creation
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'CREATE',
+                        'AutomationPlaybook',
+                        newScript.id,
+                        { name: newScript.name, type: newScript.type }
+                    );
                     return newScript;
                 }
                 if (id === 'executions' && action === 'retry') {
@@ -1260,9 +1626,9 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     if (!executionId) {
                         throw { status: 400, message: 'Execution ID is required to retry automation.' };
                     }
-                    const executionIndex = DB.automationExecutions.findIndex((e: any) => e.id === executionId);
+                    const executionIndex = DB.automation_executions.findIndex((e: any) => e.id === executionId);
                     if (executionIndex === -1) throw { status: 404, message: 'Automation execution not found.' };
-                    const originalExec = DB.automationExecutions[executionIndex];
+                    const originalExec = DB.automation_executions[executionIndex];
                     const newExec = {
                         ...originalExec,
                         id: `exec-${uuidv4()}`,
@@ -1271,7 +1637,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         end_time: undefined,
                         duration_ms: undefined
                     };
-                    DB.automationExecutions.unshift(newExec);
+                    DB.automation_executions.unshift(newExec);
                     return newExec;
                 }
                 if (id === 'triggers') {
@@ -1285,7 +1651,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         }
                         let updated = 0;
                         const now = new Date().toISOString();
-                        DB.automationTriggers.forEach((trigger: any) => {
+                        DB.automation_triggers.forEach((trigger: any) => {
                             if (!ids.includes(trigger.id)) return;
                             if (batchAction === 'enable') trigger.enabled = true;
                             if (batchAction === 'disable') trigger.enabled = false;
@@ -1294,6 +1660,24 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         });
                         return { success: true, updated };
                     }
+
+                    // 驗證必填欄位
+                    const { name, type, enabled, target_playbook_id } = body;
+                    if (!name || !type || enabled === undefined || !target_playbook_id) {
+                        throw { status: 400, message: 'Missing required fields for automation trigger' };
+                    }
+                    if (!['Schedule', 'Webhook', 'Event'].includes(type)) {
+                        throw { status: 400, message: 'Invalid trigger type' };
+                    }
+
+                    // 驗證外鍵
+                    if (body.target_playbook_id) {
+                        const playbook = DB.playbooks.find(p => p.id === body.target_playbook_id && !p.deleted_at);
+                        if (!playbook) {
+                            throw { status: 404, message: 'Target playbook not found.' };
+                        }
+                    }
+
                     const timestamp = new Date().toISOString();
                     const newTrigger = {
                         ...body,
@@ -1301,7 +1685,16 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         created_at: timestamp,
                         updated_at: timestamp
                     };
-                    DB.automationTriggers.unshift(newTrigger);
+                    DB.automation_triggers.unshift(newTrigger);
+                    // Audit log for automation trigger creation
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'CREATE',
+                        'AutomationTrigger',
+                        newTrigger.id,
+                        { name: newTrigger.name, type: newTrigger.type }
+                    );
                     return newTrigger;
                 }
                 break;
@@ -1311,17 +1704,39 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const itemId = subId;
                     const index = DB.playbooks.findIndex((p: any) => p.id === itemId);
                     if (index === -1) throw { status: 404 };
+                    const existing = DB.playbooks[index];
                     // 更新 updated_at 時間戳
-                    DB.playbooks[index] = { ...DB.playbooks[index], ...body, updated_at: new Date().toISOString() };
-                    return DB.playbooks[index];
+                    const updated = { ...existing, ...body, updated_at: new Date().toISOString() };
+                    DB.playbooks[index] = updated;
+                    // Audit log for automation playbook update
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'UPDATE',
+                        'AutomationPlaybook',
+                        itemId,
+                        { old_name: existing.name, new_name: updated.name }
+                    );
+                    return updated;
                 }
                 if (id === 'triggers') {
                     const itemId = subId;
-                    const index = DB.automationTriggers.findIndex((t: any) => t.id === itemId);
+                    const index = DB.automation_triggers.findIndex((t: any) => t.id === itemId);
                     if (index === -1) throw { status: 404 };
+                    const existing = DB.automation_triggers[index];
                     // 更新 updated_at 時間戳
-                    DB.automationTriggers[index] = { ...DB.automationTriggers[index], ...body, updated_at: new Date().toISOString() };
-                    return DB.automationTriggers[index];
+                    const updated = { ...existing, ...body, updated_at: new Date().toISOString() };
+                    DB.automation_triggers[index] = updated;
+                    // Audit log for automation trigger update
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'UPDATE',
+                        'AutomationTrigger',
+                        itemId,
+                        { old_name: existing.name, new_name: updated.name, old_enabled: existing.enabled, new_enabled: updated.enabled }
+                    );
+                    return updated;
                 }
                 break;
             }
@@ -1329,13 +1744,37 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 if (id === 'scripts') {
                     const itemId = subId;
                     const index = DB.playbooks.findIndex((item: any) => item.id === itemId);
-                    if (index > -1) (DB.playbooks[index] as any).deleted_at = new Date().toISOString();
+                    if (index > -1) {
+                        const playbook = DB.playbooks[index];
+                        (DB.playbooks[index] as any).deleted_at = new Date().toISOString();
+                        // Audit log for automation playbook deletion
+                        const currentUser = getCurrentUser();
+                        auditLogMiddleware(
+                            currentUser.id,
+                            'DELETE',
+                            'AutomationPlaybook',
+                            itemId,
+                            { name: playbook.name, type: playbook.type }
+                        );
+                    }
                     return {};
                 }
                 if (id === 'triggers') {
                     const itemId = subId;
-                    const index = DB.automationTriggers.findIndex((item: any) => item.id === itemId);
-                    if (index > -1) (DB.automationTriggers[index] as any).deleted_at = new Date().toISOString();
+                    const index = DB.automation_triggers.findIndex((item: any) => item.id === itemId);
+                    if (index > -1) {
+                        const trigger = DB.automation_triggers[index];
+                        (DB.automation_triggers[index] as any).deleted_at = new Date().toISOString();
+                        // Audit log for automation trigger deletion
+                        const currentUser = getCurrentUser();
+                        auditLogMiddleware(
+                            currentUser.id,
+                            'DELETE',
+                            'AutomationTrigger',
+                            itemId,
+                            { name: trigger.name, type: trigger.type }
+                        );
+                    }
                     return {};
                 }
                 break;
@@ -1368,9 +1807,9 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     }
                     return paginate(roles, params?.page, params?.page_size);
                 }
-                if (id === 'permissions') return DB.availablePermissions;
+                if (id === 'permissions') return DB.available_permissions;
                 if (id === 'audit-logs') {
-                    let logs = DB.auditLogs;
+                    let logs = DB.audit_logs;
                     if (params?.sort_by && params?.sort_order) {
                         logs = sortData(logs, params.sort_by, params.sort_order);
                     }
@@ -1389,6 +1828,15 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     if (subId === 'import') {
                         return { message: '成功匯入 25 位人員。' };
                     } else {
+                        // 驗證必填欄位
+                        const { name, email, role, team } = body;
+                        if (!name || !email || !role || !team) {
+                            throw { status: 400, message: 'Missing required fields: name, email, role, team' };
+                        }
+                        if (!['Admin', 'SRE', 'Developer', 'Viewer'].includes(role)) {
+                            throw { status: 400, message: 'Invalid role value' };
+                        }
+
                         const timestamp = new Date().toISOString();
                         const newUser = {
                             ...body,
@@ -1399,6 +1847,15 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                             updated_at: timestamp,
                         };
                         DB.users.unshift(newUser);
+                        // Audit log for user creation
+                        const currentUser = getCurrentUser();
+                        auditLogMiddleware(
+                            currentUser.id,
+                            'CREATE',
+                            'User',
+                            newUser.id,
+                            { name: newUser.name, email: newUser.email }
+                        );
                         return newUser;
                     }
                 }
@@ -1408,6 +1865,15 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         if (batchAction === 'delete') DB.teams.forEach((t: any) => { if (ids.includes(t.id)) t.deleted_at = new Date().toISOString(); });
                         return { success: true };
                     }
+
+                    // 驗證外鍵
+                    if (body.owner_id) {
+                        const owner = DB.users.find(u => u.id === body.owner_id && !u.deleted_at);
+                        if (!owner) {
+                            throw { status: 404, message: 'Owner user not found.' };
+                        }
+                    }
+
                     const timestamp = new Date().toISOString();
                     const newTeam = {
                         member_ids: [],
@@ -1417,6 +1883,15 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         updated_at: timestamp,
                     };
                     DB.teams.unshift(newTeam);
+                    // Audit log for team creation
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'CREATE',
+                        'Team',
+                        newTeam.id,
+                        { name: newTeam.name, owner_id: newTeam.owner_id }
+                    );
                     return newTeam;
                 }
                 if (id === 'roles') {
@@ -1436,6 +1911,15 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         updated_at: timestamp,
                     };
                     DB.roles.unshift(newRole);
+                    // Audit log for role creation
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'CREATE',
+                        'Role',
+                        newRole.id,
+                        { name: newRole.name, enabled: newRole.enabled }
+                    );
                     return newRole;
                 }
                 break;
@@ -1445,26 +1929,55 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 const itemId = subId;
                 const index = collection.findIndex((item: any) => item.id === itemId);
                 if (index === -1) throw { status: 404 };
+                const existing = collection[index];
                 const timestamp = new Date().toISOString();
-                const baseUpdate = { ...collection[index], ...body };
+                const baseUpdate = { ...existing, ...body };
                 if ('updated_at' in baseUpdate) {
                     baseUpdate.updated_at = timestamp;
                 }
                 collection[index] = baseUpdate;
+                // Audit log for update
+                const currentUser = getCurrentUser();
+                const entityType = id === 'users' ? 'User' : id === 'teams' ? 'Team' : 'Role';
+                const entityDetails = id === 'users'
+                    ? { old_name: existing.name, new_name: baseUpdate.name, old_email: existing.email, new_email: baseUpdate.email }
+                    : id === 'teams'
+                        ? { old_name: existing.name, new_name: baseUpdate.name }
+                        : { old_name: existing.name, new_name: baseUpdate.name };
+                auditLogMiddleware(
+                    currentUser.id,
+                    'UPDATE',
+                    entityType,
+                    itemId,
+                    entityDetails
+                );
                 return collection[index];
             }
             case 'DELETE /iam': {
                 const collection = id === 'users' ? DB.users : id === 'teams' ? DB.teams : DB.roles;
                 const itemId = subId;
                 const index = collection.findIndex((item: any) => item.id === itemId);
-                if (index > -1) (collection[index] as any).deleted_at = new Date().toISOString();
+                if (index > -1) {
+                    const item = collection[index];
+                    (collection[index] as any).deleted_at = new Date().toISOString();
+                    // Audit log for deletion
+                    const currentUser = getCurrentUser();
+                    const entityType = id === 'users' ? 'User' : id === 'teams' ? 'Team' : 'Role';
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'DELETE',
+                        entityType,
+                        itemId,
+                        { name: item.name, email: item.email }
+                    );
+                }
                 return {};
             }
 
             // Analysis
             case 'GET /analysis': {
                 if (id === 'overview') {
-                    return DB.analysisOverviewData;
+                    return DB.analysis_overview_data;
                 }
                 if (id === 'capacity-planning') {
                     const generateTrendData = (base: number, trend: number, variance: number) => {
@@ -1484,10 +1997,10 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                                 cpuForecast.map(([time, val]) => [time, Math.min(100, val + 5 + Math.random() * 5)])
                             ]
                         },
-                        suggestions: DB.capacitySuggestions,
-                        resource_analysis: DB.capacityResourceAnalysis,
+                        suggestions: DB.capacity_suggestions,
+                        resource_analysis: DB.capacity_resource_analysis,
                         options: {
-                            timeRangeOptions: DB.capacityTimeOptions,
+                            timeRangeOptions: DB.capacity_time_options,
                         },
                     };
                 }
@@ -1502,15 +2015,18 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         log.service.toLowerCase().includes(keyword)
                     );
                 }
+                if (params?.sort_by && params?.sort_order) {
+                    logs = sortData(logs, params.sort_by, params.sort_order);
+                }
                 return paginate(logs, params?.page, params?.page_size);
             }
 
             // Settings
             case 'GET /settings': {
                 if (id === 'layouts') return DB.layouts;
-                if (id === 'widgets') return DB.layoutWidgets;
+                if (id === 'widgets') return DB.layout_widgets;
                 if (id === 'tags') {
-                    let tags = DB.tagDefinitions;
+                    let tags = getActive(DB.tag_definitions);
                     if (params?.sort_by && params?.sort_order) {
                         tags = sortData(tags, params.sort_by, params.sort_order);
                     }
@@ -1525,43 +2041,43 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     };
                 }
                 if (id === 'column-config') {
-                    const pageKey = subId as keyof typeof DB.columnConfigs;
-                    return DB.columnConfigs[pageKey] || [];
+                    const pageKey = subId as keyof typeof DB.column_configs;
+                    return DB.column_configs[pageKey] || [];
                 }
                 if (id === 'notification-strategies') {
-                    let strategies = getActive(DB.notificationStrategies);
+                    let strategies = getActive(DB.notification_strategies);
                     if (params?.keyword) strategies = strategies.filter((s: any) => s.name.toLowerCase().includes(params.keyword.toLowerCase()));
                     if (params?.sort_by && params?.sort_order) {
                         strategies = sortData(strategies, params.sort_by, params.sort_order);
                     }
-                    return strategies;
+                    return paginate(strategies, params?.page, params?.page_size);
                 }
                 if (id === 'notification-channels') {
-                    let channels = getActive(DB.notificationChannels);
+                    let channels = getActive(DB.notification_channels);
                     if (params?.keyword) channels = channels.filter((c: any) => c.name.toLowerCase().includes(params.keyword.toLowerCase()));
                     if (params?.sort_by && params?.sort_order) {
                         channels = sortData(channels, params.sort_by, params.sort_order);
                     }
-                    return channels;
+                    return paginate(channels, params?.page, params?.page_size);
                 }
                 if (id === 'notification-history') {
-                    let history = DB.notificationHistory;
+                    let history = DB.notification_history;
                     if (params?.sort_by && params?.sort_order) {
                         history = sortData(history, params.sort_by, params.sort_order);
                     }
                     return paginate(history, params?.page, params?.page_size);
                 }
                 if (id === 'mail') {
-                    if (!DB.mailSettings.encryptionModes) {
-                        DB.mailSettings.encryptionModes = ['none', 'tls', 'ssl'];
+                    if (!DB.mail_settings.encryptionModes) {
+                        DB.mail_settings.encryptionModes = ['none', 'tls', 'ssl'];
                     }
-                    return DB.mailSettings;
+                    return DB.mail_settings;
                 }
-                if (id === 'auth') return DB.authSettings;
-                if (id === 'platform') return DB.platformSettings;
-                if (id === 'preferences' && subId === 'options') return DB.preferenceOptions;
+                if (id === 'auth') return DB.auth_settings;
+                if (id === 'platform') return DB.platform_settings;
+                if (id === 'preferences' && subId === 'options') return DB.preference_options;
                 if (id === 'grafana') {
-                    return DB.grafanaSettings;
+                    return DB.grafana_settings;
                 }
                 break;
             }
@@ -1579,30 +2095,116 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     return DB.layouts;
                 }
                 if (id === 'column-config') {
-                    const pageKey = subId as keyof typeof DB.columnConfigs;
-                    DB.columnConfigs[pageKey] = body;
-                    return DB.columnConfigs[pageKey];
+                    const pageKey = subId as keyof typeof DB.column_configs;
+                    DB.column_configs[pageKey] = body;
+                    return DB.column_configs[pageKey];
                 }
                 if (id === 'mail') {
-                    DB.mailSettings = { ...DB.mailSettings, ...body };
-                    return DB.mailSettings;
+                    DB.mail_settings = { ...DB.mail_settings, ...body };
+                    return DB.mail_settings;
                 }
                 if (id === 'grafana') {
-                    DB.grafanaSettings = { ...DB.grafanaSettings, ...body };
-                    return DB.grafanaSettings;
+                    DB.grafana_settings = { ...DB.grafana_settings, ...body };
+                    return DB.grafana_settings;
                 }
                 if (urlParts[1] === 'tags' && urlParts[3] === 'values') {
                     const tagId = urlParts[2];
-                    const tagIndex = DB.tagDefinitions.findIndex((t: any) => t.id === tagId);
+                    const tagIndex = DB.tag_definitions.findIndex((t: any) => t.id === tagId);
                     if (tagIndex === -1) {
                         throw { status: 404, message: '標籤不存在。' };
                     }
-                    DB.tagDefinitions[tagIndex].allowed_values = Array.isArray(body) ? body : [];
-                    return DB.tagDefinitions[tagIndex];
+                    DB.tag_definitions[tagIndex].allowed_values = Array.isArray(body) ? body : [];
+                    return DB.tag_definitions[tagIndex];
                 }
                 break;
             }
             case 'POST /settings': {
+                if (id === 'notification-channels' && subId === 'batch-actions') {
+                    const { action, ids = [] } = body || {};
+                    if (!action || !Array.isArray(ids)) {
+                        throw { status: 400, message: 'Invalid payload for batch actions.' };
+                    }
+                    let updated = 0;
+                    if (action === 'delete') {
+                        DB.notification_channels.forEach((channel: any) => {
+                            if (ids.includes(channel.id)) {
+                                channel.deleted_at = new Date().toISOString();
+                                updated += 1;
+                            }
+                        });
+                    } else if (action === 'enable') {
+                        DB.notification_channels.forEach((channel: any) => {
+                            if (ids.includes(channel.id)) {
+                                channel.enabled = true;
+                                channel.updated_at = new Date().toISOString();
+                                updated += 1;
+                            }
+                        });
+                    } else if (action === 'disable') {
+                        DB.notification_channels.forEach((channel: any) => {
+                            if (ids.includes(channel.id)) {
+                                channel.enabled = false;
+                                channel.updated_at = new Date().toISOString();
+                                updated += 1;
+                            }
+                        });
+                    } else {
+                        throw { status: 400, message: `Unsupported batch action: ${action}` };
+                    }
+                    return { success: true, updated };
+                }
+                if (id === 'notification-strategies' && subId === 'batch-actions') {
+                    const { action, ids = [] } = body || {};
+                    if (!action || !Array.isArray(ids)) {
+                        throw { status: 400, message: 'Invalid payload for batch actions.' };
+                    }
+                    let updated = 0;
+                    if (action === 'delete') {
+                        DB.notification_strategies.forEach((strategy: any) => {
+                            if (ids.includes(strategy.id)) {
+                                strategy.deleted_at = new Date().toISOString();
+                                updated += 1;
+                            }
+                        });
+                    } else if (action === 'enable') {
+                        DB.notification_strategies.forEach((strategy: any) => {
+                            if (ids.includes(strategy.id)) {
+                                strategy.enabled = true;
+                                strategy.updated_at = new Date().toISOString();
+                                updated += 1;
+                            }
+                        });
+                    } else if (action === 'disable') {
+                        DB.notification_strategies.forEach((strategy: any) => {
+                            if (ids.includes(strategy.id)) {
+                                strategy.enabled = false;
+                                strategy.updated_at = new Date().toISOString();
+                                updated += 1;
+                            }
+                        });
+                    } else {
+                        throw { status: 400, message: `Unsupported batch action: ${action}` };
+                    }
+                    return { success: true, updated };
+                }
+                if (id === 'tags' && subId === 'batch-actions') {
+                    const { action, ids = [] } = body || {};
+                    if (!action || !Array.isArray(ids)) {
+                        throw { status: 400, message: 'Invalid payload for batch actions.' };
+                    }
+                    let updated = 0;
+                    if (action === 'delete') {
+                        DB.tag_definitions.forEach((tag: any) => {
+                            if (ids.includes(tag.id)) {
+                                tag.deleted_at = new Date().toISOString();
+                                updated += 1;
+                            }
+                        });
+                    } else {
+                        throw { status: 400, message: `Unsupported batch action: ${action}` };
+                    }
+                    return { success: true, updated };
+                }
                 if (id === 'tags') {
                     // 創建新標籤定義
                     if (!body.key || !body.scopes || !body.writable_roles) {
@@ -1610,7 +2212,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     }
 
                     // 檢查標籤鍵是否已存在
-                    const existingTag = DB.tagDefinitions.find((t: any) => t.key === body.key);
+                    const existingTag = DB.tag_definitions.find((t: any) => t.key === body.key);
                     if (existingTag) {
                         throw { status: 400, message: `標籤鍵「${body.key}」已存在。` };
                     }
@@ -1628,12 +2230,21 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         usage_count: 0,
                     };
 
-                    DB.tagDefinitions.push(newTag);
+                    DB.tag_definitions.push(newTag);
+                    // Audit log for tag definition creation
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'CREATE',
+                        'TagDefinition',
+                        newTag.id,
+                        { key: newTag.key, scopes: newTag.scopes }
+                    );
                     return newTag;
                 }
                 if (urlParts[1] === 'notification-channels' && action === 'test') {
                     const channelId = subId;
-                    const channel = DB.notificationChannels.find((c: any) => c.id === channelId);
+                    const channel = DB.notification_channels.find((c: any) => c.id === channelId);
                     if (!channel) {
                         throw { status: 404, message: 'Notification channel not found.' };
                     }
@@ -1643,7 +2254,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 }
                 if (urlParts[1] === 'notification-history' && action === 'resend') {
                     const recordId = subId;
-                    const record = DB.notificationHistory.find((r: any) => r.id === recordId);
+                    const record = DB.notification_history.find((r: any) => r.id === recordId);
                     if (!record) {
                         throw { status: 404, message: 'Notification record not found.' };
                     }
@@ -1665,7 +2276,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     return { success: true, message: '連線成功！偵測到 Grafana v10.1.2。' };
                 }
                 if (id === 'notification-strategies') {
-                    const fallbackOptions = DB.notificationStrategyOptions || { severity_levels: [], impact_levels: [] };
+                    const fallbackOptions = DB.notification_strategy_options || { severity_levels: [], impact_levels: [] };
                     const severityLevels = Array.isArray(body?.severity_levels) && body.severity_levels.length > 0
                         ? body.severity_levels
                         : fallbackOptions.severity_levels;
@@ -1686,10 +2297,29 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         created_at: timestamp,
                         updated_at: timestamp,
                     };
-                    DB.notificationStrategies.unshift(newStrategy);
+                    DB.notification_strategies.unshift(newStrategy);
+                    // Audit log for notification strategy creation
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'CREATE',
+                        'NotificationStrategy',
+                        newStrategy.id,
+                        { name: newStrategy.name, enabled: newStrategy.enabled }
+                    );
                     return newStrategy;
                 }
                 if (id === 'notification-channels') {
+                    // 驗證必填欄位
+                    const { name, type, enabled, config } = body;
+                    if (!name || !type || enabled === undefined || !config) {
+                        throw { status: 400, message: 'Missing required fields: name, type, enabled, config' };
+                    }
+                    const validTypes: NotificationChannelType[] = ['Email', 'Webhook (通用)', 'Slack', 'LINE Notify', 'SMS'];
+                    if (!validTypes.includes(type)) {
+                        throw { status: 400, message: 'Invalid channel type' };
+                    }
+
                     const timestamp = new Date().toISOString();
                     const newChannel = {
                         ...body,
@@ -1699,11 +2329,20 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         created_at: timestamp,
                         updated_at: timestamp
                     };
-                    DB.notificationChannels.unshift(newChannel);
+                    DB.notification_channels.unshift(newChannel);
+                    // Audit log for notification channel creation
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'CREATE',
+                        'NotificationChannel',
+                        newChannel.id,
+                        { name: newChannel.name, type: newChannel.type }
+                    );
                     return newChannel;
                 }
                 if (id === 'tags') {
-                    const fallbackRoles = DB.allOptions?.tagManagement?.writable_roles || ['platform_admin'];
+                    const fallbackRoles = DB.all_options?.tagManagement?.writable_roles || ['platform_admin'];
                     const payload = {
                         id: `tag-${uuidv4()}`,
                         allowed_values: Array.isArray(body?.allowed_values) ? body.allowed_values : [],
@@ -1723,7 +2362,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         throw { status: 400, message: '至少需指定一個適用範圍。' };
                     }
 
-                    DB.tagDefinitions.unshift(payload);
+                    DB.tag_definitions.unshift(payload);
                     return payload;
                 }
                 break;
@@ -1733,9 +2372,9 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 const itemId = urlParts[2];
 
                 if (collectionId === 'notification-strategies') {
-                    const index = DB.notificationStrategies.findIndex((s: any) => s.id === itemId);
+                    const index = DB.notification_strategies.findIndex((s: any) => s.id === itemId);
                     if (index === -1) throw { status: 404 };
-                    const existingStrategy = DB.notificationStrategies[index];
+                    const existingStrategy = DB.notification_strategies[index];
                     const severityLevels = Array.isArray(body?.severity_levels) && body?.severity_levels.length > 0
                         ? body.severity_levels
                         : existingStrategy.severity_levels;
@@ -1744,7 +2383,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         : existingStrategy.impact_levels;
 
                     const timestamp = new Date().toISOString();
-                    DB.notificationStrategies[index] = {
+                    DB.notification_strategies[index] = {
                         ...existingStrategy,
                         ...body,
                         severity_levels: severityLevels,
@@ -1752,19 +2391,30 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         last_updated: timestamp,
                         updated_at: timestamp
                     };
-                    return DB.notificationStrategies[index];
+                    return DB.notification_strategies[index];
                 }
                 if (collectionId === 'notification-channels') {
-                    const index = DB.notificationChannels.findIndex((c: any) => c.id === itemId);
+                    const index = DB.notification_channels.findIndex((c: any) => c.id === itemId);
                     if (index === -1) throw { status: 404 };
+                    const existing = DB.notification_channels[index];
                     // 更新 updated_at 時間戳
-                    DB.notificationChannels[index] = { ...DB.notificationChannels[index], ...body, updated_at: new Date().toISOString() };
-                    return DB.notificationChannels[index];
+                    const updated = { ...existing, ...body, updated_at: new Date().toISOString() };
+                    DB.notification_channels[index] = updated;
+                    // Audit log for notification channel update
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'UPDATE',
+                        'NotificationChannel',
+                        itemId,
+                        { old_name: existing.name, new_name: updated.name, old_enabled: existing.enabled, new_enabled: updated.enabled }
+                    );
+                    return updated;
                 }
                 if (collectionId === 'tags') {
-                    const index = DB.tagDefinitions.findIndex((t: any) => t.id === itemId);
+                    const index = DB.tag_definitions.findIndex((t: any) => t.id === itemId);
                     if (index === -1) throw { status: 404 };
-                    const existing = DB.tagDefinitions[index];
+                    const existing = DB.tag_definitions[index];
                     const next: TagDefinition = {
                         ...existing,
                         ...body,
@@ -1785,7 +2435,16 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         next.allowed_values = body.allowed_values;
                     }
 
-                    DB.tagDefinitions[index] = next;
+                    DB.tag_definitions[index] = next;
+                    // Audit log for tag definition update
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'UPDATE',
+                        'TagDefinition',
+                        itemId,
+                        { old_key: existing.key, new_key: next.key, old_scopes: existing.scopes, new_scopes: next.scopes }
+                    );
                 }
                 break;
             }
@@ -1794,22 +2453,44 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 const itemId = urlParts[2];
 
                 if (collectionId === 'notification-strategies') {
-                    const index = DB.notificationStrategies.findIndex((s: any) => s.id === itemId);
-                    if (index > -1) (DB.notificationStrategies[index] as any).deleted_at = new Date().toISOString();
+                    const index = DB.notification_strategies.findIndex((s: any) => s.id === itemId);
+                    if (index > -1) (DB.notification_strategies[index] as any).deleted_at = new Date().toISOString();
                     return {};
                 }
                 if (collectionId === 'notification-channels') {
-                    const index = DB.notificationChannels.findIndex((c: any) => c.id === itemId);
-                    if (index > -1) (DB.notificationChannels[index] as any).deleted_at = new Date().toISOString();
+                    const index = DB.notification_channels.findIndex((c: any) => c.id === itemId);
+                    if (index > -1) {
+                        const channel = DB.notification_channels[index];
+                        (DB.notification_channels[index] as any).deleted_at = new Date().toISOString();
+                        // Audit log for notification channel deletion
+                        const currentUser = getCurrentUser();
+                        auditLogMiddleware(
+                            currentUser.id,
+                            'DELETE',
+                            'NotificationChannel',
+                            itemId,
+                            { name: channel.name, type: channel.type }
+                        );
+                    }
                     return {};
                 }
                 if (collectionId === 'tags') {
-                    const index = DB.tagDefinitions.findIndex((t: any) => t.id === itemId);
+                    const index = DB.tag_definitions.findIndex((t: any) => t.id === itemId);
                     if (index > -1) {
-                        if (DB.tagDefinitions[index].system) {
+                        if (DB.tag_definitions[index].system) {
                             throw { status: 400, message: '系統保留標籤不可刪除。' };
                         }
-                        DB.tagDefinitions[index].deleted_at = new Date().toISOString();
+                        DB.tag_definitions[index].deleted_at = new Date().toISOString();
+                        // Audit log for tag definition deletion
+                        const currentUser = getCurrentUser();
+                        const tag = DB.tag_definitions[index];
+                        auditLogMiddleware(
+                            currentUser.id,
+                            'DELETE',
+                            'TagDefinition',
+                            itemId,
+                            { key: tag.key, scopes: tag.scopes }
+                        );
                     }
                     return {};
                 }
@@ -1817,12 +2498,12 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
             }
             case 'GET /system': {
                 if (id === 'config') {
-                    return DB.systemConfig;
+                    return DB.system_config;
                 }
                 break;
             }
             case 'GET /config-versions': {
-                let versions = getActive(DB.configVersions);
+                let versions = getActive(DB.config_versions);
                 if (params?.entity_type) {
                     versions = versions.filter((version: any) => version.entity_type === params.entity_type);
                 }
@@ -1835,11 +2516,11 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 return paginate(versions, params?.page, params?.page_size);
             }
             case 'GET /kpi-data': {
-                return DB.kpiData;
+                return DB.kpi_data;
             }
             case 'GET /notifications': {
                 if (id === 'options') {
-                    return DB.notificationOptions;
+                    return DB.notification_options;
                 }
                 return DB.notifications;
             }
@@ -1850,7 +2531,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     id: `cv-${uuidv4()}`,
                     created_at: timestamp
                 };
-                DB.configVersions.unshift(newVersion);
+                DB.config_versions.unshift(newVersion);
                 return newVersion;
             }
             case 'POST /notifications': {

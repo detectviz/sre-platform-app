@@ -105,9 +105,9 @@ export interface RuleAnalysisRecommendation {
 }
 
 export interface RuleAnalysisReport {
-  reportType: 'alert' | 'silence';
+  report_type: 'alert' | 'silence';
   summary: string;
-  evaluatedRules: RuleAnalysisEvaluatedRule[];
+  evaluated_rules: RuleAnalysisEvaluatedRule[];
   metrics: RuleAnalysisMetric[];
   insights: RuleAnalysisInsight[];
   recommendations: RuleAnalysisRecommendation[];
@@ -156,7 +156,7 @@ export interface LayoutWidget {
   id: string;
   name: string;
   description: string;
-  supportedPages: string[];
+  supported_pages: string[];
 }
 
 export interface Resource {
@@ -346,7 +346,7 @@ export interface RuleCondition {
   metric: string;
   operator: '>' | '<' | '>=' | '<=';
   threshold: number;
-  durationMinutes: number;
+  duration_minutes: number;
 }
 
 export interface ConditionGroup {
@@ -403,10 +403,10 @@ export interface SilenceMatcher {
 
 export interface SilenceSchedule {
   type: 'single' | 'recurring';
-  startsAt?: string;
-  endsAt?: string;
+  starts_at?: string;
+  ends_at?: string;
   cron?: string;
-  cronDescription?: string; // 人類可讀的 cron 描述
+  cron_description?: string; // 人類可讀的 cron 描述
   timezone?: string;
 }
 
@@ -421,7 +421,7 @@ export interface SilenceRule {
   creator: string;
   created_at: string;
   updated_at: string;
-  deletedAt?: string;
+  deleted_at?: string;
 }
 
 export interface ResourceType {
@@ -434,7 +434,7 @@ export interface AlertRuleTemplate {
   id: string;
   name: string;
   description: string;
-  resourceType: string;
+  resource_type: string;
   data: Partial<AlertRule>;
   preview: {
     conditions: string[];
@@ -702,7 +702,7 @@ export interface AnalysisOverviewData {
   anomalies: Anomaly[];
   suggestions: Suggestion[];
   event_correlation_data: {
-    nodes: { id: string; name: string; value: number; symbolSize: number; category: number }[];
+    nodes: { id: string; name: string; value: number; symbol_size: number; category: number }[];
     links: { source: string; target: string }[];
     categories: { name: string }[];
   };
@@ -722,7 +722,7 @@ export interface CapacityPlanningData {
   suggestions: CapacityPlanningSuggestion[];
   resource_analysis: CapacityPlanningResourceInsight[];
   options: {
-    timeRangeOptions: CapacityPlanningTimeRangeOption[];
+    time_range_options: CapacityPlanningTimeRangeOption[];
   };
 }
 
@@ -736,27 +736,27 @@ export interface CapacityPlanningSuggestion {
   impact: CapacityPlanningImpactLevel;
   effort: CapacityPlanningImpactLevel;
   details: string;
-  detectedAt: string;
-  resourceId?: string;
+  detected_at: string;
+  resource_id?: string;
 }
 
 export interface CapacityPlanningResourceInsight {
   id: string;
-  resourceId: string;
-  resourceName: string;
-  currentUtilization: number;
-  forecastUtilization: number;
+  resource_id: string;
+  resource_name: string;
+  current_utilization: number;
+  forecast_utilization: number;
   recommendation: {
     label: string;
     action: CapacityPlanningRecommendationAction;
     severity: CapacityPlanningRecommendationSeverity;
   };
-  costImpact: {
+  cost_impact: {
     label: string;
-    monthlyDelta: number | null;
+    monthly_delta: number | null;
     currency: string | null;
   };
-  lastEvaluatedAt: string;
+  lastEvaluated_at: string;
 }
 
 export interface CapacityPlanningTimeRangeOption {
@@ -766,7 +766,7 @@ export interface CapacityPlanningTimeRangeOption {
 }
 
 export interface PageMetadata {
-  columnConfigKey: string;
+  column_config_key: string;
 }
 export type PageMetadataMap = Record<string, PageMetadata>;
 
@@ -779,7 +779,7 @@ export interface TabItemConfig {
 export type TabConfigMap = Record<string, TabItemConfig[]>;
 
 export interface PlatformSettings {
-  helpUrl: string;
+  help_url: string;
 }
 
 export interface PreferenceOptions {
@@ -794,7 +794,7 @@ export interface PreferenceOptions {
 export interface StyleDescriptor<T extends string = string> {
   value: T;
   label: string;
-  className: string;
+  class_name: string;
 }
 export interface ColorDescriptor<T extends string = string> {
   value: T;
@@ -810,37 +810,37 @@ export interface ChartTheme {
   };
   grid: {
     axis: string;
-    splitLine: string;
+    split_line: string;
   };
   background: {
     card: string;
     accent: string;
   };
-  healthGauge: {
+  health_gauge: {
     critical: string;
     warning: string;
     healthy: string;
   };
-  eventCorrelation: string[];
+  event_correlation: string[];
   severity: {
     critical: string;
     warning: string;
     info: string;
   };
-  logLevels: {
+  log_levels: {
     error: string;
     warning: string;
     info: string;
     debug: string;
   };
-  capacityPlanning: {
+  capacity_planning: {
     cpu: string;
     memory: string;
     storage: string;
     forecast: string;
     baseline: string;
   };
-  resourceDistribution: {
+  resource_distribution: {
     primary: string;
     border: string;
     axis: string;
@@ -851,8 +851,8 @@ export interface ChartTheme {
     low: string;
   };
   topology: {
-    nodeBorder: string;
-    nodeLabel: string;
+    node_border: string;
+    node_label: string;
     edge: string;
   };
   heatmap: {
@@ -863,67 +863,67 @@ export interface ChartTheme {
 }
 
 export interface GrafanaOptions {
-  timeOptions: { label: string, value: string }[];
-  refreshOptions: { label: string, value: string }[];
-  tvModeOptions: { label: string, value: string }[];
-  themeOptions: { label: string, value: string }[];
+  time_options: { label: string, value: string }[];
+  refresh_options: { label: string, value: string }[];
+  tv_mode_options: { label: string, value: string }[];
+  theme_options: { label: string, value: string }[];
   // New additions for data centralization
-  themeLabel: string;
-  tvModeLabel: string;
-  refreshLabel: string;
-  timeLabel: string;
+  theme_label: string;
+  tv_mode_label: string;
+  refresh_label: string;
+  time_label: string;
 }
 
 export interface LogOptions {
-  timeRangeOptions: { label: string, value: string }[];
+  time_range_options: { label: string, value: string }[];
 }
 
 export interface SilenceRuleOptions {
   keys: string[];
   values: Record<string, string[]>;
-  defaultMatcher: SilenceMatcher;
+  default_matcher: SilenceMatcher;
   weekdays: { value: number, label: string }[];
   types: { value: SilenceRule['type'], label: string }[];
   statuses: { value: boolean, label: string }[];
-  recurrenceTypes: { value: 'daily' | 'weekly' | 'monthly' | 'custom', label: string }[];
+  recurrence_types: { value: 'daily' | 'weekly' | 'monthly' | 'custom', label: string }[];
 }
 
 export interface InfraInsightsOptions {
-  timeOptions: { label: string, value: string }[];
-  riskLevels: ColorDescriptor[];
-  refreshOptions: { label: string, value: string }[];
-  tvModeOptions: { label: string, value: string }[];
-  themeOptions: { label: string, value: string }[];
+  time_options: { label: string, value: string }[];
+  risk_levels: ColorDescriptor[];
+  refresh_options: { label: string, value: string }[];
+  tv_mode_options: { label: string, value: string }[];
+  theme_options: { label: string, value: string }[];
 }
 
 export interface IncidentOptions {
   statuses: StyleDescriptor<Incident['status']>[];
   severities: StyleDescriptor<Incident['severity']>[];
   impacts: StyleDescriptor<Incident['impact']>[];
-  quickSilenceDurations: { label: string, value: number }[];
+  quick_silence_durations: { label: string, value: number }[];
 }
 
 export interface AlertRuleOptions {
-  severities: { value: AlertRule['severity'], label: string, className: string }[];
+  severities: { value: AlertRule['severity'], label: string, class_name: string }[];
   statuses: { value: boolean, label: string }[];
   operators: string[];
-  scopeModes: { value: string; label: string; }[];
+  scope_modes: { value: string; label: string; }[];
   variables: string[];
-  stepTitles: string[];
+  step_titles: string[];
 }
 
 export interface AutomationExecutionOptions {
   statuses: StyleDescriptor<AutomationExecution['status']>[];
-  triggerSources: { value: AutomationExecution['triggerSource']; label: string }[];
+  trigger_sources: { value: AutomationExecution['trigger_source']; label: string }[];
 }
 
 export interface AutomationPlaybookOptions {
-  statuses: StyleDescriptor<AutomationPlaybook['lastRunStatus']>[];
+  statuses: StyleDescriptor<AutomationPlaybook['last_run_status']>[];
 }
 
 export interface NotificationHistoryOptions {
   statuses: { value: NotificationHistoryRecord['status'], label: string }[];
-  channelTypes: { value: NotificationChannelType, label: string }[];
+  channel_types: { value: NotificationChannelType, label: string }[];
 }
 
 export interface NotificationOptions {
@@ -932,7 +932,7 @@ export interface NotificationOptions {
 
 export interface ResourceOptions {
   statuses: StyleDescriptor<Resource['status']>[];
-  statusColors: ColorDescriptor<Resource['status']>[];
+  status_colors: ColorDescriptor<Resource['status']>[];
   types: string[];
   providers: string[];
   regions: string[];
@@ -944,34 +944,34 @@ export interface PersonnelOptions {
 }
 
 export interface AuditLogOptions {
-  actionTypes: string[];
+  action_types: string[];
 }
 
 export interface AutomationScriptOptions {
-  playbookTypes: { value: AutomationPlaybook['type'], label: string }[];
-  parameterTypes: { value: ParameterDefinition['type'], label: string }[];
+  playbook_types: { value: AutomationPlaybook['type'], label: string }[];
+  parameter_types: { value: ParameterDefinition['type'], label: string }[];
 }
 
 export interface NotificationChannelOptions {
-  channelTypes: { value: NotificationChannelType, label: string }[];
-  httpMethods: ('POST' | 'PUT' | 'GET')[];
+  channel_types: { value: NotificationChannelType, label: string }[];
+  http_methods: ('POST' | 'PUT' | 'GET')[];
 }
 
 export interface NotificationStrategyOptions {
-  severityLevels: IncidentSeverity[];
-  impactLevels: IncidentImpact[];
-  defaultCondition: string;
-  conditionKeys: Record<string, string[]>;
-  tagKeys: string[];
-  tagValues: Record<string, string[]>;
-  stepTitles: string[];
+  severity_levels: IncidentSeverity[];
+  impact_levels: IncidentImpact[];
+  default_condition: string;
+  condition_keys: Record<string, string[]>;
+  tag_keys: string[];
+  tag_values: Record<string, string[]>;
+  step_titles: string[];
 }
 
 export interface AutomationTriggerOptions {
-  triggerTypes: { value: TriggerType, label: string }[];
-  conditionKeys: string[];
-  severityOptions: { value: AlertRule['severity'], label: string }[];
-  defaultConfigs: Record<TriggerType, Partial<AutomationTrigger['config']>>;
+  trigger_types: { value: TriggerType, label: string }[];
+  condition_keys: string[];
+  severity_options: { value: AlertRule['severity'], label: string }[];
+  default_configs: Record<TriggerType, Partial<AutomationTrigger['config']>>;
 }
 
 export interface TopologyOptions {
@@ -985,8 +985,8 @@ export interface DashboardOptions {
 
 export interface TagManagementOptions {
   scopes: { value: TagScope; label: string; description: string }[];
-  writableRoles: string[];
-  governanceNotes?: string;
+  writable_roles: string[];
+  governance_notes?: string;
 }
 
 export interface LogExplorerFilters {
@@ -1002,7 +1002,7 @@ export type ConnectionStatus = 'ok' | 'error' | 'pending';
 export interface DatasourceTestResponse {
   success: boolean;
   status: ConnectionStatus;
-  latencyMs?: number;
+  latency_ms?: number;
   message: string;
 }
 
@@ -1021,7 +1021,7 @@ export interface ResourceLink {
   metadata?: Record<string, any>;
   created_at: string;
   updated_at: string;
-  deletedAt?: string;
+  deleted_at?: string;
 }
 
 // 新增 ConfigVersion 接口定義
@@ -1043,9 +1043,9 @@ export interface Datasource {
   status: ConnectionStatus;
   created_at: string;
   url: string;
-  authMethod: AuthMethod;
+  auth_method: AuthMethod;
   tags: KeyValueTag[];
-  deletedAt?: string;
+  deleted_at?: string;
 }
 
 export type DiscoveryJobKind = 'K8s' | 'SNMP' | 'Cloud Provider' | 'Static Range' | 'Custom Script';
@@ -1181,27 +1181,27 @@ export interface AutoDiscoveryOptions {
 export interface AllOptions {
   // Existing
   incidents: IncidentOptions;
-  alertRules: AlertRuleOptions;
-  silenceRules: SilenceRuleOptions;
+  alert_rules: AlertRuleOptions;
+  silence_rules: SilenceRuleOptions;
   resources: ResourceOptions;
-  automationScripts: AutomationScriptOptions;
-  notificationChannels: NotificationChannelOptions;
-  automationTriggers: AutomationTriggerOptions;
+  automation_scripts: AutomationScriptOptions;
+  notification_channels: NotificationChannelOptions;
+  automation_triggers: AutomationTriggerOptions;
   personnel: PersonnelOptions;
   // New additions for v2.24
   dashboards: DashboardOptions;
-  notificationStrategies: NotificationStrategyOptions;
+  notification_strategies: NotificationStrategyOptions;
   grafana: GrafanaOptions;
-  auditLogs: AuditLogOptions;
+  audit_logs: AuditLogOptions;
   logs: LogOptions;
-  infraInsights: InfraInsightsOptions;
-  tagManagement: TagManagementOptions;
+  infra_insights: InfraInsightsOptions;
+  tag_management: TagManagementOptions;
   topology: TopologyOptions;
-  automationExecutions: AutomationExecutionOptions;
-  notificationHistory: NotificationHistoryOptions;
+  automation_executions: AutomationExecutionOptions;
+  notification_history: NotificationHistoryOptions;
   // New additions for data centralization
   datasources: DatasourceOptions;
-  autoDiscovery: AutoDiscoveryOptions;
+  auto_discovery: AutoDiscoveryOptions;
 }
 
 // New additions for data centralization

@@ -17,9 +17,9 @@ const QuickSilenceModal: React.FC<QuickSilenceModalProps> = ({ isOpen, onClose, 
   const incidentOptions = options?.incidents;
 
   useEffect(() => {
-    if (isOpen && incidentOptions?.quickSilenceDurations?.length) {
+    if (isOpen && incidentOptions?.quick_silence_durations?.length) {
       // Set initial duration to the first available option
-      setDuration(incidentOptions.quickSilenceDurations[0].value);
+      setDuration(incidentOptions.quick_silence_durations[0].value);
     }
   }, [isOpen, incidentOptions]);
 
@@ -77,7 +77,7 @@ const QuickSilenceModal: React.FC<QuickSilenceModalProps> = ({ isOpen, onClose, 
                   <div className="p-3 text-center text-red-400 bg-red-900/30 rounded-md">{error}</div>
               ) : (
                   <div className="grid grid-cols-3 gap-2">
-                      {incidentOptions?.quickSilenceDurations.map(d => (
+                      {incidentOptions?.quick_silence_durations.map(d => (
                           <button
                               key={d.value}
                               onClick={() => setDuration(d.value)}

@@ -41,10 +41,10 @@ const AlertRulePage: React.FC = () => {
     const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
 
     const { metadata: pageMetadata } = usePageMetadata();
-    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
 
     const { options } = useOptions();
-    const alertRuleOptions = options?.alertRules;
+    const alertRuleOptions = options?.alert_rules;
 
     const fetchRules = useCallback(async () => {
         if (!pageKey) return;
@@ -52,14 +52,14 @@ const AlertRulePage: React.FC = () => {
         setError(null);
         try {
             const [rulesRes, columnConfigRes, allColumnsRes] = await Promise.all([
-                api.get<AlertRule[]>('/alert-rules', { params: filters }),
+                api.get<{ items: AlertRule[], total: number }>('/alert-rules', { params: filters }),
                 api.get<string[]>(`/settings/column-config/${pageKey}`),
                 api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
             if (allColumnsRes.data.length === 0) {
                 throw new Error('欄位定義缺失');
             }
-            setRules(rulesRes.data);
+            setRules(rulesRes.data.items);
             setAllColumns(allColumnsRes.data);
             const resolvedVisibleColumns = columnConfigRes.data.length > 0
                 ? columnConfigRes.data
@@ -216,14 +216,14 @@ const AlertRulePage: React.FC = () => {
 
         exportToCsv({
             filename: `alert-rules-${new Date().toISOString().split('T')[0]}.csv`,
-            headers: ['id', 'name', 'enabled', 'severity', 'conditionsSummary', 'automationEnabled', 'creator', 'lastUpdated'],
+            headers: ['id', 'name', 'enabled', 'severity', 'conditions_summary', 'automation_enabled', 'creator', 'lastUpdated'],
             data: dataToExport.map(r => ({
                 id: r.id,
                 name: r.name,
                 enabled: r.enabled,
                 severity: r.severity,
-                conditionsSummary: r.conditionsSummary,
-                automationEnabled: r.automationEnabled,
+                conditions_summary: r.conditions_summary,
+                automation_enabled: r.automation_enabled,
                 creator: r.creator,
                 lastUpdated: r.lastUpdated,
             })),
@@ -241,14 +241,14 @@ const AlertRulePage: React.FC = () => {
                 );
             case 'name': return <span className="font-medium text-white">{rule.name}</span>;
             case 'target': return rule.target;
-            case 'conditionsSummary': return rule.conditionsSummary;
+            case 'conditions_summary': return rule.conditions_summary;
             case 'severity': {
                 const descriptor = alertRuleOptions?.severities.find(option => option.value === rule.severity);
-                const pillClass = descriptor?.className || 'bg-slate-800/60 border border-slate-600 text-slate-200';
+                const pillClass = descriptor?.class_name || 'bg-slate-800/60 border border-slate-600 text-slate-200';
                 const label = descriptor?.label || rule.severity;
                 return <span className={`px-2 py-1 text-xs font-semibold rounded-full ${pillClass}`}>{label}</span>;
             }
-            case 'automationEnabled': return rule.automationEnabled ? <Icon name="check-circle" className="w-5 h-5 text-green-400" /> : <Icon name="x-circle" className="w-5 h-5 text-slate-500" />;
+            case 'automation_enabled': return rule.automation_enabled ? <Icon name="check-circle" className="w-5 h-5 text-green-400" /> : <Icon name="x-circle" className="w-5 h-5 text-slate-500" />;
             case 'creator': return rule.creator;
             case 'updated_at': return rule.updated_at;
             default:
@@ -374,7 +374,7 @@ const AlertRulePage: React.FC = () => {
                 onImportSuccess={fetchRules}
                 itemName="告警規則"
                 importEndpoint="/alert-rules/import"
-                templateHeaders={['name', 'description', 'enabled', 'severity', 'conditionsSummary']}
+                templateHeaders={['name', 'description', 'enabled', 'severity', 'conditions_summary']}
                 templateFilename="alert-rules-template.csv"
             />
             <RuleAnalysisModal

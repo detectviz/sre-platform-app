@@ -45,7 +45,7 @@ const ResourceOverviewPage: React.FC = () => {
             avoidLabelOverlap: false,
             itemStyle: {
                 borderRadius: 10,
-                borderColor: chartTheme.resourceDistribution.border,
+                borderColor: chartTheme.resource_distribution.border,
                 borderWidth: 2
             },
             label: { show: false, position: 'center' },
@@ -70,7 +70,7 @@ const ResourceOverviewPage: React.FC = () => {
             type: 'bar',
             barWidth: '60%',
             data: overviewData?.distributionByProvider.map(p => p.count) || [],
-            itemStyle: { color: chartTheme.resourceDistribution.primary }
+            itemStyle: { color: chartTheme.resource_distribution.primary }
         }]
     }), [chartTheme, overviewData]);
 

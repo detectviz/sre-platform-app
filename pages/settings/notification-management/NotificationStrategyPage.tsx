@@ -34,7 +34,7 @@ const NotificationStrategyPage: React.FC = () => {
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
 
     const { metadata: pageMetadata } = usePageMetadata();
-    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
 
     const { options } = useOptions();
     const incidentOptions = options?.incidents;
@@ -45,11 +45,11 @@ const NotificationStrategyPage: React.FC = () => {
         setError(null);
         try {
             const [strategiesRes, columnConfigRes, allColumnsRes] = await Promise.all([
-                api.get<NotificationStrategy[]>('/settings/notification-strategies', { params: filters }),
+                api.get<{ items: NotificationStrategy[], total: number }>('/settings/notification-strategies', { params: filters }),
                 api.get<string[]>(`/settings/column-config/${pageKey}`),
                 api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
-            setStrategies(strategiesRes.data);
+            setStrategies(strategiesRes.data.items);
             if (allColumnsRes.data.length === 0) {
                 throw new Error('欄位定義缺失');
             }
@@ -191,7 +191,7 @@ const NotificationStrategyPage: React.FC = () => {
 
     const getSeverityStyle = (severity: string): string => {
         const descriptor = incidentOptions?.severities.find(s => s.value === severity);
-        return descriptor?.className || 'bg-slate-800/60 border border-slate-600 text-slate-200';
+        return descriptor?.class_name || 'bg-slate-800/60 border border-slate-600 text-slate-200';
     };
 
     const getImpactLabel = (impact: string): string => {
@@ -201,7 +201,7 @@ const NotificationStrategyPage: React.FC = () => {
 
     const getImpactStyle = (impact: string): string => {
         const descriptor = incidentOptions?.impacts.find(i => i.value === impact);
-        return descriptor?.className || 'bg-slate-800/60 border border-slate-600 text-slate-200';
+        return descriptor?.class_name || 'bg-slate-800/60 border border-slate-600 text-slate-200';
     };
 
     const renderConditionTags = (condition: string) => {
@@ -238,12 +238,12 @@ const NotificationStrategyPage: React.FC = () => {
                     </label>
                 );
             case 'name': return <span className="font-medium text-white">{strategy.name}</span>;
-            case 'triggerCondition': return renderConditionTags(strategy.triggerCondition);
-            case 'channelCount': return strategy.channelCount;
+            case 'trigger_condition': return renderConditionTags(strategy.trigger_condition);
+            case 'channel_count': return strategy.channel_count;
             case 'severityLevels':
                 return (
                     <div className="flex flex-wrap gap-1">
-                        {strategy.severityLevels.map(level => (
+                        {strategy.severity_levels.map(level => (
                             <span key={level} className={`px-2 py-0.5 text-xs rounded-full ${getSeverityStyle(level)}`}>
                                 {getSeverityLabel(level)}
                             </span>
@@ -253,7 +253,7 @@ const NotificationStrategyPage: React.FC = () => {
             case 'impactLevels':
                 return (
                     <div className="flex flex-wrap gap-1">
-                        {strategy.impactLevels.map(level => (
+                        {strategy.impact_levels.map(level => (
                             <span key={level} className={`px-2 py-0.5 text-xs rounded-full ${getImpactStyle(level)}`}>
                                 {getImpactLabel(level)}
                             </span>

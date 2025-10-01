@@ -33,14 +33,14 @@ const AutomationHistoryPage: React.FC = () => {
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
-    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'startTime', direction: 'desc' });
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'start_time', direction: 'desc' });
     const [selectedExecution, setSelectedExecution] = useState<AutomationExecution | null>(null);
 
     const { options, isLoading: isLoadingOptions } = useOptions();
-    const executionOptions = options?.automationExecutions;
+    const executionOptions = options?.automation_executions;
 
     const { metadata: pageMetadata } = usePageMetadata();
-    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
 
     const fetchExecutions = useCallback(async () => {
         if (!pageKey) return;
@@ -120,7 +120,7 @@ const AutomationHistoryPage: React.FC = () => {
 
         exportToCsv({
             filename: `automation-history-${new Date().toISOString().split('T')[0]}.csv`,
-            headers: ['id', 'scriptName', 'status', 'triggerSource', 'triggeredBy', 'startTime', 'endTime', 'durationMs'],
+            headers: ['id', 'script_name', 'status', 'trigger_source', 'triggered_by', 'start_time', 'endTime', 'duration_ms'],
             data: dataToExport,
         });
     };
@@ -137,7 +137,7 @@ const AutomationHistoryPage: React.FC = () => {
 
     const getStatusPill = (status: AutomationExecution['status']) => {
         const style = executionOptions?.statuses.find(s => s.value === status);
-        return style ? style.className : 'bg-slate-500/20 text-slate-400';
+        return style ? style.class_name : 'bg-slate-500/20 text-slate-400';
     };
 
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => setSelectedIds(e.target.checked ? executions.map(ex => ex.id) : []);
@@ -151,15 +151,15 @@ const AutomationHistoryPage: React.FC = () => {
         return executionOptions.statuses.find(s => s.value === status)?.label || status;
     };
 
-    const getTriggerSourceLabel = (source: AutomationExecution['triggerSource']): string => {
-        if (!executionOptions?.triggerSources) return source;
-        return executionOptions.triggerSources.find(item => item.value === source)?.label || source;
+    const getTriggerSourceLabel = (source: AutomationExecution['trigger_source']): string => {
+        if (!executionOptions?.trigger_sources) return source;
+        return executionOptions.trigger_sources.find(item => item.value === source)?.label || source;
     };
 
     const renderCellContent = (ex: AutomationExecution, columnKey: string) => {
         switch (columnKey) {
-            case 'scriptName':
-                return <span className="font-medium text-white">{ex.scriptName}</span>;
+            case 'script_name':
+                return <span className="font-medium text-white">{ex.script_name}</span>;
             case 'status':
                 return (
                     <div className="flex items-center space-x-2">
@@ -177,14 +177,14 @@ const AutomationHistoryPage: React.FC = () => {
                         )}
                     </div>
                 );
-            case 'triggerSource':
-                return getTriggerSourceLabel(ex.triggerSource);
-            case 'triggeredBy':
-                return ex.triggeredBy;
-            case 'startTime':
-                return ex.startTime;
-            case 'durationMs':
-                return formatDuration(ex.durationMs);
+            case 'trigger_source':
+                return getTriggerSourceLabel(ex.trigger_source);
+            case 'triggered_by':
+                return ex.triggered_by;
+            case 'start_time':
+                return ex.start_time;
+            case 'duration_ms':
+                return formatDuration(ex.duration_ms);
             default:
                 return <span className="text-slate-500">--</span>;
         }
@@ -255,7 +255,7 @@ const AutomationHistoryPage: React.FC = () => {
             <Drawer
                 isOpen={!!selectedExecution}
                 onClose={() => setSelectedExecution(null)}
-                title={`執行日誌: ${selectedExecution?.scriptName}`}
+                title={`執行日誌: ${selectedExecution?.script_name}`}
                 width="w-3/5"
             >
                 {selectedExecution && <ExecutionLogDetail execution={selectedExecution} />}

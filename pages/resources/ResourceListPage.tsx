@@ -61,7 +61,7 @@ const ResourceListPage: React.FC = () => {
     const { resourceId } = useParams<{ resourceId: string }>();
 
     const { metadata: pageMetadata } = usePageMetadata();
-    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
 
     const { options } = useOptions();
     const resourceOptions = options?.resources;
@@ -257,7 +257,7 @@ const ResourceListPage: React.FC = () => {
             case 'provider': return res.provider;
             case 'region': return res.region;
             case 'owner': return res.owner;
-            case 'lastCheckInAt': return formatRelativeTime(res.lastCheckInAt);
+            case 'lastCheckInAt': return formatRelativeTime(res.last_check_in_at);
             default:
                 return <span className="text-slate-500">--</span>;
         }

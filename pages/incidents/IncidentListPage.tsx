@@ -60,7 +60,7 @@ const IncidentListPage: React.FC = () => {
     const { currentUser } = useUser();
 
     const { metadata: pageMetadata } = usePageMetadata();
-    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
 
     const fetchIncidents = useCallback(async () => {
         if (!pageKey) return;
@@ -238,7 +238,7 @@ const IncidentListPage: React.FC = () => {
 
     const getStyle = (descriptors: StyleDescriptor[] | undefined, value: string | undefined): string => {
         if (!descriptors || !value) return 'bg-slate-500/20 text-slate-400';
-        return descriptors.find(d => d.value === value)?.className || 'bg-slate-500/20 text-slate-400';
+        return descriptors.find(d => d.value === value)?.class_name || 'bg-slate-500/20 text-slate-400';
     };
 
     const getLabel = (descriptors: any[] | undefined, value: string | undefined): string => {

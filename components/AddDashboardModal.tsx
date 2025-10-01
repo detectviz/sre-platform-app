@@ -11,17 +11,17 @@ import { useUser } from '../contexts/UserContext';
 import { useOptions } from '../contexts/OptionsContext';
 
 interface AvailableGrafanaDashboard {
-  uid: string;
-  title: string;
-  url: string;
-  folderTitle: string;
-  folderUid: string;
+    uid: string;
+    title: string;
+    url: string;
+    folderTitle: string;
+    folderUid: string;
 }
 
 interface AddDashboardModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (newDashboard: Partial<Dashboard>) => void;
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (newDashboard: Partial<Dashboard>) => void;
 }
 
 const AddDashboardModal: React.FC<AddDashboardModalProps> = ({ isOpen, onClose, onSave }) => {
@@ -99,15 +99,15 @@ const AddDashboardModal: React.FC<AddDashboardModalProps> = ({ isOpen, onClose, 
             category: defaultCategory,
             description: `Linked from Grafana: ${grafanaData.name}`,
             owner: currentUser?.name || 'System',
-            updatedAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
-            grafanaUrl: grafanaData.grafana_url,
+            updated_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
+            grafana_url: grafanaData.grafana_url,
             grafana_dashboard_uid: grafanaData.grafana_dashboard_uid,
             grafana_folder_uid: grafanaData.grafana_folder_uid,
         };
         onSave(newDashboard);
         onClose();
     };
-    
+
     useEffect(() => {
         if (!isOpen) {
             setStep(1);
@@ -147,8 +147,8 @@ const AddDashboardModal: React.FC<AddDashboardModalProps> = ({ isOpen, onClose, 
     const renderStep2 = () => (
         <div className="space-y-4">
             <FormRow label="從 Grafana 選擇儀表板 *">
-                <select 
-                    value={selectedDashboardUid} 
+                <select
+                    value={selectedDashboardUid}
                     onChange={e => handleDashboardSelect(e.target.value)}
                     className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
                     required
@@ -160,11 +160,11 @@ const AddDashboardModal: React.FC<AddDashboardModalProps> = ({ isOpen, onClose, 
                 </select>
             </FormRow>
             <FormRow label="儀表板名稱 *">
-                 <input type="text" value={grafanaData.name} onChange={e => handleGrafanaDataChange('name', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" placeholder="e.g., Production API Metrics" required />
+                <input type="text" value={grafanaData.name} onChange={e => handleGrafanaDataChange('name', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" placeholder="e.g., Production API Metrics" required />
             </FormRow>
         </div>
     );
-    
+
     return (
         <Modal
             title={step === 1 ? '選擇儀表板類型' : '連結 Grafana 儀表板'}

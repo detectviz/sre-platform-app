@@ -32,7 +32,7 @@ const AutomationPlaybooksPage: React.FC = () => {
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
 
     const { metadata: pageMetadata } = usePageMetadata();
-    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
 
     const fetchPlaybooks = useCallback(async () => {
         if (!pageKey) return;
@@ -40,14 +40,14 @@ const AutomationPlaybooksPage: React.FC = () => {
         setError(null);
         try {
             const [playbooksRes, columnConfigRes, allColumnsRes] = await Promise.all([
-                api.get<AutomationPlaybook[]>('/automation/scripts'),
+                api.get<{ items: AutomationPlaybook[], total: number }>('/automation/scripts'),
                 api.get<string[]>(`/settings/column-config/${pageKey}`),
                 api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
             if (allColumnsRes.data.length === 0) {
                 throw new Error('欄位定義缺失');
             }
-            setPlaybooks(playbooksRes.data);
+            setPlaybooks(playbooksRes.data.items);
             setAllColumns(allColumnsRes.data);
             const resolvedVisibleColumns = columnConfigRes.data.length > 0
                 ? columnConfigRes.data
@@ -139,7 +139,7 @@ const AutomationPlaybooksPage: React.FC = () => {
         }
     };
 
-    const getStatusPill = (status: AutomationPlaybook['lastRunStatus']) => {
+    const getStatusPill = (status: AutomationPlaybook['last_run_status']) => {
         switch (status) {
             case 'success': return 'bg-green-500/20 text-green-400';
             case 'failed': return 'bg-red-500/20 text-red-400';
@@ -175,14 +175,14 @@ const AutomationPlaybooksPage: React.FC = () => {
                 return pb.trigger;
             case 'lastRunStatus':
                 return (
-                    <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusPill(pb.lastRunStatus)}`}>
-                        {pb.lastRunStatus}
+                    <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusPill(pb.last_run_status)}`}>
+                        {pb.last_run_status}
                     </span>
                 );
             case 'lastRunAt':
-                return pb.lastRunAt;
+                return pb.last_run_at;
             case 'runCount':
-                return pb.runCount;
+                return pb.run_count;
             default:
                 return <span className="text-slate-500">--</span>;
         }

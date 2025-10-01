@@ -40,7 +40,7 @@ const SilenceRulePage: React.FC = () => {
     const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
 
     const { metadata: pageMetadata } = usePageMetadata();
-    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
 
     const fetchRules = useCallback(async () => {
         if (!pageKey) return;
@@ -48,14 +48,14 @@ const SilenceRulePage: React.FC = () => {
         setError(null);
         try {
             const [rulesRes, columnConfigRes, allColumnsRes] = await Promise.all([
-                api.get<SilenceRule[]>('/silence-rules', { params: filters }),
+                api.get<{ items: SilenceRule[], total: number }>('/silence-rules', { params: filters }),
                 api.get<string[]>(`/settings/column-config/${pageKey}`),
                 api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
             if (allColumnsRes.data.length === 0) {
                 throw new Error('欄位定義缺失');
             }
-            setRules(rulesRes.data);
+            setRules(rulesRes.data.items);
             setAllColumns(allColumnsRes.data);
             const resolvedVisibleColumns = columnConfigRes.data.length > 0
                 ? columnConfigRes.data
@@ -229,9 +229,9 @@ const SilenceRulePage: React.FC = () => {
             case 'type': return <span className="capitalize">{rule.type}</span>;
             case 'matchers': return <code className="text-xs">{rule.matchers.map(m => `${m.key}${m.operator}"${m.value}"`).join(', ')}</code>;
             case 'schedule':
-                if (rule.schedule.type === 'single') return `${rule.schedule.startsAt} -> ${rule.schedule.endsAt}`;
+                if (rule.schedule.type === 'single') return `${rule.schedule.starts_at} -> ${rule.schedule.ends_at}`;
                 if (rule.schedule.type === 'recurring') {
-                    return rule.schedule.cronDescription || rule.schedule.cron || 'N/A';
+                    return rule.schedule.cron_description || rule.schedule.cron || 'N/A';
                 }
                 return 'N/A';
             case 'creator': return rule.creator;

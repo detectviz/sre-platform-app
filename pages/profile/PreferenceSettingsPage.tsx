@@ -81,7 +81,7 @@ const PreferenceSettingsPage: React.FC = () => {
                         </select>
                     </FormRow>
                      <FormRow label="預設首頁">
-                        <select value={preferences.defaultPage} onChange={e => handleChange('defaultPage', e.target.value)} className="w-full md:w-1/2 bg-slate-800 border-slate-700 rounded-md px-3 py-2 text-sm">
+                        <select value={preferences.default_page} onChange={e => handleChange('default_page', e.target.value)} className="w-full md:w-1/2 bg-slate-800 border-slate-700 rounded-md px-3 py-2 text-sm">
                            {dashboards.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                         </select>
                     </FormRow>

@@ -47,7 +47,7 @@ const PersonnelManagementPage: React.FC = () => {
     const { options } = useOptions();
 
     const { metadata: pageMetadata } = usePageMetadata();
-    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
 
     const fetchUsers = useCallback(async () => {
         if (!pageKey) return;
@@ -109,7 +109,7 @@ const PersonnelManagementPage: React.FC = () => {
 
     const getStatusPill = (status: User['status']) => {
         const style = options?.personnel?.statuses.find(s => s.value === status);
-        return style ? style.className : 'bg-slate-500/20 text-slate-400';
+        return style ? style.class_name : 'bg-slate-500/20 text-slate-400';
     };
 
     const getStatusLabel = (status: User['status']) => {
@@ -221,7 +221,7 @@ const PersonnelManagementPage: React.FC = () => {
             case 'role': return user.role;
             case 'team': return user.team;
             case 'status': return <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusPill(user.status)}`}>{getStatusLabel(user.status)}</span>;
-            case 'lastLoginAt': return user.lastLoginAt;
+            case 'lastLoginAt': return user.last_login_at;
             default:
                 return <span className="text-slate-500">--</span>;
         }

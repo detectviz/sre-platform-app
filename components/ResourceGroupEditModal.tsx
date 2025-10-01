@@ -6,10 +6,10 @@ import { ResourceGroup, Resource, Team } from '../types';
 import api from '../services/api';
 
 interface ResourceGroupEditModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (group: ResourceGroup) => void;
-  group: ResourceGroup | null;
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (group: ResourceGroup) => void;
+    group: ResourceGroup | null;
 }
 
 interface ResourceListItemProps {
@@ -32,7 +32,7 @@ const ResourceListItem: React.FC<ResourceListItemProps> = ({ resource, onAction,
 const ResourceGroupEditModal: React.FC<ResourceGroupEditModalProps> = ({ isOpen, onClose, onSave, group }) => {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [ownerTeam, setOwnerTeam] = useState('');
+    const [owner_team, setOwnerTeam] = useState('');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [allResources, setAllResources] = useState<Resource[]>([]);
     const [teams, setTeams] = useState<Team[]>([]);
@@ -42,7 +42,7 @@ const ResourceGroupEditModal: React.FC<ResourceGroupEditModalProps> = ({ isOpen,
         if (isOpen) {
             setName(group?.name || '');
             setDescription(group?.description || '');
-            setOwnerTeam(group?.ownerTeam || '');
+            setOwnerTeam(group?.owner_team || '');
             setSelectedIds(group?.memberIds || []);
 
             setIsLoading(true);
@@ -54,11 +54,11 @@ const ResourceGroupEditModal: React.FC<ResourceGroupEditModalProps> = ({ isOpen,
                 const teamItems = teamsRes.data.items || [];
                 setAllResources(resourceItems);
                 setTeams(teamItems);
-                if (!group?.ownerTeam && teamItems.length > 0) {
+                if (!group?.owner_team && teamItems.length > 0) {
                     setOwnerTeam(teamItems[0].name);
                 }
             }).catch(err => console.error("Failed to fetch data for modal", err))
-              .finally(() => setIsLoading(false));
+                .finally(() => setIsLoading(false));
         }
     }, [isOpen, group]);
 
@@ -67,9 +67,11 @@ const ResourceGroupEditModal: React.FC<ResourceGroupEditModalProps> = ({ isOpen,
             id: group?.id || '',
             name,
             description,
-            ownerTeam,
-            memberIds: selectedIds,
-            statusSummary: group?.statusSummary || { healthy: 0, warning: 0, critical: 0 } // Summary will be recalculated on save
+            owner_team,
+            member_ids: selectedIds,
+            status_summary: group?.status_summary || { healthy: 0, warning: 0, critical: 0 }, // Summary will be recalculated on save
+            created_at: group?.created_at || new Date().toISOString(),
+            updated_at: new Date().toISOString()
         };
         onSave(savedGroup);
     };
@@ -95,9 +97,9 @@ const ResourceGroupEditModal: React.FC<ResourceGroupEditModalProps> = ({ isOpen,
                     <FormRow label="群組名稱 *">
                         <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
                     </FormRow>
-                     <FormRow label="擁有團隊">
-                        <select value={ownerTeam} onChange={e => setOwnerTeam(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoading}>
-                           {isLoading ? <option>載入中...</option> : teams.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+                    <FormRow label="擁有團隊">
+                        <select value={owner_team} onChange={e => setOwnerTeam(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoading}>
+                            {isLoading ? <option>載入中...</option> : teams.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
                         </select>
                     </FormRow>
                 </div>
@@ -105,16 +107,16 @@ const ResourceGroupEditModal: React.FC<ResourceGroupEditModalProps> = ({ isOpen,
                     <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"></textarea>
                 </FormRow>
 
-                 <div>
+                <div>
                     <label className="block text-sm font-medium text-slate-300 mb-2">成員管理</label>
                     <div className="grid grid-cols-2 gap-4 h-72">
                         <div className="border border-slate-700 rounded-lg p-3 flex flex-col">
                             <h3 className="font-semibold mb-2 text-white">可用的資源 ({availableResources.length})</h3>
-                             {isLoading ? <Icon name="loader-circle" className="animate-spin text-slate-400 mx-auto mt-4" /> : (
+                            {isLoading ? <Icon name="loader-circle" className="animate-spin text-slate-400 mx-auto mt-4" /> : (
                                 <div className="space-y-1 overflow-y-auto flex-grow">
                                     {availableResources.map(r => <ResourceListItem key={r.id} resource={r} onAction={(id) => setSelectedIds(ids => [...ids, id])} iconName="chevron-right" />)}
                                 </div>
-                             )}
+                            )}
                         </div>
                         <div className="border border-slate-700 rounded-lg p-3 flex flex-col">
                             <h3 className="font-semibold mb-2 text-white">已選擇的資源 ({selectedResources.length})</h3>

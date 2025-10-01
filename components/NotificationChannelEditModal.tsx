@@ -89,13 +89,13 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
     const [formData, setFormData] = useState<Partial<NotificationChannel>>({});
     const [isTokenVisible, setIsTokenVisible] = useState(false);
     const { options, isLoading: isLoadingOptions } = useOptions();
-    const channelOptions = options?.notificationChannels;
+    const channelOptions = options?.notification_channels;
 
     useEffect(() => {
         if (isOpen) {
             setIsTokenVisible(false); // Reset token visibility on open
             if (!isLoadingOptions && channelOptions) {
-                const defaultType = channelOptions.channelTypes[0]?.value || 'Email';
+                const defaultType = channelOptions.channel_types[0]?.value || 'Email';
                 setFormData(channel || {
                     name: '',
                     type: defaultType,
@@ -162,7 +162,7 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
                                 className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
                                 disabled={isLoadingOptions}
                             >
-                                {isLoadingOptions ? <option>載入中...</option> : channelOptions?.httpMethods.map(method => (
+                                {isLoadingOptions ? <option>載入中...</option> : channelOptions?.http_methods.map(method => (
                                     <option key={method} value={method}>{method}</option>
                                 ))}
                             </select>
@@ -238,7 +238,7 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
                         disabled={isLoadingOptions}
                         required
                     >
-                        {isLoadingOptions ? <option>載入中...</option> : channelOptions?.channelTypes.map(opt => (
+                        {isLoadingOptions ? <option>載入中...</option> : channelOptions?.channel_types.map(opt => (
                             <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
                     </select>

@@ -29,13 +29,13 @@ const ALL_SCOPES = TAG_SCOPE_OPTIONS.map(option => option.value);
 
 const CORE_TAGS: TagRegistryEntry[] = [
   // 基礎分類標籤
-  { key: 'env', description: '部署環境。', scopes: ALL_SCOPES, required: true, writableRoles: DEFAULT_WRITABLE_ROLES },
-  { key: 'service', description: '所屬服務名稱。', scopes: ALL_SCOPES, required: false, writableRoles: DEFAULT_WRITABLE_ROLES },
+  { key: 'env', description: '部署環境。', scopes: ALL_SCOPES, required: true, writable_roles: DEFAULT_WRITABLE_ROLES },
+  { key: 'service', description: '所屬服務名稱。', scopes: ALL_SCOPES, required: false, writable_roles: DEFAULT_WRITABLE_ROLES },
 
   // 事件核心屬性（系統依賴這些標籤）
-  { key: 'status', description: '事件狀態。', scopes: ['incident', 'notification_policy', 'automation'], required: true, writableRoles: DEFAULT_WRITABLE_ROLES },
-  { key: 'severity', description: '事件嚴重度。', scopes: ['incident', 'notification_policy', 'automation'], required: true, writableRoles: DEFAULT_WRITABLE_ROLES },
-  { key: 'impact', description: '事件影響層級。', scopes: ['incident', 'notification_policy', 'automation'], required: true, writableRoles: DEFAULT_WRITABLE_ROLES },
+  { key: 'status', description: '事件狀態。', scopes: ['incident', 'notification_policy', 'automation'], required: true, writable_roles: DEFAULT_WRITABLE_ROLES },
+  { key: 'severity', description: '事件嚴重度。', scopes: ['incident', 'notification_policy', 'automation'], required: true, writable_roles: DEFAULT_WRITABLE_ROLES },
+  { key: 'impact', description: '事件影響層級。', scopes: ['incident', 'notification_policy', 'automation'], required: true, writable_roles: DEFAULT_WRITABLE_ROLES },
 ];
 
 // ============================================================================
@@ -44,15 +44,15 @@ const CORE_TAGS: TagRegistryEntry[] = [
 
 const EXTENDED_TAGS: TagRegistryEntry[] = [
   // 資源標識
-  { key: 'resource_type', description: '資源種類。', scopes: ['resource', 'incident'], required: false, writableRoles: DEFAULT_WRITABLE_ROLES },
-  { key: 'cluster', description: '叢集名稱。', scopes: ['resource', 'incident'], required: false, writableRoles: DEFAULT_WRITABLE_ROLES },
+  { key: 'resource_type', description: '資源種類。', scopes: ['resource', 'incident'], required: false, writable_roles: DEFAULT_WRITABLE_ROLES },
+  { key: 'cluster', description: '叢集名稱。', scopes: ['resource', 'incident'], required: false, writable_roles: DEFAULT_WRITABLE_ROLES },
 
   // 監控相關
-  { key: 'datasource_type', description: '資料來源類型。', scopes: ['datasource', 'incident'], required: false, writableRoles: DEFAULT_WRITABLE_ROLES },
+  { key: 'datasource_type', description: '資料來源類型。', scopes: ['datasource', 'incident'], required: false, writable_roles: DEFAULT_WRITABLE_ROLES },
 
   // 組織相關（自動從關聯實體填充，唯讀）
-  { key: 'team', description: '所屬團隊名稱（自動填充，不可編輯）。', scopes: ['resource', 'incident', 'dashboard', 'alert_rule'], required: false, writableRoles: [], readonly: true, linkToEntity: 'team' },
-  { key: 'owner', description: '負責人姓名（自動填充，不可編輯）。', scopes: ['resource', 'incident', 'dashboard', 'alert_rule'], required: false, writableRoles: [], readonly: true, linkToEntity: 'personnel' },
+  { key: 'team', description: '所屬團隊名稱（自動填充，不可編輯）。', scopes: ['resource', 'incident', 'dashboard', 'alert_rule'], required: false, writable_roles: [], readonly: true, link_to_entity: 'team' },
+  { key: 'owner', description: '負責人姓名（自動填充，不可編輯）。', scopes: ['resource', 'incident', 'dashboard', 'alert_rule'], required: false, writable_roles: [], readonly: true, link_to_entity: 'personnel' },
 ];
 
 // ============================================================================
@@ -70,58 +70,58 @@ const registry: TagRegistryEntry[] = [
 
 const createTagDefinition = (entry: TagRegistryEntry): TagDefinition => {
   // 為系統標籤設置預設的 allowedValues
-  const defaultAllowedValues: Record<string, Array<{ id: string; value: string; usageCount: number }>> = {
+  const defaultAllowedValues: Record<string, Array<{ id: string; value: string; usage_count: number }>> = {
     'env': [
-      { id: 'env-production', value: 'production', usageCount: 0 },
-      { id: 'env-staging', value: 'staging', usageCount: 0 },
-      { id: 'env-development', value: 'development', usageCount: 0 },
+      { id: 'env-production', value: 'production', usage_count: 0 },
+      { id: 'env-staging', value: 'staging', usage_count: 0 },
+      { id: 'env-development', value: 'development', usage_count: 0 },
     ],
     'service': [
-      { id: 'service-api-gateway', value: 'api-gateway', usageCount: 0 },
-      { id: 'service-user-service', value: 'user-service', usageCount: 0 },
-      { id: 'service-order-service', value: 'order-service', usageCount: 0 },
-      { id: 'service-payment-service', value: 'payment-service', usageCount: 0 },
-      { id: 'service-notification-service', value: 'notification-service', usageCount: 0 },
+      { id: 'service-api-gateway', value: 'api-gateway', usage_count: 0 },
+      { id: 'service-user-service', value: 'user-service', usage_count: 0 },
+      { id: 'service-order-service', value: 'order-service', usage_count: 0 },
+      { id: 'service-payment-service', value: 'payment-service', usage_count: 0 },
+      { id: 'service-notification-service', value: 'notification-service', usage_count: 0 },
     ],
     'status': [
-      { id: 'status-New', value: 'New', usageCount: 0 },
-      { id: 'status-Acknowledged', value: 'Acknowledged', usageCount: 0 },
-      { id: 'status-Resolved', value: 'Resolved', usageCount: 0 },
-      { id: 'status-Silenced', value: 'Silenced', usageCount: 0 },
+      { id: 'status-New', value: 'New', usage_count: 0 },
+      { id: 'status-Acknowledged', value: 'Acknowledged', usage_count: 0 },
+      { id: 'status-Resolved', value: 'Resolved', usage_count: 0 },
+      { id: 'status-Silenced', value: 'Silenced', usage_count: 0 },
     ],
     'severity': [
-      { id: 'severity-Info', value: 'Info', usageCount: 0 },
-      { id: 'severity-Warning', value: 'Warning', usageCount: 0 },
-      { id: 'severity-Critical', value: 'Critical', usageCount: 0 },
+      { id: 'severity-Info', value: 'Info', usage_count: 0 },
+      { id: 'severity-Warning', value: 'Warning', usage_count: 0 },
+      { id: 'severity-Critical', value: 'Critical', usage_count: 0 },
     ],
     'impact': [
-      { id: 'impact-High', value: 'High', usageCount: 0 },
-      { id: 'impact-Medium', value: 'Medium', usageCount: 0 },
-      { id: 'impact-Low', value: 'Low', usageCount: 0 },
+      { id: 'impact-High', value: 'High', usage_count: 0 },
+      { id: 'impact-Medium', value: 'Medium', usage_count: 0 },
+      { id: 'impact-Low', value: 'Low', usage_count: 0 },
     ],
     'cluster': [
-      { id: 'cluster-prod-us-east', value: 'prod-us-east', usageCount: 0 },
-      { id: 'cluster-prod-us-west', value: 'prod-us-west', usageCount: 0 },
-      { id: 'cluster-staging', value: 'staging', usageCount: 0 },
-      { id: 'cluster-dev', value: 'dev', usageCount: 0 },
+      { id: 'cluster-prod-us-east', value: 'prod-us-east', usage_count: 0 },
+      { id: 'cluster-prod-us-west', value: 'prod-us-west', usage_count: 0 },
+      { id: 'cluster-staging', value: 'staging', usage_count: 0 },
+      { id: 'cluster-dev', value: 'dev', usage_count: 0 },
     ],
     'resource_type': [
-      { id: 'resource_type-vm', value: 'vm', usageCount: 0 },
-      { id: 'resource_type-pod', value: 'pod', usageCount: 0 },
-      { id: 'resource_type-service', value: 'service', usageCount: 0 },
-      { id: 'resource_type-device', value: 'device', usageCount: 0 },
+      { id: 'resource_type-vm', value: 'vm', usage_count: 0 },
+      { id: 'resource_type-pod', value: 'pod', usage_count: 0 },
+      { id: 'resource_type-service', value: 'service', usage_count: 0 },
+      { id: 'resource_type-device', value: 'device', usage_count: 0 },
     ],
     'datasource_type': [
-      { id: 'datasource_type-prometheus', value: 'prometheus', usageCount: 0 },
-      { id: 'datasource_type-loki', value: 'loki', usageCount: 0 },
+      { id: 'datasource_type-prometheus', value: 'prometheus', usage_count: 0 },
+      { id: 'datasource_type-loki', value: 'loki', usage_count: 0 },
     ],
   };
 
   return {
     id: `tag-${entry.key}`,
     ...entry,
-    allowedValues: defaultAllowedValues[entry.key] || [], // 使用預設值或空陣列
-    usageCount: 0,
+    allowed_values: defaultAllowedValues[entry.key] || [], // 使用預設值或空陣列
+    usage_count: 0,
   };
 };
 

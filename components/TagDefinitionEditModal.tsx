@@ -16,13 +16,13 @@ interface TagDefinitionEditModalProps {
 const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen, onClose, onSave, tag }) => {
     const [formData, setFormData] = useState<Partial<TagDefinition>>({});
     const { options, isLoading: isLoadingOptions, error: optionsError } = useOptions();
-    const tagManagementOptions = options?.tagManagement;
+    const tagManagementOptions = options?.tag_management;
 
     const resolveDefaultForm = (opts: TagManagementOptions): Partial<TagDefinition> => ({
         key: '',
         description: '',
         scopes: opts.scopes.length ? [opts.scopes[0].value] : [],
-        writableRoles: opts.writableRoles,
+        writable_roles: opts.writable_roles,
         required: false,
     });
 
@@ -43,7 +43,7 @@ const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen,
             showToast('請至少選擇一個標籤範圍。', 'error');
             return;
         }
-        if (!formData.writableRoles || formData.writableRoles.length === 0) {
+        if (!formData.writable_roles || formData.writable_roles.length === 0) {
             showToast('請指定至少一個可寫入角色。', 'error');
             return;
         }
@@ -55,7 +55,7 @@ const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen,
     };
 
     const scopeOptions = tagManagementOptions?.scopes || [];
-    const writableRoleOptions = tagManagementOptions?.writableRoles || [];
+    const writableRoleOptions = tagManagementOptions?.writable_roles || [];
     const error = optionsError;
     const isLoading = isLoadingOptions;
 
@@ -137,7 +137,7 @@ const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen,
                             <label className="block text-xs text-slate-400 mb-1">可寫入角色</label>
                             <div className={`flex flex-wrap gap-2 rounded-lg border border-slate-700 bg-slate-800/40 p-3 ${isLoading || !!error ? 'opacity-60 cursor-not-allowed' : ''}`}>
                                 {writableRoleOptions.map(role => {
-                                    const checked = (formData.writableRoles || []).includes(role);
+                                    const checked = (formData.writable_roles || []).includes(role);
                                     return (
                                         <label key={role} className={`inline-flex items-center space-x-2 text-sm ${isLoading || !!error ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                                             <input
@@ -146,13 +146,13 @@ const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen,
                                                 checked={checked}
                                                 disabled={isLoading || !!error}
                                                 onChange={e => {
-                                                    const current = new Set(formData.writableRoles || []);
+                                                    const current = new Set(formData.writable_roles || []);
                                                     if (e.target.checked) {
                                                         current.add(role);
                                                     } else {
                                                         current.delete(role);
                                                     }
-                                                    handleChange('writableRoles', Array.from(current));
+                                                    handleChange('writable_roles', Array.from(current));
                                                 }}
                                             />
                                             <span className="text-slate-200">{role}</span>

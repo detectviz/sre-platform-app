@@ -44,14 +44,14 @@
   - DiscoveryJob (line 1049): `deleted_at`
 
 **建議修復方式：**
-統一使用 camelCase 風格，將所有 `deleted_at` 改為 `deletedAt`，以保持與其他時間戳欄位的一致性。
+統一使用 camelCase 風格，將所有 `deleted_at` 改為 `deleted_at`，以保持與其他時間戳欄位的一致性。
 
 ```typescript
 // 修改前
 deleted_at?: string;
 
 // 修改後
-deletedAt?: string;
+deleted_at?: string;
 ```
 
 同時需要更新 handlers.ts 中所有使用 `deleted_at` 的地方 (約 30+ 處)。
@@ -1140,7 +1140,7 @@ updatedAt: string;
 ### 優先修復建議
 
 **第一優先 (P0)：**
-1. 統一時間戳欄位命名 (deleted_at → deletedAt)
+1. 統一時間戳欄位命名 (deleted_at → deleted_at)
 2. 修復軟刪除不一致 (AlertRule, SilenceRule, TagDefinition)
 3. 為所有 POST 端點添加必填欄位驗證
 4. 為所有 PATCH 端點添加 updatedAt 更新

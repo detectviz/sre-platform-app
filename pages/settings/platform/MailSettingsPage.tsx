@@ -75,7 +75,7 @@ const MailSettingsPage: React.FC = () => {
             <div className="glass-card rounded-xl p-6">
                 <div className="space-y-4">
                     <FormRow label="SMTP 伺服器 *">
-                        <input type="text" value={settings.smtpServer} onChange={e => handleChange('smtpServer', e.target.value)}
+                        <input type="text" value={settings.smtp_server} onChange={e => handleChange('smtp_server', e.target.value)}
                                className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
                     </FormRow>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -102,11 +102,11 @@ const MailSettingsPage: React.FC = () => {
                     </FormRow>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormRow label="寄件人名稱">
-                            <input type="text" value={settings.senderName} onChange={e => handleChange('senderName', e.target.value)}
+                            <input type="text" value={settings.sender_name} onChange={e => handleChange('sender_name', e.target.value)}
                                    className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
                         </FormRow>
                         <FormRow label="寄件人地址 *">
-                            <input type="email" value={settings.senderEmail} onChange={e => handleChange('senderEmail', e.target.value)}
+                            <input type="email" value={settings.sender_email} onChange={e => handleChange('sender_email', e.target.value)}
                                    className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
                         </FormRow>
                     </div>

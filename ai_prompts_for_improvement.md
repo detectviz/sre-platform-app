@@ -111,7 +111,7 @@ export interface AlertRule {
 ## 背景說明
 目前專案存在命名不一致的問題：
 - created_at, updated_at (snake_case) ✅
-- deletedAt, occurredAt, lastLoginAt (camelCase) ❌
+- deleted_at, occurredAt, lastLoginAt (camelCase) ❌
 
 需要統一為 snake_case 以符合資料庫慣例。
 
@@ -119,7 +119,7 @@ export interface AlertRule {
 
 ### 1. 更新 types.ts
 需要重命名的欄位：
-- deletedAt → deleted_at
+- deleted_at → deleted_at
 - occurredAt → occurred_at
 - lastLoginAt → last_login_at
 - lastCheckIn → last_check_in
@@ -130,9 +130,9 @@ export interface AlertRule {
 
 ### 2. 更新 mock-server/handlers.ts
 將所有使用上述欄位的地方改為 snake_case：
-- 讀取: `item.deletedAt` → `item.deleted_at`
+- 讀取: `item.deleted_at` → `item.deleted_at`
 - 寫入: `deleted_at: new Date().toISOString()`
-- 過濾函數已正確使用 `!item.deletedAt`，改為 `!item.deleted_at`
+- 過濾函數已正確使用 `!item.deleted_at`，改為 `!item.deleted_at`
 
 ### 3. 更新 mock-server/db.ts
 - 初始化資料時使用 snake_case
@@ -165,7 +165,7 @@ export interface AlertRule {
 
    // handlers.ts 範例
    // 舊
-   if (item.deletedAt) { ... }
+   if (item.deleted_at) { ... }
    item.lastLoginAt = timestamp;
 
    // 新
@@ -174,8 +174,8 @@ export interface AlertRule {
    ```
 
 4. **特別注意**
-   - getActive 函數: `!item.deletedAt` → `!item.deleted_at`
-   - 所有軟刪除操作: `.deletedAt =` → `.deleted_at =`
+   - getActive 函數: `!item.deleted_at` → `!item.deleted_at`
+   - 所有軟刪除操作: `.deleted_at =` → `.deleted_at =`
    - User 的 lastLoginAt 欄位
    - DiscoveryJob 的 lastRun 欄位
    - NotificationChannel 的 lastTestResult, lastTestedAt

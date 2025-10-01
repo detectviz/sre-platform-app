@@ -37,7 +37,7 @@ const NotificationHistoryPage: React.FC = () => {
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
     
     const { metadata: pageMetadata } = usePageMetadata();
-    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
     
     useEffect(() => {
         api.get<IconConfig>('/ui/icons-config')
@@ -126,7 +126,7 @@ const NotificationHistoryPage: React.FC = () => {
         }
         exportToCsv({
             filename: `notification-history-${new Date().toISOString().split('T')[0]}.csv`,
-            headers: ['id', 'timestamp', 'strategy', 'channel', 'channelType', 'recipient', 'status', 'content'],
+            headers: ['id', 'timestamp', 'strategy', 'channel', 'channel_type', 'recipient', 'status', 'content'],
             data: history,
         });
     };
@@ -158,7 +158,7 @@ const NotificationHistoryPage: React.FC = () => {
     };
     
     const renderCellContent = (record: NotificationHistoryRecord, columnKey: string) => {
-        const { icon, color } = getChannelTypeIcon(record.channelType);
+        const { icon, color } = getChannelTypeIcon(record.channel_type);
         switch (columnKey) {
             case 'timestamp': return record.timestamp;
             case 'strategy': return record.strategy;

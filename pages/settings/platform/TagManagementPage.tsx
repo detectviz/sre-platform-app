@@ -46,7 +46,7 @@ const TagManagementPage: React.FC = () => {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
     const { metadata: pageMetadata } = usePageMetadata();
-    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
 
     const fetchTags = useCallback(async () => {
         if (!pageKey) return;
@@ -239,7 +239,7 @@ const TagManagementPage: React.FC = () => {
             data: filteredTags.map(tag => ({
                 key: tag.key,
                 scopes: (tag.scopes || []).join('|'),
-                enumValues: (tag.allowedValues || []).map(v => v.value).join('|'),
+                enumValues: (tag.allowed_values || []).map(v => v.value).join('|'),
                 required: tag.required,
             })),
         });
@@ -275,7 +275,7 @@ const TagManagementPage: React.FC = () => {
                     </div>
                 );
             case 'enumValues':
-                const values = tag.allowedValues || [];
+                const values = tag.allowed_values || [];
                 if (values.length === 0) {
                     return <span className="text-slate-500 text-xs italic">未定義值</span>;
                 }
@@ -296,7 +296,7 @@ const TagManagementPage: React.FC = () => {
                     </div>
                 );
             case 'writableRoles':
-                const roles = tag.writableRoles || [];
+                const roles = tag.writable_roles || [];
                 const maxRolesDisplay = 3;
                 return (
                     <div className="flex flex-wrap gap-1 items-center">

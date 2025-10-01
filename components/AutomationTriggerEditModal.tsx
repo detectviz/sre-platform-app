@@ -9,10 +9,10 @@ import { showToast } from '../services/toast';
 import { useOptions } from '../contexts/OptionsContext';
 
 interface AutomationTriggerEditModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (trigger: Partial<AutomationTrigger>) => void;
-  trigger: AutomationTrigger | null;
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (trigger: Partial<AutomationTrigger>) => void;
+    trigger: AutomationTrigger | null;
 }
 
 const parseConditions = (str: string | undefined): { key: string; operator: string; value: string }[] => {
@@ -44,7 +44,7 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
     const [playbooks, setPlaybooks] = useState<AutomationPlaybook[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const { options, isLoading: isLoadingOptions } = useOptions();
-    const triggerOptions = options?.automationTriggers;
+    const triggerOptions = options?.automation_triggers;
     const [tagDefs, setTagDefs] = useState<TagDefinition[]>([]);
     const [conditions, setConditions] = useState<{ key: string; operator: string; value: string }[]>([]);
 
@@ -59,34 +59,34 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
             ]).then(([playbooksRes, tagsRes]) => {
                 setPlaybooks(playbooksRes.data);
                 setTagDefs(tagsRes.data);
-                
+
                 const initialFormData = trigger || {
                     name: '',
                     description: '',
-                    type: triggerOptions.triggerTypes[0]?.value || 'Schedule',
+                    type: triggerOptions.trigger_types[0]?.value || 'Schedule',
                     enabled: true,
                     targetPlaybookId: playbooksRes.data[0]?.id || '',
-                    config: triggerOptions.defaultConfigs?.Schedule || { cron: '0 * * * *' },
+                    config: triggerOptions.default_configs?.Schedule || { cron: '0 * * * *' },
                 };
                 setFormData(initialFormData);
 
             }).catch(err => { /* Failed to fetch data for modal */ })
-            .finally(() => setIsLoading(false));
+                .finally(() => setIsLoading(false));
         }
     }, [isOpen, trigger, isLoadingOptions, triggerOptions]);
 
     const handleSave = () => {
         onSave(formData);
     };
-    
+
     useEffect(() => {
         if (formData.type === 'Event') {
-            const parsed = parseConditions(formData.config?.eventConditions);
+            const parsed = parseConditions(formData.config?.event_conditions);
             if (JSON.stringify(parsed) !== JSON.stringify(conditions)) {
                 setConditions(parsed);
             }
         }
-    }, [formData.type, formData.config?.eventConditions]);
+    }, [formData.type, formData.config?.event_conditions]);
 
     const handleChange = (field: keyof AutomationTrigger, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -101,9 +101,9 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
             }
         }));
     };
-    
+
     const handleTypeChange = (newType: TriggerType) => {
-        const newConfig = triggerOptions?.defaultConfigs[newType] || {};
+        const newConfig = triggerOptions?.default_configs[newType] || {};
         setFormData(prev => ({
             ...prev,
             type: newType,
@@ -113,9 +113,9 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
 
     const updateConditionsInForm = (newConditions: { key: string; operator: string; value: string }[]) => {
         setConditions(newConditions);
-        handleConfigChange('eventConditions', serializeConditions(newConditions));
+        handleConfigChange('event_conditions', serializeConditions(newConditions));
     };
-    
+
     const handleConditionChange = (index: number, field: 'key' | 'operator' | 'value', value: string) => {
         const newConditions = conditions.map((cond, i) => {
             if (i === index) {
@@ -136,7 +136,7 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
     const removeCondition = (index: number) => {
         updateConditionsInForm(conditions.filter((_, i) => i !== index));
     };
-    
+
     const renderValueInput = (condition: { key: string; value: string }, index: number) => {
         const commonProps = {
             value: condition.value,
@@ -145,7 +145,7 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
         };
 
         if (condition.key === 'severity') {
-            const severityOptions = triggerOptions?.severityOptions || [];
+            const severityOptions = triggerOptions?.severity_options || [];
             return (
                 <select {...commonProps}>
                     <option value="">選擇嚴重性...</option>
@@ -155,17 +155,17 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
                 </select>
             );
         }
-        
+
         const tagDef = tagDefs.find(t => t.key === condition.key);
         if (tagDef && tagDef.allowedValues.length > 0) {
-             return (
+            return (
                 <select {...commonProps}>
                     <option value="">選擇值...</option>
                     {tagDef.allowedValues.map(v => <option key={v.id} value={v.value}>{v.value}</option>)}
                 </select>
             );
         }
-    
+
         return <input type="text" {...commonProps} placeholder="條件值" />;
     };
 
@@ -200,17 +200,17 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
                     <textarea value={formData.description || ''} onChange={e => handleChange('description', e.target.value)} rows={2} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"></textarea>
                 </FormRow>
                 <FormRow label="目標腳本">
-                    <select value={formData.targetPlaybookId || ''} onChange={e => handleChange('targetPlaybookId', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoading}>
+                    <select value={formData.target_playbook_id || ''} onChange={e => handleChange('target_playbook_id', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoading}>
                         {isLoading ? <option>載入中...</option> : playbooks.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select>
                 </FormRow>
 
                 <FormRow label="觸發器類型">
-                     <div className="flex space-x-2 rounded-lg bg-slate-800 p-1">
-                        {isLoadingOptions ? <div className="h-9 w-full bg-slate-700 animate-pulse rounded-md"></div> : triggerOptions?.triggerTypes.map(type => (
-                            <button 
+                    <div className="flex space-x-2 rounded-lg bg-slate-800 p-1">
+                        {isLoadingOptions ? <div className="h-9 w-full bg-slate-700 animate-pulse rounded-md"></div> : triggerOptions?.trigger_types.map(type => (
+                            <button
                                 key={type.value}
-                                onClick={() => handleTypeChange(type.value)} 
+                                onClick={() => handleTypeChange(type.value)}
                                 className={`w-full px-3 py-1.5 text-sm font-medium rounded-md ${formData.type === type.value ? 'bg-sky-600 text-white' : 'text-slate-300 hover:bg-slate-700'}`}
                             >
                                 {type.label}
@@ -228,7 +228,7 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
                     )}
                     {formData.type === 'Webhook' && (
                         <FormRow label="Webhook URL">
-                             <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-2">
                                 <input type="text" readOnly value={formData.config?.webhookUrl || '儲存後將自動生成...'} className="w-full bg-slate-800/50 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-400" />
                                 <button onClick={handleCopyWebhookUrl} className="p-2 rounded-md hover:bg-slate-700 text-slate-300" title="複製"><Icon name="copy" className="w-4 h-4" /></button>
                             </div>
@@ -243,7 +243,7 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
                                     <div key={index} className="flex items-center space-x-2">
                                         <select value={cond.key} onChange={e => handleConditionChange(index, 'key', e.target.value)} className="w-1/3 bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
                                             <option value="">選擇鍵...</option>
-                                            {triggerOptions?.conditionKeys.map(k => <option key={k} value={k}>{k}</option>)}
+                                            {triggerOptions?.condition_keys.map(k => <option key={k} value={k}>{k}</option>)}
                                         </select>
                                         <select value={cond.operator} onChange={e => handleConditionChange(index, 'operator', e.target.value)} className="bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
                                             <option value="=">=</option>

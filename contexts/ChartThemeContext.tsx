@@ -17,37 +17,37 @@ export const DEFAULT_CHART_THEME: ChartTheme = {
   },
   grid: {
     axis: '#94a3b8',
-    splitLine: '#334155',
+    split_line: '#334155',
   },
   background: {
     card: '#0f172a',
     accent: '#1e293b',
   },
-  healthGauge: {
+  health_gauge: {
     critical: '#dc2626',
     warning: '#f97316',
     healthy: '#10b981',
   },
-  eventCorrelation: ['#dc2626', '#f97316', '#10b981'],
+  event_correlation: ['#dc2626', '#f97316', '#10b981'],
   severity: {
     critical: '#dc2626',
     warning: '#f97316',
     info: '#10b981',
   },
-  logLevels: {
+  log_levels: {
     error: '#f87171',
     warning: '#facc15',
     info: '#38bdf8',
     debug: '#94a3b8',
   },
-  capacityPlanning: {
+  capacity_planning: {
     cpu: '#38bdf8',
     memory: '#a78bfa',
     storage: '#34d399',
     forecast: '#facc15',
     baseline: '#64748b',
   },
-  resourceDistribution: {
+  resource_distribution: {
     primary: '#38bdf8',
     border: '#1e293b',
     axis: '#94a3b8',
@@ -58,8 +58,8 @@ export const DEFAULT_CHART_THEME: ChartTheme = {
     low: '#10b981',
   },
   topology: {
-    nodeBorder: '#f8fafc',
-    nodeLabel: '#cbd5e1',
+    node_border: '#f8fafc',
+    node_label: '#cbd5e1',
     edge: '#475569',
   },
   heatmap: {

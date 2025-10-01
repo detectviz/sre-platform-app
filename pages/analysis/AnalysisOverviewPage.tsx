@@ -48,7 +48,7 @@ const AnalysisOverviewPage: React.FC = () => {
     
     const healthScoreGaugeOption = useMemo(() => {
         if (!overviewData) return {};
-        const { critical, warning, healthy } = chartTheme.healthGauge;
+        const { critical, warning, healthy } = chartTheme.health_gauge;
         const tickColor = chartTheme.text.primary;
         return {
             series: [{
@@ -85,7 +85,7 @@ const AnalysisOverviewPage: React.FC = () => {
             links: overviewData?.event_correlation_data.links || [],
             categories: overviewData?.event_correlation_data.categories || [],
             roam: true, label: { show: true }, force: { repulsion: 200 },
-            color: chartTheme.eventCorrelation
+            color: chartTheme.event_correlation
         }],
     }), [chartTheme, overviewData]);
 

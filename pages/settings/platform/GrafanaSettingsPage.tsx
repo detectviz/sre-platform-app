@@ -7,7 +7,7 @@ import { showToast } from '../../../services/toast';
 
 const GrafanaSettingsPage: React.FC = () => {
     const [settings, setSettings] = useState<GrafanaSettings | null>(null);
-    const [apiKey, setApiKey] = useState('**********');
+    const [api_key, setApiKey] = useState('**********');
     const [isApiKeyVisible, setIsApiKeyVisible] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -22,7 +22,7 @@ const GrafanaSettingsPage: React.FC = () => {
             const { data } = await api.get<GrafanaSettings>('/settings/grafana');
             setSettings(data);
             // Don't display the real API key
-            if (data.apiKey) {
+            if (data.api_key) {
                 setApiKey('**********');
             }
         } catch (err) {
@@ -36,7 +36,7 @@ const GrafanaSettingsPage: React.FC = () => {
         fetchSettings();
     }, [fetchSettings]);
 
-    const handleChange = (field: keyof Omit<GrafanaSettings, 'apiKey'>, value: any) => {
+    const handleChange = (field: keyof Omit<GrafanaSettings, 'api_key'>, value: any) => {
         if (settings) {
             setSettings(prev => ({ ...prev!, [field]: value }));
         }
@@ -47,7 +47,7 @@ const GrafanaSettingsPage: React.FC = () => {
         setIsTesting(true);
         setTestResult(null);
         try {
-            const payload = { ...settings, apiKey: apiKey === '**********' ? settings.apiKey : apiKey };
+            const payload = { ...settings, api_key: api_key === '**********' ? settings.api_key : api_key };
             const { data } = await api.post<{ success: boolean; message: string }>('/settings/grafana/test', payload);
             setTestResult(data);
         } catch (err) {
@@ -61,7 +61,7 @@ const GrafanaSettingsPage: React.FC = () => {
         if (!settings) return;
         setIsSaving(true);
         try {
-            const payload = { ...settings, apiKey: apiKey === '**********' ? settings.apiKey : apiKey };
+            const payload = { ...settings, api_key: api_key === '**********' ? settings.api_key : api_key };
             await api.put('/settings/grafana', payload);
             showToast('Grafana 設定已成功儲存。', 'success');
             fetchSettings(); // Re-fetch to confirm and reset API key field
@@ -101,7 +101,7 @@ const GrafanaSettingsPage: React.FC = () => {
                     </FormRow>
                     <FormRow label="Grafana API Key *">
                          <div className="relative">
-                            <input type={isApiKeyVisible ? 'text' : 'password'} value={apiKey} onChange={e => setApiKey(e.target.value)}
+                            <input type={isApiKeyVisible ? 'text' : 'password'} value={api_key} onChange={e => setApiKey(e.target.value)}
                                    className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm pr-10" />
                             <button onClick={() => setIsApiKeyVisible(!isApiKeyVisible)} className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-white">
                                 <Icon name={isApiKeyVisible ? 'eye-off' : 'eye'} className="w-4 h-4" />
@@ -109,7 +109,7 @@ const GrafanaSettingsPage: React.FC = () => {
                         </div>
                     </FormRow>
                     <FormRow label="組織 ID (Org ID)">
-                        <input type="number" value={settings.orgId} onChange={e => handleChange('orgId', parseInt(e.target.value, 10) || 1)}
+                        <input type="number" value={settings.org_id} onChange={e => handleChange('org_id', parseInt(e.target.value, 10) || 1)}
                                className="w-full md:w-1/2 bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
                     </FormRow>
                 </div>

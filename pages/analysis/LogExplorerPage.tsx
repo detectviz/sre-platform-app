@@ -121,12 +121,12 @@ const LogExplorerPage: React.FC = () => {
         yAxis: {
             type: 'value',
             axisLine: { lineStyle: { color: chartTheme.grid.axis } },
-            splitLine: { lineStyle: { color: chartTheme.grid.splitLine } },
+            splitLine: { lineStyle: { color: chartTheme.grid.split_line } },
         },
         series: [
-            { name: 'Error', type: 'bar', stack: 'total', data: histogramData.error, color: chartTheme.logLevels.error },
-            { name: 'Warning', type: 'bar', stack: 'total', data: histogramData.warning, color: chartTheme.logLevels.warning },
-            { name: 'Info', type: 'bar', stack: 'total', data: histogramData.info, color: chartTheme.logLevels.info }
+            { name: 'Error', type: 'bar', stack: 'total', data: histogramData.error, color: chartTheme.log_levels.error },
+            { name: 'Warning', type: 'bar', stack: 'total', data: histogramData.warning, color: chartTheme.log_levels.warning },
+            { name: 'Info', type: 'bar', stack: 'total', data: histogramData.info, color: chartTheme.log_levels.info }
         ]
     }), [chartTheme, histogramData]);
     

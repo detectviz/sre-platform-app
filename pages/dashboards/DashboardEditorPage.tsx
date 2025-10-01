@@ -36,11 +36,11 @@ const DashboardEditorPage: React.FC = () => {
 
     const [dashboardName, setDashboardName] = useState('');
     const [isNamePristine, setIsNamePristine] = useState(false);
-    
+
     const [widgets, setWidgets] = useState<LayoutWidget[]>([]);
     const [layout, setLayout] = useState<DashboardLayoutItem[]>([]);
     const [history, setHistory] = useState<DashboardLayoutItem[][]>([]);
-    
+
     const [isAddWidgetModalOpen, setIsAddWidgetModalOpen] = useState(false);
     const [interactionState, setInteractionState] = useState<InteractionState>(null);
 
@@ -98,13 +98,13 @@ const DashboardEditorPage: React.FC = () => {
             setIsLoading(false);
         }
     }, [dashboardId, isEditMode, location.state, pageContent]);
-    
+
     useEffect(() => {
         if (!isLoadingOptions && pageContent) {
             fetchAllData();
         }
     }, [fetchAllData, isLoadingOptions, pageContent]);
-    
+
     const availableWidgets = allWidgets.filter(w => !widgets.some(sw => sw.id === w.id));
 
     const findEmptySpace = (w: number, h: number): { x: number, y: number } => {
@@ -119,11 +119,11 @@ const DashboardEditorPage: React.FC = () => {
             y++;
         }
     };
-    
+
     const addWidget = (widget: LayoutWidget) => {
         const newPos = findEmptySpace(4, 2);
         const newLayoutItem: DashboardLayoutItem = { i: widget.id, ...newPos, w: 4, h: 2 };
-        
+
         pushToHistory();
         setWidgets([...widgets, widget]);
         setLayout([...layout, newLayoutItem]);
@@ -157,7 +157,7 @@ const DashboardEditorPage: React.FC = () => {
                 dashboardPayload.category = defaultCategory as string;
                 dashboardPayload.description = pageContent.DEFAULT_DESCRIPTION;
                 dashboardPayload.owner = currentUser?.name || 'System';
-                dashboardPayload.updatedAt = new Date().toISOString().slice(0, 16).replace('T', ' ');
+                dashboardPayload.updated_at = new Date().toISOString().slice(0, 16).replace('T', ' ');
                 const { data: createdDashboard } = await api.post<Dashboard>('/dashboards', dashboardPayload);
                 showToast(pageContent.SAVE_SUCCESS.replace('{name}', createdDashboard.name), 'success');
             }
@@ -174,7 +174,7 @@ const DashboardEditorPage: React.FC = () => {
     const pushToHistory = () => {
         setHistory(prev => [...prev.slice(-9), layout]); // Keep last 10 states
     };
-    
+
     const handleUndo = () => {
         if (history.length > 0) {
             const lastState = history[history.length - 1];
@@ -184,7 +184,7 @@ const DashboardEditorPage: React.FC = () => {
     };
 
     const checkCollision = (item: DashboardLayoutItem, currentLayout: DashboardLayoutItem[]): boolean => {
-        return currentLayout.some(l => 
+        return currentLayout.some(l =>
             l.i !== item.i &&
             item.x < l.x + l.w &&
             item.x + item.w > l.x &&
@@ -222,10 +222,10 @@ const DashboardEditorPage: React.FC = () => {
             newLayoutItem.w = Math.max(1, Math.min(newW, COLS - newLayoutItem.x));
             newLayoutItem.h = Math.max(1, newH);
         }
-        
+
         setLayout(l => l.map(i => i.i === item.i ? newLayoutItem : i));
     }, [interactionState]);
-    
+
     const handleInteractionEnd = useCallback(() => {
         if (!interactionState) return;
         const { item: movedItem, initialLayout } = interactionState;
@@ -248,7 +248,7 @@ const DashboardEditorPage: React.FC = () => {
             window.removeEventListener('mouseup', handleInteractionEnd);
         };
     }, [interactionState, handleInteractionMove, handleInteractionEnd]);
-    
+
     const getPixelValues = (item: DashboardLayoutItem, gridWidth: number) => {
         const colWidth = (gridWidth - (COLS + 1) * MARGIN[0]) / COLS;
         return {
@@ -265,22 +265,22 @@ const DashboardEditorPage: React.FC = () => {
             setIsNamePristine(false);
         }
     };
-    
-    const renderDescription = (descriptionText: string) => {
-      if (typeof descriptionText !== 'string' || !descriptionText) {
-        return descriptionText;
-      }
-      
-      const parts = descriptionText.split(/(↑\d+(\.\d+)?%|↓\d+(\.\d+)?%|\d+ 嚴重)/g).filter(Boolean);
 
-      return parts.map((part, index) => {
-          if (part.startsWith('↑')) return <span key={index} className="text-green-400">{part}</span>;
-          if (part.startsWith('↓')) return <span key={index} className="text-red-400">{part}</span>;
-          if (part.endsWith('嚴重')) return <span key={index} className="text-red-400 font-semibold">{part}</span>;
-          return part;
-      });
+    const renderDescription = (descriptionText: string) => {
+        if (typeof descriptionText !== 'string' || !descriptionText) {
+            return descriptionText;
+        }
+
+        const parts = descriptionText.split(/(↑\d+(\.\d+)?%|↓\d+(\.\d+)?%|\d+ 嚴重)/g).filter(Boolean);
+
+        return parts.map((part, index) => {
+            if (part.startsWith('↑')) return <span key={index} className="text-green-400">{part}</span>;
+            if (part.startsWith('↓')) return <span key={index} className="text-red-400">{part}</span>;
+            if (part.endsWith('嚴重')) return <span key={index} className="text-red-400 font-semibold">{part}</span>;
+            return part;
+        });
     };
-    
+
     if (!pageContent) return <div className="flex items-center justify-center h-full"><Icon name="loader-circle" className="w-8 h-8 animate-spin" /></div>;
 
     return (
@@ -311,11 +311,11 @@ const DashboardEditorPage: React.FC = () => {
             </div>
 
             <div ref={gridRef} className="flex-grow glass-card rounded-xl p-4 overflow-auto relative">
-                 {(isLoading || (isLoadingOptions && !isEditMode)) && <div className="h-full flex flex-col items-center justify-center text-slate-500"><Icon name="loader-circle" className="w-12 h-12 animate-spin" /></div>}
-                 {error && <div className="h-full flex flex-col items-center justify-center text-red-400"><Icon name="alert-circle" className="w-12 h-12 mb-4" /><p className="font-semibold">{error}</p></div>}
-                 {!isLoading && !isLoadingOptions && !error && widgets.length === 0 && <div className="h-full flex flex-col items-center justify-center text-slate-500"><Icon name="layout-dashboard" className="w-24 h-24 mb-4" /><h2 className="text-xl font-bold text-slate-300">{pageContent.EMPTY_STATE_TITLE}</h2><p className="mt-2">{pageContent.EMPTY_STATE_MESSAGE}</p></div>}
-                 
-                 {!isLoading && !isLoadingOptions && !error && gridRef.current && layout.map(item => {
+                {(isLoading || (isLoadingOptions && !isEditMode)) && <div className="h-full flex flex-col items-center justify-center text-slate-500"><Icon name="loader-circle" className="w-12 h-12 animate-spin" /></div>}
+                {error && <div className="h-full flex flex-col items-center justify-center text-red-400"><Icon name="alert-circle" className="w-12 h-12 mb-4" /><p className="font-semibold">{error}</p></div>}
+                {!isLoading && !isLoadingOptions && !error && widgets.length === 0 && <div className="h-full flex flex-col items-center justify-center text-slate-500"><Icon name="layout-dashboard" className="w-24 h-24 mb-4" /><h2 className="text-xl font-bold text-slate-300">{pageContent.EMPTY_STATE_TITLE}</h2><p className="mt-2">{pageContent.EMPTY_STATE_MESSAGE}</p></div>}
+
+                {!isLoading && !isLoadingOptions && !error && gridRef.current && layout.map(item => {
                     const widget = widgets.find(w => w.id === item.i);
                     const isInteracting = interactionState?.item.i === item.i;
                     const { top, left, width, height } = getPixelValues(item, gridRef.current!.offsetWidth);
@@ -349,21 +349,21 @@ const DashboardEditorPage: React.FC = () => {
                             </div>
                         </div>
                     );
-                 })}
+                })}
 
-                 {/* Ghost element for drag/resize feedback */}
-                 {interactionState && gridRef.current && (() => {
-                     const ghostLayout = layout.find(l => l.i === interactionState.item.i);
-                     if (!ghostLayout) {
-                         return <span className="sr-only">沒有可顯示的預覽位置</span>;
-                     }
-                     const { top, left, width, height } = getPixelValues(ghostLayout, gridRef.current.offsetWidth);
-                     const isColliding = checkCollision(ghostLayout, layout);
-                     return <div className={`absolute z-10 rounded-xl transition-colors ${isColliding ? 'bg-red-500/30' : 'bg-sky-500/30'} border-2 border-dashed ${isColliding ? 'border-red-400' : 'border-sky-400'}`} style={{ top, left, width, height }} />;
-                 })()}
+                {/* Ghost element for drag/resize feedback */}
+                {interactionState && gridRef.current && (() => {
+                    const ghostLayout = layout.find(l => l.i === interactionState.item.i);
+                    if (!ghostLayout) {
+                        return <span className="sr-only">沒有可顯示的預覽位置</span>;
+                    }
+                    const { top, left, width, height } = getPixelValues(ghostLayout, gridRef.current.offsetWidth);
+                    const isColliding = checkCollision(ghostLayout, layout);
+                    return <div className={`absolute z-10 rounded-xl transition-colors ${isColliding ? 'bg-red-500/30' : 'bg-sky-500/30'} border-2 border-dashed ${isColliding ? 'border-red-400' : 'border-sky-400'}`} style={{ top, left, width, height }} />;
+                })()}
 
             </div>
-            
+
             <Modal title={pageContent.ADD_WIDGET_MODAL_TITLE} isOpen={isAddWidgetModalOpen} onClose={() => setIsAddWidgetModalOpen(false)} width="w-1/2 max-w-3xl">
                 <div className="max-h-[60vh] overflow-y-auto"><div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {availableWidgets.map(widget => (

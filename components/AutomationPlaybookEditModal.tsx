@@ -20,7 +20,7 @@ const AutomationPlaybookEditModal: React.FC<AutomationPlaybookEditModalProps> = 
     const [formData, setFormData] = useState<Partial<AutomationPlaybook>>({});
     const [isAIOpen, setIsAIOpen] = useState(false);
     const { options, isLoading: isLoadingOptions, error: optionsError } = useOptions();
-    const scriptOptions = options?.automationScripts;
+    const scriptOptions = options?.automation_scripts;
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { content: pageContent } = useContent();
     const content = pageContent?.AUTOMATION_PLAYBOOK_EDIT_MODAL;
@@ -33,7 +33,7 @@ const AutomationPlaybookEditModal: React.FC<AutomationPlaybookEditModalProps> = 
             const getInitialFormData = (): Partial<AutomationPlaybook> => ({
                 name: '',
                 description: '',
-                type: scriptOptions.playbookTypes[0]?.value || 'shell',
+                type: scriptOptions.playbook_types[0]?.value || 'shell',
                 content: '',
                 parameters: [],
             });
@@ -61,7 +61,7 @@ const AutomationPlaybookEditModal: React.FC<AutomationPlaybookEditModalProps> = 
     };
     
     const addParam = () => {
-        const newParam: ParameterDefinition = { name: '', label: '', type: 'string', required: false, defaultValue: '', placeholder: '', options: [] };
+        const newParam: ParameterDefinition = { name: '', label: '', type: 'string', required: false, default_value: '', placeholder: '', options: [] };
         handleChange('parameters', [...(formData.parameters || []), newParam]);
     };
     
@@ -144,8 +144,8 @@ const AutomationPlaybookEditModal: React.FC<AutomationPlaybookEditModalProps> = 
 
     const renderDefaultValueInput = (param: ParameterDefinition, index: number) => {
         const commonProps = {
-            value: param.defaultValue as any,
-            onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleParamChange(index, 'defaultValue', e.target.value),
+            value: param.default_value as any,
+            onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleParamChange(index, 'default_value', e.target.value),
             className: "w-full bg-slate-700 rounded px-2 py-1 text-sm",
         };
 
@@ -154,11 +154,11 @@ const AutomationPlaybookEditModal: React.FC<AutomationPlaybookEditModalProps> = 
                 <label className="flex items-center space-x-2">
                     <input
                         type="checkbox"
-                        checked={!!param.defaultValue}
-                        onChange={(e) => handleParamChange(index, 'defaultValue', e.target.checked)}
+                        checked={!!param.default_value}
+                        onChange={(e) => handleParamChange(index, 'default_value', e.target.checked)}
                         className="form-checkbox h-4 w-4 bg-slate-600 rounded"
                     />
-                    <span>{param.defaultValue ? content.BOOLEAN_ENABLED : content.BOOLEAN_DISABLED}</span>
+                    <span>{param.default_value ? content.BOOLEAN_ENABLED : content.BOOLEAN_DISABLED}</span>
                 </label>
             );
         }
@@ -203,7 +203,7 @@ const AutomationPlaybookEditModal: React.FC<AutomationPlaybookEditModalProps> = 
                             <select value={formData.type || ''} onChange={e => handleChange('type', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoadingOptions || !!optionsError}>
                                 {isLoadingOptions && <option>{globalContent.LOADING_OPTIONS}</option>}
                                 {optionsError && <option>{globalContent.FAILED}</option>}
-                                {!isLoadingOptions && !optionsError && scriptOptions?.playbookTypes.map(opt => (
+                                {!isLoadingOptions && !optionsError && scriptOptions?.playbook_types.map(opt => (
                                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                                 ))}
                             </select>
@@ -252,7 +252,7 @@ const AutomationPlaybookEditModal: React.FC<AutomationPlaybookEditModalProps> = 
                                                 <select value={param.type} onChange={e => handleParamChange(index, 'type', e.target.value)} className="w-full bg-slate-700 rounded px-2 py-1.5 text-sm" disabled={isLoadingOptions || !!optionsError}>
                                                     {isLoadingOptions && <option>{globalContent.LOADING_OPTIONS}</option>}
                                                     {optionsError && <option>{globalContent.FAILED}</option>}
-                                                    {!isLoadingOptions && !optionsError && scriptOptions?.parameterTypes.map(opt => (
+                                                    {!isLoadingOptions && !optionsError && scriptOptions?.parameter_types.map(opt => (
                                                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                                                     ))}
                                                 </select>

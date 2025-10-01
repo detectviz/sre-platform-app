@@ -7,10 +7,10 @@ import { Team, User } from '../types';
 import api from '../services/api';
 
 interface TeamEditModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (team: Team) => void;
-  team: Team | null;
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (team: Team) => void;
+    team: Team | null;
 }
 
 interface UserListItemProps {
@@ -69,9 +69,10 @@ const TeamEditModal: React.FC<TeamEditModalProps> = ({ isOpen, onClose, onSave, 
             id: team?.id || '',
             name,
             description,
-            ownerId,
-            memberIds,
-            createdAt: team?.createdAt || '',
+            owner_id: ownerId,
+            member_ids: memberIds,
+            created_at: team?.created_at || '',
+            updated_at: new Date().toISOString(),
         };
         onSave(savedTeam);
     };
@@ -107,7 +108,7 @@ const TeamEditModal: React.FC<TeamEditModalProps> = ({ isOpen, onClose, onSave, 
                     <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"></textarea>
                 </FormRow>
 
-                 <div>
+                <div>
                     <label className="block text-sm font-medium text-slate-300 mb-2">成員管理</label>
                     <div className="grid grid-cols-2 gap-4 h-72">
                         <div className="border border-slate-700 rounded-lg p-3 flex flex-col">

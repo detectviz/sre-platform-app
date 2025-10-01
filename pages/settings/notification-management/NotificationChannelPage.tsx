@@ -24,7 +24,7 @@ const NotificationChannelPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [iconConfig, setIconConfig] = useState<IconConfig | null>(null);
-    
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingChannel, setEditingChannel] = useState<NotificationChannel | null>(null);
     const [filters, setFilters] = useState<NotificationChannelFilters>({});
@@ -36,7 +36,7 @@ const NotificationChannelPage: React.FC = () => {
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
 
     const { metadata: pageMetadata } = usePageMetadata();
-    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.columnConfigKey;
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
 
     const fetchChannels = useCallback(async () => {
         if (!pageKey) return;
@@ -44,12 +44,12 @@ const NotificationChannelPage: React.FC = () => {
         setError(null);
         try {
             const [channelsRes, iconsRes, columnConfigRes, allColumnsRes] = await Promise.all([
-                api.get<NotificationChannel[]>('/settings/notification-channels', { params: filters }),
+                api.get<{ items: NotificationChannel[], total: number }>('/settings/notification-channels', { params: filters }),
                 api.get<IconConfig>('/ui/icons-config'),
                 api.get<string[]>(`/settings/column-config/${pageKey}`),
                 api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
-            setChannels(channelsRes.data);
+            setChannels(channelsRes.data.items);
             setIconConfig(iconsRes.data);
             if (allColumnsRes.data.length === 0) {
                 throw new Error('欄位定義缺失');
@@ -59,7 +59,7 @@ const NotificationChannelPage: React.FC = () => {
                 ? columnConfigRes.data
                 : allColumnsRes.data.map(c => c.key);
             setVisibleColumns(resolvedVisibleColumns);
-        } catch(err) {
+        } catch (err) {
             setError('無法獲取通知管道。');
         } finally {
             setIsLoading(false);
@@ -71,7 +71,7 @@ const NotificationChannelPage: React.FC = () => {
             fetchChannels();
         }
     }, [fetchChannels, pageKey]);
-    
+
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
         if (!pageKey) {
             showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
@@ -112,7 +112,7 @@ const NotificationChannelPage: React.FC = () => {
             setIsModalOpen(false);
         }
     };
-    
+
     const handleDeleteClick = (channel: NotificationChannel) => {
         setDeletingChannel(channel);
         setIsDeleteModalOpen(true);
@@ -136,10 +136,10 @@ const NotificationChannelPage: React.FC = () => {
         try {
             await api.post(`/settings/notification-channels/${channelId}/test`, {});
             // Optimistically update UI to 'pending'
-            setChannels(prev => prev.map(c => c.id === channelId ? { ...c, lastTestResult: 'pending' } : c));
+            setChannels(prev => prev.map(c => c.id === channelId ? { ...c, last_test_result: 'pending' } : c));
             // Re-fetch after a delay to get the final result
             setTimeout(fetchChannels, 2000);
-        } catch(err) {
+        } catch (err) {
             alert('Failed to initiate test.');
         }
     };
@@ -159,18 +159,18 @@ const NotificationChannelPage: React.FC = () => {
         return iconConfig[type] || iconConfig.Default || fallback;
     };
 
-    const getTestResultPill = (status: NotificationChannel['lastTestResult']) => {
+    const getTestResultPill = (status: NotificationChannel['last_test_result']) => {
         switch (status) {
             case 'success': return 'bg-green-500/20 text-green-400';
             case 'failed': return 'bg-red-500/20 text-red-400';
             case 'pending': return 'bg-yellow-500/20 text-yellow-400 animate-pulse';
         }
     };
-    
+
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSelectedIds(e.target.checked ? channels.map(c => c.id) : []);
     };
-    
+
     const handleSelectOne = (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
         setSelectedIds(prev => e.target.checked ? [...prev, id] : prev.filter(selectedId => selectedId !== id));
     };
@@ -188,7 +188,7 @@ const NotificationChannelPage: React.FC = () => {
             setSelectedIds([]);
         }
     };
-    
+
     const batchActions = (
         <>
             <ToolbarButton icon="toggle-right" text="啟用" onClick={() => handleBatchAction('enable')} />
@@ -219,13 +219,13 @@ const NotificationChannelPage: React.FC = () => {
                         {channel.type}
                     </span>
                 );
-            case 'lastTestResult':
+            case 'last_test_result':
                 return (
-                    <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full capitalize ${getTestResultPill(channel.lastTestResult)}`}>
-                        {channel.lastTestResult}
+                    <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full capitalize ${getTestResultPill(channel.last_test_result)}`}>
+                        {channel.last_test_result}
                     </span>
                 );
-            case 'lastTestedAt': return channel.lastTestedAt;
+            case 'last_tested_at': return channel.last_tested_at;
             default:
                 return <span className="text-slate-500">--</span>;
         }
@@ -252,7 +252,7 @@ const NotificationChannelPage: React.FC = () => {
                             <tr>
                                 <th scope="col" className="p-4 w-12">
                                     <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
-                                           checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
+                                        checked={isAllSelected} ref={el => { if (el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
                                 {visibleColumns.map(key => (
                                     <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
@@ -269,7 +269,7 @@ const NotificationChannelPage: React.FC = () => {
                                 <tr key={channel.id} className={`border-b border-slate-800 ${selectedIds.includes(channel.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
                                     <td className="p-4 w-12">
                                         <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
-                                               checked={selectedIds.includes(channel.id)} onChange={(e) => handleSelectOne(e, channel.id)} />
+                                            checked={selectedIds.includes(channel.id)} onChange={(e) => handleSelectOne(e, channel.id)} />
                                     </td>
                                     {visibleColumns.map(key => (
                                         <td key={key} className="px-6 py-4">{renderCellContent(channel, key)}</td>
@@ -307,7 +307,7 @@ const NotificationChannelPage: React.FC = () => {
                 <p>您確定要刪除管道 <strong className="text-amber-400">{deletingChannel?.name}</strong> 嗎？</p>
                 <p className="mt-2 text-slate-400">此操作無法復原。關聯的通知策略可能會受到影響。</p>
             </Modal>
-             <UnifiedSearchModal
+            <UnifiedSearchModal
                 page="notification-channels"
                 isOpen={isSearchModalOpen}
                 onClose={() => setIsSearchModalOpen(false)}

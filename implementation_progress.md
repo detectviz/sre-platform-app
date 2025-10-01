@@ -63,7 +63,7 @@
 | `updatedAt` | `updated_at` | ✅ 已改 |
 | `occurredAt` | `occurred_at` | ✅ 已改 |
 | `lastLoginAt` | `last_login_at` | ✅ 已改 |
-| `deletedAt` | `deleted_at` | ✅ 已改 |
+| `deleted_at` | `deleted_at` | ✅ 已改 |
 | 所有其他欄位 | snake_case | ✅ 已改 |
 
 **進度**：✅ **100% (250+ 欄位)** ⬆️ 從 60% 提升
@@ -107,7 +107,7 @@ const getActive = (collection: any[] | undefined) => {
     if (!collection) {
         return [];
     }
-    return collection.filter(item => !item.deletedAt);
+    return collection.filter(item => !item.deleted_at);
 }
 ```
 
@@ -369,7 +369,7 @@ export interface Incident {
 **決策**：選擇 snake_case（與資料庫慣例一致）
 
 **待改欄位**：
-- `deletedAt` → `deleted_at`
+- `deleted_at` → `deleted_at`
 - `lastLoginAt` → `last_login_at`
 - `occurredAt` → `occurred_at`（部分已改）
 

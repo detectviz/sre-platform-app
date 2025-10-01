@@ -21,15 +21,15 @@ const DashboardViewer: React.FC<DashboardViewerProps> = ({ dashboard }) => {
     
     useEffect(() => {
         if (grafanaOptions) {
-            if (grafanaOptions.refreshOptions.length > 0) {
-                const defaultRefresh = grafanaOptions.refreshOptions.find(opt => opt.value === '1m');
-                setRefresh(defaultRefresh ? defaultRefresh.value : grafanaOptions.refreshOptions[0].value);
+            if (grafanaOptions.refresh_options.length > 0) {
+                const defaultRefresh = grafanaOptions.refresh_options.find(opt => opt.value === '1m');
+                setRefresh(defaultRefresh ? defaultRefresh.value : grafanaOptions.refresh_options[0].value);
             }
-            const defaultTime = grafanaOptions.timeOptions.find(opt => opt.value.includes('6h'));
+            const defaultTime = grafanaOptions.time_options.find(opt => opt.value.includes('6h'));
             if (defaultTime) {
                 setTimeRange(defaultTime.value);
-            } else if (grafanaOptions.timeOptions.length > 0) {
-                setTimeRange(grafanaOptions.timeOptions[0].value);
+            } else if (grafanaOptions.time_options.length > 0) {
+                setTimeRange(grafanaOptions.time_options[0].value);
             }
         }
     }, [grafanaOptions]);
@@ -74,12 +74,12 @@ const DashboardViewer: React.FC<DashboardViewerProps> = ({ dashboard }) => {
                 ) : grafanaOptions && (
                     <>
                         <div className="flex items-center space-x-4">
-                            <Dropdown label={grafanaOptions.themeLabel} options={grafanaOptions.themeOptions || []} value={theme} onChange={setTheme} minWidth="w-24" />
-                            <Dropdown label={grafanaOptions.tvModeLabel} options={grafanaOptions.tvModeOptions || []} value={tvMode} onChange={setTvMode} minWidth="w-24" />
-                            <Dropdown label={grafanaOptions.refreshLabel} options={grafanaOptions.refreshOptions || []} value={refresh} onChange={setRefresh} minWidth="w-24" />
+                            <Dropdown label={grafanaOptions.theme_label} options={grafanaOptions.theme_options || []} value={theme} onChange={setTheme} minWidth="w-24" />
+                            <Dropdown label={grafanaOptions.tv_mode_label} options={grafanaOptions.tv_mode_options || []} value={tvMode} onChange={setTvMode} minWidth="w-24" />
+                            <Dropdown label={grafanaOptions.refresh_label} options={grafanaOptions.refresh_options || []} value={refresh} onChange={setRefresh} minWidth="w-24" />
                         </div>
                         <div className="flex items-center space-x-4">
-                            <Dropdown label={grafanaOptions.timeLabel} options={grafanaOptions.timeOptions || []} value={timeRange} onChange={setTimeRange} minWidth="w-40" />
+                            <Dropdown label={grafanaOptions.time_label} options={grafanaOptions.time_options || []} value={timeRange} onChange={setTimeRange} minWidth="w-40" />
                         </div>
                     </>
                 )}

@@ -13,16 +13,16 @@ import { useOptions } from '../contexts/OptionsContext';
 import { showToast } from '../services/toast';
 
 interface StrategyCondition {
-  key: string;
-  operator: '=' | '!=' | '~=';
-  value: string;
+    key: string;
+    operator: '=' | '!=' | '~=';
+    value: string;
 }
 
 interface NotificationStrategyEditModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (strategy: NotificationStrategy) => void;
-  strategy: NotificationStrategy | null;
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (strategy: NotificationStrategy) => void;
+    strategy: NotificationStrategy | null;
 }
 
 const parseConditions = (conditionStr: string | undefined): StrategyCondition[] => {
@@ -53,30 +53,30 @@ const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps
     const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState<Partial<NotificationStrategy>>({});
     const { options, isLoading: isLoadingOptions } = useOptions();
-    const strategyOptions = options?.notificationStrategies;
-    
+    const strategyOptions = options?.notification_strategies;
+
     const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
     const [additionalConditions, setAdditionalConditions] = useState<StrategyCondition[]>([]);
 
     // Use dynamic step titles from options or fallback
-    const stepTitles = strategyOptions?.stepTitles || ["基本資訊與範圍", "通知管道", "附加條件"];
-    
+    const stepTitles = strategyOptions?.step_titles || ["基本資訊與範圍", "通知管道", "附加條件"];
+
     useEffect(() => {
         if (isOpen) {
             if (!isLoadingOptions && strategyOptions) {
-                const defaultSeverityLevels = strategyOptions.severityLevels?.length ? [strategyOptions.severityLevels[0]] : [];
-                const defaultImpactLevels = strategyOptions.impactLevels?.length ? [strategyOptions.impactLevels[0]] : [];
+                const defaultSeverityLevels = strategyOptions.severity_levels?.length ? [strategyOptions.severity_levels[0]] : [];
+                const defaultImpactLevels = strategyOptions.impact_levels?.length ? [strategyOptions.impact_levels[0]] : [];
 
                 const initialData: Partial<NotificationStrategy> = strategy
                     ? {
                         ...strategy,
-                        severityLevels: strategy.severityLevels?.length ? strategy.severityLevels : defaultSeverityLevels,
-                        impactLevels: strategy.impactLevels?.length ? strategy.impactLevels : defaultImpactLevels,
+                        severityLevels: strategy.severity_levels?.length ? strategy.severity_levels : defaultSeverityLevels,
+                        impactLevels: strategy.impact_levels?.length ? strategy.impact_levels : defaultImpactLevels,
                     }
                     : {
                         name: '',
                         enabled: true,
-                        triggerCondition: strategyOptions.defaultCondition,
+                        triggerCondition: strategyOptions.default_condition,
                         channelCount: 1,
                         severityLevels: defaultSeverityLevels,
                         impactLevels: defaultImpactLevels,
@@ -109,18 +109,18 @@ const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps
     }, [isOpen, strategy, isLoadingOptions, strategyOptions]);
 
     const handleSave = () => {
-        const groupCondition = selectedGroups.length > 0 
-            ? `resource.group IN (${selectedGroups.map(g => `"${g}"`).join(', ')})` 
+        const groupCondition = selectedGroups.length > 0
+            ? `resource.group IN (${selectedGroups.map(g => `"${g}"`).join(', ')})`
             : '';
         const additionalCondition = serializeConditions(additionalConditions);
         const finalCondition = [groupCondition, additionalCondition].filter(Boolean).join(' AND ');
 
-        const severityLevels = (formData.severityLevels && formData.severityLevels.length > 0)
-            ? formData.severityLevels
-            : strategyOptions?.severityLevels ?? [];
-        const impactLevels = (formData.impactLevels && formData.impactLevels.length > 0)
-            ? formData.impactLevels
-            : strategyOptions?.impactLevels ?? [];
+        const severityLevels = (formData.severity_levels && formData.severity_levels.length > 0)
+            ? formData.severity_levels
+            : strategyOptions?.severity_levels ?? [];
+        const impactLevels = (formData.impact_levels && formData.impact_levels.length > 0)
+            ? formData.impact_levels
+            : strategyOptions?.impact_levels ?? [];
 
         onSave({
             ...formData,
@@ -132,7 +132,7 @@ const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps
 
     const nextStep = () => setCurrentStep(s => Math.min(s + 1, 3));
     const prevStep = () => setCurrentStep(s => Math.max(s - 1, 1));
-    
+
     const renderStepContent = () => {
         switch (currentStep) {
             case 1: return <Step1 formData={formData} setFormData={setFormData} options={strategyOptions} selectedGroups={selectedGroups} setSelectedGroups={setSelectedGroups} />;
@@ -147,7 +147,7 @@ const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps
                 );
         }
     };
-    
+
     return (
         <Modal
             title={strategy && strategy.id ? '編輯通知策略' : '新增通知策略'}
@@ -159,7 +159,7 @@ const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps
                     <div>
                         {currentStep > 1 && <button onClick={prevStep} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">上一步</button>}
                     </div>
-                     <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2">
                         <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">取消</button>
                         {currentStep < 3 && <button onClick={nextStep} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md">下一步：{stepTitles[currentStep]}</button>}
                         {currentStep === 3 && <button onClick={handleSave} className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md">完成</button>}
@@ -167,9 +167,9 @@ const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps
                 </div>
             }
         >
-             <div className="flex flex-col h-[60vh]">
+            <div className="flex flex-col h-[60vh]">
                 <div className="px-4 pb-6 border-b border-slate-700/50">
-                   <Wizard currentStep={currentStep} steps={stepTitles} onStepClick={setCurrentStep} />
+                    <Wizard currentStep={currentStep} steps={stepTitles} onStepClick={setCurrentStep} />
                 </div>
                 <div className="flex-grow pt-6 overflow-y-auto">
                     {renderStepContent()}
@@ -179,9 +179,9 @@ const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps
     );
 };
 
-const Step1: React.FC<{ 
-    formData: Partial<NotificationStrategy>, 
-    setFormData: Function, 
+const Step1: React.FC<{
+    formData: Partial<NotificationStrategy>,
+    setFormData: Function,
     options: NotificationStrategyOptions | null,
     selectedGroups: string[],
     setSelectedGroups: (groups: string[]) => void
@@ -203,17 +203,17 @@ const Step1: React.FC<{
             </FormRow>
             <FormRow label="涵蓋嚴重度 *">
                 <MultiSelectDropdown
-                    items={(options?.severityLevels || []).map(level => ({ value: level, label: level }))}
-                    selected={(formData.severityLevels as string[]) || []}
-                    onSelectedChange={(values) => setFormData({ ...formData, severityLevels: values as NotificationStrategy['severityLevels'] })}
+                    items={(options?.severity_levels || []).map(level => ({ value: level, label: level }))}
+                    selected={(formData.severity_levels as string[]) || []}
+                    onSelectedChange={(values) => setFormData({ ...formData, severity_levels: values as NotificationStrategy['severity_levels'] })}
                     placeholder={options ? '選擇至少一個嚴重度...' : '載入中...'}
                 />
             </FormRow>
             <FormRow label="涵蓋影響範圍 *">
                 <MultiSelectDropdown
-                    items={(options?.impactLevels || []).map(level => ({ value: level, label: level }))}
-                    selected={(formData.impactLevels as string[]) || []}
-                    onSelectedChange={(values) => setFormData({ ...formData, impactLevels: values as NotificationStrategy['impactLevels'] })}
+                    items={(options?.impact_levels || []).map(level => ({ value: level, label: level }))}
+                    selected={(formData.impact_levels as string[]) || []}
+                    onSelectedChange={(values) => setFormData({ ...formData, impact_levels: values as NotificationStrategy['impact_levels'] })}
                     placeholder={options ? '選擇至少一個影響層級...' : '載入中...'}
                 />
             </FormRow>
@@ -249,12 +249,12 @@ const Step2: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Fu
 
     useEffect(() => {
         if (selectedGroups.length > 0 && allGroups.length > 0) {
-            const ownerTeams = selectedGroups
-                .map(groupName => allGroups.find(g => g.name === groupName)?.ownerTeam)
+            const owner_teams = selectedGroups
+                .map(groupName => allGroups.find(g => g.name === groupName)?.owner_team)
                 .filter((team): team is string => !!team);
 
-            if (ownerTeams.length === selectedGroups.length && new Set(ownerTeams).size === 1) {
-                setSuggestedTeam(ownerTeams[0]);
+            if (owner_teams.length === selectedGroups.length && new Set(owner_teams).size === 1) {
+                setSuggestedTeam(owner_teams[0]);
             } else {
                 setSuggestedTeam(null);
             }
@@ -290,21 +290,21 @@ const Step2: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Fu
     );
 };
 
-const Step3: React.FC<{ 
-    additionalConditions: StrategyCondition[], 
+const Step3: React.FC<{
+    additionalConditions: StrategyCondition[],
     setAdditionalConditions: (conditions: StrategyCondition[]) => void,
-    options: NotificationStrategyOptions | null 
+    options: NotificationStrategyOptions | null
 }> = ({ additionalConditions, setAdditionalConditions, options }) => {
-    
+
     const allConditionKeys = useMemo(() => {
         if (!options) return [];
-        return [...Object.keys(options.conditionKeys), ...options.tagKeys];
+        return [...Object.keys(options.condition_keys), ...options.tag_keys];
     }, [options]);
-    
+
     const handleConditionChange = (index: number, field: keyof StrategyCondition, value: string) => {
         const newConditions = [...additionalConditions];
         const updatedCondition = { ...newConditions[index] };
-    
+
         switch (field) {
             case 'key':
                 updatedCondition.key = value;
@@ -317,11 +317,11 @@ const Step3: React.FC<{
                 updatedCondition.value = value;
                 break;
         }
-        
+
         newConditions[index] = updatedCondition;
         setAdditionalConditions(newConditions);
     };
-    
+
     const addCondition = () => {
         setAdditionalConditions([...additionalConditions, { key: '', operator: '=', value: '' }]);
     };
@@ -329,17 +329,17 @@ const Step3: React.FC<{
     const removeCondition = (index: number) => {
         setAdditionalConditions(additionalConditions.filter((_, i) => i !== index));
     };
-    
+
     const renderValueInput = (condition: StrategyCondition, index: number) => {
         const commonProps = {
             value: condition.value,
             onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => handleConditionChange(index, 'value', e.target.value),
             className: "flex-grow bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
         };
-    
+
         if (!options) return <input type="text" {...commonProps} placeholder="標籤值" />;
 
-        const keyOptions = options.conditionKeys[condition.key] || options.tagValues[condition.key];
+        const keyOptions = options.condition_keys[condition.key] || options.tag_values[condition.key];
 
         if (keyOptions && Array.isArray(keyOptions) && keyOptions.length > 0) {
             return (
@@ -349,7 +349,7 @@ const Step3: React.FC<{
                 </select>
             );
         }
-    
+
         return <input type="text" {...commonProps} placeholder="標籤值" />;
     };
 
@@ -373,7 +373,7 @@ const Step3: React.FC<{
                         <button onClick={() => removeCondition(index)} className="p-2 text-slate-400 hover:text-red-400"><Icon name="trash-2" className="w-4 h-4" /></button>
                     </div>
                 ))}
-                 <button onClick={addCondition} className="text-sm text-sky-400 hover:text-sky-300 flex items-center"><Icon name="plus" className="w-4 h-4 mr-1" /> 新增 AND 條件</button>
+                <button onClick={addCondition} className="text-sm text-sky-400 hover:text-sky-300 flex items-center"><Icon name="plus" className="w-4 h-4 mr-1" /> 新增 AND 條件</button>
             </div>
         </div>
     );
@@ -401,7 +401,7 @@ const MultiSelectDropdown: React.FC<{
     const handleToggle = (value: string, checked: boolean) => {
         onSelectedChange(checked ? [...selected, value] : selected.filter(v => v !== value));
     };
-    
+
     const selectedLabels = items.filter(i => selected.includes(i.value)).map(i => i.label);
 
     return (

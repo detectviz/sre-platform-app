@@ -10,10 +10,10 @@ import { useOptions } from '../contexts/OptionsContext';
 import api from '../services/api';
 
 interface DatasourceEditModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (datasource: Partial<Datasource>) => void;
-  datasource: Datasource | null;
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (datasource: Partial<Datasource>) => void;
+    datasource: Datasource | null;
 }
 
 const DatasourceEditModal: React.FC<DatasourceEditModalProps> = ({ isOpen, onClose, onSave, datasource }) => {
@@ -28,12 +28,12 @@ const DatasourceEditModal: React.FC<DatasourceEditModalProps> = ({ isOpen, onClo
                 name: '',
                 type: datasourceOptions.types[0] || 'Prometheus',
                 url: '',
-                authMethod: datasourceOptions.authMethods[0] || 'None',
+                authMethod: datasourceOptions.auth_methods[0] || 'None',
                 tags: []
             });
         }
     }, [isOpen, datasource, datasourceOptions]);
-    
+
     const handleChange = (field: keyof Datasource, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
@@ -55,14 +55,14 @@ const DatasourceEditModal: React.FC<DatasourceEditModalProps> = ({ isOpen, onClo
                 name: formData.name,
                 type: formData.type,
                 url: formData.url,
-                authMethod: formData.authMethod,
+                authMethod: formData.auth_method,
                 tags: formData.tags,
             };
             const { data } = await api.post<DatasourceTestResponse>('/resources/datasources/test', payload);
             if (formData.id) {
                 setFormData(prev => ({ ...prev, status: data.status }));
             }
-            const latencyText = typeof data.latencyMs === 'number' ? ` (延遲約 ${Math.round(data.latencyMs)} 毫秒)` : '';
+            const latencyText = typeof data.latency_ms === 'number' ? ` (延遲約 ${Math.round(data.latency_ms)} 毫秒)` : '';
             showToast(`${data.message}${latencyText}`, data.success ? 'success' : 'error');
         } catch (err: any) {
             const message = err?.response?.data?.message || '連線測試失敗，請稍後再試。';
@@ -103,9 +103,9 @@ const DatasourceEditModal: React.FC<DatasourceEditModalProps> = ({ isOpen, onClo
                         </select>
                     </FormRow>
                     <FormRow label="驗證方式">
-                        <select value={formData.authMethod || ''} onChange={e => handleChange('authMethod', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoadingOptions}>
-                           {isLoadingOptions && <option>載入中...</option>}
-                           {datasourceOptions?.authMethods.map(m => <option key={m} value={m}>{m}</option>)}
+                        <select value={formData.auth_method || ''} onChange={e => handleChange('auth_method', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoadingOptions}>
+                            {isLoadingOptions && <option>載入中...</option>}
+                            {datasourceOptions?.auth_methods.map(m => <option key={m} value={m}>{m}</option>)}
                         </select>
                     </FormRow>
                 </div>

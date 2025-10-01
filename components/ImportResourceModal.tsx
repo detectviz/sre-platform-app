@@ -29,9 +29,9 @@ const ImportResourceModal: React.FC<ImportResourceModalProps> = ({ isOpen, onClo
     const [importProgress, setImportProgress] = useState<ImportItemStatus[]>([]);
     const [exporterBinding, setExporterBinding] = useState<DiscoveryJobExporterBinding | undefined>(job.exporterBinding);
     const { options } = useOptions();
-    const autoDiscoveryOptions = options?.autoDiscovery;
-    const exporterTemplates = autoDiscoveryOptions?.exporterTemplates || [];
-    const mibProfiles = autoDiscoveryOptions?.mibProfiles || [];
+    const autoDiscoveryOptions = options?.auto_discovery;
+    const exporterTemplates = autoDiscoveryOptions?.exporter_templates || [];
+    const mibProfiles = autoDiscoveryOptions?.mib_profiles || [];
 
     useEffect(() => {
         if (isOpen) {
@@ -43,11 +43,11 @@ const ImportResourceModal: React.FC<ImportResourceModalProps> = ({ isOpen, onClo
 
     const handleExporterBindingChange = (updates: Partial<DiscoveryJobExporterBinding>) => {
         setExporterBinding((prev) => {
-            const current = prev || { templateId: job.exporterBinding?.templateId || 'none' };
+            const current = prev || { template_id: job.exporterBinding?.template_id || 'none' };
             const nextBinding: DiscoveryJobExporterBinding = { ...current, ...updates };
-            if (updates.templateId) {
-                delete nextBinding.overridesYaml;
-                delete nextBinding.mibProfileId;
+            if (updates.template_id) {
+                delete nextBinding.overrides_yaml;
+                delete nextBinding.mib_profile_id;
             }
             return nextBinding;
         });
@@ -67,7 +67,7 @@ const ImportResourceModal: React.FC<ImportResourceModalProps> = ({ isOpen, onClo
 
             for (let i = 0; i < resourcesToImport.length; i++) {
                 const resource = resourcesToImport[i];
-                if (exporterBinding && exporterBinding.templateId !== 'none') {
+                if (exporterBinding && exporterBinding.template_id !== 'none') {
                     await new Promise((r) => setTimeout(r, 500));
                     setImportProgress((prev) => prev.map((p) => (p.id === resource.id ? { ...p, status: 'deploying' } : p)));
                 }
@@ -116,9 +116,9 @@ const ImportResourceModal: React.FC<ImportResourceModalProps> = ({ isOpen, onClo
         }
     };
 
-    const currentTemplateId = exporterBinding?.templateId || job.exporterBinding?.templateId || 'none';
+    const currentTemplateId = exporterBinding?.template_id || job.exporterBinding?.template_id || 'none';
     const templateMeta = exporterTemplates.find((tpl) => tpl.id === currentTemplateId);
-    const availableProfiles = mibProfiles.filter((profile) => profile.templateId === currentTemplateId);
+    const availableProfiles = mibProfiles.filter((profile) => profile.template_id === currentTemplateId);
 
     return (
         <Modal
@@ -159,13 +159,13 @@ const ImportResourceModal: React.FC<ImportResourceModalProps> = ({ isOpen, onClo
                 <div className="pt-4 border-t border-slate-700/50 space-y-4">
                     <h3 className="text-lg font-semibold text-white">Exporter 配置覆寫</h3>
                     <p className="text-sm text-slate-400">
-                        預設沿用掃描任務的 Exporter 綁定 ({job.exporterBinding?.templateId || 'none'})。您可以在此為本次匯入的資源覆寫設定。
+                        預設沿用掃描任務的 Exporter 綁定 ({job.exporterBinding?.template_id || 'none'})。您可以在此為本次匯入的資源覆寫設定。
                     </p>
 
                     <FormRow label="Exporter 模板">
                         <select
                             value={currentTemplateId}
-                            onChange={(e) => handleExporterBindingChange({ templateId: e.target.value as DiscoveryJobExporterBinding['templateId'] })}
+                            onChange={(e) => handleExporterBindingChange({ template_id: e.target.value as DiscoveryJobExporterBinding['template_id'] })}
                             className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
                         >
                             {exporterTemplates.map((tpl) => (
@@ -178,11 +178,11 @@ const ImportResourceModal: React.FC<ImportResourceModalProps> = ({ isOpen, onClo
                         {templateMeta?.description && <p className="mt-1 text-xs text-slate-400">{templateMeta.description}</p>}
                     </FormRow>
 
-                    {templateMeta?.supportsMibProfile && (
+                    {templateMeta?.supports_mib_profile && (
                         <FormRow label="MIB Profile">
                             <select
-                                value={exporterBinding?.mibProfileId || ''}
-                                onChange={(e) => handleExporterBindingChange({ mibProfileId: e.target.value || undefined })}
+                                value={exporterBinding?.mib_profile_id || ''}
+                                onChange={(e) => handleExporterBindingChange({ mib_profile_id: e.target.value || undefined })}
                                 className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
                             >
                                 <option value="">選擇 Profile (可選)</option>
@@ -198,12 +198,12 @@ const ImportResourceModal: React.FC<ImportResourceModalProps> = ({ isOpen, onClo
                         </FormRow>
                     )}
 
-                    {templateMeta?.supportsOverrides && (
+                    {templateMeta?.supports_overrides && (
                         <FormRow label="自訂覆寫 YAML">
                             <textarea
                                 rows={3}
-                                value={exporterBinding?.overridesYaml || ''}
-                                onChange={(e) => handleExporterBindingChange({ overridesYaml: e.target.value })}
+                                value={exporterBinding?.overrides_yaml || ''}
+                                onChange={(e) => handleExporterBindingChange({ overrides_yaml: e.target.value })}
                                 className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm font-mono"
                                 disabled={isImporting}
                             />

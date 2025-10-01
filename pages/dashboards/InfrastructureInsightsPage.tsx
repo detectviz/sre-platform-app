@@ -32,13 +32,13 @@ const InfrastructureInsightsPage: React.FC = () => {
     
     const { options } = useOptions();
     const { theme: chartTheme } = useChartTheme();
-    const infraInsightsOptions = options?.infraInsights;
+    const infraInsightsOptions = options?.infra_insights;
     const [timeRange, setTimeRange] = useState('');
 
     useEffect(() => {
-        if (infraInsightsOptions && infraInsightsOptions.timeOptions.length > 0) {
-            const defaultTime = infraInsightsOptions.timeOptions.find(opt => opt.value.includes('6h'));
-            setTimeRange(defaultTime ? defaultTime.value : infraInsightsOptions.timeOptions[0].value);
+        if (infraInsightsOptions && infraInsightsOptions.time_options.length > 0) {
+            const defaultTime = infraInsightsOptions.time_options.find(opt => opt.value.includes('6h'));
+            setTimeRange(defaultTime ? defaultTime.value : infraInsightsOptions.time_options[0].value);
         }
     }, [infraInsightsOptions]);
 
@@ -145,7 +145,7 @@ const InfrastructureInsightsPage: React.FC = () => {
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold">基礎設施洞察</h1>
                 <div className="flex items-center space-x-2">
-                    {infraInsightsOptions && <Dropdown label="時間範圍" options={infraInsightsOptions.timeOptions || []} value={timeRange} onChange={setTimeRange} />}
+                    {infraInsightsOptions && <Dropdown label="時間範圍" options={infraInsightsOptions.time_options || []} value={timeRange} onChange={setTimeRange} />}
                     <button onClick={handleRefresh} className="p-2 rounded-lg hover:bg-slate-700/50 flex items-center text-sm px-3 bg-slate-800/60 border border-slate-700"><Icon name="refresh-cw" className="w-4 h-4 mr-2" />刷新</button>
                     <button onClick={handleExport} className="p-2 rounded-lg hover:bg-slate-700/50 flex items-center text-sm px-3 bg-slate-800/60 border border-slate-700"><Icon name="download" className="w-4 h-4 mr-2" />匯出</button>
                 </div>

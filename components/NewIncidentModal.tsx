@@ -16,7 +16,7 @@ interface NewIncidentModalProps {
 type FormState = IncidentCreateRequest & { assignee?: string };
 
 const DEFAULT_IMPACT: Incident['impact'] = 'Medium';
-const DEFAULT_SEVERITY: Incident['severity'] = 'warning';
+const DEFAULT_SEVERITY: Incident['severity'] = 'Warning';
 
 const NewIncidentModal: React.FC<NewIncidentModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { options } = useOptions();
@@ -32,8 +32,8 @@ const NewIncidentModal: React.FC<NewIncidentModalProps> = ({ isOpen, onClose, on
 
   const getInitialForm = useCallback((): FormState => ({
     summary: '',
-    resourceId: '',
-    ruleId: '',
+    resource_id: '',
+    rule_id: '',
     severity: incidentOptions?.severities?.[0]?.value ?? DEFAULT_SEVERITY,
     impact: incidentOptions?.impacts?.[0]?.value ?? DEFAULT_IMPACT,
     assignee: '',
@@ -63,8 +63,8 @@ const NewIncidentModal: React.FC<NewIncidentModalProps> = ({ isOpen, onClose, on
 
         setForm(prev => ({
           ...prev,
-          resourceId: prev.resourceId || resourceRes.data.items[0]?.id || '',
-          ruleId: prev.ruleId || rulesRes.data[0]?.id || '',
+          resource_id: prev.resource_id || resourceRes.data.items[0]?.id || '',
+          rule_id: prev.rule_id || rulesRes.data[0]?.id || '',
         }));
       } catch (err) {
         // Failed to load incident creation data
@@ -90,7 +90,7 @@ const NewIncidentModal: React.FC<NewIncidentModalProps> = ({ isOpen, onClose, on
   }, []);
 
   const canSubmit = useMemo(() => {
-    return Boolean(form.summary && form.resourceId && form.ruleId && form.severity && form.impact);
+    return Boolean(form.summary && form.resource_id && form.rule_id && form.severity && form.impact);
   }, [form]);
 
   const handleSubmit = useCallback(async (event: React.FormEvent) => {
@@ -102,8 +102,8 @@ const NewIncidentModal: React.FC<NewIncidentModalProps> = ({ isOpen, onClose, on
     try {
       const payload: IncidentCreateRequest = {
         summary: form.summary,
-        resourceId: form.resourceId,
-        ruleId: form.ruleId,
+        resource_id: form.resource_id,
+        rule_id: form.rule_id,
         severity: form.severity,
         impact: form.impact,
         assignee: form.assignee?.trim() ? form.assignee.trim() : undefined,
@@ -170,8 +170,8 @@ const NewIncidentModal: React.FC<NewIncidentModalProps> = ({ isOpen, onClose, on
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1">影響資源</label>
               <select
-                value={form.resourceId}
-                onChange={e => handleInputChange('resourceId', e.target.value)}
+                value={form.resource_id}
+                onChange={e => handleInputChange('resource_id', e.target.value)}
                 className="w-full rounded-md border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm text-white focus:border-sky-500 focus:outline-none"
               >
                 <option value="" disabled>選擇資源</option>
@@ -183,8 +183,8 @@ const NewIncidentModal: React.FC<NewIncidentModalProps> = ({ isOpen, onClose, on
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1">觸發規則</label>
               <select
-                value={form.ruleId}
-                onChange={e => handleInputChange('ruleId', e.target.value)}
+                value={form.rule_id}
+                onChange={e => handleInputChange('rule_id', e.target.value)}
                 className="w-full rounded-md border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm text-white focus:border-sky-500 focus:outline-none"
               >
                 <option value="" disabled>選擇規則</option>

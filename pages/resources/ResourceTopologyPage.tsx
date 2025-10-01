@@ -37,8 +37,8 @@ const ResourceTopologyPage: React.FC = () => {
     const contextMenuRef = useRef<HTMLDivElement>(null);
     
     const statusColorMap = useMemo(() => {
-        if (!options?.resources.statusColors) return {};
-        return options.resources.statusColors.reduce((acc, curr) => {
+        if (!options?.resources.status_colors) return {};
+        return options.resources.status_colors.reduce((acc, curr) => {
             acc[curr.value] = curr.color;
             return acc;
         }, {} as Record<Resource['status'], string>);
@@ -92,13 +92,13 @@ const ResourceTopologyPage: React.FC = () => {
             category: res.type,
             itemStyle: {
                 color: statusColorMap[res.status] || chartTheme.topology.edge,
-                borderColor: chartTheme.topology.nodeBorder,
+                borderColor: chartTheme.topology.node_border,
                 borderWidth: 2,
             },
             label: {
                 show: true,
                 position: 'bottom',
-                color: chartTheme.topology.nodeLabel,
+                color: chartTheme.topology.node_label,
             },
             tooltip: {
                 formatter: `{b}<br/>Type: ${res.type}<br/>Status: ${res.status}<br/>Owner: ${res.owner}`

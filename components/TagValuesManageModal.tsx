@@ -37,7 +37,7 @@ const TagValuesManageModal: React.FC<TagValuesManageModalProps> = ({ isOpen, onC
             const newTagValue: TagValue = {
                 id: `val-${Date.now()}`,
                 value: newValue.trim(),
-                usageCount: 0,
+                usage_count: 0,
             };
             setValues([...values, newTagValue]);
             setNewValue('');
@@ -92,7 +92,7 @@ const TagValuesManageModal: React.FC<TagValuesManageModalProps> = ({ isOpen, onC
                             {values.map(v => (
                                 <tr key={v.id} className="border-b border-slate-800 last:border-0 hover:bg-slate-800/40">
                                     <td className="px-4 py-3">{v.value}</td>
-                                    <td className="px-4 py-3">{v.usageCount}</td>
+                                    <td className="px-4 py-3">{v.usage_count}</td>
                                     <td className="px-4 py-3 text-right">
                                         <button
                                             onClick={() => handleRemoveValue(v.id)}

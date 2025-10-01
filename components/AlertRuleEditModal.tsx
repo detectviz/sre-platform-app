@@ -39,7 +39,7 @@ const Step0 = ({ selectedTemplate, setSelectedTemplate }: { selectedTemplate: Al
 
     const filteredTemplates = useMemo(() => {
         return templates
-            .filter(t => selectedType === 'all' || t.resourceType === selectedType)
+            .filter(t => selectedType === 'all' || t.resource_type === selectedType)
             .filter(t =>
                 searchTerm === '' ||
                 t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -263,7 +263,7 @@ const Step1 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
 
 const Step2 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFormData: Function }) => {
     const { options: uiOptions, isLoading: isLoadingOptions } = useOptions();
-    const severities = uiOptions?.alertRules?.severities || [];
+    const severities = uiOptions?.alert_rules?.severities || [];
     const [metricMetadata, setMetricMetadata] = useState<MetricMetadata[]>([]);
     const [isMetricLoading, setIsMetricLoading] = useState(true);
 
@@ -279,43 +279,43 @@ const Step2 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
     }, []);
 
     const handleGroupChange = (groupIndex: number, field: keyof ConditionGroup, value: any) => {
-        const newGroups = [...(formData.conditionGroups || [])];
+        const newGroups = [...(formData.condition_groups || [])];
         // @ts-ignore
         newGroups[groupIndex][field] = value;
-        setFormData({ ...formData, conditionGroups: newGroups });
+        setFormData({ ...formData, condition_groups: newGroups });
     };
 
     const handleConditionChange = (groupIndex: number, condIndex: number, field: keyof RuleCondition, value: any) => {
-        const newGroups = JSON.parse(JSON.stringify(formData.conditionGroups || []));
+        const newGroups = JSON.parse(JSON.stringify(formData.condition_groups || []));
         newGroups[groupIndex].conditions[condIndex][field] = value;
-        setFormData({ ...formData, conditionGroups: newGroups });
+        setFormData({ ...formData, condition_groups: newGroups });
     };
 
     const addCondition = (groupIndex: number) => {
-        const newGroups = JSON.parse(JSON.stringify(formData.conditionGroups || []));
-        newGroups[groupIndex].conditions.push({ metric: '', operator: '>', threshold: 0, durationMinutes: 5 });
-        setFormData({ ...formData, conditionGroups: newGroups });
+        const newGroups = JSON.parse(JSON.stringify(formData.condition_groups || []));
+        newGroups[groupIndex].conditions.push({ metric: '', operator: '>', threshold: 0, duration_minutes: 5 });
+        setFormData({ ...formData, condition_groups: newGroups });
     };
 
     const removeCondition = (groupIndex: number, condIndex: number) => {
-        const newGroups = JSON.parse(JSON.stringify(formData.conditionGroups || []));
+        const newGroups = JSON.parse(JSON.stringify(formData.condition_groups || []));
         newGroups[groupIndex].conditions.splice(condIndex, 1);
-        setFormData({ ...formData, conditionGroups: newGroups });
+        setFormData({ ...formData, condition_groups: newGroups });
     };
 
     const addGroup = () => {
-        const newGroups = [...(formData.conditionGroups || [])];
+        const newGroups = [...(formData.condition_groups || [])];
         newGroups.push({
             logic: 'OR',
             severity: 'warning',
-            conditions: [{ metric: '', operator: '>', threshold: 0, durationMinutes: 5 }]
+            conditions: [{ metric: '', operator: '>', threshold: 0, duration_minutes: 5 }]
         });
-        setFormData({ ...formData, conditionGroups: newGroups });
+        setFormData({ ...formData, condition_groups: newGroups });
     };
 
     return (
         <div className="space-y-4 px-4">
-            {formData.conditionGroups?.map((group, groupIndex) => (
+            {formData.condition_groups?.map((group, groupIndex) => (
                 <div key={groupIndex} className="p-4 border border-slate-700 rounded-lg space-y-4 bg-slate-800/20">
                     <div className="flex justify-between items-center">
                         <h4 className="font-semibold text-white">條件群組 #{groupIndex + 1} (OR)</h4>
@@ -328,7 +328,7 @@ const Step2 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
                                         key={level.value}
                                         type="button"
                                         onClick={() => handleGroupChange(groupIndex, 'severity', level.value)}
-                                        className={`px-4 py-1.5 text-sm font-semibold rounded-md border transition-colors uppercase ${isActive ? level.className : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-white'}`}
+                                        className={`px-4 py-1.5 text-sm font-semibold rounded-md border transition-colors uppercase ${isActive ? level.class_name : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-white'}`}
                                     >
                                         {level.label}
                                     </button>
@@ -373,7 +373,7 @@ const Step2 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
                                     {unit && <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 text-xs pointer-events-none">{unit}</span>}
                                 </div>
                                 <div className="relative w-32 shrink-0">
-                                    <input type="number" value={cond.durationMinutes} onChange={e => handleConditionChange(groupIndex, condIndex, 'durationMinutes', parseInt(e.target.value))} className="w-full bg-slate-800 border border-slate-700 rounded-md pl-3 pr-14 py-2 text-sm" placeholder="持續" />
+                                    <input type="number" value={cond.duration_minutes} onChange={e => handleConditionChange(groupIndex, condIndex, 'duration_minutes', parseInt(e.target.value))} className="w-full bg-slate-800 border border-slate-700 rounded-md pl-3 pr-14 py-2 text-sm" placeholder="持續" />
                                     <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 text-xs pointer-events-none">分鐘</span>
                                 </div>
                                 <button onClick={() => removeCondition(groupIndex, condIndex)} className="p-2 shrink-0 text-slate-400 hover:text-red-400 transition-colors"><Icon name="trash-2" className="w-4 h-4" /></button>
@@ -396,17 +396,17 @@ const Step3 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
     const [focusedElement, setFocusedElement] = useState<'title' | 'content' | null>(null);
 
     // Use dynamic variables from options or fallback
-    const variables = uiOptions?.alertRules?.variables || ['{{severity}}', '{{resource.name}}', '{{metric}}', '{{value}}', '{{threshold}}', '{{duration}}'];
+    const variables = uiOptions?.alert_rules?.variables || ['{{severity}}', '{{resource.name}}', '{{metric}}', '{{value}}', '{{threshold}}', '{{duration}}'];
 
     const insertVariable = (variable: string) => {
         if (focusedElement === 'title' && titleRef.current) {
             const { selectionStart, selectionEnd, value } = titleRef.current;
             const newValue = value.substring(0, selectionStart || 0) + variable + value.substring(selectionEnd || 0);
-            setFormData({ ...formData, titleTemplate: newValue });
+            setFormData({ ...formData, title_template: newValue });
         } else if (focusedElement === 'content' && contentRef.current) {
             const { selectionStart, selectionEnd, value } = contentRef.current;
             const newValue = value.substring(0, selectionStart || 0) + variable + value.substring(selectionEnd || 0);
-            setFormData({ ...formData, contentTemplate: newValue });
+            setFormData({ ...formData, content_template: newValue });
         }
     };
 
@@ -443,10 +443,10 @@ const Step3 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
     return (
         <div className="space-y-6 px-4">
             <FormRow label="事件標題 *">
-                <input ref={titleRef} onFocus={() => setFocusedElement('title')} type="text" value={formData.titleTemplate} onChange={e => setFormData({ ...formData, titleTemplate: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+                <input ref={titleRef} onFocus={() => setFocusedElement('title')} type="text" value={formData.title_template} onChange={e => setFormData({ ...formData, title_template: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
             </FormRow>
             <FormRow label="事件內容 *">
-                <textarea ref={contentRef} onFocus={() => setFocusedElement('content')} value={formData.contentTemplate} onChange={e => setFormData({ ...formData, contentTemplate: e.target.value })} rows={5} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm font-mono"></textarea>
+                <textarea ref={contentRef} onFocus={() => setFocusedElement('content')} value={formData.content_template} onChange={e => setFormData({ ...formData, content_template: e.target.value })} rows={5} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm font-mono"></textarea>
             </FormRow>
             <div>
                 <h3 className="text-sm font-semibold text-slate-300 mb-2">可用的變數</h3>
@@ -490,18 +490,18 @@ const Step4 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
             automation: {
                 ...(formData.automation || {}),
                 enabled,
-                scriptId: enabled ? formData.automation?.scriptId : undefined,
+                script_id: enabled ? formData.automation?.script_id : undefined,
                 parameters: enabled ? formData.automation?.parameters : {},
             }
         });
     };
 
-    const handleScriptChange = (scriptId: string) => {
-        const selectedPlaybook = playbooks.find(p => p.id === scriptId);
+    const handleScriptChange = (script_id: string) => {
+        const selectedPlaybook = playbooks.find(p => p.id === script_id);
         const newParams: Record<string, any> = {};
         selectedPlaybook?.parameters?.forEach(p => {
-            if (p.defaultValue !== undefined) {
-                newParams[p.name] = p.defaultValue;
+            if (p.default_value !== undefined) {
+                newParams[p.name] = p.default_value;
             }
         });
 
@@ -510,7 +510,7 @@ const Step4 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
             automation: {
                 ...(formData.automation || {}),
                 enabled: true,
-                scriptId,
+                script_id,
                 parameters: newParams,
             }
         });
@@ -529,7 +529,7 @@ const Step4 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
         });
     };
 
-    const selectedPlaybook = playbooks.find(p => p.id === formData.automation?.scriptId);
+    const selectedPlaybook = playbooks.find(p => p.id === formData.automation?.script_id);
 
     return (
         <div className="space-y-6 px-4">
@@ -547,7 +547,7 @@ const Step4 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
                 <div className="space-y-4 p-4 border border-slate-700 rounded-lg bg-slate-800/20 animate-fade-in">
                     <FormRow label="選擇腳本">
                         <select
-                            value={formData.automation?.scriptId || ''}
+                            value={formData.automation?.script_id || ''}
                             onChange={e => handleScriptChange(e.target.value)}
                             className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
                             disabled={isLoading}
@@ -565,7 +565,7 @@ const Step4 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
                             <div className="space-y-3">
                                 {selectedPlaybook.parameters.map(param => {
                                     let inputElement;
-                                    const value = formData.automation?.parameters?.[param.name] ?? param.defaultValue ?? '';
+                                    const value = formData.automation?.parameters?.[param.name] ?? param.default_value ?? '';
 
                                     switch (param.type) {
                                         case 'boolean':
@@ -716,7 +716,7 @@ const AlertRuleEditModal: React.FC<AlertRuleEditModalProps> = ({ isOpen, onClose
     }, [isOpen, isEditMode]);
 
     const handleSave = () => {
-        const firstCondition = formData.conditionGroups?.[0]?.conditions?.[0];
+        const firstCondition = formData.condition_groups?.[0]?.conditions?.[0];
         const conditionsSummary = firstCondition
             ? `${firstCondition.metric} ${firstCondition.operator} ${firstCondition.threshold}`
             : 'No conditions';
@@ -745,8 +745,8 @@ const AlertRuleEditModal: React.FC<AlertRuleEditModalProps> = ({ isOpen, onClose
                 showToast('請選擇一個範本以繼續。', 'error');
                 return;
             }
-            const firstGroupSeverity = selectedTemplate.data.conditionGroups?.[0]?.severity;
-            const defaultTarget = `resource.type = "${selectedTemplate.resourceType}"`;
+            const firstGroupSeverity = selectedTemplate.data.condition_groups?.[0]?.severity;
+            const defaultTarget = `resource.type = "${selectedTemplate.resource_type}"`;
 
             if (!defaultRuleData) {
                 showToast('預設告警規則尚未載入，請稍候。', 'error');
@@ -773,7 +773,7 @@ const AlertRuleEditModal: React.FC<AlertRuleEditModalProps> = ({ isOpen, onClose
     const prevStep = () => setCurrentStep(s => Math.max(s - 1, isEditMode ? 1 : 0));
 
     // Use dynamic step titles from options or fallback
-    const stepTitles = uiOptions?.alertRules?.stepTitles || ["選擇監控目標", "設定基本資訊", "定義觸發條件", "事件定義與通知", "設定自動化響應"];
+    const stepTitles = uiOptions?.alert_rules?.step_titles || ["選擇監控目標", "設定基本資訊", "定義觸發條件", "事件定義與通知", "設定自動化響應"];
 
     const renderStepContent = () => {
         switch (currentStep) {

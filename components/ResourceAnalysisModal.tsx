@@ -106,7 +106,7 @@ const ResourceAnalysisModal: React.FC<ResourceAnalysisModalProps> = ({ isOpen, o
                         {analysis.riskAnalysis.map((risk, i) => (
                             <div key={i} className="p-3 bg-slate-800/50 rounded-lg">
                                 <div className="flex justify-between items-start">
-                                    <Link to={`/resources/list/${risk.resourceId}`} className="font-semibold text-white hover:underline">{risk.resourceName}</Link>
+                                    <Link to={`/resources/list/${risk.resource_id}`} className="font-semibold text-white hover:underline">{risk.resource_name}</Link>
                                     <RiskLevelPill level={risk.riskLevel} />
                                 </div>
                                 <p className="text-sm text-slate-400 mt-1">原因: {risk.reason}</p>
@@ -120,7 +120,7 @@ const ResourceAnalysisModal: React.FC<ResourceAnalysisModalProps> = ({ isOpen, o
                         {analysis.optimizationSuggestions.map((suggestion, i) => (
                              <div key={i} className="p-3 bg-slate-800/50 rounded-lg">
                                 <div className="flex justify-between items-start">
-                                    <Link to={`/resources/list/${suggestion.resourceId}`} className="font-semibold text-white hover:underline">{suggestion.resourceName}</Link>
+                                    <Link to={`/resources/list/${suggestion.resource_id}`} className="font-semibold text-white hover:underline">{suggestion.resource_name}</Link>
                                     <OptimizationTypePill type={suggestion.type} />
                                 </div>
                                 <p className="text-sm text-slate-300 mt-1">{suggestion.suggestion}</p>

@@ -58,7 +58,7 @@
 ```typescript
 resourceId      → resource_id
 createdAt       → created_at
-deletedAt       → deleted_at
+deleted_at       → deleted_at
 lastLoginAt     → last_login_at
 automationEnabled → automation_enabled
 conditionsSummary → conditions_summary

@@ -45,7 +45,7 @@ export const auditLogMiddleware = (
   };
 
   // Add to audit logs
-  DB.auditLogs.unshift(log);
+  DB.audit_logs.unshift(log);
 };
 
 // Helper to get user name by ID

@@ -15,7 +15,7 @@ const DatasourceManagementPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [filters, setFilters] = useState<DatasourceFilters>({});
-    
+
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingDatasource, setEditingDatasource] = useState<Datasource | null>(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -25,8 +25,8 @@ const DatasourceManagementPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const { data } = await api.get<Datasource[]>('/resources/datasources', { params: filters });
-            setDatasources(data);
+            const { data } = await api.get<{ items: Datasource[], total: number }>('/resources/datasources', { params: filters });
+            setDatasources(data.items);
         } catch (err) {
             setError('無法獲取 Datasource 列表。');
         } finally {
@@ -47,7 +47,7 @@ const DatasourceManagementPage: React.FC = () => {
         setEditingDatasource(ds);
         setIsEditModalOpen(true);
     };
-    
+
     const handleDelete = (ds: Datasource) => {
         setDeletingDatasource(ds);
         setIsDeleteModalOpen(true);
@@ -67,7 +67,7 @@ const DatasourceManagementPage: React.FC = () => {
             }
         }
     };
-    
+
     const handleSave = async (ds: Partial<Datasource>) => {
         try {
             if (ds.id) {
@@ -84,7 +84,7 @@ const DatasourceManagementPage: React.FC = () => {
             setIsEditModalOpen(false);
         }
     };
-    
+
     const handleTestConnection = async (ds: Datasource) => {
         showToast(`正在測試對 "${ds.name}" 的連線...`, 'success');
         try {
@@ -106,7 +106,7 @@ const DatasourceManagementPage: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col">
-            <Toolbar 
+            <Toolbar
                 rightActions={
                     <ToolbarButton icon="plus" text="新增 Datasource" primary onClick={handleNew} />
                 }
@@ -133,7 +133,7 @@ const DatasourceManagementPage: React.FC = () => {
                                     <td className="px-6 py-4 font-medium text-white">{ds.name}</td>
                                     <td className="px-6 py-4">{ds.type}</td>
                                     <td className="px-6 py-4">{getStatusIndicator(ds.status)}</td>
-                                    <td className="px-6 py-4">{ds.createdAt}</td>
+                                    <td className="px-6 py-4">{ds.created_at}</td>
                                     <td className="px-6 py-4 text-center space-x-1">
                                         <button onClick={() => handleTestConnection(ds)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="測試連線"><Icon name="plug-zap" className="w-4 h-4" /></button>
                                         <button onClick={() => handleEdit(ds)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯"><Icon name="edit-3" className="w-4 h-4" /></button>
@@ -145,8 +145,8 @@ const DatasourceManagementPage: React.FC = () => {
                     </table>
                 </div>
             </TableContainer>
-             {isEditModalOpen && (
-                <DatasourceEditModal 
+            {isEditModalOpen && (
+                <DatasourceEditModal
                     isOpen={isEditModalOpen}
                     onClose={() => setIsEditModalOpen(false)}
                     onSave={handleSave}

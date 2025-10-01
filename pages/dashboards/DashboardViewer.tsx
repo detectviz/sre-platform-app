@@ -25,15 +25,15 @@ const DashboardViewer: React.FC<DashboardViewerProps> = ({ dashboard }) => {
                 const { data } = await api.get<InfraInsightsOptions>('/dashboards/infrastructure-insights/options');
                 setOptions(data);
                 if (data) {
-                    if (data.refreshOptions.length > 0) {
-                        const defaultRefresh = data.refreshOptions.find(opt => opt.value === '1m');
-                        setRefresh(defaultRefresh ? defaultRefresh.value : data.refreshOptions[0].value);
+                    if (data.refresh_options.length > 0) {
+                        const defaultRefresh = data.refresh_options.find(opt => opt.value === '1m');
+                        setRefresh(defaultRefresh ? defaultRefresh.value : data.refresh_options[0].value);
                     }
-                    const defaultTime = data.timeOptions.find(opt => opt.value.includes('6h'));
+                    const defaultTime = data.time_options.find(opt => opt.value.includes('6h'));
                     if (defaultTime) {
                         setTimeRange(defaultTime.value);
-                    } else if (data.timeOptions.length > 0) {
-                        setTimeRange(data.timeOptions[0].value);
+                    } else if (data.time_options.length > 0) {
+                        setTimeRange(data.time_options[0].value);
                     }
                 }
             } catch (err) {
@@ -85,12 +85,12 @@ const DashboardViewer: React.FC<DashboardViewerProps> = ({ dashboard }) => {
                 ) : options && (
                     <>
                         <div className="flex items-center space-x-4">
-                            <Dropdown label="主題" options={options.themeOptions || []} value={theme} onChange={setTheme} minWidth="w-24" />
-                            <Dropdown label="TV 模式" options={options.tvModeOptions || []} value={tvMode} onChange={setTvMode} minWidth="w-24" />
-                            <Dropdown label="刷新" options={options.refreshOptions || []} value={refresh} onChange={setRefresh} minWidth="w-24" />
+                            <Dropdown label="主題" options={options.theme_options || []} value={theme} onChange={setTheme} minWidth="w-24" />
+                            <Dropdown label="TV 模式" options={options.tv_mode_options || []} value={tvMode} onChange={setTvMode} minWidth="w-24" />
+                            <Dropdown label="刷新" options={options.refresh_options || []} value={refresh} onChange={setRefresh} minWidth="w-24" />
                         </div>
                         <div className="flex items-center space-x-4">
-                            <Dropdown label="時間" options={options.timeOptions || []} value={timeRange} onChange={setTimeRange} minWidth="w-40" />
+                            <Dropdown label="時間" options={options.time_options || []} value={timeRange} onChange={setTimeRange} minWidth="w-40" />
                         </div>
                     </>
                 )}
