@@ -62,6 +62,64 @@ const sortData = (data: any[], sortBy: string, sortOrder: 'asc' | 'desc') => {
     });
 };
 
+const isActiveEntity = (entity: any) => entity && !entity.deleted_at;
+
+const validateForeignKey = (collection: any[], id: string | undefined | null, entityLabel: string) => {
+    if (!id) {
+        return;
+    }
+    const exists = collection.some(item => item?.id === id && isActiveEntity(item));
+    if (!exists) {
+        throw {
+            status: 404,
+            message: `${entityLabel} not found.`
+        };
+    }
+};
+
+const validateForeignKeys = (collection: any[], ids: string[] | undefined | null, entityLabel: string) => {
+    if (!Array.isArray(ids) || ids.length === 0) {
+        return;
+    }
+    const missing = ids.filter(id => !collection.some(item => item?.id === id && isActiveEntity(item)));
+    if (missing.length > 0) {
+        throw {
+            status: 404,
+            message: `The following ${entityLabel} could not be found: ${missing.join(', ')}`
+        };
+    }
+};
+
+const resolveAutomationScriptId = (automation: any) => {
+    if (!automation) {
+        return undefined;
+    }
+    return automation.script_id ?? automation.playbook_id;
+};
+
+const getConfigEntityCollection = (entityType: ConfigVersion['entity_type']) => {
+    switch (entityType) {
+        case 'AlertRule':
+            return { collection: DB.alert_rules, label: 'Alert rule' };
+        case 'AutomationPlaybook':
+            return { collection: DB.playbooks, label: 'Automation playbook' };
+        case 'Dashboard':
+            return { collection: DB.dashboards, label: 'Dashboard' };
+        case 'NotificationStrategy':
+            return { collection: DB.notification_strategies, label: 'Notification strategy' };
+        case 'SilenceRule':
+            return { collection: DB.silence_rules, label: 'Silence rule' };
+        case 'Resource':
+            return { collection: DB.resources, label: 'Resource' };
+        case 'Team':
+            return { collection: DB.teams, label: 'Team' };
+        case 'User':
+            return { collection: DB.users, label: 'User' };
+        default:
+            return null;
+    }
+};
+
 /**
  * 自動填充 team 和 owner 標籤（從關聯實體自動生成）
  * @param entity 實體物件（需要有 team_id 和/或 owner_id 欄位）
@@ -375,6 +433,12 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 const index = DB.dashboards.findIndex((d: any) => d.id === id);
                 if (index === -1) throw { status: 404 };
                 const existing = DB.dashboards[index];
+                if (Object.prototype.hasOwnProperty.call(body ?? {}, 'team_id')) {
+                    validateForeignKey(DB.teams, body?.team_id, 'Team');
+                }
+                if (Object.prototype.hasOwnProperty.call(body ?? {}, 'owner_id')) {
+                    validateForeignKey(DB.users, body?.owner_id, 'Owner (user)');
+                }
                 // 更新 updated_at 時間戳
                 const updated = { ...existing, ...body, updated_at: new Date().toISOString() };
                 DB.dashboards[index] = updated;
@@ -893,12 +957,11 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const owner = DB.users.find(u => u.id === body.owner_id && !u.deleted_at);
                     if (!owner) throw { status: 404, message: 'Owner not found.' };
                 }
-                if (body.automation?.enabled && body.automation?.playbook_id) {
-                    const playbook = DB.playbooks.find(p => p.id === body.automation.playbook_id && !p.deleted_at);
-                    if (!playbook) {
-                        throw { status: 404, message: 'Automation playbook not found.' };
-                    }
+                const automationScriptId = resolveAutomationScriptId(body.automation);
+                if (body.automation?.enabled && automationScriptId) {
+                    validateForeignKey(DB.playbooks, automationScriptId, 'Automation playbook');
                 }
+                validateForeignKeys(DB.resources, body.target_resource_ids, 'resource IDs');
 
                 const timestamp1 = new Date().toISOString();
                 const newRule = {
@@ -927,6 +990,22 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 const ruleIndex = DB.alert_rules.findIndex((r: any) => r.id === id);
                 if (ruleIndex === -1) throw { status: 404 };
                 const oldRule = { ...DB.alert_rules[ruleIndex] };
+                if (Object.prototype.hasOwnProperty.call(body ?? {}, 'team_id')) {
+                    validateForeignKey(DB.teams, body?.team_id, 'Team');
+                }
+                if (Object.prototype.hasOwnProperty.call(body ?? {}, 'owner_id')) {
+                    validateForeignKey(DB.users, body?.owner_id, 'Owner (user)');
+                }
+                const automationScriptIdForUpdate = resolveAutomationScriptId(body?.automation);
+                if (automationScriptIdForUpdate) {
+                    validateForeignKey(DB.playbooks, automationScriptIdForUpdate, 'Automation playbook');
+                }
+                if (Object.prototype.hasOwnProperty.call(body ?? {}, 'target_resource_ids')) {
+                    if (body?.target_resource_ids !== undefined && !Array.isArray(body?.target_resource_ids)) {
+                        throw { status: 400, message: 'target_resource_ids must be an array.' };
+                    }
+                    validateForeignKeys(DB.resources, body?.target_resource_ids, 'resource IDs');
+                }
                 // 更新 updated_at 時間戳
                 DB.alert_rules[ruleIndex] = { ...DB.alert_rules[ruleIndex], ...body, automation_enabled: !!body.automation?.enabled, updated_at: new Date().toISOString() };
 
@@ -1460,6 +1539,12 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 }
             }
             case 'POST /resource-links': {
+                const { source_resource_id, target_resource_id, link_type } = body || {};
+                if (!source_resource_id || !target_resource_id || !link_type) {
+                    throw { status: 400, message: 'Missing required fields: source_resource_id, target_resource_id, link_type' };
+                }
+                validateForeignKey(DB.resources, source_resource_id, 'Source resource');
+                validateForeignKey(DB.resources, target_resource_id, 'Target resource');
                 const timestamp = new Date().toISOString();
                 const newLink: ResourceLink = {
                     ...body,
@@ -1540,6 +1625,18 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 const resIndex = DB.resources.findIndex((r: any) => r.id === id);
                 if (resIndex === -1) throw { status: 404 };
                 const oldResource = { ...DB.resources[resIndex] };
+                if (Object.prototype.hasOwnProperty.call(body ?? {}, 'team_id')) {
+                    validateForeignKey(DB.teams, body?.team_id, 'Team');
+                }
+                if (Object.prototype.hasOwnProperty.call(body ?? {}, 'owner_id')) {
+                    validateForeignKey(DB.users, body?.owner_id, 'Owner (user)');
+                }
+                if (Object.prototype.hasOwnProperty.call(body ?? {}, 'datasource_id')) {
+                    validateForeignKey(DB.datasources, body?.datasource_id, 'Datasource');
+                }
+                if (Object.prototype.hasOwnProperty.call(body ?? {}, 'status') && body?.status) {
+                    validateEnum(body.status, ['healthy', 'warning', 'critical', 'offline'], 'status');
+                }
                 // 更新 updated_at 時間戳
                 DB.resources[resIndex] = { ...DB.resources[resIndex], ...body, updated_at: new Date().toISOString() };
 
@@ -1564,6 +1661,12 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 const linkIndex = DB.resource_links.findIndex((link: any) => link.id === id);
                 if (linkIndex === -1) throw { status: 404 };
                 const existingLink = DB.resource_links[linkIndex];
+                if (Object.prototype.hasOwnProperty.call(body ?? {}, 'source_resource_id')) {
+                    validateForeignKey(DB.resources, body?.source_resource_id, 'Source resource');
+                }
+                if (Object.prototype.hasOwnProperty.call(body ?? {}, 'target_resource_id')) {
+                    validateForeignKey(DB.resources, body?.target_resource_id, 'Target resource');
+                }
                 // 更新 updated_at 時間戳
                 DB.resource_links[linkIndex] = { ...existingLink, ...body, updated_at: new Date().toISOString() };
                 // Audit log for resource link update
@@ -1700,6 +1803,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 if (!resourceGroupName || !owner_team || !Array.isArray(member_ids)) {
                     throw { status: 400, message: 'Missing required fields: name, owner_team, member_ids' };
                 }
+                validateForeignKeys(DB.resources, member_ids, 'resource IDs');
 
                 const timestamp = new Date().toISOString();
                 const newGroup = {
@@ -1728,6 +1832,12 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 const groupIndex = DB.resource_groups.findIndex((g: any) => g.id === id);
                 if (groupIndex === -1) throw { status: 404 };
                 const existingGroup = DB.resource_groups[groupIndex];
+                if (Object.prototype.hasOwnProperty.call(body ?? {}, 'member_ids')) {
+                    if (body?.member_ids !== undefined && !Array.isArray(body?.member_ids)) {
+                        throw { status: 400, message: 'member_ids must be an array.' };
+                    }
+                    validateForeignKeys(DB.resources, body?.member_ids, 'resource IDs');
+                }
                 // 更新 updated_at 時間戳
                 const updatedGroup = { ...existingGroup, ...body, updated_at: new Date().toISOString() };
                 DB.resource_groups[groupIndex] = updatedGroup;
@@ -2030,6 +2140,12 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const index = DB.automation_triggers.findIndex((t: any) => t.id === itemId);
                     if (index === -1) throw { status: 404 };
                     const existing = DB.automation_triggers[index];
+                    if (Object.prototype.hasOwnProperty.call(body ?? {}, 'target_playbook_id')) {
+                        const targetPlaybookId = body?.target_playbook_id;
+                        if (targetPlaybookId) {
+                            validateForeignKey(DB.playbooks, targetPlaybookId, 'Automation playbook');
+                        }
+                    }
                     // 更新 updated_at 時間戳
                     const updated = { ...existing, ...body, updated_at: new Date().toISOString() };
                     DB.automation_triggers[index] = updated;
@@ -2297,6 +2413,17 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 const index = collection.findIndex((item: any) => item.id === itemId);
                 if (index === -1) throw { status: 404 };
                 const existing = collection[index];
+                if (id === 'teams') {
+                    if (Object.prototype.hasOwnProperty.call(body ?? {}, 'owner_id')) {
+                        validateForeignKey(DB.users, body?.owner_id, 'Owner (user)');
+                    }
+                    if (Object.prototype.hasOwnProperty.call(body ?? {}, 'member_ids')) {
+                        if (body?.member_ids !== undefined && !Array.isArray(body?.member_ids)) {
+                            throw { status: 400, message: 'member_ids must be an array.' };
+                        }
+                        validateForeignKeys(DB.users, body?.member_ids, 'user IDs');
+                    }
+                }
                 const timestamp = new Date().toISOString();
                 const baseUpdate = { ...existing, ...body };
                 if ('updated_at' in baseUpdate) {
@@ -2738,6 +2865,12 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const impact_levels = Array.isArray(body?.impact_levels) && body.impact_levels.length > 0
                         ? body.impact_levels
                         : fallbackOptions.impact_levels;
+                    if (Object.prototype.hasOwnProperty.call(body ?? {}, 'channel_ids')) {
+                        if (body?.channel_ids !== undefined && !Array.isArray(body?.channel_ids)) {
+                            throw { status: 400, message: 'channel_ids must be an array.' };
+                        }
+                        validateForeignKeys(DB.notification_channels, body?.channel_ids, 'notification channel IDs');
+                    }
 
                     const timestamp = new Date().toISOString();
                     const newStrategy: NotificationStrategy = {
@@ -2849,6 +2982,12 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const impact_levels = Array.isArray(body?.impact_levels) && body?.impact_levels.length > 0
                         ? body.impact_levels
                         : existingStrategy.impact_levels;
+                    if (Object.prototype.hasOwnProperty.call(body ?? {}, 'channel_ids')) {
+                        if (body?.channel_ids !== undefined && !Array.isArray(body?.channel_ids)) {
+                            throw { status: 400, message: 'channel_ids must be an array.' };
+                        }
+                        validateForeignKeys(DB.notification_channels, body?.channel_ids, 'notification channel IDs');
+                    }
 
                     const timestamp = new Date().toISOString();
                     const updatedStrategy = {
@@ -3035,6 +3174,16 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 return DB.notifications;
             }
             case 'POST /config-versions': {
+                const { entity_type, entity_id, changed_by } = body || {};
+                if (!entity_type || !entity_id || !changed_by) {
+                    throw { status: 400, message: 'Missing required fields: entity_type, entity_id, changed_by' };
+                }
+                const entityCollectionInfo = getConfigEntityCollection(entity_type);
+                if (!entityCollectionInfo) {
+                    throw { status: 400, message: `Unsupported entity_type: ${entity_type}` };
+                }
+                validateForeignKey(DB.users, changed_by, 'Changed-by user');
+                validateForeignKey(entityCollectionInfo.collection, entity_id, entityCollectionInfo.label);
                 const timestamp = new Date().toISOString();
                 const newVersion: ConfigVersion = {
                     ...body,
