@@ -717,15 +717,15 @@ const AlertRuleEditModal: React.FC<AlertRuleEditModalProps> = ({ isOpen, onClose
 
     const handleSave = () => {
         const firstCondition = formData.condition_groups?.[0]?.conditions?.[0];
-        const conditionsSummary = firstCondition
+        const conditions_summary = firstCondition
             ? `${firstCondition.metric} ${firstCondition.operator} ${firstCondition.threshold}`
             : 'No conditions';
 
 
         const rulePayload: Partial<AlertRule> = {
             ...formData,
-            conditionsSummary: conditionsSummary,
-            automationEnabled: !!formData.automation?.enabled,
+            conditions_summary: conditions_summary,
+            automation_enabled: !!formData.automation?.enabled,
         };
 
         if (rule?.id) {

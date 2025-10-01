@@ -91,9 +91,9 @@ const DualListSelector: React.FC<DualListSelectorProps> = ({ available, selected
 };
 
 interface LayoutConfig {
-    widgetIds: string[];
-    updatedAt: string;
-    updatedBy: string;
+    widget_ids: string[];
+    updated_at: string;
+    updated_by: string;
 }
 type LayoutsData = Record<string, LayoutConfig>;
 
@@ -108,7 +108,7 @@ const AccordionItem: React.FC<AccordionItemProps> = ({ pageName, layouts, handle
     const { content } = useContent();
     const pageContent = content?.LAYOUT_SETTINGS;
     const pageLayout = layouts[pageName];
-    const widgetIds = pageLayout?.widgetIds || [];
+    const widget_ids = pageLayout?.widget_ids || [];
     const getWidgetById = (id: string) => allWidgets.find(w => w.id === id);
 
     if (!pageContent) {
@@ -131,9 +131,9 @@ const AccordionItem: React.FC<AccordionItemProps> = ({ pageName, layouts, handle
                     <div className="flex justify-between items-start">
                         <div>
                             <h4 className="font-semibold mb-2">{pageContent.CURRENTLY_DISPLAYED}</h4>
-                            {widgetIds.length > 0 ? (
+                            {widget_ids.length > 0 ? (
                                 <ol className="list-decimal list-inside text-slate-300 space-y-1">
-                                    {widgetIds.map(id => {
+                                    {widget_ids.map(id => {
                                         const widget = getWidgetById(id);
                                         return <li key={id}>{widget?.name || 'Unknown Widget'}</li>;
                                     })}
@@ -194,8 +194,8 @@ const LayoutSettingsPage: React.FC = () => {
 
     const handleEditClick = (pageName: string) => {
         setEditingPage(pageName);
-        const widgetIds = layouts[pageName]?.widgetIds || [];
-        const selected = widgetIds.map(id => getWidgetById(id)).filter(Boolean) as LayoutWidget[];
+        const widget_ids = layouts[pageName]?.widget_ids || [];
+        const selected = widget_ids.map(id => getWidgetById(id)).filter(Boolean) as LayoutWidget[];
         setModalWidgets(selected);
         setIsModalOpen(true);
     };
@@ -203,8 +203,8 @@ const LayoutSettingsPage: React.FC = () => {
     const handleSaveLayout = async () => {
         if (editingPage) {
             const newSelectedIds = modalWidgets.map(w => w.id);
-            const currentLayoutConfig = layouts[editingPage] || { widgetIds: [], updatedAt: '', updatedBy: '' };
-            const updatedLayouts = { ...layouts, [editingPage]: { ...currentLayoutConfig, widgetIds: newSelectedIds } };
+            const currentLayoutConfig = layouts[editingPage] || { widget_ids: [], updated_at: '', updated_by: '' };
+            const updatedLayouts = { ...layouts, [editingPage]: { ...currentLayoutConfig, widget_ids: newSelectedIds } };
 
             try {
                 const { data: savedLayouts } = await api.put<LayoutsData>('/settings/layouts', updatedLayouts);

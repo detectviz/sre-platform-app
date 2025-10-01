@@ -190,7 +190,7 @@ const AutomationTriggersPage: React.FC = () => {
         }
     };
 
-    const findPlaybookName = (playbookId: string) => playbookNameMap.get(playbookId) || 'Unknown Playbook';
+    const findPlaybookName = (playbook_id: string) => playbookNameMap.get(playbook_id) || 'Unknown Playbook';
 
     const renderCellContent = (trigger: AutomationTrigger, columnKey: string) => {
         switch (columnKey) {
@@ -212,7 +212,7 @@ const AutomationTriggersPage: React.FC = () => {
                 );
             case 'targetPlaybookId':
                 return findPlaybookName(trigger.target_playbook_id);
-            case 'lastTriggeredAt':
+            case 'last_triggered_at':
                 return trigger.last_triggered_at;
             default:
                 return <span className="text-slate-500">--</span>;

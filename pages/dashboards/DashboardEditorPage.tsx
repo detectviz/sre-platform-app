@@ -45,7 +45,7 @@ const DashboardEditorPage: React.FC = () => {
     const [interactionState, setInteractionState] = useState<InteractionState>(null);
 
     const [allWidgets, setAllWidgets] = useState<LayoutWidget[]>([]);
-    const [kpiData, setKpiData] = useState<Record<string, any>>({});
+    const [kpi_data, setKpiData] = useState<Record<string, any>>({});
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -327,7 +327,7 @@ const DashboardEditorPage: React.FC = () => {
                             </div>
                         );
                     }
-                    const data = kpiData[widget.id];
+                    const data = kpi_data[widget.id];
                     if (!data) {
                         return (
                             <div key={item.i} className="absolute border border-dashed border-slate-700 bg-slate-900/40 rounded-xl flex flex-col items-center justify-center text-slate-400 text-sm" style={{ top, left, width, height }}>
@@ -342,7 +342,7 @@ const DashboardEditorPage: React.FC = () => {
                             onMouseDown={(e) => handleInteractionStart(e, 'drag', item)}
                             className={`absolute transition-all duration-200 ease-in-out group ${isInteracting ? 'z-20 shadow-2xl opacity-80' : 'z-10'}`}
                             style={{ top, left, width, height }}>
-                            <ContextualKPICard title={widget.name} value={data.value} description={renderDescription(data.description)} icon={data.icon} iconBgColor={data.iconBgColor} />
+                            <ContextualKPICard title={widget.name} value={data.value} description={renderDescription(data.description)} icon={data.icon} icon_bg_color={data.icon_bg_color} />
                             <button onClick={(e) => { e.stopPropagation(); removeWidget(widget.id); }} className="absolute top-2 right-2 p-1 bg-red-600/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity" title={pageContent.REMOVE_WIDGET_TITLE}><Icon name="x" className="w-4 h-4" /></button>
                             <div onMouseDown={(e) => handleInteractionStart(e, 'resize', item)} className="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Icon name="move-down-right" className="w-4 h-4 text-slate-400 absolute bottom-1 right-1" />

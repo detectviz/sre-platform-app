@@ -69,7 +69,7 @@ const registry: TagRegistryEntry[] = [
 // ============================================================================
 
 const createTagDefinition = (entry: TagRegistryEntry): TagDefinition => {
-  // 為系統標籤設置預設的 allowedValues
+  // 為系統標籤設置預設的 allowed_values
   const defaultAllowedValues: Record<string, Array<{ id: string; value: string; usage_count: number }>> = {
     'env': [
       { id: 'env-production', value: 'production', usage_count: 0 },

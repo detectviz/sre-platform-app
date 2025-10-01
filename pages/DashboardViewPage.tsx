@@ -56,7 +56,7 @@ const DashboardViewPage: React.FC = () => {
     }
     // Handle generic, user-created built-in dashboards that have a layout property
     if (dashboard.layout) {
-      return <GenericBuiltInDashboardPage name={dashboard.name} description={dashboard.description} widgetIds={dashboard.layout} />;
+      return <GenericBuiltInDashboardPage name={dashboard.name} description={dashboard.description} widget_ids={dashboard.layout} />;
     }
     // Fallback for any other built-in dashboard without a specific page or layout
     return <Navigate to="/home" replace />;

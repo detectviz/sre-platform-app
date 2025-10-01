@@ -6,13 +6,13 @@ interface ContextualKPICardProps {
   value: string;
   description: React.ReactNode;
   icon: string;
-  iconBgColor: string;
+  icon_bg_color: string;
 }
 
-const ContextualKPICard: React.FC<ContextualKPICardProps> = ({ title, value, description, icon, iconBgColor }) => {
+const ContextualKPICard: React.FC<ContextualKPICardProps> = ({ title, value, description, icon, icon_bg_color }) => {
   return (
     <div className="glass-card rounded-xl p-5 flex items-center w-full">
-      <div className={`w-12 h-12 rounded-lg flex items-center justify-center mr-5 shrink-0 ${iconBgColor}`}>
+      <div className={`w-12 h-12 rounded-lg flex items-center justify-center mr-5 shrink-0 ${icon_bg_color}`}>
         <Icon name={icon} className="w-6 h-6 text-white" />
       </div>
       <div className="flex-1 min-w-0">

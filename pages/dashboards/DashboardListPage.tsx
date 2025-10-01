@@ -206,7 +206,7 @@ const DashboardListPage: React.FC = () => {
 
         exportToCsv({
             filename: `dashboards-${new Date().toISOString().split('T')[0]}.csv`,
-            headers: ['id', 'name', 'type', 'category', 'description', 'owner', 'updatedAt', 'path'],
+            headers: ['id', 'name', 'type', 'category', 'description', 'owner', 'updated_at', 'path'],
             data: dataToExport,
         });
     };

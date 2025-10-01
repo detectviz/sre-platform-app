@@ -323,12 +323,12 @@ const Step3 = ({ formData, setFormData, options }: { formData: Partial<SilenceRu
     }, [formData.matchers]);
 
     const renderMatcherValueInput = (matcher: SilenceMatcher, index: number) => {
-        const allowedValues = options?.values[matcher.key] || [];
+        const allowed_values = options?.values[matcher.key] || [];
 
-        if (allowedValues.length > 0) {
+        if (allowed_values.length > 0) {
             return (
                 <MultiSelectDropdown
-                    options={allowedValues.map(v => ({ id: v, value: v }))}
+                    options={allowed_values.map(v => ({ id: v, value: v }))}
                     selectedValues={matcher.value ? matcher.value.split('|') : []}
                     onChange={(newValues) => {
                         const newMatchers = JSON.parse(JSON.stringify(formData.matchers || []));

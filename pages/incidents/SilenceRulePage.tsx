@@ -200,7 +200,7 @@ const SilenceRulePage: React.FC = () => {
         }
         exportToCsv({
             filename: `silence-rules-${new Date().toISOString().split('T')[0]}.csv`,
-            headers: ['id', 'name', 'enabled', 'type', 'creator', 'createdAt'],
+            headers: ['id', 'name', 'enabled', 'type', 'creator', 'created_at'],
             data: rules.map(r => ({ ...r, matchers: JSON.stringify(r.matchers), schedule: JSON.stringify(r.schedule) })),
         });
     };

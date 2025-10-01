@@ -65,14 +65,14 @@ const CapacityPlanningPage: React.FC = () => {
         fetchData();
     }, [fetchData]);
 
-    const seriesLabels = useMemo(
+    const series_labels = useMemo(
         () => ({
             cpu: content?.SERIES_LABELS?.CPU ?? 'CPU',
-            cpuForecast: content?.SERIES_LABELS?.CPU_FORECAST ?? 'CPU Forecast',
+            cpu_forecast: content?.SERIES_LABELS?.CPU_FORECAST ?? 'CPU Forecast',
             memory: content?.SERIES_LABELS?.MEMORY ?? 'Memory',
-            memoryForecast: content?.SERIES_LABELS?.MEMORY_FORECAST ?? 'Memory Forecast',
+            memory_forecast: content?.SERIES_LABELS?.MEMORY_FORECAST ?? 'Memory Forecast',
             storage: content?.SERIES_LABELS?.STORAGE ?? 'Storage',
-            storageForecast: content?.SERIES_LABELS?.STORAGE_FORECAST ?? 'Storage Forecast',
+            storage_forecast: content?.SERIES_LABELS?.STORAGE_FORECAST ?? 'Storage Forecast',
         }),
         [content],
     );
@@ -82,12 +82,12 @@ const CapacityPlanningPage: React.FC = () => {
             tooltip: { trigger: 'axis' },
             legend: {
                 data: [
-                    seriesLabels.cpu,
-                    seriesLabels.cpuForecast,
-                    seriesLabels.memory,
-                    seriesLabels.memoryForecast,
-                    seriesLabels.storage,
-                    seriesLabels.storageForecast,
+                    series_labels.cpu,
+                    series_labels.cpu_forecast,
+                    series_labels.memory,
+                    series_labels.memory_forecast,
+                    series_labels.storage,
+                    series_labels.storage_forecast,
                 ],
                 textStyle: { color: chartTheme.text.primary },
             },
@@ -101,21 +101,21 @@ const CapacityPlanningPage: React.FC = () => {
                 splitLine: { lineStyle: { color: chartTheme.grid.split_line } },
             },
             series: [
-                { name: seriesLabels.cpu, type: 'line', data: data?.trends.cpu.historical, showSymbol: false, lineStyle: { color: chartTheme.capacity_planning.cpu } },
-                { name: seriesLabels.cpuForecast, type: 'line', data: data?.trends.cpu.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: chartTheme.capacity_planning.cpu } },
-                { name: seriesLabels.memory, type: 'line', data: data?.trends.memory.historical, showSymbol: false, lineStyle: { color: chartTheme.capacity_planning.memory } },
-                { name: seriesLabels.memoryForecast, type: 'line', data: data?.trends.memory.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: chartTheme.capacity_planning.memory } },
-                { name: seriesLabels.storage, type: 'line', data: data?.trends.storage.historical, showSymbol: false, lineStyle: { color: chartTheme.capacity_planning.storage } },
-                { name: seriesLabels.storageForecast, type: 'line', data: data?.trends.storage.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: chartTheme.capacity_planning.storage } },
+                { name: series_labels.cpu, type: 'line', data: data?.trends.cpu.historical, showSymbol: false, lineStyle: { color: chartTheme.capacity_planning.cpu } },
+                { name: series_labels.cpu_forecast, type: 'line', data: data?.trends.cpu.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: chartTheme.capacity_planning.cpu } },
+                { name: series_labels.memory, type: 'line', data: data?.trends.memory.historical, showSymbol: false, lineStyle: { color: chartTheme.capacity_planning.memory } },
+                { name: series_labels.memory_forecast, type: 'line', data: data?.trends.memory.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: chartTheme.capacity_planning.memory } },
+                { name: series_labels.storage, type: 'line', data: data?.trends.storage.historical, showSymbol: false, lineStyle: { color: chartTheme.capacity_planning.storage } },
+                { name: series_labels.storage_forecast, type: 'line', data: data?.trends.storage.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: chartTheme.capacity_planning.storage } },
             ],
         }),
-        [chartTheme, data, seriesLabels],
+        [chartTheme, data, series_labels],
     );
 
-    const forecastModelLegend = useMemo(
+    const forecast_model_legend = useMemo(
         () => ({
             prediction: content?.FORECAST_MODEL_LEGEND?.PREDICTION ?? '預測',
-            confidenceBand: content?.FORECAST_MODEL_LEGEND?.CONFIDENCE_BAND ?? '信賴區間',
+            confidence_band: content?.FORECAST_MODEL_LEGEND?.CONFIDENCE_BAND ?? '信賴區間',
         }),
         [content],
     );
@@ -123,7 +123,7 @@ const CapacityPlanningPage: React.FC = () => {
     const forecastModelOption = useMemo(
         () => ({
             tooltip: { trigger: 'axis' },
-            legend: { data: [forecastModelLegend.prediction, forecastModelLegend.confidenceBand], textStyle: { color: chartTheme.text.primary } },
+            legend: { data: [forecast_model_legend.prediction, forecast_model_legend.confidence_band], textStyle: { color: chartTheme.text.primary } },
             grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
             xAxis: { type: 'time', axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
             yAxis: {
@@ -134,10 +134,10 @@ const CapacityPlanningPage: React.FC = () => {
                 splitLine: { lineStyle: { color: chartTheme.grid.split_line } },
             },
             series: [
-                { name: forecastModelLegend.prediction, type: 'line', data: data?.forecast_model.prediction, showSymbol: false, lineStyle: { color: chartTheme.capacity_planning.forecast } },
-                { name: forecastModelLegend.confidenceBand, type: 'line', data: data?.forecast_model.confidence_band[0], lineStyle: { opacity: 0 }, stack: 'confidence-band', symbol: 'none' },
+                { name: forecast_model_legend.prediction, type: 'line', data: data?.forecast_model.prediction, showSymbol: false, lineStyle: { color: chartTheme.capacity_planning.forecast } },
+                { name: forecast_model_legend.confidence_band, type: 'line', data: data?.forecast_model.confidence_band[0], lineStyle: { opacity: 0 }, stack: 'confidence-band', symbol: 'none' },
                 {
-                    name: forecastModelLegend.confidenceBand,
+                    name: forecast_model_legend.confidence_band,
                     type: 'line',
                     data: data
                         ? data.forecast_model.confidence_band[1].map((point, i) => [point[0], point[1] - data.forecast_model.confidence_band[0][i][1]])
@@ -149,7 +149,7 @@ const CapacityPlanningPage: React.FC = () => {
                 },
             ],
         }),
-        [chartTheme, data, toRgba, forecastModelLegend],
+        [chartTheme, data, toRgba, forecast_model_legend],
     );
 
     const handleExport = () => {
@@ -160,13 +160,13 @@ const CapacityPlanningPage: React.FC = () => {
         exportToCsv({
             filename: `capacity-planning-${new Date().toISOString().split('T')[0]}.csv`,
             data: data.resource_analysis.map(item => ({
-                resourceName: item.resource_name,
-                currentUtilization: formatUtilization(item.current_utilization),
-                forecastUtilization: formatUtilization(item.forecast_utilization),
+                resource_name: item.resource_name,
+                current_utilization: formatUtilization(item.current_utilization),
+                forecast_utilization: formatUtilization(item.forecast_utilization),
                 recommendation: item.recommendation.label,
-                recommendationSeverity: item.recommendation.severity,
-                costImpact: item.cost_impact.label,
-                lastEvaluatedAt: item.last_evaluated_at,
+                recommendation_severity: item.recommendation.severity,
+                cost_impact: item.cost_impact.label,
+                last_evaluated_at: item.last_evaluated_at,
             })),
         });
     };

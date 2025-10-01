@@ -179,7 +179,7 @@ const AutomationPlaybooksPage: React.FC = () => {
                         {pb.last_run_status}
                     </span>
                 );
-            case 'lastRunAt':
+            case 'last_run_at':
                 return pb.last_run_at;
             case 'runCount':
                 return pb.run_count;

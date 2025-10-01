@@ -17,8 +17,8 @@ export interface IncidentFilters {
   severity?: IncidentSeverity;
   impact?: IncidentImpact;
   assignee?: string;
-  startTime?: string;
-  endTime?: string;
+  start_time?: string;
+  end_time?: string;
 }
 
 export interface AlertRuleFilters {
@@ -127,8 +127,8 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
       <div className="col-span-2">
         <FormRow label={content.INCIDENTS.TRIGGER_TIME_RANGE}>
           <div className="flex space-x-2">
-            <input type="datetime-local" value={(filters as IncidentFilters).startTime || ''} onChange={e => setFilters(prev => ({ ...(prev as IncidentFilters), startTime: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
-            <input type="datetime-local" value={(filters as IncidentFilters).endTime || ''} onChange={e => setFilters(prev => ({ ...(prev as IncidentFilters), endTime: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+            <input type="datetime-local" value={(filters as IncidentFilters).start_time || ''} onChange={e => setFilters(prev => ({ ...(prev as IncidentFilters), start_time: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+            <input type="datetime-local" value={(filters as IncidentFilters).end_time || ''} onChange={e => setFilters(prev => ({ ...(prev as IncidentFilters), end_time: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
           </div>
         </FormRow>
       </div>
@@ -230,8 +230,8 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
       <div className="col-span-2">
         <FormRow label={content.AUDIT_LOGS.TIME_RANGE}>
           <div className="flex space-x-2">
-            <input type="datetime-local" value={(filters as AuditLogFilters).start_date || ''} onChange={e => setFilters(prev => ({ ...(prev as AuditLogFilters), startDate: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
-            <input type="datetime-local" value={(filters as AuditLogFilters).end_date || ''} onChange={e => setFilters(prev => ({ ...(prev as AuditLogFilters), endDate: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+            <input type="datetime-local" value={(filters as AuditLogFilters).start_date || ''} onChange={e => setFilters(prev => ({ ...(prev as AuditLogFilters), start_date: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+            <input type="datetime-local" value={(filters as AuditLogFilters).end_date || ''} onChange={e => setFilters(prev => ({ ...(prev as AuditLogFilters), end_date: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
           </div>
         </FormRow>
       </div>
@@ -252,7 +252,7 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
   const renderAutomationHistoryFilters = () => (
     <>
       <FormRow label={content.AUTOMATION_HISTORY.PLAYBOOK}>
-        <select value={(filters as AutomationHistoryFilters).playbook_id || ''} onChange={e => setFilters(prev => ({ ...prev, playbookId: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
+        <select value={(filters as AutomationHistoryFilters).playbook_id || ''} onChange={e => setFilters(prev => ({ ...prev, playbook_id: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
           <option value="">{content.AUTOMATION_HISTORY.ALL_PLAYBOOKS}</option>
           {playbooks.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
@@ -266,8 +266,8 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
       <div className="col-span-2">
         <FormRow label={content.AUTOMATION_HISTORY.TIME_RANGE}>
           <div className="flex space-x-2">
-            <input type="datetime-local" value={(filters as AutomationHistoryFilters).start_date || ''} onChange={e => setFilters(prev => ({ ...prev, startDate: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
-            <input type="datetime-local" value={(filters as AutomationHistoryFilters).end_date || ''} onChange={e => setFilters(prev => ({ ...prev, endDate: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+            <input type="datetime-local" value={(filters as AutomationHistoryFilters).start_date || ''} onChange={e => setFilters(prev => ({ ...prev, start_date: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+            <input type="datetime-local" value={(filters as AutomationHistoryFilters).end_date || ''} onChange={e => setFilters(prev => ({ ...prev, end_date: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
           </div>
         </FormRow>
       </div>
@@ -283,7 +283,7 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
         </select>
       </FormRow>
       <FormRow label={content.NOTIFICATION_HISTORY.CHANNEL_TYPE}>
-        <select value={(filters as NotificationHistoryFilters).channel_type || ''} onChange={e => setFilters(prev => ({ ...prev, channelType: e.target.value as any }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
+        <select value={(filters as NotificationHistoryFilters).channel_type || ''} onChange={e => setFilters(prev => ({ ...prev, channel_type: e.target.value as any }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
           <option value="">{content.NOTIFICATION_HISTORY.ALL_CHANNEL_TYPES}</option>
           {options?.notification_history.channel_types.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
         </select>
@@ -291,8 +291,8 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
       <div className="col-span-2">
         <FormRow label={content.NOTIFICATION_HISTORY.TIME_RANGE}>
           <div className="flex space-x-2">
-            <input type="datetime-local" value={(filters as NotificationHistoryFilters).start_date || ''} onChange={e => setFilters(prev => ({ ...prev, startDate: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
-            <input type="datetime-local" value={(filters as NotificationHistoryFilters).end_date || ''} onChange={e => setFilters(prev => ({ ...prev, endDate: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+            <input type="datetime-local" value={(filters as NotificationHistoryFilters).start_date || ''} onChange={e => setFilters(prev => ({ ...prev, start_date: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+            <input type="datetime-local" value={(filters as NotificationHistoryFilters).end_date || ''} onChange={e => setFilters(prev => ({ ...prev, end_date: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
           </div>
         </FormRow>
       </div>

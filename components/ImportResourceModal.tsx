@@ -27,11 +27,11 @@ interface ImportResourceModalProps {
 const ImportResourceModal: React.FC<ImportResourceModalProps> = ({ isOpen, onClose, onSuccess, resourcesToImport, job }) => {
     const [isImporting, setIsImporting] = useState(false);
     const [importProgress, setImportProgress] = useState<ImportItemStatus[]>([]);
-    const [exporterBinding, setExporterBinding] = useState<DiscoveryJobExporterBinding | undefined>(job.exporter_binding);
+    const [exporter_binding, setExporterBinding] = useState<DiscoveryJobExporterBinding | undefined>(job.exporter_binding);
     const { options } = useOptions();
     const autoDiscoveryOptions = options?.auto_discovery;
-    const exporterTemplates = autoDiscoveryOptions?.exporter_templates || [];
-    const mibProfiles = autoDiscoveryOptions?.mib_profiles || [];
+    const exporter_templates = autoDiscoveryOptions?.exporter_templates || [];
+    const mib_profiles = autoDiscoveryOptions?.mib_profiles || [];
 
     useEffect(() => {
         if (isOpen) {
@@ -62,12 +62,12 @@ const ImportResourceModal: React.FC<ImportResourceModalProps> = ({ isOpen, onClo
             await api.post('/resources/import-discovered', {
                 discovered_resource_ids: resourcesToImport.map((r) => r.id),
                 job_id: job.id,
-                exporter_binding: exporterBinding,
+                exporter_binding: exporter_binding,
             });
 
             for (let i = 0; i < resourcesToImport.length; i++) {
                 const resource = resourcesToImport[i];
-                if (exporterBinding && exporterBinding.template_id !== 'none') {
+                if (exporter_binding && exporter_binding.template_id !== 'none') {
                     await new Promise((r) => setTimeout(r, 500));
                     setImportProgress((prev) => prev.map((p) => (p.id === resource.id ? { ...p, status: 'deploying' } : p)));
                 }
@@ -116,9 +116,9 @@ const ImportResourceModal: React.FC<ImportResourceModalProps> = ({ isOpen, onClo
         }
     };
 
-    const currentTemplateId = exporterBinding?.template_id || job.exporter_binding?.template_id || 'none';
-    const templateMeta = exporterTemplates.find((tpl) => tpl.id === currentTemplateId);
-    const availableProfiles = mibProfiles.filter((profile) => profile.template_id === currentTemplateId);
+    const currentTemplateId = exporter_binding?.template_id || job.exporter_binding?.template_id || 'none';
+    const templateMeta = exporter_templates.find((tpl) => tpl.id === currentTemplateId);
+    const availableProfiles = mib_profiles.filter((profile) => profile.template_id === currentTemplateId);
 
     return (
         <Modal
@@ -168,12 +168,12 @@ const ImportResourceModal: React.FC<ImportResourceModalProps> = ({ isOpen, onClo
                             onChange={(e) => handleExporterBindingChange({ template_id: e.target.value as DiscoveryJobExporterBinding['template_id'] })}
                             className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
                         >
-                            {exporterTemplates.map((tpl) => (
+                            {exporter_templates.map((tpl) => (
                                 <option key={tpl.id} value={tpl.id}>
                                     {tpl.name}
                                 </option>
                             ))}
-                            {exporterTemplates.length === 0 && <option value="none">none</option>}
+                            {exporter_templates.length === 0 && <option value="none">none</option>}
                         </select>
                         {templateMeta?.description && <p className="mt-1 text-xs text-slate-400">{templateMeta.description}</p>}
                     </FormRow>
@@ -181,7 +181,7 @@ const ImportResourceModal: React.FC<ImportResourceModalProps> = ({ isOpen, onClo
                     {templateMeta?.supports_mib_profile && (
                         <FormRow label="MIB Profile">
                             <select
-                                value={exporterBinding?.mib_profile_id || ''}
+                                value={exporter_binding?.mib_profile_id || ''}
                                 onChange={(e) => handleExporterBindingChange({ mib_profile_id: e.target.value || undefined })}
                                 className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
                             >
@@ -202,7 +202,7 @@ const ImportResourceModal: React.FC<ImportResourceModalProps> = ({ isOpen, onClo
                         <FormRow label="自訂覆寫 YAML">
                             <textarea
                                 rows={3}
-                                value={exporterBinding?.overrides_yaml || ''}
+                                value={exporter_binding?.overrides_yaml || ''}
                                 onChange={(e) => handleExporterBindingChange({ overrides_yaml: e.target.value })}
                                 className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm font-mono"
                                 disabled={isImporting}
