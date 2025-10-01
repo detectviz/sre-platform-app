@@ -95,7 +95,7 @@ const DiscoveryJobResultDrawer: React.FC<DiscoveryJobResultDrawerProps> = ({ job
         if (tags.length === 0 || selectedIds.length === 0) return;
         setIsProcessing(true);
         try {
-            await api.post('/resources/batch-tags', { resourceIds: selectedIds, tags });
+            await api.post('/resources/batch-tags', { resource_ids: selectedIds, tags });
             showToast('批次標籤已套用。', 'success');
             setIsBatchTagModalOpen(false);
             setSelectedIds([]);
@@ -115,7 +115,7 @@ const DiscoveryJobResultDrawer: React.FC<DiscoveryJobResultDrawerProps> = ({ job
         }
         setIsProcessing(true);
         try {
-            await api.post('/discovery/batch-ignore', { resourceIds: selectedIds });
+            await api.post('/discovery/batch-ignore', { resource_ids: selectedIds });
             showToast('已忽略選定的資源。', 'success');
             setSelectedIds([]);
             fetchResults();
@@ -144,9 +144,9 @@ const DiscoveryJobResultDrawer: React.FC<DiscoveryJobResultDrawerProps> = ({ job
         );
     }
 
-    const templateMeta = exporterTemplates.find((tpl) => tpl.id === job.exporterBinding?.template_id);
-    const gatewayLabel = job.edgeGateway?.enabled
-        ? edgeGateways.find((gw) => gw.id === job.edgeGateway?.gatewayId)?.name || job.edgeGateway?.gatewayId || '未指定'
+    const templateMeta = exporterTemplates.find((tpl) => tpl.id === job.exporter_binding?.template_id);
+    const gatewayLabel = job.edge_gateway?.enabled
+        ? edgeGateways.find((gw) => gw.id === job.edge_gateway?.gateway_id)?.name || job.edge_gateway?.gateway_id || '未指定'
         : '未啟用';
 
     const selectedResources = results.filter(r => selectedIds.includes(r.id));
@@ -160,7 +160,7 @@ const DiscoveryJobResultDrawer: React.FC<DiscoveryJobResultDrawerProps> = ({ job
                 </div>
                 <div className="bg-slate-800/40 border border-slate-700 rounded-lg p-4">
                     <h4 className="text-xs uppercase text-slate-400">Exporter 模板</h4>
-                    <p className="mt-1 text-sm text-white font-medium">{templateMeta?.name || job.exporterBinding?.template_id || '未設定'}</p>
+                    <p className="mt-1 text-sm text-white font-medium">{templateMeta?.name || job.exporter_binding?.template_id || '未設定'}</p>
                 </div>
                 <div className="bg-slate-800/40 border border-slate-700 rounded-lg p-4">
                     <h4 className="text-xs uppercase text-slate-400">Edge Gateway</h4>

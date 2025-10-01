@@ -54,7 +54,7 @@ const ResourceAnalysisModal: React.FC<ResourceAnalysisModalProps> = ({ isOpen, o
                 setAnalysis(null);
                 try {
                     const { data } = await api.post<ResourceAnalysis>('/ai/resources/analyze', {
-                        resourceIds: resources.map(r => r.id),
+                        resource_ids: resources.map(r => r.id),
                     });
                     setAnalysis(data);
                 } catch (err) {
@@ -103,11 +103,11 @@ const ResourceAnalysisModal: React.FC<ResourceAnalysisModalProps> = ({ isOpen, o
                 </Section>
                 <Section title="風險分析" icon="shield-alert">
                     <div className="space-y-3">
-                        {analysis.riskAnalysis.map((risk, i) => (
+                        {analysis.risk_analysis.map((risk, i) => (
                             <div key={i} className="p-3 bg-slate-800/50 rounded-lg">
                                 <div className="flex justify-between items-start">
                                     <Link to={`/resources/list/${risk.resource_id}`} className="font-semibold text-white hover:underline">{risk.resource_name}</Link>
-                                    <RiskLevelPill level={risk.riskLevel} />
+                                    <RiskLevelPill level={risk.risk_level} />
                                 </div>
                                 <p className="text-sm text-slate-400 mt-1">原因: {risk.reason}</p>
                                 <p className="text-sm text-sky-300 mt-1">建議: {risk.recommendation}</p>
@@ -117,7 +117,7 @@ const ResourceAnalysisModal: React.FC<ResourceAnalysisModalProps> = ({ isOpen, o
                 </Section>
                 <Section title="優化建議" icon="wrench">
                     <div className="space-y-3">
-                        {analysis.optimizationSuggestions.map((suggestion, i) => (
+                        {analysis.optimization_suggestions.map((suggestion, i) => (
                              <div key={i} className="p-3 bg-slate-800/50 rounded-lg">
                                 <div className="flex justify-between items-start">
                                     <Link to={`/resources/list/${suggestion.resource_id}`} className="font-semibold text-white hover:underline">{suggestion.resource_name}</Link>

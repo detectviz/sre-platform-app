@@ -153,7 +153,7 @@ const AppRoutes: React.FC = () => {
           <Route path="resources" element={<PageWithTabsLayout title={pageLayouts.resources.title} description={pageLayouts.resources.description} kpi_page_name={pageLayouts.resources.kpi_page_name} tabs={tabConfigs?.resources || []} />}>
             <Route index element={<Navigate to="/resources/list" replace />} />
             <Route path="list" element={<ResourceListPage />} />
-            <Route path="list/:resourceId" element={<ResourceListPage />} />
+            <Route path="list/:resource_id" element={<ResourceListPage />} />
             <Route path="groups" element={<ResourceGroupPage />} />
             <Route path="datasources" element={<DatasourceManagementPage />} />
             <Route path="discovery" element={<AutoDiscoveryPage />} />
