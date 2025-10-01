@@ -120,7 +120,7 @@ const AutomationHistoryPage: React.FC = () => {
 
         exportToCsv({
             filename: `automation-history-${new Date().toISOString().split('T')[0]}.csv`,
-            headers: ['id', 'script_name', 'status', 'trigger_source', 'triggered_by', 'start_time', 'endTime', 'duration_ms'],
+            headers: ['id', 'script_name', 'status', 'trigger_source', 'triggered_by', 'start_time', 'end_time', 'duration_ms'],
             data: dataToExport,
         });
     };

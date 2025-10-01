@@ -12,7 +12,7 @@ import { showToast } from '../../services/toast';
 import Modal from '../../components/Modal';
 
 interface IncidentDetailPageProps {
-  incidentId: string;
+  incident_id: string;
   onUpdate: () => void;
   currentUser: User | null;
 }
@@ -24,7 +24,7 @@ const InfoItem = ({ label, children }: { label: string; children?: React.ReactNo
   </div>
 );
 
-const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onUpdate, currentUser }) => {
+const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incident_id, onUpdate, currentUser }) => {
   const [incident, setIncident] = useState<Incident | null>(null);
   const { options } = useOptions();
   const incidentOptions = options?.incidents;
@@ -37,18 +37,18 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onU
   const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
 
   const fetchIncident = useCallback(async () => {
-    if (!incidentId) return;
+    if (!incident_id) return;
     setIsLoading(true);
     setError(null);
     try {
-      const { data: incidentRes } = await api.get<Incident>(`/incidents/${incidentId}`);
+      const { data: incidentRes } = await api.get<Incident>(`/incidents/${incident_id}`);
       setIncident(incidentRes);
     } catch (err) {
-      setError(`Failed to fetch incident ${incidentId}.`);
+      setError(`Failed to fetch incident ${incident_id}.`);
     } finally {
       setIsLoading(false);
     }
-  }, [incidentId]);
+  }, [incident_id]);
 
   useEffect(() => {
     fetchIncident();
@@ -134,7 +134,7 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onU
       <div className="p-6 text-center text-red-400">
         <Icon name="alert-circle" className="w-12 h-12 mx-auto mb-4" />
         <h2 className="text-2xl font-bold">事故載入失敗</h2>
-        <p>{error || `找不到 ID 為 "${incidentId}" 的事故。`}</p>
+        <p>{error || `找不到 ID 為 "${incident_id}" 的事故。`}</p>
       </div>
     );
   }

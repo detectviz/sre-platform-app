@@ -295,7 +295,7 @@ const TagManagementPage: React.FC = () => {
                         )}
                     </div>
                 );
-            case 'writableRoles':
+            case 'writable_roles':
                 const roles = tag.writable_roles || [];
                 const maxRolesDisplay = 3;
                 return (

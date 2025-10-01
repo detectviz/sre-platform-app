@@ -11,11 +11,11 @@ const getActive = (collection: any[] | undefined) => {
     return collection.filter(item => !item.deleted_at);
 }
 
-const validateEnum = <T>(value: any, allowedValues: T[], fieldName: string): T => {
-    if (!allowedValues.includes(value as T)) {
+const validateEnum = <T>(value: any, allowed_values: T[], fieldName: string): T => {
+    if (!allowed_values.includes(value as T)) {
         throw {
             status: 400,
-            message: `Invalid ${fieldName}. Allowed values: ${allowedValues.join(', ')}`
+            message: `Invalid ${fieldName}. Allowed values: ${allowed_values.join(', ')}`
         };
     }
     return value as T;
@@ -64,7 +64,7 @@ const sortData = (data: any[], sortBy: string, sortOrder: 'asc' | 'desc') => {
 
 /**
  * 自動填充 team 和 owner 標籤（從關聯實體自動生成）
- * @param entity 實體物件（需要有 teamId 和/或 ownerId 欄位）
+ * @param entity 實體物件（需要有 team_id 和/或 owner_id 欄位）
  */
 const autoPopulateReadonlyTags = (entity: any): void => {
     if (!entity.tags) {
@@ -761,9 +761,9 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     };
                 }
                 if (subId === 'test') {
-                    const ruleId = id;
+                    const rule_id = id;
                     const { payload } = body;
-                    const rule = DB.alert_rules.find((r: any) => r.id === ruleId);
+                    const rule = DB.alert_rules.find((r: any) => r.id === rule_id);
                     if (!rule) throw { status: 404, message: 'Rule not found' };
                     const condition = rule.condition_groups?.[0]?.conditions?.[0];
                     if (condition && payload.metric === condition.metric && payload.value > condition.threshold) {
@@ -889,8 +889,8 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     if (!Array.isArray(ids)) {
                         throw { status: 400, message: 'Invalid payload for batch actions.' };
                     }
-                    ids.forEach((ruleId: string) => {
-                        const ruleIndex = DB.silenceRules.findIndex((rule: any) => rule.id === ruleId);
+                    ids.forEach((rule_id: string) => {
+                        const ruleIndex = DB.silenceRules.findIndex((rule: any) => rule.id === rule_id);
                         if (ruleIndex === -1) return;
                         if (action === 'delete') {
                             DB.silenceRules.splice(ruleIndex, 1);
@@ -1318,8 +1318,8 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     return DB.datasources[index];
                 }
                 if (id === 'discovery-jobs') {
-                    const jobId = subId;
-                    const index = DB.discovery_jobs.findIndex((j: any) => j.id === jobId);
+                    const job_id = subId;
+                    const index = DB.discovery_jobs.findIndex((j: any) => j.id === job_id);
                     if (index === -1) throw { status: 404 };
                     const existingJob = DB.discovery_jobs[index];
                     // 更新 updated_at 時間戳
@@ -1382,8 +1382,8 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     return {};
                 }
                 if (id === 'discovery-jobs') {
-                    const jobId = subId;
-                    const index = DB.discovery_jobs.findIndex((j: any) => j.id === jobId);
+                    const job_id = subId;
+                    const index = DB.discovery_jobs.findIndex((j: any) => j.id === job_id);
                     if (index > -1) (DB.discovery_jobs[index] as any).deleted_at = new Date().toISOString();
                     return {};
                 }
@@ -1563,15 +1563,15 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         return { success: true, updated };
                     }
                     if (action === 'execute') {
-                        const scriptId = subId;
-                        if (!scriptId) {
+                        const script_id = subId;
+                        if (!script_id) {
                             throw { status: 400, message: 'Script ID is required to execute an automation playbook.' };
                         }
-                        const script = DB.playbooks.find((p: any) => p.id === scriptId);
+                        const script = DB.playbooks.find((p: any) => p.id === script_id);
                         if (!script) throw { status: 404, message: 'Automation playbook not found.' };
                         const newExec = {
                             id: `exec-${uuidv4()}`,
-                            script_id: scriptId,
+                            script_id: script_id,
                             script_name: script.name,
                             status: 'running',
                             trigger_source: 'manual',
@@ -2277,10 +2277,10 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 }
                 if (id === 'notification-strategies') {
                     const fallbackOptions = DB.notification_strategy_options || { severity_levels: [], impact_levels: [] };
-                    const severityLevels = Array.isArray(body?.severity_levels) && body.severity_levels.length > 0
+                    const severity_levels = Array.isArray(body?.severity_levels) && body.severity_levels.length > 0
                         ? body.severity_levels
                         : fallbackOptions.severity_levels;
-                    const impactLevels = Array.isArray(body?.impact_levels) && body.impact_levels.length > 0
+                    const impact_levels = Array.isArray(body?.impact_levels) && body.impact_levels.length > 0
                         ? body.impact_levels
                         : fallbackOptions.impact_levels;
 
@@ -2290,8 +2290,8 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         id: `strat-${uuidv4()}`,
                         last_updated: timestamp,
                         creator: 'Admin User',
-                        severity_levels: severityLevels,
-                        impact_levels: impactLevels,
+                        severity_levels: severity_levels,
+                        impact_levels: impact_levels,
                         channel_count: body?.channel_count ?? 0,
                         enabled: body?.enabled ?? true,
                         created_at: timestamp,
@@ -2375,10 +2375,10 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const index = DB.notification_strategies.findIndex((s: any) => s.id === itemId);
                     if (index === -1) throw { status: 404 };
                     const existingStrategy = DB.notification_strategies[index];
-                    const severityLevels = Array.isArray(body?.severity_levels) && body?.severity_levels.length > 0
+                    const severity_levels = Array.isArray(body?.severity_levels) && body?.severity_levels.length > 0
                         ? body.severity_levels
                         : existingStrategy.severity_levels;
-                    const impactLevels = Array.isArray(body?.impact_levels) && body?.impact_levels.length > 0
+                    const impact_levels = Array.isArray(body?.impact_levels) && body?.impact_levels.length > 0
                         ? body.impact_levels
                         : existingStrategy.impact_levels;
 
@@ -2386,8 +2386,8 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     DB.notification_strategies[index] = {
                         ...existingStrategy,
                         ...body,
-                        severity_levels: severityLevels,
-                        impact_levels: impactLevels,
+                        severity_levels: severity_levels,
+                        impact_levels: impact_levels,
                         last_updated: timestamp,
                         updated_at: timestamp
                     };

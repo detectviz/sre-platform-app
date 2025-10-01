@@ -240,7 +240,7 @@ const NotificationStrategyPage: React.FC = () => {
             case 'name': return <span className="font-medium text-white">{strategy.name}</span>;
             case 'trigger_condition': return renderConditionTags(strategy.trigger_condition);
             case 'channel_count': return strategy.channel_count;
-            case 'severityLevels':
+            case 'severity_levels':
                 return (
                     <div className="flex flex-wrap gap-1">
                         {strategy.severity_levels.map(level => (
@@ -250,7 +250,7 @@ const NotificationStrategyPage: React.FC = () => {
                         ))}
                     </div>
                 );
-            case 'impactLevels':
+            case 'impact_levels':
                 return (
                     <div className="flex flex-wrap gap-1">
                         {strategy.impact_levels.map(level => (

@@ -147,7 +147,7 @@ const AppRoutes: React.FC = () => {
             <Route index element={<IncidentListPage />} />
             <Route path="rules" element={<AlertRulePage />} />
             <Route path="silence" element={<SilenceRulePage />} />
-            <Route path=":incidentId" element={<IncidentListPage />} />
+            <Route path=":incident_id" element={<IncidentListPage />} />
           </Route>
 
           <Route path="resources" element={<PageWithTabsLayout title={pageLayouts.resources.title} description={pageLayouts.resources.description} kpi_page_name={pageLayouts.resources.kpi_page_name} tabs={tabConfigs?.resources || []} />}>

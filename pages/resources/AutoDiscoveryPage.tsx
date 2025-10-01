@@ -88,10 +88,10 @@ const AutoDiscoveryPage: React.FC = () => {
         }
     };
 
-    const handleManualRun = async (jobId: string) => {
+    const handleManualRun = async (job_id: string) => {
         showToast('手動執行已觸發...', 'success');
         try {
-            await api.post(`/resources/discovery-jobs/${jobId}/run`);
+            await api.post(`/resources/discovery-jobs/${job_id}/run`);
             fetchJobs(); // Refetch to show running status
         } catch (err) {
             showToast('手動執行失敗。', 'error');

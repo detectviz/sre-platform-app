@@ -55,7 +55,7 @@ const IncidentListPage: React.FC = () => {
     const { options, isLoading: isLoadingOptions } = useOptions();
     const incidentOptions = options?.incidents;
 
-    const { incidentId } = useParams<{ incidentId: string }>();
+    const { incident_id } = useParams<{ incident_id: string }>();
     const navigate = useNavigate();
     const { currentUser } = useUser();
 
@@ -137,7 +137,7 @@ const IncidentListPage: React.FC = () => {
 
         exportToCsv({
             filename: `incidents-${new Date().toISOString().split('T')[0]}.csv`,
-            headers: ['id', 'summary', 'resource', 'status', 'severity', 'impact', 'assignee', 'occurredAt'],
+            headers: ['id', 'summary', 'resource', 'status', 'severity', 'impact', 'assignee', 'occurred_at'],
             data: dataToExport,
         });
     };
@@ -181,7 +181,7 @@ const IncidentListPage: React.FC = () => {
             matchers: [{ key: 'resource', operator: '=', value: incidentToSilence.resource }, { key: 'rule', operator: '=', value: incidentToSilence.rule }],
             schedule: { type: 'single', startsAt: now.toISOString(), endsAt: endsAt.toISOString() },
             creator: currentUser?.name || 'System',
-            createdAt: now.toISOString(),
+            created_at: now.toISOString(),
         };
 
         try {
@@ -372,8 +372,8 @@ const IncidentListPage: React.FC = () => {
                 <Pagination total={totalIncidents} page={currentPage} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
             </TableContainer>
 
-            <Drawer isOpen={!!incidentId} onClose={() => navigate('/incidents')} title={`事故詳情: ${incidentId}`} width="w-3/5">
-                {incidentId && <IncidentDetailPage incidentId={incidentId} onUpdate={fetchIncidents} currentUser={currentUser} />}
+            <Drawer isOpen={!!incident_id} onClose={() => navigate('/incidents')} title={`事故詳情: ${incident_id}`} width="w-3/5">
+                {incident_id && <IncidentDetailPage incident_id={incident_id} onUpdate={fetchIncidents} currentUser={currentUser} />}
             </Drawer>
 
             <UnifiedSearchModal page="incidents" isOpen={isSearchModalOpen} onClose={() => setIsSearchModalOpen(false)} onSearch={(newFilters) => { setFilters(newFilters as IncidentFilters); setIsSearchModalOpen(false); setCurrentPage(1); }} initialFilters={filters} />
@@ -401,7 +401,7 @@ const IncidentListPage: React.FC = () => {
                 onImportSuccess={fetchIncidents}
                 itemName="事件"
                 importEndpoint="/incidents/import"
-                templateHeaders={['id', 'summary', 'resource', 'status', 'severity', 'impact', 'assignee', 'occurredAt']}
+                templateHeaders={['id', 'summary', 'resource', 'status', 'severity', 'impact', 'assignee', 'occurred_at']}
                 templateFilename="incidents-template.csv"
             />
         </div>

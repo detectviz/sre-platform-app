@@ -115,17 +115,17 @@ const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps
         const additionalCondition = serializeConditions(additionalConditions);
         const finalCondition = [groupCondition, additionalCondition].filter(Boolean).join(' AND ');
 
-        const severityLevels = (formData.severity_levels && formData.severity_levels.length > 0)
+        const severity_levels = (formData.severity_levels && formData.severity_levels.length > 0)
             ? formData.severity_levels
             : strategyOptions?.severity_levels ?? [];
-        const impactLevels = (formData.impact_levels && formData.impact_levels.length > 0)
+        const impact_levels = (formData.impact_levels && formData.impact_levels.length > 0)
             ? formData.impact_levels
             : strategyOptions?.impact_levels ?? [];
 
         onSave({
             ...formData,
-            severity_levels: severityLevels,
-            impact_levels: impactLevels,
+            severity_levels: severity_levels,
+            impact_levels: impact_levels,
             trigger_condition: finalCondition
         } as NotificationStrategy);
     };

@@ -25,8 +25,8 @@ const DiscoveryJobResultDrawer: React.FC<DiscoveryJobResultDrawerProps> = ({ job
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const { options } = useOptions();
     const autoDiscoveryOptions = options?.auto_discovery;
-    const exporterTemplates = autoDiscoveryOptions?.exporter_templates || [];
-    const edgeGateways = autoDiscoveryOptions?.edge_gateways || [];
+    const exporter_templates = autoDiscoveryOptions?.exporter_templates || [];
+    const edge_gateways = autoDiscoveryOptions?.edge_gateways || [];
 
     const fetchResults = useCallback(async () => {
         if (!job) return;
@@ -144,9 +144,9 @@ const DiscoveryJobResultDrawer: React.FC<DiscoveryJobResultDrawerProps> = ({ job
         );
     }
 
-    const templateMeta = exporterTemplates.find((tpl) => tpl.id === job.exporter_binding?.template_id);
+    const templateMeta = exporter_templates.find((tpl) => tpl.id === job.exporter_binding?.template_id);
     const gatewayLabel = job.edge_gateway?.enabled
-        ? edgeGateways.find((gw) => gw.id === job.edge_gateway?.gateway_id)?.name || job.edge_gateway?.gateway_id || '未指定'
+        ? edge_gateways.find((gw) => gw.id === job.edge_gateway?.gateway_id)?.name || job.edge_gateway?.gateway_id || '未指定'
         : '未啟用';
 
     const selectedResources = results.filter(r => selectedIds.includes(r.id));

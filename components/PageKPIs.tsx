@@ -6,25 +6,25 @@ import api from '../services/api';
 
 interface PageKPIsProps {
   pageName: string;
-  widgetIds?: string[];
+  widget_ids?: string[];
 }
 
 interface KpiDataItem {
     value: string;
     description: string;
     icon: string;
-    iconBgColor: string;
+    icon_bg_color: string;
 }
 
 interface LayoutsData {
     [key: string]: {
-        widgetIds: string[];
-        updatedAt: string;
-        updatedBy: string;
+        widget_ids: string[];
+        updated_at: string;
+        updated_by: string;
     }
 }
 
-const PageKPIs: React.FC<PageKPIsProps> = ({ pageName, widgetIds: explicitWidgetIds }) => {
+const PageKPIs: React.FC<PageKPIsProps> = ({ pageName, widget_ids: explicit_widget_ids }) => {
   const [layouts, setLayouts] = useState<LayoutsData>({});
   const [kpiData, setKpiData] = useState<Record<string, KpiDataItem>>({});
   const [widgets, setWidgets] = useState<LayoutWidget[]>([]);
@@ -68,7 +68,7 @@ const PageKPIs: React.FC<PageKPIsProps> = ({ pageName, widgetIds: explicitWidget
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  const widgetIds = explicitWidgetIds || layouts[pageName]?.widgetIds || [];
+  const widget_ids = explicit_widget_ids || layouts[pageName]?.widget_ids || [];
 
   if (isLoading) {
     return (
@@ -81,7 +81,7 @@ const PageKPIs: React.FC<PageKPIsProps> = ({ pageName, widgetIds: explicitWidget
     );
   }
 
-  if (widgetIds.length === 0) {
+  if (widget_ids.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-slate-700 bg-slate-900/40 p-8 text-center text-slate-400">
         <Icon name="layout-dashboard" className="w-6 h-6 mx-auto mb-3" />
@@ -118,7 +118,7 @@ const PageKPIs: React.FC<PageKPIsProps> = ({ pageName, widgetIds: explicitWidget
 
   return (
     <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4 mb-6">
-      {widgetIds.map(id => {
+      {widget_ids.map(id => {
         const widget = getWidgetById(id);
         const data = kpiData[id];
         if (!widget || !data) {
@@ -138,7 +138,7 @@ const PageKPIs: React.FC<PageKPIsProps> = ({ pageName, widgetIds: explicitWidget
             value={data.value}
             description={renderDescription(data.description)}
             icon={data.icon}
-            iconBgColor={data.iconBgColor}
+            icon_bg_color={data.icon_bg_color}
           />
         );
       })}

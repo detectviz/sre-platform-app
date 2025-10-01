@@ -7,7 +7,7 @@ import { useOptions } from '../contexts/OptionsContext';
 interface QuickSilenceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (incidentId: string, durationHours: number) => void;
+  onSave: (incident_id: string, durationHours: number) => void;
   incident: Incident | null;
 }
 
@@ -31,8 +31,8 @@ const QuickSilenceModal: React.FC<QuickSilenceModalProps> = ({ isOpen, onClose, 
   };
 
   const getEndTime = () => {
-    const endTime = new Date(Date.now() + duration * 3600 * 1000);
-    return endTime.toLocaleString('zh-TW', {
+    const end_time = new Date(Date.now() + duration * 3600 * 1000);
+    return end_time.toLocaleString('zh-TW', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

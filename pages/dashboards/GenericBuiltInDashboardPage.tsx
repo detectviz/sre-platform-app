@@ -7,11 +7,11 @@ import { DashboardLayoutItem } from '../../types';
 interface GenericBuiltInDashboardPageProps {
     name: string;
     description: string;
-    widgetIds: DashboardLayoutItem[];
+    widget_ids: DashboardLayoutItem[];
 }
 
-const GenericBuiltInDashboardPage: React.FC<GenericBuiltInDashboardPageProps> = ({ name, description, widgetIds }) => {
-    const ids = widgetIds.map(item => item.i);
+const GenericBuiltInDashboardPage: React.FC<GenericBuiltInDashboardPageProps> = ({ name, description, widget_ids }) => {
+    const ids = widget_ids.map(item => item.i);
     
     return (
         <div className="space-y-6">
@@ -21,8 +21,8 @@ const GenericBuiltInDashboardPage: React.FC<GenericBuiltInDashboardPageProps> = 
                     <p className="text-slate-400 mt-1">{description}</p>
                 </div>
             </div>
-            {/* Pass widgetIds directly to the enhanced PageKPIs component */}
-            <PageKPIs pageName={`dashboard-${name}`} widgetIds={ids} />
+            {/* Pass widget_ids directly to the enhanced PageKPIs component */}
+            <PageKPIs pageName={`dashboard-${name}`} widget_ids={ids} />
         </div>
     );
 };

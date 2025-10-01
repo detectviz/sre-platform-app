@@ -39,7 +39,7 @@ const UserListItem: React.FC<UserListItemProps> = ({ user, onAction, iconName })
 const TeamEditModal: React.FC<TeamEditModalProps> = ({ isOpen, onClose, onSave, team }) => {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [ownerId, setOwnerId] = useState('');
+    const [owner_id, setOwnerId] = useState('');
     const [memberIds, setMemberIds] = useState<string[]>([]);
     const [allUsers, setAllUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -69,7 +69,7 @@ const TeamEditModal: React.FC<TeamEditModalProps> = ({ isOpen, onClose, onSave, 
             id: team?.id || '',
             name,
             description,
-            owner_id: ownerId,
+            owner_id: owner_id,
             member_ids: memberIds,
             created_at: team?.created_at || '',
             updated_at: new Date().toISOString(),
@@ -99,7 +99,7 @@ const TeamEditModal: React.FC<TeamEditModalProps> = ({ isOpen, onClose, onSave, 
                         <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
                     </FormRow>
                     <FormRow label="擁有者">
-                        <select value={ownerId} onChange={e => setOwnerId(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
+                        <select value={owner_id} onChange={e => setOwnerId(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
                             {allUsers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                         </select>
                     </FormRow>
