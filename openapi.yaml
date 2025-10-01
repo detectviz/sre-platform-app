@@ -529,7 +529,7 @@ components:
     Incident:
       type: object
       description: 平台中的事件資料結構，已改為僅保留狀態、嚴重性與影響三層標籤。
-      required: [id, summary, resource, resourceId, impact, rule, ruleId, status, severity, occurredAt, history]
+      required: [id, summary, resource, resourceId, impact, rule, ruleId, status, severity, occurredAt, createdAt, updatedAt, history]
       properties:
         id:
           type: string
@@ -565,10 +565,29 @@ components:
           type: string
           nullable: true
           description: 目前負責處理事件的人員名稱。
+        teamId:
+          type: string
+          description: 事件所屬團隊的唯一識別碼。
+        ownerId:
+          type: string
+          description: 事件負責人的唯一識別碼。
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+          description: 與事件關聯的標籤鍵值對。
         occurredAt:
           type: string
           format: date-time
           description: 事件發生時間 (格式：YYYY-MM-DD HH:mm:ss)。
+        createdAt:
+          type: string
+          format: date-time
+          description: 事件建立時間。
+        updatedAt:
+          type: string
+          format: date-time
+          description: 事件最後更新時間。
         history:
           type: array
           description: 事件時間軸紀錄。
@@ -641,10 +660,21 @@ components:
         system:
           type: boolean
           description: 是否為系統保留鍵。保留鍵不可更改鍵名、範圍或資料型別。
+        readonly:
+          type: boolean
+          description: 是否為唯讀標籤 (由系統自動填入)。
+        linkToEntity:
+          type: string
+          nullable: true
+          description: 若為唯讀標籤，對應的實體類型識別。
         usageCount:
           type: integer
           minimum: 0
           description: 此標籤鍵在平台中被使用的次數統計。
+        deleted_at:
+          type: string
+          nullable: true
+          description: 若標籤已被刪除，紀錄刪除時間。
 
     TagDefinitionCreateRequest:
       type: object
@@ -663,10 +693,13 @@ components:
           items:
             type: string
             enum: [resource, datasource, discovery_job, exporter, dashboard, alert_rule, incident, notification_policy, automation, analysis, tenant, team, user]
+        valueType:
           type: string
+          description: 標籤允許值的資料型別。
           enum: [enum, string, number, boolean]
+        allowedValues:
           type: array
-          nullable: true
+          description: 若 valueType 為 `enum`，可提供預設允許值清單。
           items:
             type: string
             maxLength: 128
@@ -681,6 +714,12 @@ components:
         system:
           type: boolean
           default: false
+        readonly:
+          type: boolean
+          default: false
+        linkToEntity:
+          type: string
+          nullable: true
 
     TagDefinitionUpdateRequest:
       type: object
@@ -694,10 +733,14 @@ components:
           items:
             type: string
             enum: [resource, datasource, discovery_job, exporter, dashboard, alert_rule, incident, notification_policy, automation, analysis, tenant, team, user]
+        valueType:
           type: string
+          description: 標籤允許值的資料型別。
           enum: [enum, string, number, boolean]
+        allowedValues:
           type: array
           nullable: true
+          description: 更新枚舉型標籤時，可提供新的允許值清單。
           items:
             type: string
             maxLength: 128
@@ -709,6 +752,11 @@ components:
           type: boolean
         system:
           type: boolean
+        readonly:
+          type: boolean
+        linkToEntity:
+          type: string
+          nullable: true
     IncidentCreateRequest:
       type: object
       description: 建立新事件時所需的資料結構。
@@ -777,7 +825,7 @@ components:
     DiscoveryJob:
       type: object
       description: 自動探索任務的完整設定描述。
-      required: [id, name, schedule, status, targetConfig, tags]
+      required: [id, name, kind, schedule, lastRunAt, status, targetConfig, tags, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -785,21 +833,25 @@ components:
         name:
           type: string
           description: 任務名稱。
+        kind:
           type: string
-          description: 探索類型，例如 `K8s`、`VM`、`SNMP`。
+          description: 探索任務類型。
+          enum: ['K8s', 'SNMP', 'Cloud Provider', 'Static Range', 'Custom Script']
         schedule:
           type: string
           description: Cron 表達式或排程描述。
-        lastRun:
+        lastRunAt:
           type: string
-          nullable: true
+          format: date-time
           description: 最近一次執行時間。
         status:
           type: string
-          description: 任務狀態，例如 `active`、`paused`。
+          description: 任務狀態。
+          enum: ['success', 'partial_failure', 'failed', 'running']
         targetConfig:
           type: object
           description: 與探索目標相關的動態設定 (依任務類型而異)。
+          additionalProperties: true
         exporterBinding:
           allOf:
             - $ref: '#/components/schemas/DiscoveryJobExporterBinding'
@@ -815,6 +867,14 @@ components:
           description: 任務套用的標籤清單。
           items:
             $ref: '#/components/schemas/KeyValueTag'
+        createdAt:
+          type: string
+          format: date-time
+          description: 任務建立時間。
+        updatedAt:
+          type: string
+          format: date-time
+          description: 任務最後更新時間。
         deleted_at:
           type: string
           nullable: true
@@ -822,7 +882,7 @@ components:
     NotificationStrategy:
       type: object
       description: 通知策略的清單回應格式，支援多重嚴重度與影響層級。
-      required: [id, name, enabled, triggerCondition, channelCount, severityLevels, impactLevels, creator, lastUpdated]
+      required: [id, name, enabled, triggerCondition, channelCount, severityLevels, impactLevels, creator, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -854,8 +914,13 @@ components:
         creator:
           type: string
           description: 建立此策略的使用者名稱。
-        lastUpdated:
+        createdAt:
           type: string
+          format: date-time
+          description: 建立時間。
+        updatedAt:
+          type: string
+          format: date-time
           description: 最近更新時間。
         deleted_at:
           type: string

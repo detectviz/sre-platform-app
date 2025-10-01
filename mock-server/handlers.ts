@@ -139,9 +139,9 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 }
                 if (id === 'icons') return DB.iconMap;
                 if (id === 'tabs') {
-                    const VITE_EDITION = 'community'; // Simulate portfolio mode
+                    const edition = process.env.SRE_PLATFORM_EDITION ?? 'community';
                     let tabsConfig = JSON.parse(JSON.stringify(DB.tabConfigs)) as TabConfigMap;
-                    if (VITE_EDITION === 'community') {
+                    if (edition === 'community') {
                         const platformSettingsTabs = tabsConfig.platformSettings;
                         if (platformSettingsTabs) {
                             const licenseTab = platformSettingsTabs.find(t => t.path.endsWith('/license'));
