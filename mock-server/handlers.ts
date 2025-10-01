@@ -2641,10 +2641,18 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     }
                     let updated = 0;
                     if (action === 'delete') {
+                        const currentUser = getCurrentUser();
                         DB.tag_definitions.forEach((tag: any) => {
                             if (ids.includes(tag.id)) {
                                 tag.deleted_at = new Date().toISOString();
                                 updated += 1;
+                                auditLogMiddleware(
+                                    currentUser.id,
+                                    'DELETE',
+                                    'TagDefinition',
+                                    tag.id,
+                                    { key: tag.key, scopes: tag.scopes }
+                                );
                             }
                         });
                     } else {
