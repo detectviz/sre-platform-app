@@ -111,6 +111,42 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /dashboards/available-grafana:
+    get:
+      tags: [Dashboards]
+      summary: List available Grafana dashboards
+      description: Retrieve Grafana dashboards that are not yet linked to the platform
+      operationId: listAvailableGrafanaDashboards
+      responses:
+        '200':
+          description: List of available Grafana dashboards
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [uid, title, url]
+                  properties:
+                    uid:
+                      type: string
+                      example: grafana-uid-1
+                    title:
+                      type: string
+                      example: Service Health
+                    url:
+                      type: string
+                      format: uri
+                      example: https://grafana.example.com/d/grafana-uid-1
+                    folder_title:
+                      type: string
+                      example: Production
+                    folder_uid:
+                      type: string
+                      example: prod-folder
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
     patch:
       tags: [Dashboards]
       summary: Update dashboard
@@ -164,13 +200,13 @@ paths:
           application/json:
             schema:
               type: object
-              required: [action, dashboard_ids]
+              required: [action, ids]
               properties:
                 action:
                   type: string
                   enum: [delete]
                   description: Action to perform
-                dashboard_ids:
+                ids:
                   type: array
                   items:
                     type: string
@@ -178,7 +214,7 @@ paths:
                   description: List of dashboard IDs
             example:
               action: delete
-              dashboard_ids: ["dash-001", "dash-002", "dash-003"]
+              ids: ["dash-001", "dash-002", "dash-003"]
       responses:
         '200':
           description: Batch operation completed

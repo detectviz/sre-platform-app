@@ -16,7 +16,7 @@ paths:
           description: Filter by incident status
           schema:
             type: string
-            enum: [New, Acknowledged, Investigating, Resolved, Closed]
+            enum: [New, Acknowledged, Investigating, Resolved, Closed, Silenced]
           example: New
         - name: severity
           in: query
@@ -104,6 +104,66 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Incident'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /incidents/{id}/actions:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    post:
+      tags: [Incidents]
+      summary: Perform incident action
+      description: Trigger a state-changing action such as acknowledge, resolve, assign, or silence an incident
+      operationId: performIncidentAction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action:
+                  type: string
+                  enum: [acknowledge, resolve, assign, silence, add_note, delete_note]
+                  description: Action to perform on the incident
+                assignee_name:
+                  type: string
+                  description: Required when action is assign
+                duration_hours:
+                  type: integer
+                  minimum: 1
+                  description: Required when action is silence
+                details:
+                  type: string
+                  description: Additional details for notes or deletions
+            examples:
+              acknowledge:
+                summary: Acknowledge an incident
+                value:
+                  action: acknowledge
+              assign:
+                summary: Assign to a named engineer
+                value:
+                  action: assign
+                  assignee_name: 王小明
+              silence:
+                summary: Silence the incident for 2 hours
+                value:
+                  action: silence
+                  duration_hours: 2
+      responses:
+        '200':
+          description: Incident updated after performing the action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incident'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
