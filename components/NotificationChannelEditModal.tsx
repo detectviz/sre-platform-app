@@ -153,12 +153,12 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
                 return (
                     <>
                         <FormRow label="Webhook URL *">
-                            <input type="url" value={formData.config?.webhookUrl || ''} onChange={e => handleConfigChange('webhookUrl', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+                            <input type="url" value={formData.config?.webhook_url || ''} onChange={e => handleConfigChange('webhook_url', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
                         </FormRow>
                         <FormRow label="HTTP 方法 (Method)">
                             <select
-                                value={formData.config?.httpMethod || 'POST'}
-                                onChange={e => handleConfigChange('httpMethod', e.target.value)}
+                                value={formData.config?.http_method || 'POST'}
+                                onChange={e => handleConfigChange('http_method', e.target.value)}
                                 className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
                                 disabled={isLoadingOptions}
                             >
@@ -173,7 +173,7 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
                 return (
                     <>
                         <FormRow label="Incoming Webhook URL *">
-                            <input type="url" value={formData.config?.webhookUrl || ''} onChange={e => handleConfigChange('webhookUrl', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+                            <input type="url" value={formData.config?.webhook_url || ''} onChange={e => handleConfigChange('webhook_url', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
                         </FormRow>
                         <FormRow label="提及對象 (Mention)">
                             <input type="text" value={formData.config?.mention || ''} onChange={e => handleConfigChange('mention', e.target.value)} placeholder="@channel, @here, or user_id" className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
@@ -186,8 +186,8 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
                         <div className="relative">
                             <input
                                 type={isTokenVisible ? 'text' : 'password'}
-                                value={formData.config?.accessToken || ''}
-                                onChange={e => handleConfigChange('accessToken', e.target.value)}
+                                value={formData.config?.access_token || ''}
+                                onChange={e => handleConfigChange('access_token', e.target.value)}
                                 className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm pr-10"
                             />
                             <button
@@ -204,7 +204,7 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
             case 'SMS':
                  return (
                     <FormRow label="收件人手機號碼 *">
-                        <input type="tel" value={formData.config?.phoneNumber || ''} onChange={e => handleConfigChange('phoneNumber', e.target.value)} placeholder="例如: +886912345678" className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+                        <input type="tel" value={formData.config?.phone_number || ''} onChange={e => handleConfigChange('phone_number', e.target.value)} placeholder="例如: +886912345678" className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
                     </FormRow>
                 );
             default:

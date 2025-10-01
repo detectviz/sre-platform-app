@@ -60,8 +60,8 @@ const PersonalInfoPage: React.FC = () => {
           </FormRow>
         </div>
          <div className="mt-6 pt-6 border-t border-slate-700/50 text-right">
-            {authSettings?.idpAdminUrl && (
-                <a href={authSettings.idpAdminUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-sm text-sky-400 hover:text-sky-300 px-3 py-1 rounded-md hover:bg-sky-500/20 ml-auto">
+            {authSettings?.idp_admin_url && (
+                <a href={authSettings.idp_admin_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-sm text-sky-400 hover:text-sky-300 px-3 py-1 rounded-md hover:bg-sky-500/20 ml-auto">
                     <Icon name="external-link" className="w-4 h-4 mr-2" />
                     在 {authSettings.provider} 中管理
                 </a>

@@ -48,14 +48,14 @@ const TeamEditModal: React.FC<TeamEditModalProps> = ({ isOpen, onClose, onSave, 
         if (isOpen) {
             setName(team?.name || '');
             setDescription(team?.description || '');
-            setOwnerId(team?.ownerId || '');
-            setMemberIds(team?.memberIds || []);
+            setOwnerId(team?.owner_id || '');
+            setMemberIds(team?.member_ids || []);
 
             setIsLoading(true);
             api.get<{ items: User[] }>('/iam/users', { params: { page: 1, page_size: 1000 } })
                 .then(res => {
                     setAllUsers(res.data.items);
-                    if (!team?.ownerId && res.data.items.length > 0) {
+                    if (!team?.owner_id && res.data.items.length > 0) {
                         setOwnerId(res.data.items[0].id);
                     }
                 })

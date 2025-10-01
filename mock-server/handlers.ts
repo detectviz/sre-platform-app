@@ -757,7 +757,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     return {
                         success: true,
                         message: `成功觸發告警規則: ${rule.name}`,
-                        incidentId: newIncident.id
+                        incident_id: newIncident.id
                     };
                 }
                 if (subId === 'test') {
@@ -765,11 +765,11 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const { payload } = body;
                     const rule = DB.alert_rules.find((r: any) => r.id === ruleId);
                     if (!rule) throw { status: 404, message: 'Rule not found' };
-                    const condition = rule.conditionGroups?.[0]?.conditions?.[0];
+                    const condition = rule.condition_groups?.[0]?.conditions?.[0];
                     if (condition && payload.metric === condition.metric && payload.value > condition.threshold) {
                         return {
                             matches: true,
-                            preview: `事件: ${rule.titleTemplate?.replace('{{resource.name}}', payload.resource).replace('{{severity}}', rule.severity)}`
+                            preview: `事件: ${rule.title_template?.replace('{{resource.name}}', payload.resource).replace('{{severity}}', rule.severity)}`
                         };
                     } else {
                         return {
@@ -1532,7 +1532,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 if (id === 'executions') {
                     let executions = getActive(DB.automation_executions);
                     if (params) {
-                        if (params.playbookId) executions = executions.filter((e: any) => e.script_id === params.playbookId);
+                        if (params.playbook_id) executions = executions.filter((e: any) => e.script_id === params.playbook_id);
                         if (params.status) executions = executions.filter((e: any) => e.status === params.status);
                     }
                     if (params?.sort_by && params?.sort_order) {

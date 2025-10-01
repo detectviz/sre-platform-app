@@ -149,7 +149,7 @@ const NotificationCenter: React.FC = () => {
                                                     <p className="text-sm text-slate-300 mt-1">{n.description}</p>
                                                     <div className="text-xs text-slate-500 mt-2 flex items-center">
                                                         <span>{timeSince(n.created_at)}</span>
-                                                        {n.linkUrl && <Link to={n.linkUrl} className="ml-2 text-sky-400 hover:underline">{content.VIEW_DETAILS}</Link>}
+                                                        {n.link_url && <Link to={n.link_url} className="ml-2 text-sky-400 hover:underline">{content.VIEW_DETAILS}</Link>}
                                                     </div>
                                                 </div>
                                                 {n.status === 'unread' && (

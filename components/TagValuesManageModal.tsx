@@ -16,7 +16,7 @@ const TagValuesManageModal: React.FC<TagValuesManageModalProps> = ({ isOpen, onC
 
     useEffect(() => {
         if (isOpen) {
-            setValues(tag.allowedValues);
+            setValues(tag.allowed_values);
             setNewValue('');
         }
     }, [isOpen, tag]);

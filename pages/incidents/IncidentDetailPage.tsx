@@ -108,7 +108,7 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onU
       const { data } = await api.post<IncidentAnalysis>('/ai/incidents/analyze', {
         incident_ids: [incident.id],
       });
-      setIncident(prev => prev ? { ...prev, aiAnalysis: data } : null);
+      setIncident(prev => prev ? { ...prev, ai_analysis: data } : null);
     } catch (err) {
       showToast('無法生成 AI 分析報告。', 'error');
     } finally {
@@ -216,7 +216,7 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onU
                 <Icon name="brain-circuit" className="w-5 h-5 mr-2 text-purple-400" />
                 AI 自動分析
               </h2>
-              {incident.aiAnalysis && !isAnalysisLoading && (
+              {incident.ai_analysis && !isAnalysisLoading && (
                 <button onClick={handleRunAnalysis} className="px-3 py-1.5 text-xs rounded-md hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center text-slate-300 hover:text-white transition-colors border border-slate-600/50">
                   <Icon name="refresh-cw" className="w-3.5 h-3.5 mr-1.5" />
                   重新分析
@@ -225,8 +225,8 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incidentId, onU
             </div>
             {isAnalysisLoading ? (
               <AIAnalysisDisplay report={null} isLoading={true} />
-            ) : incident.aiAnalysis ? (
-              <AIAnalysisDisplay report={incident.aiAnalysis} isLoading={false} />
+            ) : incident.ai_analysis ? (
+              <AIAnalysisDisplay report={incident.ai_analysis} isLoading={false} />
             ) : (
               <div className="text-center py-8">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-500/10 mb-4">

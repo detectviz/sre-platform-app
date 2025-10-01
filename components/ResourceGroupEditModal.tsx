@@ -43,7 +43,7 @@ const ResourceGroupEditModal: React.FC<ResourceGroupEditModalProps> = ({ isOpen,
             setName(group?.name || '');
             setDescription(group?.description || '');
             setOwnerTeam(group?.owner_team || '');
-            setSelectedIds(group?.memberIds || []);
+            setSelectedIds(group?.member_ids || []);
 
             setIsLoading(true);
             Promise.all([
