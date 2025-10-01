@@ -51,7 +51,7 @@ const ResourceOverviewPage: React.FC = () => {
             label: { show: false, position: 'center' },
             emphasis: { label: { show: true, fontSize: 20, fontWeight: 'bold' } },
             labelLine: { show: false },
-            data: overviewData?.distributionByType || [],
+            data: overviewData?.distribution_by_type || [],
             color: chartTheme.palette
         }]
     }), [chartTheme, overviewData]);
@@ -61,7 +61,7 @@ const ResourceOverviewPage: React.FC = () => {
         grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
         xAxis: {
             type: 'category',
-            data: overviewData?.distributionByProvider.map(p => p.provider) || [],
+            data: overviewData?.distribution_by_provider.map(p => p.provider) || [],
             axisLine: { lineStyle: { color: chartTheme.grid.axis } }
         },
         yAxis: { type: 'value', axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
@@ -69,7 +69,7 @@ const ResourceOverviewPage: React.FC = () => {
             name: '資源數量',
             type: 'bar',
             barWidth: '60%',
-            data: overviewData?.distributionByProvider.map(p => p.count) || [],
+            data: overviewData?.distribution_by_provider.map(p => p.count) || [],
             itemStyle: { color: chartTheme.resource_distribution.primary }
         }]
     }), [chartTheme, overviewData]);
@@ -127,11 +127,11 @@ const ResourceOverviewPage: React.FC = () => {
                 <div className="glass-card rounded-xl p-6">
                     <h2 className="text-xl font-bold mb-4">最近發現的資源</h2>
                     <ul className="space-y-3">
-                        {overviewData.recentlyDiscovered.map(res => (
+                        {overviewData.recently_discovered.map(res => (
                             <li key={res.id} className="p-2 bg-slate-800/50 rounded-lg flex justify-between items-center">
                                 <div>
                                     <p className="font-semibold text-white">{res.name}</p>
-                                    <p className="text-xs text-slate-400">{res.type} - 發現於 {res.discoveredAt}</p>
+                                    <p className="text-xs text-slate-400">{res.type} - 發現於 {res.discovered_at}</p>
                                 </div>
                                 <Link to="/resources/discovery" className="text-sm text-sky-400 hover:underline">
                                     查看任務
@@ -143,7 +143,7 @@ const ResourceOverviewPage: React.FC = () => {
                 <div className="glass-card rounded-xl p-6">
                     <h2 className="text-xl font-bold mb-4">需要關注的資源群組</h2>
                     <ul className="space-y-3">
-                        {overviewData.groupsWithMostAlerts.map(group => (
+                        {overviewData.groups_with_most_alerts.map(group => (
                              <li key={group.id} className="p-2 bg-slate-800/50 rounded-lg flex justify-between items-center">
                                 <div>
                                     <p className="font-semibold text-white">{group.name}</p>

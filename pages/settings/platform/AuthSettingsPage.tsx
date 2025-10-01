@@ -72,7 +72,7 @@ const AuthSettingsPage: React.FC = () => {
                             <ReadOnlyInput value={settings.realm} />
                         </FormRow>
                          <FormRow label="Client ID">
-                            <ReadOnlyInput value={settings.clientId} />
+                            <ReadOnlyInput value={settings.client_id} />
                         </FormRow>
                     </div>
 
@@ -89,13 +89,13 @@ const AuthSettingsPage: React.FC = () => {
 
                     <h3 className="text-lg font-semibold text-white pt-4 border-t border-slate-700/50">端點 URLs</h3>
                     <FormRow label="授權端點 (Authorization Endpoint)">
-                        <ReadOnlyInput value={settings.authUrl} />
+                        <ReadOnlyInput value={settings.auth_url} />
                     </FormRow>
                     <FormRow label="令牌端點 (Token Endpoint)">
-                        <ReadOnlyInput value={settings.tokenUrl} />
+                        <ReadOnlyInput value={settings.token_url} />
                     </FormRow>
                      <FormRow label="使用者資訊端點 (UserInfo Endpoint)">
-                        <ReadOnlyInput value={settings.userInfoUrl} />
+                        <ReadOnlyInput value={settings.user_info_url} />
                     </FormRow>
                 </div>
             </div>

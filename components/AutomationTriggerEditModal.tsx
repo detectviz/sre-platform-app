@@ -65,7 +65,7 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
                     description: '',
                     type: triggerOptions.trigger_types[0]?.value || 'Schedule',
                     enabled: true,
-                    targetPlaybookId: playbooksRes.data[0]?.id || '',
+                    target_playbook_id: playbooksRes.data[0]?.id || '',
                     config: triggerOptions.default_configs?.Schedule || { cron: '0 * * * *' },
                 };
                 setFormData(initialFormData);
@@ -157,11 +157,11 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
         }
 
         const tagDef = tagDefs.find(t => t.key === condition.key);
-        if (tagDef && tagDef.allowedValues.length > 0) {
+        if (tagDef && tagDef.allowed_values.length > 0) {
             return (
                 <select {...commonProps}>
                     <option value="">選擇值...</option>
-                    {tagDef.allowedValues.map(v => <option key={v.id} value={v.value}>{v.value}</option>)}
+                    {tagDef.allowed_values.map(v => <option key={v.id} value={v.value}>{v.value}</option>)}
                 </select>
             );
         }
@@ -170,8 +170,8 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
     };
 
     const handleCopyWebhookUrl = () => {
-        if (formData.config?.webhookUrl) {
-            navigator.clipboard.writeText(formData.config.webhookUrl)
+        if (formData.config?.webhook_url) {
+            navigator.clipboard.writeText(formData.config.webhook_url)
                 .then(() => showToast('Webhook URL 已複製到剪貼簿。', 'success'))
                 .catch(err => showToast('無法複製 URL。', 'error'));
         } else {
@@ -229,7 +229,7 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
                     {formData.type === 'Webhook' && (
                         <FormRow label="Webhook URL">
                             <div className="flex items-center space-x-2">
-                                <input type="text" readOnly value={formData.config?.webhookUrl || '儲存後將自動生成...'} className="w-full bg-slate-800/50 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-400" />
+                                <input type="text" readOnly value={formData.config?.webhook_url || '儲存後將自動生成...'} className="w-full bg-slate-800/50 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-400" />
                                 <button onClick={handleCopyWebhookUrl} className="p-2 rounded-md hover:bg-slate-700 text-slate-300" title="複製"><Icon name="copy" className="w-4 h-4" /></button>
                             </div>
                         </FormRow>

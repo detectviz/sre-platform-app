@@ -70,16 +70,16 @@ const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps
                 const initialData: Partial<NotificationStrategy> = strategy
                     ? {
                         ...strategy,
-                        severityLevels: strategy.severity_levels?.length ? strategy.severity_levels : defaultSeverityLevels,
-                        impactLevels: strategy.impact_levels?.length ? strategy.impact_levels : defaultImpactLevels,
+                        severity_levels: strategy.severity_levels?.length ? strategy.severity_levels : defaultSeverityLevels,
+                        impact_levels: strategy.impact_levels?.length ? strategy.impact_levels : defaultImpactLevels,
                     }
                     : {
                         name: '',
                         enabled: true,
-                        triggerCondition: strategyOptions.default_condition,
-                        channelCount: 1,
-                        severityLevels: defaultSeverityLevels,
-                        impactLevels: defaultImpactLevels,
+                        trigger_condition: strategyOptions.default_condition,
+                        channel_count: 1,
+                        severity_levels: defaultSeverityLevels,
+                        impact_levels: defaultImpactLevels,
                     };
 
                 if (strategy && !strategy.id) {
@@ -87,9 +87,9 @@ const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps
                 }
                 setFormData(initialData);
 
-                // De-serialize triggerCondition into parts for the wizard
-                if (strategy?.triggerCondition) {
-                    const parts = strategy.triggerCondition.split(' AND ');
+                // De-serialize trigger_condition into parts for the wizard
+                if (strategy?.trigger_condition) {
+                    const parts = strategy.trigger_condition.split(' AND ');
                     const groupPart = parts.find(p => p.startsWith('resource.group IN'));
                     if (groupPart) {
                         const groupNames = groupPart.match(/"([^"]+)"/g)?.map(g => g.replace(/"/g, '')) || [];
@@ -124,9 +124,9 @@ const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps
 
         onSave({
             ...formData,
-            severityLevels,
-            impactLevels,
-            triggerCondition: finalCondition
+            severity_levels: severityLevels,
+            impact_levels: impactLevels,
+            trigger_condition: finalCondition
         } as NotificationStrategy);
     };
 

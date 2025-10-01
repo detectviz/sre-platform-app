@@ -136,9 +136,9 @@ const KeyValueInput: React.FC<KeyValueInputProps> = ({ values, onChange, keyPlac
                             {tagDefinitions.map(tag => <option key={tag.key} value={tag.key}>{tag.key}</option>)}
                         </select>
                         <span className="text-slate-400">=</span>
-                        {tagDef && tagDef.allowedValues.length > 0 ? (
+                        {tagDef && tagDef.allowed_values.length > 0 ? (
                             <MultiSelectDropdown
-                                options={tagDef.allowedValues}
+                                options={tagDef.allowed_values}
                                 selectedValues={item.value ? item.value.split(',').filter(Boolean) : []}
                                 onChange={(newValues) => handleChange(item.id, 'value', newValues.join(','))}
                                 placeholder={valuePlaceholder}

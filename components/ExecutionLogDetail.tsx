@@ -36,8 +36,8 @@ const ExecutionLogDetail: React.FC<ExecutionLogDetailProps> = ({ execution }) =>
     }
 
     const triggerByText = pageContent.TRIGGER_BY_TEMPLATE
-        ?.replace('{source}', execution.triggerSource)
-        ?.replace('{by}', execution.triggeredBy) || `${execution.triggerSource} by ${execution.triggeredBy}`;
+        ?.replace('{source}', execution.trigger_source)
+        ?.replace('{by}', execution.triggered_by) || `${execution.trigger_source} by ${execution.triggered_by}`;
     
     return (
         <div className="h-full flex flex-col space-y-6">
@@ -47,9 +47,9 @@ const ExecutionLogDetail: React.FC<ExecutionLogDetailProps> = ({ execution }) =>
                         {execution.status}
                     </span>
                 </InfoItem>
-                <InfoItem label={pageContent.SCRIPT_NAME}>{execution.scriptName}</InfoItem>
+                <InfoItem label={pageContent.SCRIPT_NAME}>{execution.script_name}</InfoItem>
                 <InfoItem label={pageContent.TRIGGER_SOURCE}>{triggerByText}</InfoItem>
-                <InfoItem label={pageContent.DURATION}>{execution.durationMs ? `${(execution.durationMs / 1000).toFixed(2)}s` : 'N/A'}</InfoItem>
+                <InfoItem label={pageContent.DURATION}>{execution.duration_ms ? `${(execution.duration_ms / 1000).toFixed(2)}s` : 'N/A'}</InfoItem>
             </div>
             
             {execution.parameters && Object.keys(execution.parameters).length > 0 && (
