@@ -169,6 +169,7 @@ const SilenceRuleEditModal: React.FC<SilenceRuleEditModalProps> = ({ isOpen, onC
 
 const Step1 = ({ formData, setFormData }: { formData: Partial<SilenceRule>, setFormData: Function }) => {
     const [templates, setTemplates] = useState<SilenceRuleTemplate[]>([]);
+    const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
     useEffect(() => {
         api.get<SilenceRuleTemplate[]>('/silence-rules/templates')
@@ -176,7 +177,13 @@ const Step1 = ({ formData, setFormData }: { formData: Partial<SilenceRule>, setF
             .catch(err => console.error("Failed to fetch silence rule templates", err));
     }, []);
 
-    const applyTemplate = (templateData: Partial<SilenceRule>) => {
+    const applyTemplate = (template: SilenceRuleTemplate) => {
+        setSelectedTemplateId(template.id);
+        // 如果範本中有名稱，則使用範本名稱，否則保留用戶輸入的名稱
+        const templateData = {
+            ...template.data,
+            name: template.data.name || formData.name || ''
+        };
         setFormData({ ...formData, ...templateData });
     };
     return (
@@ -185,7 +192,14 @@ const Step1 = ({ formData, setFormData }: { formData: Partial<SilenceRule>, setF
                 <h3 className="text-sm font-semibold text-slate-300 mb-2">快速套用範本</h3>
                 <div className="flex flex-wrap gap-2">
                     {templates.map(tpl => (
-                        <button key={tpl.id} onClick={() => applyTemplate(tpl.data)} className="px-3 py-1.5 text-sm bg-slate-700/50 hover:bg-slate-700 rounded-md flex items-center">
+                        <button
+                            key={tpl.id}
+                            onClick={() => applyTemplate(tpl)}
+                            className={`px-3 py-1.5 text-sm rounded-md flex items-center transition-colors ${selectedTemplateId === tpl.id
+                                ? 'bg-sky-600 text-white'
+                                : 'bg-slate-700/50 hover:bg-slate-700 text-slate-300'
+                                }`}
+                        >
                             {tpl.name}
                         </button>
                     ))}

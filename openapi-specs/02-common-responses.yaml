@@ -1,0 +1,95 @@
+# Common Responses
+components:
+  responses:
+    BadRequest:
+      description: Bad Request - Invalid input parameters
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Missing required fields: name, type
+          examples:
+            missingFields:
+              summary: Missing required fields
+              value:
+                error: "Missing required fields: name, type"
+            invalidEnum:
+              summary: Invalid enum value
+              value:
+                error: "Invalid status. Allowed values: New, Acknowledged, Resolved"
+
+    NotFound:
+      description: Resource Not Found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Resource not found
+          examples:
+            resourceNotFound:
+              value:
+                error: "Resource with ID 'res-001' not found"
+            incidentNotFound:
+              value:
+                error: "Incident with ID 'INC-001' not found"
+
+    Unauthorized:
+      description: Unauthorized - Authentication required
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Authentication required
+          examples:
+            noToken:
+              value:
+                error: "Authentication token not provided"
+            invalidToken:
+              value:
+                error: "Invalid or expired authentication token"
+
+    Forbidden:
+      description: Forbidden - Insufficient permissions
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Insufficient permissions
+          examples:
+            noPermission:
+              value:
+                error: "You don't have permission to perform this action"
+
+    InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Internal server error
+          examples:
+            serverError:
+              value:
+                error: "An unexpected error occurred. Please try again later."
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT authentication token obtained from login endpoint

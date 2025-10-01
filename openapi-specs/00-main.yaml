@@ -1,0 +1,59 @@
+openapi: 3.0.0
+info:
+  title: SRE Platform API
+  version: 1.0.0
+  description: |
+    Comprehensive SRE Platform API for incident management, resource monitoring, automation, and system observability.
+
+    ## Features
+    - 📊 Dashboard Management
+    - 🚨 Incident & Alert Management
+    - 🔧 Resource & Topology Management
+    - 🤖 Automation & Playbooks
+    - 📈 Analysis & Insights
+    - 👥 IAM & Access Control
+    - 📢 Notification Management
+    - ⚙️ System Settings
+
+  contact:
+    name: SRE Platform Team
+    email: sre@example.com
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:4000/api/v1
+    description: Development server
+  - url: https://api.sre-platform.example.com/api/v1
+    description: Production server
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Dashboards
+    description: Dashboard management and visualization
+  - name: Incidents
+    description: Incident tracking and management
+  - name: Alert Rules
+    description: Alert rule configuration
+  - name: Silence Rules
+    description: Alert silence management
+  - name: Resources
+    description: Resource inventory and monitoring
+  - name: Resource Groups
+    description: Resource grouping and organization
+  - name: Resource Links
+    description: Resource topology and relationships
+  - name: Automation
+    description: Automation playbooks and executions
+  - name: IAM
+    description: Identity and access management
+  - name: Notifications
+    description: Notification channels and strategies
+  - name: Analysis
+    description: AI-powered analysis and insights
+  - name: Settings
+    description: System configuration and preferences
+  - name: System
+    description: System information and utilities

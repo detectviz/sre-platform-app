@@ -90,10 +90,10 @@ const GlobalSearchModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                 setActiveIndex(0);
             }, 200); // Wait for modal close animation
         } else {
-             setTimeout(() => inputRef.current?.focus(), 100);
+            setTimeout(() => inputRef.current?.focus(), 100);
         }
     }, [isOpen]);
-    
+
     const performSearch = useCallback(async (currentQuery: string) => {
         setIsLoading(true);
         try {
@@ -132,12 +132,12 @@ const GlobalSearchModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
             setIsLoading(false);
         }
     }, []);
-    
+
     const searchForPlaybook = useCallback(async (currentQuery: string) => {
         setIsLoading(true);
         try {
-            const res = await api.get<AutomationPlaybook[]>('/automation/scripts');
-            const filtered = res.data.filter(p => p.name.toLowerCase().includes(currentQuery.toLowerCase()));
+            const res = await api.get<{ items: AutomationPlaybook[], total: number }>('/automation/scripts');
+            const filtered = res.data.items.filter(p => p.name.toLowerCase().includes(currentQuery.toLowerCase()));
             setResults(filtered.map(p => ({
                 id: p.id,
                 name: p.name,
@@ -155,7 +155,7 @@ const GlobalSearchModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
     useEffect(() => {
         setActiveIndex(0);
         let debounce: ReturnType<typeof setTimeout>;
-        
+
         switch (step) {
             case 'root':
                 if (query.startsWith('>')) {
@@ -171,7 +171,7 @@ const GlobalSearchModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                 }
                 break;
             case 'silence_resource_search':
-                 if (query.length > 0) {
+                if (query.length > 0) {
                     setIsLoading(true);
                     debounce = setTimeout(() => searchForResource(query), 300);
                 } else {
@@ -180,16 +180,16 @@ const GlobalSearchModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                 break;
             case 'run_playbook_search':
                 if (query.length > 0) {
-                   setIsLoading(true);
-                   debounce = setTimeout(() => searchForPlaybook(query), 300);
+                    setIsLoading(true);
+                    debounce = setTimeout(() => searchForPlaybook(query), 300);
                 } else {
-                   setResults([]);
+                    setResults([]);
                 }
                 break;
             default:
                 setResults([]);
         }
-        
+
         return () => clearTimeout(debounce);
     }, [query, step, commands, commandActions, performSearch, searchForResource, searchForPlaybook]);
 
@@ -213,17 +213,17 @@ const GlobalSearchModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                     if (activeResult) handleSelect(activeResult);
                 }
             } else if (e.key === 'Backspace' && query === '' && step !== 'root') {
-                 e.preventDefault();
-                 setStep('root');
+                e.preventDefault();
+                setStep('root');
             }
         };
 
-        if(isOpen) window.addEventListener('keydown', handleKeyDown);
+        if (isOpen) window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, results, activeIndex, query, step]);
-    
+
     const handleSelect = (result: SearchResult) => {
-        switch(step) {
+        switch (step) {
             case 'root':
                 if (result.type === 'Command' && result.action) {
                     result.action();
@@ -243,15 +243,15 @@ const GlobalSearchModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                 onClose();
                 break;
             case 'silence_duration':
-                 if (query.trim()) {
+                if (query.trim()) {
                     api.post(`/resources/${payload.resource.id}/silence`, { duration: query.trim() });
                     showToast(`Silencing resource "${payload.resource.name}" for ${query}...`, 'success');
                     onClose();
-                 }
-                 break;
+                }
+                break;
         }
     };
-    
+
     // Grouping and rendering
     const groupedResults = useMemo(() => {
         return results.reduce((acc, result) => {
@@ -272,10 +272,10 @@ const GlobalSearchModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
             default: return 'search';
         }
     };
-    
+
     const getPlaceholder = () => {
         if (!modalContent) return 'Loading...';
-        switch(step) {
+        switch (step) {
             case 'root': return modalContent.PLACEHOLDER_ROOT;
             case 'silence_resource_search': return modalContent.PLACEHOLDER_SILENCE_SEARCH;
             case 'silence_duration': return modalContent.PLACEHOLDER_SILENCE_DURATION;
@@ -288,64 +288,65 @@ const GlobalSearchModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
 
     return (
         <>
-        <Modal title="" isOpen={isOpen} onClose={onClose} width="w-1/2 max-w-3xl" className="glass-card rounded-xl border border-slate-700/50 shadow-2xl flex flex-col max-w-4xl max-h-[60vh] animate-fade-in-down">
-            <div className="p-3 border-b border-slate-700/50">
-                 <div className="relative flex items-center">
-                    {step === 'silence_resource_search' && <span className="pl-4 pr-2 text-slate-400 font-semibold">{modalContent?.SILENCE_PREFIX_TEMPLATE?.replace('{name}', '')}</span>}
-                    {step === 'silence_duration' && <span className="pl-4 pr-2 text-slate-400 font-semibold">{silencePrefix}</span>}
-                    {step === 'run_playbook_search' && <span className="pl-4 pr-2 text-slate-400 font-semibold">{modalContent?.RUN_PLAYBOOK_PREFIX}</span>}
-                    
-                    <Icon name={isLoading ? "loader-circle" : "search"} className={`absolute ${step === 'root' ? 'left-4' : 'left-auto'} text-slate-400 w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} style={{ left: step === 'root' ? '1rem' : 'auto' }} />
-                    
-                    <input
-                        ref={inputRef}
-                        type="text"
-                        placeholder={getPlaceholder()}
-                        value={query}
-                        onChange={e => setQuery(e.target.value)}
-                        className="w-full bg-transparent border-none pl-12 py-3 text-lg focus:outline-none focus:ring-0 text-slate-100 placeholder:text-slate-500"
-                        autoFocus
-                    />
-                </div>
-            </div>
-            <div className="flex-grow overflow-y-auto">
-                {!isLoading && query.length > 1 && results.length === 0 && <div className="text-center p-8 text-slate-400">{modalContent?.NO_RESULTS}</div>}
-                {Object.entries(groupedResults).map(([type, items]) => (
-                    <div key={type} className="px-2 pt-2">
-                        <h3 className="text-xs font-semibold text-slate-400 px-3 py-1">{type}</h3>
-                        <ul>
-                            {(items as SearchResult[]).map((item, index) => {
-                                let itemIndex = index;
-                                const typeKeys = Object.keys(groupedResults);
-                                const currentTypeIndex = typeKeys.indexOf(type);
-                                for (let i = 0; i < currentTypeIndex; i++) {
-                                    const group = groupedResults[typeKeys[i]];
-                                    if (group) {
-                                       itemIndex += group.length;
-                                    }
-                                }
+            <Modal title="" isOpen={isOpen} onClose={onClose} width="w-1/2 max-w-3xl" className="glass-card rounded-xl border border-slate-700/50 shadow-2xl flex flex-col max-w-4xl max-h-[60vh] animate-fade-in-down">
+                <div className="p-3 border-b border-slate-700/50">
+                    <div className="relative flex items-center">
+                        {step === 'silence_resource_search' && <span className="pl-4 pr-2 text-slate-400 font-semibold">{modalContent?.SILENCE_PREFIX_TEMPLATE?.replace('{name}', '')}</span>}
+                        {step === 'silence_duration' && <span className="pl-4 pr-2 text-slate-400 font-semibold">{silencePrefix}</span>}
+                        {step === 'run_playbook_search' && <span className="pl-4 pr-2 text-slate-400 font-semibold">{modalContent?.RUN_PLAYBOOK_PREFIX}</span>}
 
-                                return (
-                                <li key={item.type + item.id}
-                                    onClick={() => handleSelect(item)}
-                                    className={`p-3 flex items-center rounded-lg cursor-pointer ${activeIndex === itemIndex ? 'bg-slate-700/50' : ''}`}>
-                                    <Icon name={getTypeIcon(item.type)} className="w-5 h-5 mr-4 text-slate-300" />
-                                    <div>
-                                        <p className="font-medium text-white">{item.name}</p>
-                                        <p className="text-sm text-slate-400">{item.description}</p>
-                                    </div>
-                                </li>
-                            )})}
-                        </ul>
+                        <Icon name={isLoading ? "loader-circle" : "search"} className={`absolute ${step === 'root' ? 'left-4' : 'left-auto'} text-slate-400 w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} style={{ left: step === 'root' ? '1rem' : 'auto' }} />
+
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            placeholder={getPlaceholder()}
+                            value={query}
+                            onChange={e => setQuery(e.target.value)}
+                            className="w-full bg-transparent border-none pl-12 py-3 text-lg focus:outline-none focus:ring-0 text-slate-100 placeholder:text-slate-500"
+                            autoFocus
+                        />
                     </div>
-                ))}
-            </div>
-        </Modal>
-        <NewIncidentModal
-            isOpen={isNewIncidentModalOpen}
-            onClose={() => setIsNewIncidentModalOpen(false)}
-            onSuccess={handleIncidentCreated}
-        />
+                </div>
+                <div className="flex-grow overflow-y-auto">
+                    {!isLoading && query.length > 1 && results.length === 0 && <div className="text-center p-8 text-slate-400">{modalContent?.NO_RESULTS}</div>}
+                    {Object.entries(groupedResults).map(([type, items]) => (
+                        <div key={type} className="px-2 pt-2">
+                            <h3 className="text-xs font-semibold text-slate-400 px-3 py-1">{type}</h3>
+                            <ul>
+                                {(items as SearchResult[]).map((item, index) => {
+                                    let itemIndex = index;
+                                    const typeKeys = Object.keys(groupedResults);
+                                    const currentTypeIndex = typeKeys.indexOf(type);
+                                    for (let i = 0; i < currentTypeIndex; i++) {
+                                        const group = groupedResults[typeKeys[i]];
+                                        if (group) {
+                                            itemIndex += group.length;
+                                        }
+                                    }
+
+                                    return (
+                                        <li key={item.type + item.id}
+                                            onClick={() => handleSelect(item)}
+                                            className={`p-3 flex items-center rounded-lg cursor-pointer ${activeIndex === itemIndex ? 'bg-slate-700/50' : ''}`}>
+                                            <Icon name={getTypeIcon(item.type)} className="w-5 h-5 mr-4 text-slate-300" />
+                                            <div>
+                                                <p className="font-medium text-white">{item.name}</p>
+                                                <p className="text-sm text-slate-400">{item.description}</p>
+                                            </div>
+                                        </li>
+                                    )
+                                })}
+                            </ul>
+                        </div>
+                    ))}
+                </div>
+            </Modal>
+            <NewIncidentModal
+                isOpen={isNewIncidentModalOpen}
+                onClose={() => setIsNewIncidentModalOpen(false)}
+                onSuccess={handleIncidentCreated}
+            />
         </>
     );
 };

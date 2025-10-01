@@ -17,6 +17,7 @@ const AnalysisOverviewPage: React.FC = () => {
     const { theme: chartTheme } = useChartTheme();
 
     const [logQuery, setLogQuery] = useState('');
+    const [timeRange, setTimeRange] = useState('1h');
     const navigate = useNavigate();
 
     const fetchOverviewData = useCallback(async () => {
@@ -45,7 +46,7 @@ const AnalysisOverviewPage: React.FC = () => {
             navigate(`/resources/${id}`);
         }
     };
-    
+
     const healthScoreGaugeOption = useMemo(() => {
         if (!overviewData) return {};
         const { critical, warning, healthy } = chartTheme.health_gauge;
@@ -77,15 +78,87 @@ const AnalysisOverviewPage: React.FC = () => {
 
 
     const eventCorrelationOption = useMemo(() => ({
-        tooltip: { trigger: 'item', formatter: '{a} <br/>{b}: {c}' },
-        legend: { data: overviewData?.event_correlation_data.categories.map(c => c.name) || [], textStyle: { color: chartTheme.text.primary } },
+        tooltip: {
+            trigger: 'item',
+            formatter: (params: any) => {
+                if (params.dataType === 'node') {
+                    return `${params.data.category === 0 ? '🔴' : params.data.category === 1 ? '🟠' : '🟢'} ${params.data.name}<br/>影響範圍: ${params.data.value}`;
+                } else if (params.dataType === 'edge') {
+                    return `關聯關係<br/>${params.data.source} → ${params.data.target}`;
+                }
+                return '';
+            }
+        },
+        legend: {
+            data: overviewData?.event_correlation_data.categories.map(c => c.name) || [],
+            textStyle: { color: chartTheme.text.primary, fontSize: 12 },
+            bottom: 10
+        },
         series: [{
-            name: 'Event Correlation', type: 'graph', layout: 'force',
-            data: overviewData?.event_correlation_data.nodes || [],
-            links: overviewData?.event_correlation_data.links || [],
-            categories: overviewData?.event_correlation_data.categories || [],
-            roam: true, label: { show: true }, force: { repulsion: 200 },
-            color: chartTheme.event_correlation
+            name: '事件關聯分析', type: 'graph', layout: 'force',
+            data: overviewData?.event_correlation_data.nodes.map((node: any) => ({
+                ...node,
+                symbolSize: Math.max(node.symbol_size * 1.2, 30), // 增加節點大小
+                itemStyle: {
+                    color: chartTheme.event_correlation[node.category],
+                    borderColor: chartTheme.topology.node_border,
+                    borderWidth: 2,
+                    shadowColor: 'rgba(0, 0, 0, 0.5)',
+                    shadowBlur: 10
+                },
+                label: {
+                    show: true,
+                    position: 'inside',
+                    fontSize: 11,
+                    fontWeight: 'bold',
+                    color: '#ffffff',
+                    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+                    textShadowBlur: 2,
+                    formatter: (params: any) => {
+                        const name = params.data.name;
+                        return name.length > 8 ? name.substring(0, 8) + '...' : name;
+                    }
+                }
+            })) || [],
+            links: overviewData?.event_correlation_data.links.map((link: any) => ({
+                ...link,
+                lineStyle: {
+                    color: chartTheme.topology.edge,
+                    width: 2,
+                    opacity: 0.8,
+                    curveness: 0.2
+                },
+                emphasis: {
+                    focus: 'adjacency',
+                    lineStyle: {
+                        width: 4,
+                        opacity: 1
+                    }
+                }
+            })) || [],
+            categories: overviewData?.event_correlation_data.categories.map((cat: any, index: number) => ({
+                ...cat,
+                itemStyle: {
+                    color: chartTheme.event_correlation[index]
+                }
+            })) || [],
+            roam: true,
+            focusNodeAdjacency: true,
+            draggable: true,
+            force: {
+                repulsion: 300, // 增加排斥力，讓節點分佈更均勻
+                edgeLength: 120, // 增加邊長，讓圖形更舒展
+                gravity: 0.2
+            },
+            emphasis: {
+                focus: 'adjacency',
+                itemStyle: {
+                    borderWidth: 4,
+                    shadowBlur: 15
+                }
+            },
+            animationDuration: 1000,
+            animationEasingUpdate: 'quinticInOut'
         }],
     }), [chartTheme, overviewData]);
 
@@ -102,8 +175,23 @@ const AnalysisOverviewPage: React.FC = () => {
     };
 
     const handleLogSearch = () => {
-        navigate(logQuery.trim() ? `/analyzing/logs?q=${encodeURIComponent(logQuery.trim())}` : '/analyzing/logs');
+        const queryParams = new URLSearchParams();
+        if (logQuery.trim()) {
+            queryParams.set('q', logQuery.trim());
+        }
+        queryParams.set('timeRange', timeRange);
+
+        const queryString = queryParams.toString();
+        navigate(`/analyzing/logs${queryString ? `?${queryString}` : ''}`);
     };
+
+    const timeRangeOptions = [
+        { value: '15m', label: '最近15分鐘' },
+        { value: '1h', label: '最近1小時' },
+        { value: '24h', label: '最近24小時' },
+        { value: '7d', label: '最近7天' },
+        { value: '30d', label: '最近30天' },
+    ];
 
     const eventCorrelationEvents = { 'click': handleEventCorrelationClick };
 
@@ -114,7 +202,7 @@ const AnalysisOverviewPage: React.FC = () => {
             case 'info': return 'bg-sky-500/20 text-sky-400';
         }
     };
-    
+
     const getImpactEffortPill = (level: Suggestion['impact'] | Suggestion['effort']) => {
         switch (level) {
             case '高': return 'bg-red-500/20 text-red-400';
@@ -122,25 +210,25 @@ const AnalysisOverviewPage: React.FC = () => {
             case '低': return 'bg-sky-500/20 text-sky-400';
         }
     };
-    
+
     if (isLoading) {
         return (
-             <div className="space-y-6 animate-pulse">
-                <Toolbar rightActions={<ToolbarButton icon="download" text="匯出報表" onClick={() => {}} disabled />} />
+            <div className="space-y-6 animate-pulse">
+                <Toolbar rightActions={<ToolbarButton icon="download" text="匯出報表" onClick={() => { }} disabled />} />
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-1 glass-card rounded-xl p-6 h-[348px] bg-slate-800/50"></div>
                     <div className="lg:col-span-2 glass-card rounded-xl p-6 h-[348px] bg-slate-800/50"></div>
                 </div>
-                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div className="glass-card rounded-xl p-6 h-[250px] bg-slate-800/50"></div>
                     <div className="glass-card rounded-xl p-6 h-[250px] bg-slate-800/50"></div>
                 </div>
-                 <div className="glass-card rounded-xl p-6 h-[344px] bg-slate-800/50"></div>
+                <div className="glass-card rounded-xl p-6 h-[344px] bg-slate-800/50"></div>
             </div>
         );
     }
 
-     if (error || !overviewData) {
+    if (error || !overviewData) {
         return <div className="text-center text-red-500">{error || '資料載入失敗。'}</div>;
     }
 
@@ -156,7 +244,12 @@ const AnalysisOverviewPage: React.FC = () => {
                 </div>
                 <div className="lg:col-span-2 glass-card rounded-xl p-6">
                     <h2 className="text-xl font-bold mb-4">事件關聯分析</h2>
-                    <EChartsReact option={eventCorrelationOption} style={{ height: '300px' }} onEvents={eventCorrelationEvents} />
+                    <div className="relative">
+                        <EChartsReact option={eventCorrelationOption} style={{ height: '300px' }} onEvents={eventCorrelationEvents} />
+                        <div className="absolute top-2 right-2 text-xs text-slate-400 bg-slate-800/80 px-2 py-1 rounded">
+                            💡 拖拽節點探索關聯關係
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -194,9 +287,38 @@ const AnalysisOverviewPage: React.FC = () => {
 
             <div className="glass-card rounded-xl p-6">
                 <h2 className="text-xl font-bold mb-4">日誌探索</h2>
+
+                {/* 時間範圍快速選擇 */}
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-slate-300 mb-2">時間範圍</label>
+                    <div className="flex flex-wrap gap-2">
+                        {timeRangeOptions.map((option) => (
+                            <button
+                                key={option.value}
+                                onClick={() => setTimeRange(option.value)}
+                                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${timeRange === option.value
+                                    ? 'bg-sky-600 text-white'
+                                    : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
+                                    }`}
+                            >
+                                {option.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* 搜尋輸入區域 */}
                 <div className="flex space-x-2">
-                    <input type="text" value={logQuery} onChange={e => setLogQuery(e.target.value)} placeholder="搜尋日誌... (e.g., error status:500)" className="flex-grow bg-slate-800/80 border border-slate-700 rounded-md px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
-                    <button onClick={handleLogSearch} className="flex items-center text-sm text-white bg-sky-600 hover:bg-sky-700 px-4 py-2 rounded-md">搜尋</button>
+                    <input
+                        type="text"
+                        value={logQuery}
+                        onChange={e => setLogQuery(e.target.value)}
+                        placeholder="搜尋日誌... (e.g., error status:500)"
+                        className="flex-grow bg-slate-800/80 border border-slate-700 rounded-md px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    />
+                    <button onClick={handleLogSearch} className="flex items-center text-sm text-white bg-sky-600 hover:bg-sky-700 px-4 py-2 rounded-md">
+                        搜尋
+                    </button>
                 </div>
                 <div className="mt-4 h-64 bg-slate-900/70 rounded-md p-4 font-mono text-xs text-slate-300 overflow-y-auto">
                     {overviewData.recent_logs.map((log: LogEntry) => {

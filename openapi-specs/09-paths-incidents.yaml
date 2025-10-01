@@ -1,0 +1,297 @@
+# Incident API Paths
+paths:
+  /incidents:
+    get:
+      tags: [Incidents]
+      summary: List incidents
+      description: Retrieve a paginated list of incidents with optional filtering
+      operationId: listIncidents
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
+        - name: status
+          in: query
+          description: Filter by incident status
+          schema:
+            type: string
+            enum: [New, Acknowledged, Investigating, Resolved, Closed]
+          example: New
+        - name: severity
+          in: query
+          description: Filter by severity level
+          schema:
+            type: string
+            enum: [Critical, Warning, Info]
+          example: Critical
+        - name: assignee
+          in: query
+          description: Filter by assignee name
+          schema:
+            type: string
+          example: 張三
+      responses:
+        '200':
+          description: Successful response with paginated incidents
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Incident'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Incidents]
+      summary: Create incident
+      description: Create a new incident
+      operationId: createIncident
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentCreate'
+            example:
+              resource_id: "res-001"
+              rule_id: "rule-cpu-high"
+              summary: "CPU usage exceeded 90%"
+              severity: "Critical"
+              impact: "High"
+              tags:
+                env: production
+                service: web
+      responses:
+        '201':
+          description: Incident created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incident'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Referenced resource or rule not found
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /incidents/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [Incidents]
+      summary: Get incident by ID
+      description: Retrieve a specific incident by its ID
+      operationId: getIncidentById
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incident'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    patch:
+      tags: [Incidents]
+      summary: Update incident
+      description: Update an existing incident
+      operationId: updateIncident
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentUpdate'
+            examples:
+              updateStatus:
+                summary: Update status
+                value:
+                  status: "Resolved"
+              assignIncident:
+                summary: Assign to user
+                value:
+                  assignee: "張三"
+                  status: "Acknowledged"
+      responses:
+        '200':
+          description: Incident updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incident'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags: [Incidents]
+      summary: Delete incident
+      description: Delete an incident
+      operationId: deleteIncident
+      responses:
+        '204':
+          description: Incident deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /incidents/batch-close:
+    post:
+      tags: [Incidents]
+      summary: Batch close incidents
+      description: Close multiple incidents at once with optional resolution note
+      operationId: batchCloseIncidents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [incident_ids]
+              properties:
+                incident_ids:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+                  description: List of incident IDs to close
+                resolution_note:
+                  type: string
+                  description: Optional resolution note
+            example:
+              incident_ids: ["INC-001", "INC-002", "INC-003"]
+              resolution_note: "問題已通過重啟服務解決"
+      responses:
+        '200':
+          description: Batch close completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResult'
+              example:
+                success: true
+                updated: 2
+                skipped_ids: ["INC-003"]
+                message: "Successfully closed 2 incidents, skipped 1 (already resolved)"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /incidents/batch-assign:
+    post:
+      tags: [Incidents]
+      summary: Batch assign incidents
+      description: Assign multiple incidents to a specific user
+      operationId: batchAssignIncidents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [incident_ids]
+              properties:
+                incident_ids:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+                  description: List of incident IDs to assign
+                assignee_id:
+                  type: string
+                  description: User ID to assign incidents to
+                assignee_name:
+                  type: string
+                  description: User name to assign incidents to (alternative to assignee_id)
+            examples:
+              assignById:
+                summary: Assign by user ID
+                value:
+                  incident_ids: ["INC-001", "INC-002"]
+                  assignee_id: "usr-003"
+              assignByName:
+                summary: Assign by user name
+                value:
+                  incident_ids: ["INC-001", "INC-002"]
+                  assignee_name: "張三"
+      responses:
+        '200':
+          description: Batch assign completed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BatchResult'
+                  - type: object
+                    properties:
+                      assignee:
+                        type: string
+                      assignee_id:
+                        type: string
+              example:
+                success: true
+                updated: 2
+                skipped_ids: []
+                assignee: "張三"
+                assignee_id: "usr-003"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Assignee not found
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /incidents/batch-ignore:
+    post:
+      tags: [Incidents]
+      summary: Batch ignore incidents
+      description: Mark multiple incidents as ignored
+      operationId: batchIgnoreIncidents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [incident_ids]
+              properties:
+                incident_ids:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+            example:
+              incident_ids: ["INC-004", "INC-005"]
+      responses:
+        '200':
+          description: Batch ignore completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'

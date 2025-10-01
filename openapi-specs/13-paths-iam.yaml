@@ -1,0 +1,584 @@
+# IAM API Paths
+paths:
+  # ===================
+  # Users
+  # ===================
+  /iam/users:
+    get:
+      tags: [IAM]
+      summary: List users
+      description: Retrieve a paginated list of users
+      operationId: listUsers
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
+        - name: role
+          in: query
+          description: Filter by user role
+          schema:
+            type: string
+            enum: [Admin, SRE, Developer, Viewer]
+          example: SRE
+        - name: team_id
+          in: query
+          description: Filter by team membership
+          schema:
+            type: string
+          example: team-sre
+      responses:
+        '200':
+          description: Successful response with paginated users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [IAM]
+      summary: Create user
+      description: Create a new user
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+            example:
+              name: "張三"
+              email: "zhang.san@example.com"
+              role: "SRE"
+              team_ids: ["team-sre"]
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /iam/users/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [IAM]
+      summary: Get user by ID
+      description: Retrieve a specific user by their ID
+      operationId: getUserById
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    patch:
+      tags: [IAM]
+      summary: Update user
+      description: Update an existing user
+      operationId: updateUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+            examples:
+              updateRole:
+                summary: Update user role
+                value:
+                  role: "Developer"
+              updateTeams:
+                summary: Update team membership
+                value:
+                  team_ids: ["team-sre", "team-dev"]
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    delete:
+      tags: [IAM]
+      summary: Delete user
+      description: Delete a user
+      operationId: deleteUser
+      responses:
+        '204':
+          description: User deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ===================
+  # Teams
+  # ===================
+  /iam/teams:
+    get:
+      tags: [IAM]
+      summary: List teams
+      description: Retrieve a paginated list of teams
+      operationId: listTeams
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
+      responses:
+        '200':
+          description: Successful response with paginated teams
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Team'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [IAM]
+      summary: Create team
+      description: Create a new team
+      operationId: createTeam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamCreate'
+            example:
+              name: "SRE Team"
+              description: "Site Reliability Engineering team"
+              owner_id: "usr-001"
+              member_ids: ["usr-001", "usr-002", "usr-003"]
+      responses:
+        '201':
+          description: Team created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Owner or member not found
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /iam/teams/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [IAM]
+      summary: Get team by ID
+      description: Retrieve a specific team by its ID
+      operationId: getTeamById
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    patch:
+      tags: [IAM]
+      summary: Update team
+      description: Update an existing team
+      operationId: updateTeam
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamUpdate'
+            examples:
+              updateDescription:
+                summary: Update team description
+                value:
+                  description: "Updated team description"
+              addMembers:
+                summary: Add team members
+                value:
+                  member_ids: ["usr-001", "usr-002", "usr-003", "usr-004"]
+      responses:
+        '200':
+          description: Team updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    delete:
+      tags: [IAM]
+      summary: Delete team
+      description: Delete a team
+      operationId: deleteTeam
+      responses:
+        '204':
+          description: Team deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /iam/teams/{id}/members:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    post:
+      tags: [IAM]
+      summary: Add team members
+      description: Add members to a team
+      operationId: addTeamMembers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [member_ids]
+              properties:
+                member_ids:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+            example:
+              member_ids: ["usr-005", "usr-006"]
+      responses:
+        '200':
+          description: Members added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    delete:
+      tags: [IAM]
+      summary: Remove team members
+      description: Remove members from a team
+      operationId: removeTeamMembers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [member_ids]
+              properties:
+                member_ids:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+            example:
+              member_ids: ["usr-005"]
+      responses:
+        '200':
+          description: Members removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ===================
+  # Roles
+  # ===================
+  /iam/roles:
+    get:
+      tags: [IAM]
+      summary: List roles
+      description: Retrieve a paginated list of roles
+      operationId: listRoles
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
+      responses:
+        '200':
+          description: Successful response with paginated roles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Role'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [IAM]
+      summary: Create role
+      description: Create a new role with specific permissions
+      operationId: createRole
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleCreate'
+            example:
+              name: "Incident Manager"
+              description: "Can manage incidents and view resources"
+              permissions:
+                - "incidents:read"
+                - "incidents:write"
+                - "incidents:delete"
+                - "resources:read"
+      responses:
+        '201':
+          description: Role created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /iam/roles/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [IAM]
+      summary: Get role by ID
+      description: Retrieve a specific role by its ID
+      operationId: getRoleById
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    patch:
+      tags: [IAM]
+      summary: Update role
+      description: Update an existing role
+      operationId: updateRole
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleUpdate'
+            example:
+              permissions:
+                - "incidents:read"
+                - "incidents:write"
+                - "incidents:delete"
+                - "resources:read"
+                - "resources:write"
+      responses:
+        '200':
+          description: Role updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    delete:
+      tags: [IAM]
+      summary: Delete role
+      description: Delete a role
+      operationId: deleteRole
+      responses:
+        '204':
+          description: Role deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ===================
+  # Batch Operations
+  # ===================
+  /iam/users/batch-update-role:
+    post:
+      tags: [IAM]
+      summary: Batch update user roles
+      description: Update roles for multiple users at once
+      operationId: batchUpdateUserRole
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_ids, role]
+              properties:
+                user_ids:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+                role:
+                  type: string
+                  enum: [Admin, SRE, Developer, Viewer]
+            example:
+              user_ids: ["usr-003", "usr-004"]
+              role: "Developer"
+      responses:
+        '200':
+          description: Batch update completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /iam/users/batch-delete:
+    post:
+      tags: [IAM]
+      summary: Batch delete users
+      description: Delete multiple users at once
+      operationId: batchDeleteUsers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_ids]
+              properties:
+                user_ids:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+            example:
+              user_ids: ["usr-old-001", "usr-old-002"]
+      responses:
+        '200':
+          description: Batch delete completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'

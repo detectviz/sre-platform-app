@@ -1322,8 +1322,8 @@ const MOCK_SILENCE_RULES: SilenceRule[] = [
     { id: 'sil-001', name: '週末維護窗口', description: '週末例行維護期間静音所有 staging 環境的告警。', enabled: true, type: 'repeat', matchers: [{ key: 'env', operator: '=', value: 'staging' }], schedule: { type: 'recurring', cron: '0 22 * * 5', cron_description: '每週五 22:00', timezone: 'Asia/Taipei' }, creator: 'Admin User', created_at: '2025-09-20T18:00:00Z', updated_at: '2025-09-20T18:00:00Z' },
 ];
 const MOCK_SILENCE_RULE_TEMPLATES: SilenceRuleTemplate[] = [
-    { id: 'srt-001', name: 'Staging Maintenance', data: { description: 'Silence all alerts from the staging environment.', matchers: [{ key: 'env', operator: '=', value: 'staging' }] } },
-    { id: 'srt-002', name: 'Weekend Silence', data: { description: 'Silence non-critical alerts over the weekend.', matchers: [{ key: 'severity', operator: '!=', value: 'critical' }], schedule: { type: 'recurring', cron: '0 0 * * 6' } } },
+    { id: 'srt-001', name: 'Staging Maintenance', data: { name: 'Staging Maintenance', description: 'Silence all alerts from the staging environment.', matchers: [{ key: 'env', operator: '=', value: 'staging' }] } },
+    { id: 'srt-002', name: 'Weekend Silence', data: { name: 'Weekend Silence', description: 'Silence non-critical alerts over the weekend.', matchers: [{ key: 'severity', operator: '!=', value: 'critical' }], schedule: { type: 'recurring', cron: '0 0 * * 6' } } },
 ];
 const MOCK_SILENCE_RULE_OPTIONS: SilenceRuleOptions = {
     keys: ['severity', 'env', 'service', 'resource_type'],
@@ -1906,23 +1906,24 @@ const MOCK_RESOURCE_ANALYSIS: ResourceAnalysis = {
 
 const MOCK_EVENT_CORRELATION_DATA = {
     nodes: [
-        { id: 'INC-002', name: 'DB Connection Timeout', value: 10, symbol_size: 50, category: 0 },
-        { id: 'INC-001', name: 'API Latency Spike', value: 8, symbol_size: 40, category: 1 },
-        { id: 'Deployment-XYZ', name: 'Deployment', value: 5, symbol_size: 30, category: 2 },
-        { id: 'INC-003', name: '5xx Errors', value: 9, symbol_size: 45, category: 1 },
-        { id: 'res-002', name: 'rds-prod-main', value: 6, symbol_size: 35, category: 0 },
-        { id: 'res-001', name: 'api-gateway-prod-01', value: 6, symbol_size: 35, category: 1 },
+        { id: 'INC-002', name: '資料庫連線逾時', value: 10, symbol_size: 60, category: 0 },
+        { id: 'INC-001', name: 'API 延遲激增', value: 8, symbol_size: 50, category: 1 },
+        { id: 'Deployment-XYZ', name: '系統部署', value: 5, symbol_size: 35, category: 2 },
+        { id: 'INC-003', name: '5xx 錯誤', value: 9, symbol_size: 55, category: 1 },
+        { id: 'res-002', name: 'RDS 資料庫', value: 6, symbol_size: 40, category: 0 },
+        { id: 'res-001', name: 'API 閘道', value: 6, symbol_size: 40, category: 1 },
     ],
     links: [
         { source: 'res-002', target: 'INC-002' },
         { source: 'Deployment-XYZ', target: 'INC-001' },
         { source: 'res-001', target: 'INC-001' },
         { source: 'INC-001', target: 'INC-003' },
+        { source: 'INC-002', target: 'INC-003', lineStyle: { type: 'dashed' } },
     ],
     categories: [
-        { name: 'DB Events' },
-        { name: 'API Events' },
-        { name: 'Infra Changes' },
+        { name: '資料庫事件' },
+        { name: 'API 事件' },
+        { name: '基礎設施變更' },
     ],
 };
 const MOCK_CAPACITY_SUGGESTIONS = [

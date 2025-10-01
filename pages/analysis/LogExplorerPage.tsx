@@ -18,21 +18,30 @@ const LogExplorerPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const { options, isLoading: isLoadingOptions } = useOptions();
-    
+
     const location = useLocation();
     const params = new URLSearchParams(location.search);
     const queryFromUrl = params.get('q');
-    
+
     const [filters, setFilters] = useState<LogExplorerFilters>({
         keyword: queryFromUrl || '',
         time_range: '15m',
     });
+
+    // 時間範圍快速選擇選項
+    const timeRangeOptions = [
+        { value: '15m', label: '最近15分鐘' },
+        { value: '1h', label: '最近1小時' },
+        { value: '24h', label: '最近24小時' },
+        { value: '7d', label: '最近7天' },
+        { value: '30d', label: '最近30天' },
+    ];
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isLive, setIsLive] = useState(false);
     const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
     const liveIntervalRef = useRef<number | null>(null);
     const logContainerRef = useRef<HTMLDivElement>(null);
-    
+
     // New state for AI Log Analysis
     const [isLogAnalysisModalOpen, setIsLogAnalysisModalOpen] = useState(false);
     const [logAnalysisReport, setLogAnalysisReport] = useState<LogAnalysis | null>(null);
@@ -61,7 +70,7 @@ const LogExplorerPage: React.FC = () => {
                 if (!isLiveUpdate) setIsLoading(false);
             });
     }, [filters]);
-    
+
     useEffect(() => {
         // Initial fetch
         if (!isLive) {
@@ -85,7 +94,7 @@ const LogExplorerPage: React.FC = () => {
             }
         };
     }, [isLive, fetchData]);
-    
+
     // The histogram is now calculated from the fetched logs.
     const histogramData = useMemo(() => {
         const countsByLevel: Record<string, Record<LogLevel, number>> = {};
@@ -97,8 +106,8 @@ const LogExplorerPage: React.FC = () => {
             }
             countsByLevel[minuteKey][log.level]++;
         });
-        
-        const sortedKeys = Object.keys(countsByLevel).sort((a,b) => new Date(a).getTime() - new Date(b).getTime());
+
+        const sortedKeys = Object.keys(countsByLevel).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
 
         return {
             timestamps: sortedKeys.map(key => new Date(key).toLocaleTimeString()),
@@ -129,7 +138,7 @@ const LogExplorerPage: React.FC = () => {
             { name: 'Info', type: 'bar', stack: 'total', data: histogramData.info, color: chartTheme.log_levels.info }
         ]
     }), [chartTheme, histogramData]);
-    
+
     const toggleExpand = (id: string) => {
         setExpandedLogId(prevId => (prevId === id ? null : id));
     };
@@ -188,11 +197,29 @@ const LogExplorerPage: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col space-y-4">
-            <Toolbar 
+            <Toolbar
                 leftActions={leftActions}
-                rightActions={rightActions} 
+                rightActions={rightActions}
             />
-            
+
+            {/* 時間範圍快速選擇 */}
+            <div className="shrink-0">
+                <div className="flex flex-wrap gap-2 p-2">
+                    {timeRangeOptions.map((option) => (
+                        <button
+                            key={option.value}
+                            onClick={() => setFilters(prev => ({ ...prev, time_range: option.value }))}
+                            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${filters.time_range === option.value
+                                ? 'bg-sky-600 text-white'
+                                : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
+                                }`}
+                        >
+                            {option.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
             <div className="shrink-0 h-40">
                 <EChartsReact option={histogramOption} />
             </div>
@@ -210,7 +237,7 @@ const LogExplorerPage: React.FC = () => {
                             <Icon name="loader-circle" className="w-6 h-6 animate-spin mr-2" /> 載入日誌中...
                         </div>
                     ) : error ? (
-                         <div className="flex flex-col items-center justify-center h-full text-red-400">
+                        <div className="flex flex-col items-center justify-center h-full text-red-400">
                             <Icon name="alert-circle" className="w-10 h-10 mb-2" />
                             <p className="font-semibold">{error}</p>
                         </div>
@@ -221,7 +248,7 @@ const LogExplorerPage: React.FC = () => {
                             return (
                                 <div key={log.id} className={`border-l-4 ${isExpanded ? levelColor : 'border-transparent'}`}>
                                     <div onClick={() => toggleExpand(log.id)}
-                                         className={`grid grid-cols-12 px-4 py-2 text-sm font-mono cursor-pointer hover:bg-slate-800/50 ${isExpanded ? 'bg-slate-800/50' : ''}`}>
+                                        className={`grid grid-cols-12 px-4 py-2 text-sm font-mono cursor-pointer hover:bg-slate-800/50 ${isExpanded ? 'bg-slate-800/50' : ''}`}>
                                         <div className="col-span-2 text-slate-400">{new Date(log.timestamp).toLocaleString()}</div>
                                         <div className="col-span-1"><LogLevelPill level={log.level} /></div>
                                         <div className="col-span-2 text-purple-300">{log.service}</div>

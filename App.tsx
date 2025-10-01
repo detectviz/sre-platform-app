@@ -15,6 +15,7 @@ import SilenceRulePage from './pages/incidents/SilenceRulePage';
 import ResourceListPage from './pages/resources/ResourceListPage';
 import ResourceGroupPage from './pages/resources/ResourceGroupPage';
 import ResourceTopologyPage from './pages/resources/ResourceTopologyPage';
+import ResourceDetailPage from './pages/resources/ResourceDetailPage';
 import AutomationPlaybooksPage from './pages/automation/AutomationPlaybooksPage';
 import AutomationHistoryPage from './pages/automation/AutomationHistoryPage';
 import AnalysisOverviewPage from './pages/analysis/AnalysisOverviewPage';
@@ -154,6 +155,7 @@ const AppRoutes: React.FC = () => {
             <Route index element={<Navigate to="/resources/list" replace />} />
             <Route path="list" element={<ResourceListPage />} />
             <Route path="list/:resource_id" element={<ResourceListPage />} />
+            <Route path=":resource_id" element={<ResourceDetailPage />} />
             <Route path="groups" element={<ResourceGroupPage />} />
             <Route path="datasources" element={<DatasourceManagementPage />} />
             <Route path="discovery" element={<AutoDiscoveryPage />} />

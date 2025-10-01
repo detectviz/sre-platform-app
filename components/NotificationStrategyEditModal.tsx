@@ -190,8 +190,8 @@ const Step1: React.FC<{
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        api.get<ResourceGroup[]>('/resource-groups')
-            .then(res => setResourceGroups(res.data))
+        api.get<{ items: ResourceGroup[], total: number }>('/resource-groups')
+            .then(res => setResourceGroups(res.data.items))
             .catch(err => showToast('無法載入資源群組。', 'error'))
             .finally(() => setIsLoading(false));
     }, []);
@@ -239,11 +239,11 @@ const Step2: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Fu
         api.get<{ items: Team[] }>('/iam/teams', { params: { page: 1, page_size: 1000 } })
             .then(res => setTeams(res.data.items || []))
             .catch(err => { /* Failed to load teams */ });
-        api.get<NotificationChannel[]>('/settings/notification-channels')
-            .then(res => setChannels(res.data))
+        api.get<{ items: NotificationChannel[], total: number }>('/settings/notification-channels')
+            .then(res => setChannels(res.data.items))
             .catch(err => { /* Failed to load notification channels */ });
-        api.get<ResourceGroup[]>('/resource-groups')
-            .then(res => setAllGroups(res.data))
+        api.get<{ items: ResourceGroup[], total: number }>('/resource-groups')
+            .then(res => setAllGroups(res.data.items))
             .catch(err => { /* Failed to load resource groups */ });
     }, []);
 

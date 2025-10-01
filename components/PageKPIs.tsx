@@ -10,18 +10,18 @@ interface PageKPIsProps {
 }
 
 interface KpiDataItem {
-    value: string;
-    description: string;
-    icon: string;
-    icon_bg_color: string;
+  value: string;
+  description: string;
+  icon: string;
+  icon_bg_color: string;
 }
 
 interface LayoutsData {
-    [key: string]: {
-        widget_ids: string[];
-        updated_at: string;
-        updated_by: string;
-    }
+  [key: string]: {
+    widget_ids: string[];
+    updated_at: string;
+    updated_by: string;
+  }
 }
 
 const PageKPIs: React.FC<PageKPIsProps> = ({ pageName, widget_ids: explicit_widget_ids }) => {
@@ -32,37 +32,37 @@ const PageKPIs: React.FC<PageKPIsProps> = ({ pageName, widget_ids: explicit_widg
 
   useEffect(() => {
     const fetchAllData = async () => {
-        setIsLoading(true);
-        try {
-            const [kpiRes, widgetsRes, layoutsRes] = await Promise.all([
-                api.get<Record<string, KpiDataItem>>('/kpi-data'),
-                api.get<LayoutWidget[]>('/settings/widgets'),
-                api.get<LayoutsData>('/settings/layouts')
-            ]);
-            setKpiData(kpiRes.data);
-            setWidgets(widgetsRes.data);
-            setLayouts(layoutsRes.data);
-        } catch (error) {
-            // Failed to fetch page KPI data
-            // Use defaults on error
-            setLayouts({});
-        } finally {
-            setIsLoading(false);
-        }
+      setIsLoading(true);
+      try {
+        const [kpiRes, widgetsRes, layoutsRes] = await Promise.all([
+          api.get<Record<string, KpiDataItem>>('/kpi-data'),
+          api.get<LayoutWidget[]>('/settings/widgets'),
+          api.get<LayoutsData>('/settings/layouts')
+        ]);
+        setKpiData(kpiRes.data);
+        setWidgets(widgetsRes.data);
+        setLayouts(layoutsRes.data);
+      } catch (error) {
+        // Failed to fetch page KPI data
+        // Use defaults on error
+        setLayouts({});
+      } finally {
+        setIsLoading(false);
+      }
     };
-    
+
     fetchAllData();
 
     const handleStorageChange = () => {
-        // Optimistic update from localStorage if layout is changed on settings page
-        const storedLayouts = localStorage.getItem('sre-platform-layouts');
-         try {
-            if (storedLayouts) {
-                setLayouts(JSON.parse(storedLayouts));
-            }
-        } catch (e) {
-            // Failed to parse layouts from localStorage
+      // Optimistic update from localStorage if layout is changed on settings page
+      const storedLayouts = localStorage.getItem('sre-platform-layouts');
+      try {
+        if (storedLayouts) {
+          setLayouts(JSON.parse(storedLayouts));
         }
+      } catch (e) {
+        // Failed to parse layouts from localStorage
+      }
     };
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
@@ -90,29 +90,29 @@ const PageKPIs: React.FC<PageKPIsProps> = ({ pageName, widget_ids: explicit_widg
       </div>
     );
   }
-  
+
   const getWidgetById = (id: string): LayoutWidget | undefined => widgets.find(w => w.id === id);
 
   const renderDescription = (descriptionText: string): React.ReactNode => {
-      if (typeof descriptionText !== 'string' || !descriptionText) {
-        return descriptionText; // Return original value if not a processable string
+    if (typeof descriptionText !== 'string' || !descriptionText) {
+      return descriptionText; // Return original value if not a processable string
+    }
+
+    // The regex captures groups, which can result in `undefined` or empty strings in the parts array. Filter them out.
+    const parts = descriptionText.split(/(↑\d+(\.\d+)?%|↓\d+(\.\d+)?%|\d+ 嚴重)/g).filter(Boolean);
+
+    return parts.map((part, index) => {
+      if (part.startsWith('↑')) {
+        return <span key={index} className="text-green-400">{part}</span>;
       }
-      
-      // The regex captures groups, which can result in `undefined` or empty strings in the parts array. Filter them out.
-      const parts = descriptionText.split(/(↑\d+(\.\d+)?%|↓\d+(\.\d+)?%|\d+ 嚴重)/g).filter(Boolean);
-      
-      return parts.map((part, index) => {
-          if (part.startsWith('↑')) {
-              return <span key={index} className="text-green-400">{part}</span>;
-          }
-          if (part.startsWith('↓')) {
-              return <span key={index} className="text-red-400">{part}</span>;
-          }
-          if (part.endsWith('嚴重')) {
-              return <span key={index} className="text-red-400 font-semibold">{part}</span>;
-          }
-          return part;
-      });
+      if (part.startsWith('↓')) {
+        return <span key={index} className="text-red-400">{part}</span>;
+      }
+      if (part.endsWith('嚴重')) {
+        return <span key={index} className="text-red-400 font-semibold">{part}</span>;
+      }
+      return part;
+    });
   };
 
 

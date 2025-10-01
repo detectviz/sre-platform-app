@@ -2,6 +2,8 @@
 
 一個現代化的 Site Reliability Engineering (SRE) 平台，提供全面的系統監控、事件管理、資源管理與自動化運維功能。
 
+![SRE Platform Demo](demo.gif)
+
 ## ✨ 主要特色
 
 - **📊 儀表板管理**: 自訂儀表板整合 Grafana，支持多雲資源健康狀態監控

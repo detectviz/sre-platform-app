@@ -60,8 +60,8 @@ const Step0 = ({ selectedTemplate, setSelectedTemplate }: { selectedTemplate: Al
                             <button
                                 onClick={() => setSelectedType(rt.id)}
                                 className={`w-full flex items-center p-2 rounded-md text-sm text-left transition-colors ${selectedType === rt.id
-                                        ? 'bg-sky-500/20 text-sky-300 font-semibold'
-                                        : 'text-slate-300 hover:bg-slate-700/50'
+                                    ? 'bg-sky-500/20 text-sky-300 font-semibold'
+                                    : 'text-slate-300 hover:bg-slate-700/50'
                                     }`}
                             >
                                 <Icon name={rt.icon} className="w-4 h-4 mr-3" />
@@ -101,8 +101,8 @@ const Step0 = ({ selectedTemplate, setSelectedTemplate }: { selectedTemplate: Al
                                     key={tpl.id}
                                     onClick={() => setSelectedTemplate(tpl)}
                                     className={`p-4 rounded-lg border-2 text-left transition-all h-full flex flex-col ${selectedTemplate?.id === tpl.id
-                                            ? 'bg-sky-900/50 border-sky-500 shadow-lg'
-                                            : 'bg-slate-800/50 border-slate-700 hover:border-slate-500'
+                                        ? 'bg-sky-900/50 border-sky-500 shadow-lg'
+                                        : 'bg-slate-800/50 border-slate-700 hover:border-slate-500'
                                         }`}
                                 >
                                     <div className="flex items-center space-x-3">
@@ -142,10 +142,10 @@ const Step1 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
 
     useEffect(() => {
         Promise.all([
-            api.get<ResourceGroup[]>('/resource-groups'),
+            api.get<{ items: ResourceGroup[], total: number }>('/resource-groups'),
             api.get<{ items: Resource[] }>('/resources', { params: { page_size: 1000 } }),
         ]).then(([groupsRes, resourcesRes]) => {
-            setResourceGroups(groupsRes.data);
+            setResourceGroups(groupsRes.data.items);
             setAllResources(resourcesRes.data.items);
         }).catch(err => {
             showToast("無法載入資源或群組選項。", "error");
@@ -475,8 +475,8 @@ const Step4 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        api.get<AutomationPlaybook[]>('/automation/scripts')
-            .then(res => setPlaybooks(res.data))
+        api.get<{ items: AutomationPlaybook[], total: number }>('/automation/scripts')
+            .then(res => setPlaybooks(res.data.items))
             .catch(err => {
                 // Failed to fetch playbooks
                 showToast("無法載入自動化腳本列表。", "error");

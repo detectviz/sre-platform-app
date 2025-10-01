@@ -1,0 +1,196 @@
+# Dashboard API Paths
+paths:
+  /dashboards:
+    get:
+      tags: [Dashboards]
+      summary: List dashboards
+      description: Retrieve a paginated list of dashboards with optional filtering and sorting
+      operationId: listDashboards
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
+        - name: type
+          in: query
+          description: Filter by dashboard type
+          schema:
+            type: string
+            enum: [built-in, custom, grafana]
+          example: grafana
+        - name: category
+          in: query
+          description: Filter by category
+          schema:
+            type: string
+          example: 基礎設施
+      responses:
+        '200':
+          description: Successful response with paginated dashboards
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                    example: 1
+                  page_size:
+                    type: integer
+                    example: 20
+                  total:
+                    type: integer
+                    example: 45
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Dashboard'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Dashboards]
+      summary: Create dashboard
+      description: Create a new dashboard
+      operationId: createDashboard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DashboardCreate'
+            examples:
+              grafanaDashboard:
+                summary: Grafana Dashboard
+                value:
+                  name: "Production Metrics"
+                  type: "grafana"
+                  category: "基礎設施"
+                  description: "生產環境關鍵指標監控"
+                  team_id: "team-sre"
+                  grafana_dashboard_uid: "prod-metrics-uid"
+              customDashboard:
+                summary: Custom Dashboard
+                value:
+                  name: "Custom Overview"
+                  type: "custom"
+                  category: "業務監控"
+                  resource_ids: ["res-001", "res-002"]
+      responses:
+        '201':
+          description: Dashboard created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /dashboards/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [Dashboards]
+      summary: Get dashboard by ID
+      description: Retrieve a specific dashboard by its ID
+      operationId: getDashboardById
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    patch:
+      tags: [Dashboards]
+      summary: Update dashboard
+      description: Update an existing dashboard
+      operationId: updateDashboard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DashboardUpdate'
+            example:
+              name: "Updated Dashboard Name"
+              description: "Updated description"
+      responses:
+        '200':
+          description: Dashboard updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags: [Dashboards]
+      summary: Delete dashboard
+      description: Soft delete a dashboard (sets deleted_at timestamp)
+      operationId: deleteDashboard
+      responses:
+        '204':
+          description: Dashboard deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /dashboards/batch-actions:
+    post:
+      tags: [Dashboards]
+      summary: Batch dashboard operations
+      description: Perform batch operations on multiple dashboards
+      operationId: batchDashboardActions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, dashboard_ids]
+              properties:
+                action:
+                  type: string
+                  enum: [delete]
+                  description: Action to perform
+                dashboard_ids:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+                  description: List of dashboard IDs
+            example:
+              action: delete
+              dashboard_ids: ["dash-001", "dash-002", "dash-003"]
+      responses:
+        '200':
+          description: Batch operation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResult'
+              example:
+                success: true
+                updated: 3
+                skipped_ids: []
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'

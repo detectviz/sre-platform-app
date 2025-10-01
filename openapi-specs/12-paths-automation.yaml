@@ -1,0 +1,507 @@
+# Automation API Paths
+paths:
+  # ===================
+  # Playbooks
+  # ===================
+  /automation/playbooks:
+    get:
+      tags: [Automation]
+      summary: List automation playbooks
+      description: Retrieve a paginated list of automation playbooks
+      operationId: listPlaybooks
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
+        - name: type
+          in: query
+          description: Filter by playbook type
+          schema:
+            type: string
+            enum: [Shell Script, Python, Ansible, Terraform]
+          example: Ansible
+        - name: enabled
+          in: query
+          description: Filter by enabled status
+          schema:
+            type: boolean
+          example: true
+      responses:
+        '200':
+          description: Successful response with paginated playbooks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AutomationPlaybook'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Automation]
+      summary: Create automation playbook
+      description: Create a new automation playbook
+      operationId: createPlaybook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutomationPlaybookCreate'
+            examples:
+              ansiblePlaybook:
+                summary: Ansible playbook for service restart
+                value:
+                  name: "Restart Web Service"
+                  type: "Ansible"
+                  description: "Restarts web service and verifies health"
+                  content: "---\n- hosts: webservers\n  tasks:\n    - name: Restart nginx\n      service:\n        name: nginx\n        state: restarted"
+                  enabled: true
+                  timeout_seconds: 300
+              shellScript:
+                summary: Shell script for cleanup
+                value:
+                  name: "Cleanup Old Logs"
+                  type: "Shell Script"
+                  content: "#!/bin/bash\nfind /var/log -name '*.log' -mtime +30 -delete"
+                  enabled: true
+                  timeout_seconds: 60
+      responses:
+        '201':
+          description: Playbook created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutomationPlaybook'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /automation/playbooks/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [Automation]
+      summary: Get playbook by ID
+      description: Retrieve a specific playbook by its ID
+      operationId: getPlaybookById
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutomationPlaybook'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    patch:
+      tags: [Automation]
+      summary: Update playbook
+      description: Update an existing playbook
+      operationId: updatePlaybook
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutomationPlaybookUpdate'
+            example:
+              enabled: false
+              description: "Updated description"
+      responses:
+        '200':
+          description: Playbook updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutomationPlaybook'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags: [Automation]
+      summary: Delete playbook
+      description: Delete a playbook
+      operationId: deletePlaybook
+      responses:
+        '204':
+          description: Playbook deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ===================
+  # Executions
+  # ===================
+  /automation/executions:
+    get:
+      tags: [Automation]
+      summary: List automation executions
+      description: Retrieve a paginated list of automation executions
+      operationId: listExecutions
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
+        - name: status
+          in: query
+          description: Filter by execution status
+          schema:
+            type: string
+            enum: [Pending, Running, Success, Failed, Cancelled]
+          example: Success
+        - name: playbook_id
+          in: query
+          description: Filter by playbook ID
+          schema:
+            type: string
+          example: playbook-001
+        - name: trigger_type
+          in: query
+          description: Filter by trigger type
+          schema:
+            type: string
+            enum: [Manual, Scheduled, Webhook, Incident, Alert]
+          example: Incident
+      responses:
+        '200':
+          description: Successful response with paginated executions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AutomationExecution'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Automation]
+      summary: Create automation execution
+      description: Manually trigger a playbook execution
+      operationId: createExecution
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutomationExecutionCreate'
+            example:
+              playbook_id: "playbook-001"
+              trigger_type: "Manual"
+              target_resource_id: "res-001"
+              parameters:
+                service_name: "nginx"
+                check_health: true
+      responses:
+        '201':
+          description: Execution created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutomationExecution'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Playbook or resource not found
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /automation/executions/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [Automation]
+      summary: Get execution by ID
+      description: Retrieve a specific execution by its ID
+      operationId: getExecutionById
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutomationExecution'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags: [Automation]
+      summary: Cancel execution
+      description: Cancel a running or pending execution
+      operationId: cancelExecution
+      responses:
+        '200':
+          description: Execution cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutomationExecution'
+        '400':
+          description: Execution cannot be cancelled (already completed)
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ===================
+  # Triggers
+  # ===================
+  /automation/triggers:
+    get:
+      tags: [Automation]
+      summary: List automation triggers
+      description: Retrieve a paginated list of automation triggers
+      operationId: listTriggers
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
+        - name: type
+          in: query
+          description: Filter by trigger type
+          schema:
+            type: string
+            enum: [Schedule (Cron), Webhook, Event (Incident/Alert)]
+          example: Schedule (Cron)
+        - name: enabled
+          in: query
+          description: Filter by enabled status
+          schema:
+            type: boolean
+          example: true
+      responses:
+        '200':
+          description: Successful response with paginated triggers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AutomationTrigger'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Automation]
+      summary: Create automation trigger
+      description: Create a new automation trigger
+      operationId: createTrigger
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutomationTriggerCreate'
+            examples:
+              scheduleTrigger:
+                summary: Schedule trigger for nightly cleanup
+                value:
+                  name: "Nightly Log Cleanup"
+                  type: "Schedule (Cron)"
+                  playbook_id: "playbook-cleanup-001"
+                  enabled: true
+                  config:
+                    cron_expression: "0 2 * * *"
+                    timezone: "UTC"
+              eventTrigger:
+                summary: Event trigger for critical incidents
+                value:
+                  name: "Auto-restart on Critical Alert"
+                  type: "Event (Incident/Alert)"
+                  playbook_id: "playbook-restart-001"
+                  enabled: true
+                  config:
+                    event_type: "incident.created"
+                    condition: "severity == 'Critical'"
+      responses:
+        '201':
+          description: Trigger created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutomationTrigger'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Playbook not found
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /automation/triggers/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [Automation]
+      summary: Get trigger by ID
+      description: Retrieve a specific trigger by its ID
+      operationId: getTriggerById
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutomationTrigger'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    patch:
+      tags: [Automation]
+      summary: Update trigger
+      description: Update an existing trigger
+      operationId: updateTrigger
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutomationTriggerUpdate'
+            example:
+              enabled: false
+      responses:
+        '200':
+          description: Trigger updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutomationTrigger'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags: [Automation]
+      summary: Delete trigger
+      description: Delete a trigger
+      operationId: deleteTrigger
+      responses:
+        '204':
+          description: Trigger deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ===================
+  # Batch Operations
+  # ===================
+  /automation/playbooks/batch-enable:
+    post:
+      tags: [Automation]
+      summary: Batch enable playbooks
+      description: Enable multiple playbooks at once
+      operationId: batchEnablePlaybooks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [playbook_ids]
+              properties:
+                playbook_ids:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+            example:
+              playbook_ids: ["playbook-001", "playbook-002"]
+      responses:
+        '200':
+          description: Batch enable completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /automation/playbooks/batch-disable:
+    post:
+      tags: [Automation]
+      summary: Batch disable playbooks
+      description: Disable multiple playbooks at once
+      operationId: batchDisablePlaybooks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [playbook_ids]
+              properties:
+                playbook_ids:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+            example:
+              playbook_ids: ["playbook-003", "playbook-004"]
+      responses:
+        '200':
+          description: Batch disable completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'

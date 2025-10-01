@@ -1,0 +1,218 @@
+# Notification Schemas
+components:
+  schemas:
+    # ===================
+    # Notification Channel
+    # ===================
+    NotificationChannel:
+      type: object
+      required: [id, name, type, enabled, created_at]
+      properties:
+        id:
+          type: string
+          example: channel-email-ops
+        name:
+          type: string
+          example: Ops Team Email
+        type:
+          type: string
+          enum: [Email, Webhook (通用), Slack, LINE Notify, SMS]
+          example: Email
+        enabled:
+          type: boolean
+          example: true
+        config:
+          type: object
+          description: Channel-specific configuration
+          example:
+            recipients: [ops@example.com, oncall@example.com]
+            sender: noreply@example.com
+        last_test_result:
+          type: string
+          enum: [success, failed, not_tested]
+          example: success
+        last_tested_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T08:00:00Z"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    NotificationChannelCreate:
+      type: object
+      required: [name, type, enabled, config]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        type:
+          type: string
+          enum: [Email, Webhook (通用), Slack, LINE Notify, SMS]
+        enabled:
+          type: boolean
+        config:
+          type: object
+          description: |
+            Channel configuration varies by type:
+            - Email: { recipients: string[], sender?: string }
+            - Webhook: { url: string, method?: string, headers?: object }
+            - Slack: { webhook_url: string, channel?: string }
+            - LINE Notify: { access_token: string }
+            - SMS: { phone_numbers: string[], provider?: string }
+
+    NotificationChannelUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        enabled:
+          type: boolean
+        config:
+          type: object
+
+    # ===================
+    # Notification Strategy
+    # ===================
+    NotificationStrategy:
+      type: object
+      required: [id, name, enabled, trigger_condition, created_at]
+      properties:
+        id:
+          type: string
+          example: strategy-critical-alerts
+        name:
+          type: string
+          example: 嚴重告警通知策略
+        enabled:
+          type: boolean
+          example: true
+        trigger_condition:
+          type: string
+          example: severity == 'Critical' OR impact == 'High'
+        severity_levels:
+          type: array
+          items:
+            type: string
+            enum: [Critical, Warning, Info]
+          example: [Critical]
+        impact_levels:
+          type: array
+          items:
+            type: string
+            enum: [High, Medium, Low]
+          example: [High, Medium]
+        channel_ids:
+          type: array
+          items:
+            type: string
+          example: [channel-email-ops, channel-slack-oncall]
+        channel_count:
+          type: integer
+          example: 2
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    NotificationStrategyCreate:
+      type: object
+      required: [name, enabled, trigger_condition]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        enabled:
+          type: boolean
+        trigger_condition:
+          type: string
+          description: Condition expression for triggering notifications
+        severity_levels:
+          type: array
+          items:
+            type: string
+            enum: [Critical, Warning, Info]
+        impact_levels:
+          type: array
+          items:
+            type: string
+            enum: [High, Medium, Low]
+        channel_ids:
+          type: array
+          items:
+            type: string
+          description: List of notification channel IDs to use
+
+    NotificationStrategyUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        enabled:
+          type: boolean
+        trigger_condition:
+          type: string
+        severity_levels:
+          type: array
+          items:
+            type: string
+        impact_levels:
+          type: array
+          items:
+            type: string
+        channel_ids:
+          type: array
+          items:
+            type: string
+
+    # ===================
+    # Notification History Record
+    # ===================
+    NotificationHistoryRecord:
+      type: object
+      required: [id, channel_type, status, created_at]
+      properties:
+        id:
+          type: string
+          example: notif-001
+        channel_type:
+          type: string
+          enum: [Email, Webhook (通用), Slack, LINE Notify, SMS]
+          example: Email
+        incident_id:
+          type: string
+          example: INC-001
+        status:
+          type: string
+          enum: [sent, failed, pending]
+          example: sent
+        recipients:
+          type: array
+          items:
+            type: string
+          example: [ops@example.com]
+        message:
+          type: string
+          example: "Critical incident: API 延遲超過閾值"
+        error:
+          type: string
+          nullable: true
+          example: null
+        created_at:
+          type: string
+          format: date-time

@@ -1,0 +1,474 @@
+# Core Entity Schemas
+components:
+  schemas:
+    # ===================
+    # Dashboard
+    # ===================
+    Dashboard:
+      type: object
+      required: [id, name, type, category, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          example: dash-prod-overview
+        name:
+          type: string
+          example: Production Overview
+        type:
+          type: string
+          enum: [built-in, custom, grafana]
+          example: grafana
+        category:
+          type: string
+          example: 基礎設施
+        description:
+          type: string
+          example: 生產環境全局監控儀表板
+        owner:
+          type: string
+          example: SRE 平台團隊
+        path:
+          type: string
+          example: /dashboard/production-overview
+        grafana_url:
+          type: string
+          format: uri
+          example: https://grafana.example.com/d/prod-overview
+        grafana_dashboard_uid:
+          type: string
+          example: prod-overview-uid
+        grafana_folder_uid:
+          type: string
+          example: infra-folder
+        resource_ids:
+          type: array
+          items:
+            type: string
+          example: [res-001, res-002, res-003]
+        team_id:
+          type: string
+          example: team-sre
+        owner_id:
+          type: string
+          example: usr-001
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+
+    DashboardCreate:
+      type: object
+      required: [name, type, category]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        type:
+          type: string
+          enum: [built-in, custom, grafana]
+        category:
+          type: string
+        description:
+          type: string
+        owner:
+          type: string
+        team_id:
+          type: string
+        grafana_dashboard_uid:
+          type: string
+        grafana_folder_uid:
+          type: string
+        resource_ids:
+          type: array
+          items:
+            type: string
+
+    DashboardUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        resource_ids:
+          type: array
+          items:
+            type: string
+
+    # ===================
+    # Incident
+    # ===================
+    Incident:
+      type: object
+      required: [id, summary, resource, resource_id, rule_id, status, severity, created_at]
+      properties:
+        id:
+          type: string
+          example: INC-001
+        summary:
+          type: string
+          example: API 延遲超過閾值
+        resource:
+          type: string
+          example: api-server-01
+        resource_id:
+          type: string
+          example: res-001
+        rule:
+          type: string
+          example: API 延遲規則
+        rule_id:
+          type: string
+          example: rule-002
+        status:
+          type: string
+          enum: [New, Acknowledged, Investigating, Resolved, Closed]
+          example: New
+        severity:
+          type: string
+          enum: [Critical, Warning, Info]
+          example: Warning
+        impact:
+          type: string
+          enum: [High, Medium, Low]
+          example: High
+        assignee:
+          type: string
+          example: 張三
+        team_id:
+          type: string
+          example: team-001
+        owner_id:
+          type: string
+          example: usr-001
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            env: production
+            service: api-gateway
+            team: SRE Platform
+        occurred_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:35:00Z"
+        acknowledged_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        silenced_by:
+          type: string
+          nullable: true
+          example: null
+        notifications_sent:
+          type: array
+          items:
+            type: object
+          example: []
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              timestamp:
+                type: string
+                format: date-time
+              user:
+                type: string
+              action:
+                type: string
+              details:
+                type: string
+          example:
+            - timestamp: "2024-01-15T10:30:00Z"
+              user: "System"
+              action: "Created"
+              details: "Incident created from rule 'API 延遲規則'"
+
+    IncidentCreate:
+      type: object
+      required: [resource_id, rule_id, summary, severity]
+      properties:
+        resource_id:
+          type: string
+        rule_id:
+          type: string
+        summary:
+          type: string
+          minLength: 1
+          maxLength: 500
+        severity:
+          type: string
+          enum: [Critical, Warning, Info]
+        impact:
+          type: string
+          enum: [High, Medium, Low]
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+
+    IncidentUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [New, Acknowledged, Investigating, Resolved, Closed]
+        assignee:
+          type: string
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+
+    # ===================
+    # Alert Rule
+    # ===================
+    AlertRule:
+      type: object
+      required: [id, name, enabled, severity, created_at]
+      properties:
+        id:
+          type: string
+          example: rule-cpu-high
+        name:
+          type: string
+          example: CPU 使用率過高規則
+        enabled:
+          type: boolean
+          example: true
+        severity:
+          type: string
+          enum: [critical, high, medium, low, info]
+          example: high
+        conditions_summary:
+          type: string
+          example: "CPU usage > 80% for 5 minutes"
+        automation_enabled:
+          type: boolean
+          example: true
+        target_resource_ids:
+          type: array
+          items:
+            type: string
+          example: [res-001, res-002]
+        target_scope:
+          type: string
+          enum: [all, specific, group]
+          example: specific
+        triggered_count:
+          type: integer
+          example: 15
+        version:
+          type: integer
+          example: 2
+        condition_groups:
+          type: array
+          items:
+            type: object
+            properties:
+              operator:
+                type: string
+                enum: [AND, OR]
+              conditions:
+                type: array
+                items:
+                  type: object
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    AlertRuleCreate:
+      type: object
+      required: [name, severity]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        enabled:
+          type: boolean
+          default: true
+        severity:
+          type: string
+          enum: [critical, high, medium, low, info]
+        conditions_summary:
+          type: string
+        automation_enabled:
+          type: boolean
+          default: false
+        target_resource_ids:
+          type: array
+          items:
+            type: string
+        condition_groups:
+          type: array
+          items:
+            type: object
+
+    AlertRuleUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        enabled:
+          type: boolean
+        severity:
+          type: string
+          enum: [critical, high, medium, low, info]
+        automation_enabled:
+          type: boolean
+
+    # ===================
+    # Resource
+    # ===================
+    Resource:
+      type: object
+      required: [id, name, type, status, created_at]
+      properties:
+        id:
+          type: string
+          example: res-web-001
+        name:
+          type: string
+          example: web-server-01
+        type:
+          type: string
+          example: VM
+        status:
+          type: string
+          enum: [healthy, warning, critical, offline, unknown]
+          example: healthy
+        provider:
+          type: string
+          example: AWS
+        region:
+          type: string
+          example: us-east-1
+        ip:
+          type: string
+          example: 10.0.1.100
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            env: production
+            tier: web
+        datasource_id:
+          type: string
+          example: ds-prometheus-01
+        metrics:
+          type: object
+          example:
+            cpu: 45.2
+            memory: 67.8
+            disk: 52.1
+        last_check_in:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:45:00Z"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    ResourceCreate:
+      type: object
+      required: [name, type]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        type:
+          type: string
+        provider:
+          type: string
+        region:
+          type: string
+        ip:
+          type: string
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+        datasource_id:
+          type: string
+
+    ResourceUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+          enum: [healthy, warning, critical, offline, unknown]
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+        metrics:
+          type: object
+
+    # ===================
+    # Batch Result
+    # ===================
+    BatchResult:
+      type: object
+      required: [success, updated]
+      properties:
+        success:
+          type: boolean
+          example: true
+        updated:
+          type: integer
+          example: 5
+        skipped_ids:
+          type: array
+          items:
+            type: string
+          example: [INC-003, INC-005]
+        message:
+          type: string
+          example: "Successfully updated 5 items, skipped 2"

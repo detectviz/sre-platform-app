@@ -1,0 +1,209 @@
+# Analysis & AI Schemas
+components:
+  schemas:
+    # ===================
+    # Incident Analysis
+    # ===================
+    IncidentAnalysis:
+      type: object
+      properties:
+        summary:
+          type: string
+          example: "根據當前資料分析，此事件由 API 服務延遲引起"
+        root_cause:
+          type: string
+          example: "後端資料庫連接池耗盡，導致新請求排隊等待"
+        impact_assessment:
+          type: string
+          example: "影響約 15% 的用戶請求，平均延遲增加 3.5 秒"
+        recommended_actions:
+          type: array
+          items:
+            type: string
+          example:
+            - "立即增加資料庫連接池大小"
+            - "重啟受影響的 API 服務實例"
+            - "啟用流量限制保護機制"
+        related_incidents:
+          type: array
+          items:
+            type: string
+          example: [INC-045, INC-032]
+        confidence_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          example: 0.87
+        analysis_time:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:35:00Z"
+
+    # ===================
+    # Resource Analysis
+    # ===================
+    ResourceAnalysis:
+      type: object
+      properties:
+        resource_id:
+          type: string
+          example: res-web-001
+        resource_name:
+          type: string
+          example: web-server-01
+        risk_level:
+          type: string
+          enum: [low, medium, high, critical]
+          example: medium
+        risk_analysis:
+          type: string
+          example: "CPU 使用率持續偏高，可能在高峰期出現性能問題"
+        optimization_suggestions:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [performance, cost, security, reliability]
+              priority:
+                type: string
+                enum: [low, medium, high, critical]
+              suggestion:
+                type: string
+              estimated_impact:
+                type: string
+          example:
+            - type: performance
+              priority: high
+              suggestion: "建議增加 CPU 核心數從 2 核升級到 4 核"
+              estimated_impact: "預計可降低 CPU 使用率 40%"
+            - type: cost
+              priority: medium
+              suggestion: "考慮使用保留實例降低成本"
+              estimated_impact: "預計可節省 30% 運算成本"
+        predicted_issues:
+          type: array
+          items:
+            type: object
+            properties:
+              issue_type:
+                type: string
+              probability:
+                type: number
+                format: float
+              timeframe:
+                type: string
+              description:
+                type: string
+          example:
+            - issue_type: capacity
+              probability: 0.75
+              timeframe: "未來 7 天內"
+              description: "磁碟空間可能在未來一週內達到 90%"
+        confidence_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          example: 0.82
+        analysis_time:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:40:00Z"
+
+    # ===================
+    # Multi-Incident Analysis
+    # ===================
+    MultiIncidentAnalysis:
+      type: object
+      properties:
+        incident_ids:
+          type: array
+          items:
+            type: string
+          example: [INC-001, INC-002, INC-003]
+        correlation_found:
+          type: boolean
+          example: true
+        correlation_summary:
+          type: string
+          example: "這些事件都與同一個資料庫服務器相關"
+        common_root_cause:
+          type: string
+          example: "資料庫主節點性能下降"
+        timeline:
+          type: array
+          items:
+            type: object
+            properties:
+              timestamp:
+                type: string
+                format: date-time
+              incident_id:
+                type: string
+              event:
+                type: string
+        recommended_actions:
+          type: array
+          items:
+            type: string
+        confidence_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+
+    # ===================
+    # Log Analysis
+    # ===================
+    LogAnalysis:
+      type: object
+      properties:
+        query:
+          type: string
+          example: "error AND service:api"
+        time_range:
+          type: object
+          properties:
+            start:
+              type: string
+              format: date-time
+            end:
+              type: string
+              format: date-time
+        total_logs:
+          type: integer
+          example: 15420
+        error_count:
+          type: integer
+          example: 234
+        warning_count:
+          type: integer
+          example: 1567
+        patterns_found:
+          type: array
+          items:
+            type: object
+            properties:
+              pattern:
+                type: string
+              count:
+                type: integer
+              severity:
+                type: string
+          example:
+            - pattern: "Connection timeout"
+              count: 89
+              severity: error
+            - pattern: "Slow query detected"
+              count: 145
+              severity: warning
+        anomalies:
+          type: array
+          items:
+            type: object
+        insights:
+          type: string
+          example: "檢測到異常的連接超時錯誤激增，建議檢查網絡連接"

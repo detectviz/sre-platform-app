@@ -68,8 +68,8 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
           .catch(err => console.error("Failed to fetch users for filter", err));
       }
       if (page === 'automation-history') {
-        api.get<AutomationPlaybook[]>('/automation/scripts')
-          .then(res => setPlaybooks(res.data))
+        api.get<{ items: AutomationPlaybook[], total: number }>('/automation/scripts')
+          .then(res => setPlaybooks(res.data.items))
           .catch(err => console.error("Failed to fetch playbooks for filter", err));
       }
     }

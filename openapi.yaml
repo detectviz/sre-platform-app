@@ -1,0 +1,1835 @@
+openapi: 3.0.0
+info:
+  title: SRE Platform API
+  version: 1.0.0
+  description: |
+    Comprehensive SRE Platform API for incident management, resource monitoring, automation, and system observability.
+
+    ## Features
+    - 📊 Dashboard Management
+    - 🚨 Incident & Alert Management
+    - 🔧 Resource & Topology Management
+    - 🤖 Automation & Playbooks
+    - 📈 Analysis & Insights
+    - 👥 IAM & Access Control
+    - 📢 Notification Management
+    - ⚙️ System Settings
+
+  contact:
+    name: SRE Platform Team
+    email: sre@example.com
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:4000/api/v1
+    description: Development server
+  - url: https://api.sre-platform.example.com/api/v1
+    description: Production server
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Dashboards
+    description: Dashboard management and visualization
+  - name: Incidents
+    description: Incident tracking and management
+  - name: Alert Rules
+    description: Alert rule configuration
+  - name: Silence Rules
+    description: Alert silence management
+  - name: Resources
+    description: Resource inventory and monitoring
+  - name: Resource Groups
+    description: Resource grouping and organization
+  - name: Resource Links
+    description: Resource topology and relationships
+  - name: Automation
+    description: Automation playbooks and executions
+  - name: IAM
+    description: Identity and access management
+  - name: Notifications
+    description: Notification channels and strategies
+  - name: Analysis
+    description: AI-powered analysis and insights
+  - name: Settings
+    description: System configuration and preferences
+  - name: System
+    description: System information and utilities
+
+paths:
+  # ===================
+  # Dashboards
+  # ===================
+  /dashboards:
+    get:
+      tags: [Dashboards]
+      summary: List dashboards
+      description: Retrieve a paginated list of dashboards with optional filtering
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [built-in, custom, grafana]
+        - name: category
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                    example: 1
+                  page_size:
+                    type: integer
+                    example: 20
+                  total:
+                    type: integer
+                    example: 45
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Dashboard'
+
+    post:
+      tags: [Dashboards]
+      summary: Create dashboard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DashboardCreate'
+      responses:
+        '201':
+          description: Dashboard created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /dashboards/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [Dashboards]
+      summary: Get dashboard by ID
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags: [Dashboards]
+      summary: Update dashboard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DashboardUpdate'
+      responses:
+        '200':
+          description: Dashboard updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Dashboards]
+      summary: Delete dashboard (soft delete)
+      responses:
+        '204':
+          description: Dashboard deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /dashboards/batch-actions:
+    post:
+      tags: [Dashboards]
+      summary: Batch dashboard operations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, dashboard_ids]
+              properties:
+                action:
+                  type: string
+                  enum: [delete]
+                dashboard_ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Batch operation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResult'
+
+  # ===================
+  # Incidents
+  # ===================
+  /incidents:
+    get:
+      tags: [Incidents]
+      summary: List incidents
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [New, Acknowledged, Investigating, Resolved, Closed]
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [Critical, Warning, Info]
+        - name: assignee
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Incident'
+
+    post:
+      tags: [Incidents]
+      summary: Create incident
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentCreate'
+      responses:
+        '201':
+          description: Incident created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incident'
+
+  /incidents/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [Incidents]
+      summary: Get incident by ID
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incident'
+
+    patch:
+      tags: [Incidents]
+      summary: Update incident
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentUpdate'
+      responses:
+        '200':
+          description: Incident updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incident'
+
+    delete:
+      tags: [Incidents]
+      summary: Delete incident
+      responses:
+        '204':
+          description: Incident deleted
+
+  /incidents/batch-close:
+    post:
+      tags: [Incidents]
+      summary: Batch close incidents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [incident_ids]
+              properties:
+                incident_ids:
+                  type: array
+                  items:
+                    type: string
+                resolution_note:
+                  type: string
+      responses:
+        '200':
+          description: Batch close completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResult'
+
+  /incidents/batch-assign:
+    post:
+      tags: [Incidents]
+      summary: Batch assign incidents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [incident_ids]
+              properties:
+                incident_ids:
+                  type: array
+                  items:
+                    type: string
+                assignee_id:
+                  type: string
+                assignee_name:
+                  type: string
+      responses:
+        '200':
+          description: Batch assign completed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BatchResult'
+                  - type: object
+                    properties:
+                      assignee:
+                        type: string
+                      assignee_id:
+                        type: string
+
+  /incidents/batch-ignore:
+    post:
+      tags: [Incidents]
+      summary: Batch ignore incidents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [incident_ids]
+              properties:
+                incident_ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Batch ignore completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResult'
+
+  # ===================
+  # Alert Rules
+  # ===================
+  /alert-rules:
+    get:
+      tags: [Alert Rules]
+      summary: List alert rules
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: enabled
+          in: query
+          schema:
+            type: boolean
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [critical, high, medium, low, info]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AlertRule'
+
+    post:
+      tags: [Alert Rules]
+      summary: Create alert rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertRuleCreate'
+      responses:
+        '201':
+          description: Alert rule created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertRule'
+
+  /alert-rules/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    patch:
+      tags: [Alert Rules]
+      summary: Update alert rule
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertRuleUpdate'
+      responses:
+        '200':
+          description: Alert rule updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertRule'
+
+    delete:
+      tags: [Alert Rules]
+      summary: Delete alert rule (soft delete)
+      responses:
+        '204':
+          description: Alert rule deleted
+
+  /alert-rules/batch-actions:
+    post:
+      tags: [Alert Rules]
+      summary: Batch alert rule operations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, rule_ids]
+              properties:
+                action:
+                  type: string
+                  enum: [delete, enable, disable]
+                rule_ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Batch operation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResult'
+
+  # ===================
+  # Resources
+  # ===================
+  /resources:
+    get:
+      tags: [Resources]
+      summary: List resources
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [healthy, warning, critical, offline, unknown]
+        - name: provider
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Resource'
+
+    post:
+      tags: [Resources]
+      summary: Create resource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourceCreate'
+      responses:
+        '201':
+          description: Resource created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resource'
+
+  /resources/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [Resources]
+      summary: Get resource by ID
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resource'
+
+    patch:
+      tags: [Resources]
+      summary: Update resource
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourceUpdate'
+      responses:
+        '200':
+          description: Resource updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resource'
+
+    delete:
+      tags: [Resources]
+      summary: Delete resource (soft delete)
+      responses:
+        '204':
+          description: Resource deleted
+
+  /resources/batch-tags:
+    post:
+      tags: [Resources]
+      summary: Batch tag resources
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [resource_ids, tags]
+              properties:
+                resource_ids:
+                  type: array
+                  items:
+                    type: string
+                tags:
+                  type: object
+                  additionalProperties:
+                    type: string
+      responses:
+        '200':
+          description: Batch tagging completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResult'
+
+  /resources/batch-actions:
+    post:
+      tags: [Resources]
+      summary: Batch resource operations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, resource_ids]
+              properties:
+                action:
+                  type: string
+                  enum: [delete]
+                resource_ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Batch operation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResult'
+
+  # ===================
+  # Automation
+  # ===================
+  /automation/scripts:
+    get:
+      tags: [Automation]
+      summary: List automation playbooks
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [shell, python, ansible, terraform]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AutomationPlaybook'
+
+    post:
+      tags: [Automation]
+      summary: Create automation playbook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutomationPlaybookCreate'
+      responses:
+        '201':
+          description: Playbook created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutomationPlaybook'
+
+  /automation/scripts/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    patch:
+      tags: [Automation]
+      summary: Update automation playbook
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutomationPlaybookUpdate'
+      responses:
+        '200':
+          description: Playbook updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutomationPlaybook'
+
+    delete:
+      tags: [Automation]
+      summary: Delete playbook (soft delete)
+      responses:
+        '204':
+          description: Playbook deleted
+
+  /automation/executions:
+    get:
+      tags: [Automation]
+      summary: List automation executions
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, running, success, failed]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AutomationExecution'
+
+  /automation/triggers:
+    get:
+      tags: [Automation]
+      summary: List automation triggers
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AutomationTrigger'
+
+    post:
+      tags: [Automation]
+      summary: Create automation trigger
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutomationTriggerCreate'
+      responses:
+        '201':
+          description: Trigger created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutomationTrigger'
+
+  # ===================
+  # IAM - Users
+  # ===================
+  /iam/users:
+    get:
+      tags: [IAM]
+      summary: List users
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [Admin, SRE, Developer, Viewer]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+
+    post:
+      tags: [IAM]
+      summary: Create user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /iam/teams:
+    get:
+      tags: [IAM]
+      summary: List teams
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Team'
+
+  /iam/roles:
+    get:
+      tags: [IAM]
+      summary: List roles
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+
+  # ===================
+  # Notifications
+  # ===================
+  /settings/notification-channels:
+    get:
+      tags: [Notifications]
+      summary: List notification channels
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [Email, Webhook, Slack, LINE Notify, SMS]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NotificationChannel'
+
+    post:
+      tags: [Notifications]
+      summary: Create notification channel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationChannelCreate'
+      responses:
+        '201':
+          description: Channel created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationChannel'
+
+  /settings/notification-strategies:
+    get:
+      tags: [Notifications]
+      summary: List notification strategies
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NotificationStrategy'
+
+    post:
+      tags: [Notifications]
+      summary: Create notification strategy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationStrategyCreate'
+      responses:
+        '201':
+          description: Strategy created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationStrategy'
+
+  # ===================
+  # Analysis & AI
+  # ===================
+  /ai/incident-analysis:
+    post:
+      tags: [Analysis]
+      summary: Analyze incident with AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [incident_id]
+              properties:
+                incident_id:
+                  type: string
+      responses:
+        '200':
+          description: Analysis completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentAnalysis'
+
+  /ai/resource-analysis:
+    post:
+      tags: [Analysis]
+      summary: Analyze resource with AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [resource_id]
+              properties:
+                resource_id:
+                  type: string
+      responses:
+        '200':
+          description: Analysis completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceAnalysis'
+
+  # ===================
+  # System
+  # ===================
+  /me:
+    get:
+      tags: [System]
+      summary: Get current user info
+      responses:
+        '200':
+          description: Current user information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /system/health:
+    get:
+      tags: [System]
+      summary: Get system health status
+      responses:
+        '200':
+          description: System health
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, degraded, down]
+                  timestamp:
+                    type: string
+                    format: date-time
+
+# ===================
+# Components
+# ===================
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT authentication token
+
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Resource ID
+
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: Page number
+
+    PageSizeParam:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: Number of items per page
+
+    SortByParam:
+      name: sort_by
+      in: query
+      schema:
+        type: string
+        default: created_at
+      description: Field to sort by
+
+    SortOrderParam:
+      name: sort_order
+      in: query
+      schema:
+        type: string
+        enum: [asc, desc]
+        default: desc
+      description: Sort order
+
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Invalid request parameters
+
+    NotFound:
+      description: Resource Not Found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Resource not found
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Authentication required
+
+  schemas:
+    # ===================
+    # Core Entities
+    # ===================
+    Dashboard:
+      type: object
+      required: [id, name, type, category, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          example: dash-001
+        name:
+          type: string
+          example: Production Overview
+        type:
+          type: string
+          enum: [built-in, custom, grafana]
+          example: grafana
+        category:
+          type: string
+          example: Infrastructure
+        description:
+          type: string
+        owner:
+          type: string
+        path:
+          type: string
+        grafana_url:
+          type: string
+          format: uri
+        grafana_dashboard_uid:
+          type: string
+        grafana_folder_uid:
+          type: string
+        resource_ids:
+          type: array
+          items:
+            type: string
+        team_id:
+          type: string
+        owner_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    DashboardCreate:
+      type: object
+      required: [name, type, category]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [built-in, custom, grafana]
+        category:
+          type: string
+        description:
+          type: string
+        owner:
+          type: string
+        team_id:
+          type: string
+        grafana_dashboard_uid:
+          type: string
+
+    DashboardUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+
+    Incident:
+      type: object
+      required: [id, summary, resource, resource_id, rule_id, status, severity, created_at]
+      properties:
+        id:
+          type: string
+          example: INC-001
+        summary:
+          type: string
+          example: High CPU usage detected
+        resource:
+          type: string
+          example: web-server-01
+        resource_id:
+          type: string
+          example: res-001
+        rule:
+          type: string
+        rule_id:
+          type: string
+        status:
+          type: string
+          enum: [New, Acknowledged, Investigating, Resolved, Closed]
+          example: New
+        severity:
+          type: string
+          enum: [Critical, Warning, Info]
+          example: Warning
+        impact:
+          type: string
+          enum: [High, Medium, Low]
+        assignee:
+          type: string
+        team_id:
+          type: string
+        owner_id:
+          type: string
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+        occurred_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        acknowledged_at:
+          type: string
+          format: date-time
+          nullable: true
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+        silenced_by:
+          type: string
+          nullable: true
+        notifications_sent:
+          type: array
+          items:
+            type: object
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              timestamp:
+                type: string
+                format: date-time
+              user:
+                type: string
+              action:
+                type: string
+              details:
+                type: string
+
+    IncidentCreate:
+      type: object
+      required: [resource_id, rule_id, summary, severity]
+      properties:
+        resource_id:
+          type: string
+        rule_id:
+          type: string
+        summary:
+          type: string
+        severity:
+          type: string
+          enum: [Critical, Warning, Info]
+        impact:
+          type: string
+          enum: [High, Medium, Low]
+        tags:
+          type: object
+
+    IncidentUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [New, Acknowledged, Investigating, Resolved, Closed]
+        assignee:
+          type: string
+        tags:
+          type: object
+
+    AlertRule:
+      type: object
+      required: [id, name, enabled, severity, created_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        enabled:
+          type: boolean
+        severity:
+          type: string
+          enum: [critical, high, medium, low, info]
+        conditions_summary:
+          type: string
+        automation_enabled:
+          type: boolean
+        target_resource_ids:
+          type: array
+          items:
+            type: string
+        target_scope:
+          type: string
+        triggered_count:
+          type: integer
+        version:
+          type: integer
+        condition_groups:
+          type: array
+          items:
+            type: object
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    AlertRuleCreate:
+      type: object
+      required: [name, severity]
+      properties:
+        name:
+          type: string
+        enabled:
+          type: boolean
+          default: true
+        severity:
+          type: string
+          enum: [critical, high, medium, low, info]
+        conditions_summary:
+          type: string
+        automation_enabled:
+          type: boolean
+
+    AlertRuleUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        enabled:
+          type: boolean
+        severity:
+          type: string
+
+    Resource:
+      type: object
+      required: [id, name, type, status, created_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        status:
+          type: string
+          enum: [healthy, warning, critical, offline, unknown]
+        provider:
+          type: string
+        region:
+          type: string
+        ip:
+          type: string
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+        datasource_id:
+          type: string
+        metrics:
+          type: object
+        last_check_in:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    ResourceCreate:
+      type: object
+      required: [name, type]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        provider:
+          type: string
+        region:
+          type: string
+        ip:
+          type: string
+        tags:
+          type: object
+
+    ResourceUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+        tags:
+          type: object
+
+    AutomationPlaybook:
+      type: object
+      required: [id, name, type, content, created_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [shell, python, ansible, terraform]
+        content:
+          type: string
+        description:
+          type: string
+        parameters:
+          type: array
+          items:
+            type: object
+        last_run_at:
+          type: string
+          format: date-time
+        last_run_status:
+          type: string
+        run_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    AutomationPlaybookCreate:
+      type: object
+      required: [name, type, content]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [shell, python, ansible, terraform]
+        content:
+          type: string
+        description:
+          type: string
+
+    AutomationPlaybookUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        content:
+          type: string
+        description:
+          type: string
+
+    AutomationExecution:
+      type: object
+      required: [id, script_id, script_name, trigger_source, triggered_by, status, start_time]
+      properties:
+        id:
+          type: string
+        script_id:
+          type: string
+        script_name:
+          type: string
+        incident_id:
+          type: string
+        alert_rule_id:
+          type: string
+        target_resource_id:
+          type: string
+        trigger_source:
+          type: string
+          enum: [manual, event, schedule, webhook]
+        triggered_by:
+          type: string
+        status:
+          type: string
+          enum: [pending, running, success, failed]
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        duration_ms:
+          type: integer
+        output:
+          type: string
+        error:
+          type: string
+        resolved_incident:
+          type: boolean
+
+    AutomationTrigger:
+      type: object
+      required: [id, name, type, enabled, target_playbook_id, created_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [Schedule, Webhook, Event]
+        enabled:
+          type: boolean
+        target_playbook_id:
+          type: string
+        cron:
+          type: string
+        webhook_url:
+          type: string
+        event_conditions:
+          type: object
+        last_triggered_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    AutomationTriggerCreate:
+      type: object
+      required: [name, type, enabled, target_playbook_id]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [Schedule, Webhook, Event]
+        enabled:
+          type: boolean
+        target_playbook_id:
+          type: string
+        cron:
+          type: string
+        event_conditions:
+          type: object
+
+    User:
+      type: object
+      required: [id, name, email, role, team, status, created_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [Admin, SRE, Developer, Viewer]
+        team:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive]
+        avatar:
+          type: string
+        last_login_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    UserCreate:
+      type: object
+      required: [name, email, role, team]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [Admin, SRE, Developer, Viewer]
+        team:
+          type: string
+
+    Team:
+      type: object
+      required: [id, name, created_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        owner_id:
+          type: string
+        member_ids:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    Role:
+      type: object
+      required: [id, name, permissions, created_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+        user_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    NotificationChannel:
+      type: object
+      required: [id, name, type, enabled, created_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [Email, Webhook (通用), Slack, LINE Notify, SMS]
+        enabled:
+          type: boolean
+        config:
+          type: object
+        last_test_result:
+          type: string
+        last_tested_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    NotificationChannelCreate:
+      type: object
+      required: [name, type, enabled, config]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [Email, Webhook (通用), Slack, LINE Notify, SMS]
+        enabled:
+          type: boolean
+        config:
+          type: object
+
+    NotificationStrategy:
+      type: object
+      required: [id, name, enabled, trigger_condition, created_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        enabled:
+          type: boolean
+        trigger_condition:
+          type: string
+        severity_levels:
+          type: array
+          items:
+            type: string
+        impact_levels:
+          type: array
+          items:
+            type: string
+        channel_ids:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    NotificationStrategyCreate:
+      type: object
+      required: [name, enabled, trigger_condition]
+      properties:
+        name:
+          type: string
+        enabled:
+          type: boolean
+        trigger_condition:
+          type: string
+        severity_levels:
+          type: array
+          items:
+            type: string
+        channel_ids:
+          type: array
+          items:
+            type: string
+
+    IncidentAnalysis:
+      type: object
+      properties:
+        summary:
+          type: string
+        root_cause:
+          type: string
+        impact_assessment:
+          type: string
+        recommended_actions:
+          type: array
+          items:
+            type: string
+        related_incidents:
+          type: array
+          items:
+            type: string
+        confidence_score:
+          type: number
+          format: float
+
+    ResourceAnalysis:
+      type: object
+      properties:
+        resource_id:
+          type: string
+        resource_name:
+          type: string
+        risk_level:
+          type: string
+          enum: [low, medium, high, critical]
+        risk_analysis:
+          type: string
+        optimization_suggestions:
+          type: array
+          items:
+            type: object
+        predicted_issues:
+          type: array
+          items:
+            type: object
+
+    BatchResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        updated:
+          type: integer
+        skipped_ids:
+          type: array
+          items:
+            type: string

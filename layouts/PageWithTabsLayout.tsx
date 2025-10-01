@@ -10,12 +10,12 @@ import { useContentSection } from '../contexts/ContentContext';
 interface PageWithTabsLayoutProps {
   title: string;
   description: string;
-  kpiPageName: string;
+  kpi_page_name: string;
   tabs: { label: string; path: string; icon?: string }[];
   showRefresh?: boolean;
 }
 
-const PageWithTabsLayout: React.FC<PageWithTabsLayoutProps> = ({ title, description, kpiPageName, tabs, showRefresh = false }) => {
+const PageWithTabsLayout: React.FC<PageWithTabsLayoutProps> = ({ title, description, kpi_page_name, tabs, showRefresh = false }) => {
   const pageContent = useContentSection('PAGE_WITH_TABS');
 
   const handleRefresh = () => {
@@ -36,7 +36,7 @@ const PageWithTabsLayout: React.FC<PageWithTabsLayoutProps> = ({ title, descript
           </button>
         )}
       </div>
-      <PageKPIs pageName={kpiPageName} />
+      <PageKPIs pageName={kpi_page_name} />
       <Tabs tabs={tabs} />
       <div className="mt-6 flex-grow flex flex-col">
         <Outlet />

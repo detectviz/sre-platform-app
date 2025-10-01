@@ -1,0 +1,540 @@
+# Analysis & AI API Paths
+paths:
+  # ===================
+  # Incident Analysis
+  # ===================
+  /analysis/incidents/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Incident ID to analyze
+        schema:
+          type: string
+        example: INC-001
+
+    post:
+      tags: [Analysis]
+      summary: Analyze incident
+      description: Generate AI-powered analysis for a specific incident, including root cause analysis and recommendations
+      operationId: analyzeIncident
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                include_related:
+                  type: boolean
+                  default: true
+                  description: Include analysis of related incidents
+                time_window_hours:
+                  type: integer
+                  default: 24
+                  description: Time window for related incident analysis (in hours)
+            example:
+              include_related: true
+              time_window_hours: 48
+      responses:
+        '200':
+          description: Analysis completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentAnalysis'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          description: AI service unavailable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "AI analysis service is temporarily unavailable"
+
+  /analysis/incidents/multi:
+    post:
+      tags: [Analysis]
+      summary: Analyze multiple incidents
+      description: Analyze correlation and patterns across multiple incidents
+      operationId: analyzeMultipleIncidents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [incident_ids]
+              properties:
+                incident_ids:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 2
+                  description: List of incident IDs to analyze together
+            example:
+              incident_ids: ["INC-001", "INC-002", "INC-003"]
+      responses:
+        '200':
+          description: Multi-incident analysis completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MultiIncidentAnalysis'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: One or more incidents not found
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          description: AI service unavailable
+
+  # ===================
+  # Resource Analysis
+  # ===================
+  /analysis/resources/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    post:
+      tags: [Analysis]
+      summary: Analyze resource
+      description: Generate AI-powered analysis for a specific resource, including risk assessment and optimization suggestions
+      operationId: analyzeResource
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                analysis_depth:
+                  type: string
+                  enum: [basic, detailed, comprehensive]
+                  default: detailed
+                  description: Depth of analysis to perform
+                time_window_days:
+                  type: integer
+                  default: 7
+                  description: Historical data time window (in days)
+            example:
+              analysis_depth: comprehensive
+              time_window_days: 14
+      responses:
+        '200':
+          description: Analysis completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceAnalysis'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          description: AI service unavailable
+
+  /analysis/resources/batch:
+    post:
+      tags: [Analysis]
+      summary: Batch analyze resources
+      description: Analyze multiple resources and provide comparative insights
+      operationId: batchAnalyzeResources
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [resource_ids]
+              properties:
+                resource_ids:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+                  description: List of resource IDs to analyze
+                analysis_depth:
+                  type: string
+                  enum: [basic, detailed, comprehensive]
+                  default: basic
+            example:
+              resource_ids: ["res-001", "res-002", "res-003"]
+              analysis_depth: detailed
+      responses:
+        '200':
+          description: Batch analysis completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  analyses:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ResourceAnalysis'
+                  summary:
+                    type: object
+                    properties:
+                      total_resources:
+                        type: integer
+                      high_risk_count:
+                        type: integer
+                      recommendations_count:
+                        type: integer
+                example:
+                  analyses: []
+                  summary:
+                    total_resources: 3
+                    high_risk_count: 1
+                    recommendations_count: 7
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: One or more resources not found
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ===================
+  # Log Analysis
+  # ===================
+  /analysis/logs:
+    post:
+      tags: [Analysis]
+      summary: Analyze logs
+      description: Perform AI-powered log analysis to detect patterns, anomalies, and insights
+      operationId: analyzeLogs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query, time_range]
+              properties:
+                query:
+                  type: string
+                  description: Log query string
+                time_range:
+                  type: object
+                  required: [start, end]
+                  properties:
+                    start:
+                      type: string
+                      format: date-time
+                    end:
+                      type: string
+                      format: date-time
+                resource_ids:
+                  type: array
+                  items:
+                    type: string
+                  description: Filter logs by specific resources
+                severity_filter:
+                  type: array
+                  items:
+                    type: string
+                    enum: [error, warning, info, debug]
+            example:
+              query: "error AND service:api"
+              time_range:
+                start: "2024-01-15T00:00:00Z"
+                end: "2024-01-15T23:59:59Z"
+              resource_ids: ["res-001", "res-002"]
+              severity_filter: ["error", "warning"]
+      responses:
+        '200':
+          description: Log analysis completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogAnalysis'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          description: AI service unavailable
+
+  # ===================
+  # Predictive Analysis
+  # ===================
+  /analysis/predict/capacity:
+    post:
+      tags: [Analysis]
+      summary: Predict capacity needs
+      description: Predict future capacity requirements based on historical data
+      operationId: predictCapacity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [resource_id]
+              properties:
+                resource_id:
+                  type: string
+                prediction_days:
+                  type: integer
+                  default: 30
+                  description: Number of days to predict into the future
+                metrics:
+                  type: array
+                  items:
+                    type: string
+                  description: Specific metrics to predict (cpu_usage, memory_usage, etc.)
+            example:
+              resource_id: "res-001"
+              prediction_days: 60
+              metrics: ["cpu_usage", "memory_usage", "disk_usage"]
+      responses:
+        '200':
+          description: Capacity prediction completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resource_id:
+                    type: string
+                  resource_name:
+                    type: string
+                  predictions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        metric:
+                          type: string
+                        current_value:
+                          type: number
+                        predicted_values:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              date:
+                                type: string
+                                format: date
+                              value:
+                                type: number
+                              confidence:
+                                type: number
+                        threshold_breach_date:
+                          type: string
+                          format: date
+                          nullable: true
+                        recommendation:
+                          type: string
+                example:
+                  resource_id: "res-001"
+                  resource_name: "web-server-01"
+                  predictions:
+                    - metric: "disk_usage"
+                      current_value: 68.5
+                      predicted_values:
+                        - date: "2024-02-15"
+                          value: 78.2
+                          confidence: 0.85
+                        - date: "2024-03-15"
+                          value: 87.9
+                          confidence: 0.72
+                      threshold_breach_date: "2024-03-10"
+                      recommendation: "建議在 2024-03-01 前增加磁碟容量"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /analysis/predict/incidents:
+    post:
+      tags: [Analysis]
+      summary: Predict potential incidents
+      description: Predict potential incidents based on current system state and historical patterns
+      operationId: predictIncidents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                resource_ids:
+                  type: array
+                  items:
+                    type: string
+                  description: Specific resources to analyze (if not provided, analyzes all)
+                time_horizon_hours:
+                  type: integer
+                  default: 24
+                  description: Prediction time horizon (in hours)
+                min_probability:
+                  type: number
+                  format: float
+                  default: 0.5
+                  minimum: 0
+                  maximum: 1
+                  description: Minimum probability threshold for predictions
+            example:
+              resource_ids: ["res-001", "res-002"]
+              time_horizon_hours: 48
+              min_probability: 0.7
+      responses:
+        '200':
+          description: Incident prediction completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  predictions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        resource_id:
+                          type: string
+                        resource_name:
+                          type: string
+                        predicted_issue:
+                          type: string
+                        probability:
+                          type: number
+                          format: float
+                        estimated_time:
+                          type: string
+                          format: date-time
+                        severity:
+                          type: string
+                          enum: [Critical, Warning, Info]
+                        preventive_actions:
+                          type: array
+                          items:
+                            type: string
+                  analysis_timestamp:
+                    type: string
+                    format: date-time
+                example:
+                  predictions:
+                    - resource_id: "res-001"
+                      resource_name: "web-server-01"
+                      predicted_issue: "CPU 使用率可能超過 90%"
+                      probability: 0.82
+                      estimated_time: "2024-01-16T14:30:00Z"
+                      severity: "Warning"
+                      preventive_actions:
+                        - "考慮增加 CPU 資源"
+                        - "檢查是否有異常進程"
+                  analysis_timestamp: "2024-01-15T10:00:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ===================
+  # Anomaly Detection
+  # ===================
+  /analysis/anomalies:
+    post:
+      tags: [Analysis]
+      summary: Detect anomalies
+      description: Detect anomalies in metrics and system behavior
+      operationId: detectAnomalies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [resource_ids, time_range]
+              properties:
+                resource_ids:
+                  type: array
+                  items:
+                    type: string
+                time_range:
+                  type: object
+                  required: [start, end]
+                  properties:
+                    start:
+                      type: string
+                      format: date-time
+                    end:
+                      type: string
+                      format: date-time
+                sensitivity:
+                  type: string
+                  enum: [low, medium, high]
+                  default: medium
+                  description: Anomaly detection sensitivity
+            example:
+              resource_ids: ["res-001", "res-002", "res-003"]
+              time_range:
+                start: "2024-01-14T00:00:00Z"
+                end: "2024-01-15T23:59:59Z"
+              sensitivity: high
+      responses:
+        '200':
+          description: Anomaly detection completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  anomalies:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        resource_id:
+                          type: string
+                        resource_name:
+                          type: string
+                        metric:
+                          type: string
+                        timestamp:
+                          type: string
+                          format: date-time
+                        actual_value:
+                          type: number
+                        expected_range:
+                          type: object
+                          properties:
+                            min:
+                              type: number
+                            max:
+                              type: number
+                        severity:
+                          type: string
+                          enum: [low, medium, high]
+                        description:
+                          type: string
+                  summary:
+                    type: object
+                    properties:
+                      total_anomalies:
+                        type: integer
+                      high_severity_count:
+                        type: integer
+                example:
+                  anomalies:
+                    - resource_id: "res-001"
+                      resource_name: "web-server-01"
+                      metric: "cpu_usage"
+                      timestamp: "2024-01-15T15:23:00Z"
+                      actual_value: 95.3
+                      expected_range:
+                        min: 30
+                        max: 70
+                      severity: high
+                      description: "CPU 使用率異常飆升，超出預期範圍"
+                  summary:
+                    total_anomalies: 5
+                    high_severity_count: 2
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'

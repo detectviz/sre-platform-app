@@ -1,0 +1,212 @@
+# IAM Schemas
+components:
+  schemas:
+    # ===================
+    # User
+    # ===================
+    User:
+      type: object
+      required: [id, name, email, role, team, status, created_at]
+      properties:
+        id:
+          type: string
+          example: usr-001
+        name:
+          type: string
+          example: 張三
+        email:
+          type: string
+          format: email
+          example: zhang.san@example.com
+        role:
+          type: string
+          enum: [Admin, SRE, Developer, Viewer]
+          example: SRE
+        team:
+          type: string
+          example: SRE 平台團隊
+        status:
+          type: string
+          enum: [active, inactive]
+          example: active
+        avatar:
+          type: string
+          format: uri
+          example: https://api.example.com/avatars/usr-001.png
+        last_login_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T09:00:00Z"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    UserCreate:
+      type: object
+      required: [name, email, role, team]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [Admin, SRE, Developer, Viewer]
+        team:
+          type: string
+
+    UserUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [Admin, SRE, Developer, Viewer]
+        team:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive]
+
+    # ===================
+    # Team
+    # ===================
+    Team:
+      type: object
+      required: [id, name, created_at]
+      properties:
+        id:
+          type: string
+          example: team-sre
+        name:
+          type: string
+          example: SRE 平台團隊
+        description:
+          type: string
+          example: 負責平台穩定性和可靠性
+        owner_id:
+          type: string
+          example: usr-001
+        member_ids:
+          type: array
+          items:
+            type: string
+          example: [usr-001, usr-002, usr-003]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    TeamCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+        owner_id:
+          type: string
+
+    TeamUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        owner_id:
+          type: string
+        member_ids:
+          type: array
+          items:
+            type: string
+
+    # ===================
+    # Role
+    # ===================
+    Role:
+      type: object
+      required: [id, name, permissions, created_at]
+      properties:
+        id:
+          type: string
+          example: role-sre-engineer
+        name:
+          type: string
+          example: SRE Engineer
+        description:
+          type: string
+          example: 具備系統監控、事件處理和自動化執行權限
+        permissions:
+          type: array
+          items:
+            type: string
+          example:
+            - incidents.read
+            - incidents.write
+            - resources.read
+            - automation.execute
+        user_count:
+          type: integer
+          example: 15
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    RoleCreate:
+      type: object
+      required: [name, permissions]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+          minItems: 1
+
+    RoleUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string

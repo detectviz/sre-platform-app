@@ -54,10 +54,10 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
 
             setIsLoading(true);
             Promise.all([
-                api.get<AutomationPlaybook[]>('/automation/scripts'),
+                api.get<{ items: AutomationPlaybook[], total: number }>('/automation/scripts'),
                 api.get<TagDefinition[]>('/settings/tags'),
             ]).then(([playbooksRes, tagsRes]) => {
-                setPlaybooks(playbooksRes.data);
+                setPlaybooks(playbooksRes.data.items);
                 setTagDefs(tagsRes.data);
 
                 const initialFormData = trigger || {

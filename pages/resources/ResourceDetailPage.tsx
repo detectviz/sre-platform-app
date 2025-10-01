@@ -53,33 +53,6 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resource_id }) 
     fetchResourceDetails();
   }, [fetchResourceDetails]);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <Icon name="loader-circle" className="w-8 h-8 animate-spin" />
-      </div>
-    );
-  }
-
-  if (error || !resource) {
-    return (
-      <div className="p-6 text-center text-red-400">
-        <Icon name="alert-circle" className="w-12 h-12 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold">資源載入失敗</h2>
-        <p>{error || `找不到 ID 為 "${resource_id}" 的資源。`}</p>
-      </div>
-    );
-  }
-
-  const getStatusPill = (status: Resource['status']) => {
-    switch (status) {
-      case 'healthy': return 'bg-green-500/20 text-green-400';
-      case 'warning': return 'bg-yellow-500/20 text-yellow-400';
-      case 'critical': return 'bg-red-500/20 text-red-400';
-      case 'offline': return 'bg-slate-500/20 text-slate-400';
-    }
-  };
-
   const toRgba = useCallback((hex: string, alpha: number) => {
     const sanitized = hex.replace('#', '');
     if (sanitized.length !== 6) return hex;
@@ -109,8 +82,35 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resource_id }) 
     grid: { left: '10%', right: '5%', top: '15%', bottom: '15%' },
   }), [toRgba]);
 
-  const cpuOption = useMemo(() => getMetricOption('CPU Usage', metrics?.cpu, chartTheme.capacity_planning.cpu), [chartTheme.capacity_planning.cpu, getMetricOption, metrics?.cpu]);
-  const memoryOption = useMemo(() => getMetricOption('Memory Usage', metrics?.memory, chartTheme.capacity_planning.memory), [chartTheme.capacity_planning.memory, getMetricOption, metrics?.memory]);
+  const cpuOption = useMemo(() => getMetricOption('CPU Usage', metrics?.cpu, chartTheme.capacity_planning?.cpu || '#38bdf8'), [chartTheme.capacity_planning?.cpu, getMetricOption, metrics?.cpu]);
+  const memoryOption = useMemo(() => getMetricOption('Memory Usage', metrics?.memory, chartTheme.capacity_planning?.memory || '#a78bfa'), [chartTheme.capacity_planning?.memory, getMetricOption, metrics?.memory]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Icon name="loader-circle" className="w-8 h-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error || !resource) {
+    return (
+      <div className="p-6 text-center text-red-400">
+        <Icon name="alert-circle" className="w-12 h-12 mx-auto mb-4" />
+        <h2 className="text-2xl font-bold">資源載入失敗</h2>
+        <p>{error || `找不到 ID 為 "${resource_id}" 的資源。`}</p>
+      </div>
+    );
+  }
+
+  const getStatusPill = (status: Resource['status']) => {
+    switch (status) {
+      case 'healthy': return 'bg-green-500/20 text-green-400';
+      case 'warning': return 'bg-yellow-500/20 text-yellow-400';
+      case 'critical': return 'bg-red-500/20 text-red-400';
+      case 'offline': return 'bg-slate-500/20 text-slate-400';
+    }
+  };
 
   return (
     <div className="flex flex-col h-full space-y-6">
