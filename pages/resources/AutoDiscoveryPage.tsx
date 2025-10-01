@@ -141,7 +141,7 @@ const AutoDiscoveryPage: React.FC = () => {
                                     <td className="px-6 py-4 font-medium text-white">{job.name}</td>
                                     <td className="px-6 py-4">{job.kind}</td>
                                     <td className="px-6 py-4 font-mono">{job.schedule}</td>
-                                    <td className="px-6 py-4">{job.lastRun}</td>
+                                    <td className="px-6 py-4">{job.last_run_at}</td>
                                     <td className="px-6 py-4">{getStatusIndicator(job.status)}</td>
                                     <td className="px-6 py-4 text-center space-x-1">
                                         <button onClick={() => handleViewResults(job)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="查看結果"><Icon name="list" className="w-4 h-4" /></button>

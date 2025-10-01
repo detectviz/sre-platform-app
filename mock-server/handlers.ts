@@ -116,18 +116,18 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
             }
             case 'POST /discovery': {
                 if (id === 'batch-ignore') {
-                    const { action, ids = [] } = body || {};
-                    if (!action || action !== 'ignore' || !Array.isArray(ids)) {
+                    const { action, resource_ids = [] } = body || {};
+                    if ((action && action !== 'ignore') || !Array.isArray(resource_ids)) {
                         throw { status: 400, message: 'Invalid payload for batch actions.' };
                     }
-                    ids.forEach((resourceId: string) => {
-                        const index = DB.discovered_resources.findIndex((res: any) => res.id === resourceId);
+                    resource_ids.forEach((resource_id: string) => {
+                        const index = DB.discovered_resources.findIndex((res: any) => res.id === resource_id);
                         if (index > -1) {
                             DB.discovered_resources[index].status = 'ignored';
                             DB.discovered_resources[index].ignored_at = new Date().toISOString();
                         }
                     });
-                    return { success: true, updated: ids.length };
+                    return { success: true, updated: resource_ids.length };
                 }
                 break;
             }
@@ -195,12 +195,12 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
             }
             case 'POST /me': {
                 if (id === 'change-password') {
-                    const { oldPassword, newPassword } = body;
+                    const { old_password, new_password } = body;
                     // Mock validation: In a real app, this would be a secure check.
-                    if (oldPassword === 'wrongpassword') {
+                    if (old_password === 'wrongpassword') {
                         throw { status: 400, message: '舊密碼不正確。' };
                     }
-                    if (!newPassword || newPassword.length < 6) {
+                    if (!new_password || new_password.length < 6) {
                         throw { status: 400, message: '新密碼長度至少需要 6 個字元。' };
                     }
                     // Success, return empty object which will result in a 204 No Content.
@@ -273,7 +273,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     return DB.log_analysis;
                 }
                 if (id === 'resources' && subId === 'analyze') {
-                    const { resourceIds } = body;
+                    const { resource_ids } = body;
                     // Mock: just return the same analysis regardless of input ids
                     return DB.resource_analysis;
                 }
@@ -1085,13 +1085,13 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     return { success: true, updated };
                 }
                 if (id === 'batch-tags') {
-                    const { resourceIds = [], tags = [] } = body || {};
-                    if (!Array.isArray(resourceIds) || !Array.isArray(tags)) {
+                    const { resource_ids = [], tags = [] } = body || {};
+                    if (!Array.isArray(resource_ids) || !Array.isArray(tags)) {
                         throw { status: 400, message: 'Invalid payload for batch tagging.' };
                     }
                     const cleanedTags = tags.filter((tag: any) => tag?.key && tag?.value);
-                    resourceIds.forEach((resourceId: string) => {
-                        const resourceIndex = DB.resources.findIndex((resource: any) => resource.id === resourceId);
+                    resource_ids.forEach((resource_id: string) => {
+                        const resourceIndex = DB.resources.findIndex((resource: any) => resource.id === resource_id);
                         if (resourceIndex > -1) {
                             cleanedTags.forEach((tag: any) => {
                                 const duplicate = DB.resources[resourceIndex].tags?.some((existing: any) => existing.key === tag.key && existing.value === tag.value);
@@ -1101,7 +1101,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                                 }
                             });
                         }
-                        const discoveryIndex = DB.discovered_resources.findIndex((res: any) => res.id === resourceId);
+                        const discoveryIndex = DB.discovered_resources.findIndex((res: any) => res.id === resource_id);
                         if (discoveryIndex > -1) {
                             cleanedTags.forEach((tag: any) => {
                                 const duplicate = DB.discovered_resources[discoveryIndex].tags.some((existing: any) => existing.key === tag.key && existing.value === tag.value);
@@ -1111,7 +1111,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                             });
                         }
                     });
-                    return { success: true, updated: resourceIds.length };
+                    return { success: true, updated: resource_ids.length };
                 }
                 if (id === 'datasources') {
                     if (subId === 'test' && !action) {
@@ -1161,7 +1161,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 if (id === 'discovery-jobs') {
                     if (subId === 'test' && !action) {
                         const success = Math.random() > 0.2;
-                        const discoveredCount = success ? Math.floor(Math.random() * 20) + 1 : 0;
+                        const discovered_count = success ? Math.floor(Math.random() * 20) + 1 : 0;
                         const warnings = [] as string[];
                         if (success && Math.random() > 0.7) {
                             warnings.push('部分節點需要額外憑證才能完成匯入。');
@@ -1169,18 +1169,18 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         const message = success
                             ? '測試掃描成功。'
                             : '測試掃描失敗，請檢查目標配置。';
-                        return { success, discoveredCount, message, warnings };
+                        return { success, discovered_count, message, warnings };
                     }
                     if (subId && action === 'run') {
-                        const jobId = subId;
-                        const jobIndex = DB.discovery_jobs.findIndex((j: any) => j.id === jobId);
+                        const job_id = subId;
+                        const jobIndex = DB.discovery_jobs.findIndex((j: any) => j.id === job_id);
                         if (jobIndex === -1) throw { status: 404 };
                         DB.discovery_jobs[jobIndex].status = 'running';
                         setTimeout(() => {
-                            const idx = DB.discovery_jobs.findIndex((j: any) => j.id === jobId);
+                            const idx = DB.discovery_jobs.findIndex((j: any) => j.id === job_id);
                             if (idx > -1) {
                                 DB.discovery_jobs[idx].status = Math.random() > 0.2 ? 'success' : 'partial_failure';
-                                DB.discovery_jobs[idx].last_run = new Date().toISOString();
+                                DB.discovery_jobs[idx].last_run_at = new Date().toISOString();
                             }
                         }, 3000);
                         return { message: 'Run triggered.' };
@@ -1196,7 +1196,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const newJob: DiscoveryJob = {
                         ...body,
                         id: `dj-${uuidv4()}`,
-                        last_run: 'N/A',
+                        last_run_at: 'N/A',
                         status: 'success',
                         kind: body?.kind || 'K8s',
                         target_config: body?.target_config || {},
@@ -1210,9 +1210,9 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     return newJob;
                 }
                 if (id === 'import-discovered') {
-                    const { discoveredResourceIds, jobId, deployAgent } = body;
-                    discoveredResourceIds.forEach((resId: string) => {
-                        const resIndex = DB.discovered_resources.findIndex((r: any) => r.id === resId);
+                    const { discovered_resource_ids, job_id, deploy_agent } = body;
+                    (discovered_resource_ids || []).forEach((res_id: string) => {
+                        const resIndex = DB.discovered_resources.findIndex((r: any) => r.id === res_id);
                         if (resIndex > -1) {
                             DB.discovered_resources[resIndex].status = 'imported';
                             const newResource = {
@@ -1223,9 +1223,9 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                                 provider: 'Discovered',
                                 region: 'N/A',
                                 owner: 'Unassigned',
-                                last_check_in: new Date().toISOString(),
-                                discovered_by_job_id: jobId,
-                                monitoring_agent: deployAgent ? 'node_exporter' : undefined
+                                last_check_in_at: new Date().toISOString(),
+                                discovered_by_job_id: job_id,
+                                monitoring_agent: deploy_agent ? 'node_exporter' : undefined
                             };
                             DB.resources.unshift(newResource);
                         }

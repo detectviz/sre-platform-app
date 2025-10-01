@@ -58,7 +58,7 @@ const ResourceListPage: React.FC = () => {
     const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
     const [analyzingResources, setAnalyzingResources] = useState<Resource[]>([]);
 
-    const { resourceId } = useParams<{ resourceId: string }>();
+    const { resource_id } = useParams<{ resource_id: string }>();
 
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
@@ -349,12 +349,12 @@ const ResourceListPage: React.FC = () => {
                 />
             </TableContainer>
             <Drawer
-                isOpen={!!resourceId}
+                isOpen={!!resource_id}
                 onClose={handleCloseDrawer}
-                title={resources.find(res => res.id === resourceId)?.name || "載入中..."}
+                title={resources.find(res => res.id === resource_id)?.name || "載入中..."}
                 width="w-3/5"
             >
-                {resourceId && <ResourceDetailPage resourceId={resourceId} />}
+                {resource_id && <ResourceDetailPage resource_id={resource_id} />}
             </Drawer>
             <UnifiedSearchModal
                 page="resources"

@@ -42,23 +42,23 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
   useEffect(() => {
     if (isOpen && autoDiscoveryOptions) {
       const defaultKind = (job?.kind as DiscoveryJobKind) || autoDiscoveryOptions.job_kinds[0] || 'K8s';
-      const defaultTemplate = job?.exporterBinding?.template_id || getDefaultTemplateForKind(defaultKind);
+      const defaultTemplate = job?.exporter_binding?.template_id || getDefaultTemplateForKind(defaultKind);
       const initialData: Partial<DiscoveryJob> = job
         ? {
             ...job,
             kind: job.kind,
-            targetConfig: job.targetConfig || {},
-            exporterBinding: job.exporterBinding || { template_id: defaultTemplate },
-            edgeGateway: job.edgeGateway || { enabled: false },
+            target_config: job.target_config || {},
+            exporter_binding: job.exporter_binding || { template_id: defaultTemplate },
+            edge_gateway: job.edge_gateway || { enabled: false },
             tags: job.tags || []
           }
         : {
             name: '',
             kind: defaultKind,
             schedule: '0 * * * *',
-            targetConfig: {},
-            exporterBinding: { template_id: defaultTemplate },
-            edgeGateway: { enabled: false },
+            target_config: {},
+            exporter_binding: { template_id: defaultTemplate },
+            edge_gateway: { enabled: false },
             tags: []
           };
       setFormData(initialData);
@@ -73,8 +73,8 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
     setFormData((prev) => ({
       ...prev,
       kind,
-      targetConfig: {},
-      exporterBinding: { template_id },
+      target_config: {},
+      exporter_binding: { template_id },
     }));
   };
 
@@ -89,27 +89,27 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
   const handleTargetConfigChange = (key: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
-      targetConfig: { ...(prev.targetConfig || {}), [key]: value },
+      target_config: { ...(prev.target_config || {}), [key]: value },
     }));
   };
 
   const handleExporterBindingChange = (updates: Partial<DiscoveryJobExporterBinding>) => {
     setFormData((prev) => {
-      const current = prev.exporterBinding || { template_id: getDefaultTemplateForKind((prev.kind as DiscoveryJobKind) || 'K8s') };
+      const current = prev.exporter_binding || { template_id: getDefaultTemplateForKind((prev.kind as DiscoveryJobKind) || 'K8s') };
       const nextBinding: DiscoveryJobExporterBinding = { ...current, ...updates };
       if (updates.template_id) {
         delete nextBinding.overrides_yaml;
         delete nextBinding.mib_profile_id;
       }
-      return { ...prev, exporterBinding: nextBinding };
+      return { ...prev, exporter_binding: nextBinding };
     });
   };
 
   const handleEdgeGatewayToggle = (enabled: boolean) => {
     setFormData((prev) => ({
       ...prev,
-      edgeGateway: enabled
-        ? { enabled, gatewayId: prev.edgeGateway?.gatewayId || edgeGateways[0]?.id }
+      edge_gateway: enabled
+        ? { enabled, gateway_id: prev.edge_gateway?.gateway_id || edgeGateways[0]?.id }
         : { enabled },
     }));
   };
@@ -139,12 +139,12 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
   };
 
   const handleSave = () => {
-    const exporterBinding: DiscoveryJobExporterBinding = formData.exporterBinding || { template_id: getDefaultTemplateForKind((formData.kind as DiscoveryJobKind) || 'K8s') };
+    const exporterBinding: DiscoveryJobExporterBinding = formData.exporter_binding || { template_id: getDefaultTemplateForKind((formData.kind as DiscoveryJobKind) || 'K8s') };
     const payload: Partial<DiscoveryJob> = {
       ...formData,
-      targetConfig: formData.targetConfig || {},
-      exporterBinding,
-      edgeGateway: formData.edgeGateway || { enabled: false },
+      target_config: formData.target_config || {},
+      exporter_binding: exporterBinding,
+      edge_gateway: formData.edge_gateway || { enabled: false },
       tags: formData.tags || [],
     };
     onSave(payload);
@@ -159,12 +159,12 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
     setIsTesting(true);
     try {
       const payload = {
-        jobId: formData.id,
+        job_id: formData.id,
         name: formData.name,
         kind: formData.kind,
-        targetConfig: formData.targetConfig || {},
-        exporterBinding: formData.exporterBinding,
-        edgeGateway: formData.edgeGateway,
+        target_config: formData.target_config || {},
+        exporter_binding: formData.exporter_binding,
+        edge_gateway: formData.edge_gateway,
       };
       const { data } = await api.post<DiscoveryTestResponse>('/resources/discovery-jobs/test', payload);
       const warnings = data.warnings?.length ? ` 注意事項：${data.warnings.join('；')}` : '';
@@ -205,7 +205,7 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
               </div>
               <textarea
                 rows={5}
-                value={(formData.targetConfig as any)?.kubeconfig || ''}
+                value={(formData.target_config as any)?.kubeconfig || ''}
                 onChange={(e) => handleTargetConfigChange('kubeconfig', e.target.value)}
                 className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm font-mono"
                 placeholder="在此貼上您的 kubeconfig YAML 或上傳檔案。"
@@ -219,7 +219,7 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
             <FormRow label="Community String">
               <input
                 type="text"
-                value={(formData.targetConfig as any)?.community || ''}
+                value={(formData.target_config as any)?.community || ''}
                 onChange={(e) => handleTargetConfigChange('community', e.target.value)}
                 className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
               />
@@ -227,7 +227,7 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
             <FormRow label="IP 範圍">
               <input
                 type="text"
-                value={(formData.targetConfig as any)?.ipRange || ''}
+                value={(formData.target_config as any)?.ip_range || ''}
                 onChange={(e) => handleTargetConfigChange('ipRange', e.target.value)}
                 placeholder="例如：10.1.0.0/24"
                 className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
@@ -240,7 +240,7 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
           <FormRow label="IP 範圍">
             <input
               type="text"
-              value={(formData.targetConfig as any)?.ipRange || ''}
+              value={(formData.target_config as any)?.ip_range || ''}
               onChange={(e) => handleTargetConfigChange('ipRange', e.target.value)}
               placeholder="例如：192.168.1.1/24"
               className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
@@ -252,7 +252,7 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
           <FormRow label="API Key">
             <input
               type="password"
-              value={(formData.targetConfig as any)?.apiKey || ''}
+              value={(formData.target_config as any)?.api_key || ''}
               onChange={(e) => handleTargetConfigChange('apiKey', e.target.value)}
               className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
             />
@@ -264,7 +264,7 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
   };
 
   const renderExporterBindingSection = () => {
-    const currentTemplateId = formData.exporterBinding?.template_id || 'none';
+    const currentTemplateId = formData.exporter_binding?.template_id || 'none';
     const templateMeta = exporterTemplates.find((tpl) => tpl.id === currentTemplateId);
     const availableProfiles = mibProfiles.filter((profile) => profile.template_id === currentTemplateId);
 
@@ -289,7 +289,7 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
         {templateMeta?.supports_mib_profile && (
           <FormRow label="MIB Profile">
             <select
-              value={formData.exporterBinding?.mib_profile_id || ''}
+              value={formData.exporter_binding?.mib_profile_id || ''}
               onChange={(e) => handleExporterBindingChange({ mib_profile_id: e.target.value || undefined })}
               className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
             >
@@ -309,7 +309,7 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
           <FormRow label="自訂覆寫 YAML">
             <textarea
               rows={5}
-              value={formData.exporterBinding?.overrides_yaml || ''}
+              value={formData.exporter_binding?.overrides_yaml || ''}
               onChange={(e) => handleExporterBindingChange({ overrides_yaml: e.target.value })}
               className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm font-mono"
               placeholder="可自訂 exporter 設定，例如額外的 metric_endpoints。"
@@ -321,7 +321,7 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
   };
 
   const renderEdgeGatewaySection = () => {
-    const enabled = formData.edgeGateway?.enabled || false;
+    const enabled = formData.edge_gateway?.enabled || false;
     return (
       <div className="space-y-3">
         <FormRow label="邊緣閘道 (Edge Gateway)">
@@ -337,10 +337,10 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
             </label>
             {enabled && (
               <select
-                value={formData.edgeGateway?.gatewayId || edgeGateways[0]?.id || ''}
+                value={formData.edge_gateway?.gateway_id || edgeGateways[0]?.id || ''}
                 onChange={(e) => setFormData((prev) => ({
                   ...prev,
-                  edgeGateway: { enabled: true, gatewayId: e.target.value },
+                  edge_gateway: { enabled: true, gateway_id: e.target.value },
                 }))}
                 className="bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
               >

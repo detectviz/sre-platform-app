@@ -7,7 +7,7 @@ import api from '../../services/api';
 import { useChartTheme } from '../../contexts/ChartThemeContext';
 
 interface ResourceDetailPageProps {
-  resourceId: string;
+  resource_id: string;
 }
 
 const InfoItem = ({ label, children }: { label: string; children?: React.ReactNode }) => (
@@ -17,7 +17,7 @@ const InfoItem = ({ label, children }: { label: string; children?: React.ReactNo
   </div>
 );
 
-const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resourceId }) => {
+const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resource_id }) => {
   const [resource, setResource] = useState<Resource | null>(null);
   const [relatedIncidents, setRelatedIncidents] = useState<Incident[]>([]);
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
@@ -27,15 +27,15 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resourceId }) =
   const { theme: chartTheme } = useChartTheme();
 
   const fetchResourceDetails = useCallback(async () => {
-    if (!resourceId) return;
+    if (!resource_id) return;
     setIsLoading(true);
     setError(null);
     try {
-      const resourceData = (await api.get<Resource>(`/resources/${resourceId}`)).data;
+      const resourceData = (await api.get<Resource>(`/resources/${resource_id}`)).data;
 
       const [incidentsRes, metricsRes] = await Promise.all([
         api.get<{ items: Incident[] }>('/incidents', { params: { resource_name: resourceData.name, page_size: 3 } }),
-        api.get<MetricsData>(`/resources/${resourceId}/metrics`)
+        api.get<MetricsData>(`/resources/${resource_id}/metrics`)
       ]);
 
       setResource(resourceData);
@@ -43,11 +43,11 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resourceId }) =
       setMetrics(metricsRes.data);
 
     } catch (err) {
-      setError(`無法獲取資源 ${resourceId} 的詳細資訊。`);
+      setError(`無法獲取資源 ${resource_id} 的詳細資訊。`);
     } finally {
       setIsLoading(false);
     }
-  }, [resourceId]);
+  }, [resource_id]);
 
   useEffect(() => {
     fetchResourceDetails();
@@ -66,7 +66,7 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resourceId }) =
       <div className="p-6 text-center text-red-400">
         <Icon name="alert-circle" className="w-12 h-12 mx-auto mb-4" />
         <h2 className="text-2xl font-bold">資源載入失敗</h2>
-        <p>{error || `找不到 ID 為 "${resourceId}" 的資源。`}</p>
+        <p>{error || `找不到 ID 為 "${resource_id}" 的資源。`}</p>
       </div>
     );
   }

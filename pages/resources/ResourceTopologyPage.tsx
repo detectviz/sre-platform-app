@@ -180,11 +180,11 @@ const ResourceTopologyPage: React.FC = () => {
     const handleMenuAction = (action: 'details' | 'incidents' | 'automation') => {
         if (!contextMenu.nodeData) return;
         
-        const resourceId = contextMenu.nodeData.id;
+        const resource_id = contextMenu.nodeData.id;
         
         switch(action) {
             case 'details':
-                navigate(`/resources/list/${resourceId}`);
+                navigate(`/resources/list/${resource_id}`);
                 break;
             case 'incidents':
                 navigate('/incidents');

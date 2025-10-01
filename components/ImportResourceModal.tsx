@@ -27,7 +27,7 @@ interface ImportResourceModalProps {
 const ImportResourceModal: React.FC<ImportResourceModalProps> = ({ isOpen, onClose, onSuccess, resourcesToImport, job }) => {
     const [isImporting, setIsImporting] = useState(false);
     const [importProgress, setImportProgress] = useState<ImportItemStatus[]>([]);
-    const [exporterBinding, setExporterBinding] = useState<DiscoveryJobExporterBinding | undefined>(job.exporterBinding);
+    const [exporterBinding, setExporterBinding] = useState<DiscoveryJobExporterBinding | undefined>(job.exporter_binding);
     const { options } = useOptions();
     const autoDiscoveryOptions = options?.auto_discovery;
     const exporterTemplates = autoDiscoveryOptions?.exporter_templates || [];
@@ -35,7 +35,7 @@ const ImportResourceModal: React.FC<ImportResourceModalProps> = ({ isOpen, onClo
 
     useEffect(() => {
         if (isOpen) {
-            setExporterBinding(job.exporterBinding);
+            setExporterBinding(job.exporter_binding);
             setImportProgress([]);
             setIsImporting(false);
         }
@@ -43,7 +43,7 @@ const ImportResourceModal: React.FC<ImportResourceModalProps> = ({ isOpen, onClo
 
     const handleExporterBindingChange = (updates: Partial<DiscoveryJobExporterBinding>) => {
         setExporterBinding((prev) => {
-            const current = prev || { template_id: job.exporterBinding?.template_id || 'none' };
+            const current = prev || { template_id: job.exporter_binding?.template_id || 'none' };
             const nextBinding: DiscoveryJobExporterBinding = { ...current, ...updates };
             if (updates.template_id) {
                 delete nextBinding.overrides_yaml;
@@ -60,9 +60,9 @@ const ImportResourceModal: React.FC<ImportResourceModalProps> = ({ isOpen, onClo
 
         try {
             await api.post('/resources/import-discovered', {
-                discoveredResourceIds: resourcesToImport.map((r) => r.id),
-                jobId: job.id,
-                exporterBinding,
+                discovered_resource_ids: resourcesToImport.map((r) => r.id),
+                job_id: job.id,
+                exporter_binding: exporterBinding,
             });
 
             for (let i = 0; i < resourcesToImport.length; i++) {
@@ -116,7 +116,7 @@ const ImportResourceModal: React.FC<ImportResourceModalProps> = ({ isOpen, onClo
         }
     };
 
-    const currentTemplateId = exporterBinding?.template_id || job.exporterBinding?.template_id || 'none';
+    const currentTemplateId = exporterBinding?.template_id || job.exporter_binding?.template_id || 'none';
     const templateMeta = exporterTemplates.find((tpl) => tpl.id === currentTemplateId);
     const availableProfiles = mibProfiles.filter((profile) => profile.template_id === currentTemplateId);
 
@@ -159,7 +159,7 @@ const ImportResourceModal: React.FC<ImportResourceModalProps> = ({ isOpen, onClo
                 <div className="pt-4 border-t border-slate-700/50 space-y-4">
                     <h3 className="text-lg font-semibold text-white">Exporter 配置覆寫</h3>
                     <p className="text-sm text-slate-400">
-                        預設沿用掃描任務的 Exporter 綁定 ({job.exporterBinding?.template_id || 'none'})。您可以在此為本次匯入的資源覆寫設定。
+                        預設沿用掃描任務的 Exporter 綁定 ({job.exporter_binding?.template_id || 'none'})。您可以在此為本次匯入的資源覆寫設定。
                     </p>
 
                     <FormRow label="Exporter 模板">

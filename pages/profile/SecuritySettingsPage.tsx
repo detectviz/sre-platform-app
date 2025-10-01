@@ -57,7 +57,7 @@ const SecuritySettingsPage: React.FC = () => {
     
         setIsUpdating(true);
         try {
-            await api.post('/me/change-password', { oldPassword, newPassword });
+            await api.post('/me/change-password', { old_password: oldPassword, new_password: newPassword });
             showToast('密碼已成功更新。', 'success');
             setOldPassword('');
             setNewPassword('');
