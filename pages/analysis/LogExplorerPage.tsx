@@ -12,12 +12,14 @@ import LogAnalysisModal from '../../components/LogAnalysisModal';
 import { useOptions } from '../../contexts/OptionsContext';
 import UnifiedSearchModal from '../../components/UnifiedSearchModal';
 import { useChartTheme } from '../../contexts/ChartThemeContext';
+import { useLogOptions } from '../../hooks/useLogOptions';
 
 const LogExplorerPage: React.FC = () => {
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const { options, isLoading: isLoadingOptions } = useOptions();
+    const { timeRangeOptions } = useLogOptions();
 
     const location = useLocation();
     const params = new URLSearchParams(location.search);
@@ -28,14 +30,6 @@ const LogExplorerPage: React.FC = () => {
         time_range: '15m',
     });
 
-    // 時間範圍快速選擇選項
-    const timeRangeOptions = [
-        { value: '15m', label: '最近15分鐘' },
-        { value: '1h', label: '最近1小時' },
-        { value: '24h', label: '最近24小時' },
-        { value: '7d', label: '最近7天' },
-        { value: '30d', label: '最近30天' },
-    ];
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isLive, setIsLive] = useState(false);
     const [expandedLogId, setExpandedLogId] = useState<string | null>(null);

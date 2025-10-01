@@ -9,12 +9,14 @@ import { exportToCsv } from '../../services/export';
 import { AnalysisOverviewData, LogEntry, Anomaly, Suggestion } from '../../types';
 import api from '../../services/api';
 import { useChartTheme } from '../../contexts/ChartThemeContext';
+import { useLogOptions } from '../../hooks/useLogOptions';
 
 const AnalysisOverviewPage: React.FC = () => {
     const [overviewData, setOverviewData] = useState<AnalysisOverviewData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const { theme: chartTheme } = useChartTheme();
+    const { timeRangeOptions } = useLogOptions();
 
     const [logQuery, setLogQuery] = useState('');
     const [timeRange, setTimeRange] = useState('1h');
@@ -184,14 +186,6 @@ const AnalysisOverviewPage: React.FC = () => {
         const queryString = queryParams.toString();
         navigate(`/analyzing/logs${queryString ? `?${queryString}` : ''}`);
     };
-
-    const timeRangeOptions = [
-        { value: '15m', label: '最近15分鐘' },
-        { value: '1h', label: '最近1小時' },
-        { value: '24h', label: '最近24小時' },
-        { value: '7d', label: '最近7天' },
-        { value: '30d', label: '最近30天' },
-    ];
 
     const eventCorrelationEvents = { 'click': handleEventCorrelationClick };
 

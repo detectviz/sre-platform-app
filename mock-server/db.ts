@@ -1539,6 +1539,8 @@ const MOCK_LOG_TIME_OPTIONS: { label: string, value: string }[] = [
     { label: '最近 1 小時', value: '1h' },
     { label: '最近 4 小時', value: '4h' },
     { label: '最近 1 天', value: '1d' },
+    { label: '最近 7 天', value: '7d' },
+    { label: '最近 30 天', value: '30d' },
 ];
 const MOCK_MAIL_SETTINGS: MailSettings = { smtp_server: 'smtp.example.com', port: 587, username: 'noreply@sre.platform', sender_name: 'SRE Platform', sender_email: 'noreply@sre.platform', encryption: 'tls' };
 const MOCK_GRAFANA_SETTINGS: GrafanaSettings = { enabled: true, url: DEFAULT_GRAFANA_BASE_URL, api_key: 'glsa_xxxxxxxxxxxxxxxxxxxxxxxx', org_id: 1 };
