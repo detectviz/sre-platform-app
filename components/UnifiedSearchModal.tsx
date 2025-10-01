@@ -303,8 +303,8 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
     <>
       <FormRow label="時間範圍">
         <select
-          value={(filters as LogExplorerFilters).timeRange || ''}
-          onChange={e => setFilters(prev => ({ ...prev, timeRange: e.target.value }))}
+          value={(filters as LogExplorerFilters).time_range || ''}
+          onChange={e => setFilters(prev => ({ ...prev, time_range: e.target.value }))}
           className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
         >
           {options?.logs.time_range_options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}

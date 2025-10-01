@@ -252,7 +252,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     if (ruleIds.length === 0) {
                         throw { status: 400, message: '請至少選擇一項靜音規則進行分析。' };
                     }
-                    const selectedRules = DB.silenceRules.filter((rule: any) => ruleIds.includes(rule.id));
+                    const selectedRules = DB.silence_rules.filter((rule: any) => ruleIds.includes(rule.id));
                     if (selectedRules.length === 0) {
                         throw { status: 404, message: '找不到對應的靜音規則。' };
                     }
@@ -566,11 +566,16 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     return {
                         success: true,
                         message: `成功發送通知: ${incident.summary}`,
-                        notificationId: notificationRecord.id
+                        notification_id: notificationRecord.id
                     };
                 }
                 if (subId === 'actions') {
-                    const { action: incidentAction, assigneeName, durationHours, details } = body;
+                    const {
+                        action: incidentAction,
+                        assignee_name: assigneeName,
+                        duration_hours: durationHours,
+                        details
+                    } = body;
                     const index = DB.incidents.findIndex((i: any) => i.id === id);
                     if (index === -1) throw { status: 404 };
 
@@ -841,7 +846,12 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     'UPDATE',
                     'AlertRule',
                     id,
-                    { oldName: oldRule.name, newName: body.name, oldSeverity: oldRule.severity, newSeverity: body.severity }
+                    {
+                        old_name: oldRule.name,
+                        new_name: body.name,
+                        old_severity: oldRule.severity,
+                        new_severity: body.severity
+                    }
                 );
 
                 return DB.alert_rules[ruleIndex];
@@ -866,7 +876,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
 
             case 'GET /silence-rules': {
                 if (id === 'templates') return DB.silence_rule_templates;
-                let rules = getActive(DB.silenceRules);
+                let rules = getActive(DB.silence_rules);
                 if (params) {
                     if (params.keyword) rules = rules.filter((r: any) => r.name.toLowerCase().includes(params.keyword.toLowerCase()));
                     if (params.type) rules = rules.filter((r: any) => r.type === params.type);
@@ -890,14 +900,14 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         throw { status: 400, message: 'Invalid payload for batch actions.' };
                     }
                     ids.forEach((rule_id: string) => {
-                        const ruleIndex = DB.silenceRules.findIndex((rule: any) => rule.id === rule_id);
+                        const ruleIndex = DB.silence_rules.findIndex((rule: any) => rule.id === rule_id);
                         if (ruleIndex === -1) return;
                         if (action === 'delete') {
-                            DB.silenceRules.splice(ruleIndex, 1);
+                            DB.silence_rules.splice(ruleIndex, 1);
                         } else if (action === 'enable') {
-                            DB.silenceRules[ruleIndex].enabled = true;
+                            DB.silence_rules[ruleIndex].enabled = true;
                         } else if (action === 'disable') {
-                            DB.silenceRules[ruleIndex].enabled = false;
+                            DB.silence_rules[ruleIndex].enabled = false;
                         }
                     });
                     return { success: true };
@@ -922,7 +932,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     created_at: timestamp2,
                     updated_at: timestamp2
                 };
-                DB.silenceRules.unshift(newSilenceRule);
+                DB.silence_rules.unshift(newSilenceRule);
                 // Audit log for silence rule creation
                 const currentUser = getCurrentUser();
                 auditLogMiddleware(
@@ -934,12 +944,12 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 );
                 return newSilenceRule;
             case 'PATCH /silence-rules':
-                const silenceIndex = DB.silenceRules.findIndex((r: any) => r.id === id);
+                const silenceIndex = DB.silence_rules.findIndex((r: any) => r.id === id);
                 if (silenceIndex === -1) throw { status: 404 };
-                const existingSilenceRule = DB.silenceRules[silenceIndex];
+                const existingSilenceRule = DB.silence_rules[silenceIndex];
                 // 更新 updated_at 時間戳
                 const updatedSilenceRule = { ...existingSilenceRule, ...body, updated_at: new Date().toISOString() };
-                DB.silenceRules[silenceIndex] = updatedSilenceRule;
+                DB.silence_rules[silenceIndex] = updatedSilenceRule;
                 // Audit log for silence rule update
                 const currentUser4 = getCurrentUser();
                 auditLogMiddleware(
@@ -951,10 +961,10 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 );
                 return updatedSilenceRule;
             case 'DELETE /silence-rules': {
-                const ruleIndex = DB.silenceRules.findIndex((r: any) => r.id === id);
+                const ruleIndex = DB.silence_rules.findIndex((r: any) => r.id === id);
                 if (ruleIndex > -1) {
-                    const rule = DB.silenceRules[ruleIndex];
-                    DB.silenceRules[ruleIndex].deleted_at = new Date().toISOString();
+                    const rule = DB.silence_rules[ruleIndex];
+                    DB.silence_rules[ruleIndex].deleted_at = new Date().toISOString();
                     // Audit log for silence rule deletion
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
@@ -1347,7 +1357,12 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     'UPDATE',
                     'Resource',
                     id,
-                    { oldName: oldResource.name, newName: body.name, oldType: oldResource.type, newType: body.type }
+                    {
+                        old_name: oldResource.name,
+                        new_name: body.name,
+                        old_type: oldResource.type,
+                        new_type: body.type
+                    }
                 );
 
                 return DB.resources[resIndex];
@@ -2000,7 +2015,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         suggestions: DB.capacity_suggestions,
                         resource_analysis: DB.capacity_resource_analysis,
                         options: {
-                            timeRangeOptions: DB.capacity_time_options,
+                            time_range_options: DB.capacity_time_options,
                         },
                     };
                 }

@@ -991,7 +991,7 @@ export interface TagManagementOptions {
 
 export interface LogExplorerFilters {
   keyword?: string;
-  timeRange?: string;
+  time_range?: string;
 }
 
 // --- Datasource & Discovery Types ---
