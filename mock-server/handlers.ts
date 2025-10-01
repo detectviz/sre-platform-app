@@ -546,6 +546,143 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 return paginate(incidents, params?.page, params?.page_size);
             }
             case 'POST /incidents': {
+                if (id === 'batch-close') {
+                    const { incident_ids = [], resolution_note } = body || {};
+                    if (!Array.isArray(incident_ids) || incident_ids.length === 0) {
+                        throw { status: 400, message: 'incident_ids must be a non-empty array.' };
+                    }
+
+                    const uniqueIncidentIds = Array.from(new Set(incident_ids));
+                    const currentUser = getCurrentUser();
+                    const timestamp = new Date().toISOString();
+                    let updated = 0;
+                    const skipped_ids: string[] = [];
+
+                    uniqueIncidentIds.forEach((incidentId: string) => {
+                        const incident = DB.incidents.find((i: any) => i.id === incidentId && !i.deleted_at);
+                        if (!incident) {
+                            skipped_ids.push(incidentId);
+                            return;
+                        }
+
+                        if (incident.status === 'Resolved') {
+                            skipped_ids.push(incidentId);
+                            return;
+                        }
+
+                        const previousStatus = incident.status;
+                        incident.status = 'Resolved';
+                        incident.resolved_at = timestamp;
+                        incident.updated_at = timestamp;
+                        incident.history.push({
+                            timestamp,
+                            user: currentUser.name,
+                            action: 'Resolved',
+                            details: `Status changed from '${previousStatus}' to 'Resolved'.`
+                        });
+
+                        if (resolution_note) {
+                            incident.history.push({
+                                timestamp,
+                                user: currentUser.name,
+                                action: 'Note Added',
+                                details: resolution_note
+                            });
+                        }
+
+                        auditLogMiddleware(
+                            currentUser.id,
+                            'UPDATE',
+                            'Incident',
+                            incident.id,
+                            {
+                                action: 'batch_close',
+                                previous_status: previousStatus,
+                                new_status: incident.status
+                            }
+                        );
+
+                        updated += 1;
+                    });
+
+                    return { success: true, updated, skipped_ids };
+                }
+
+                if (id === 'batch-assign') {
+                    const { incident_ids = [], assignee_id, assignee_name } = body || {};
+                    if (!Array.isArray(incident_ids) || incident_ids.length === 0) {
+                        throw { status: 400, message: 'incident_ids must be a non-empty array.' };
+                    }
+
+                    if (!assignee_id && !assignee_name) {
+                        throw { status: 400, message: 'assignee_id or assignee_name is required for batch assignment.' };
+                    }
+
+                    let resolvedAssigneeName = assignee_name as string | undefined;
+                    let assigneeUser: any = undefined;
+                    if (assignee_id) {
+                        validateForeignKey(DB.users, assignee_id, 'Assignee');
+                        assigneeUser = DB.users.find((user: any) => user.id === assignee_id && isActiveEntity(user));
+                        resolvedAssigneeName = assigneeUser?.name ?? resolvedAssigneeName;
+                    } else if (assignee_name) {
+                        assigneeUser = DB.users.find((user: any) => user.name === assignee_name && isActiveEntity(user));
+                    }
+
+                    if (!resolvedAssigneeName) {
+                        throw { status: 400, message: 'Unable to resolve assignee name for batch assignment.' };
+                    }
+
+                    const currentUser = getCurrentUser();
+                    const timestamp = new Date().toISOString();
+                    const uniqueIncidentIds = Array.from(new Set(incident_ids));
+                    let updated = 0;
+                    const skipped_ids: string[] = [];
+
+                    uniqueIncidentIds.forEach((incidentId: string) => {
+                        const incident = DB.incidents.find((i: any) => i.id === incidentId && !i.deleted_at);
+                        if (!incident) {
+                            skipped_ids.push(incidentId);
+                            return;
+                        }
+
+                        const previousAssignee = incident.assignee || 'Unassigned';
+                        incident.assignee = resolvedAssigneeName;
+                        if (assigneeUser?.id) {
+                            incident.owner_id = assigneeUser.id;
+                        }
+                        incident.updated_at = timestamp;
+                        incident.history.push({
+                            timestamp,
+                            user: currentUser.name,
+                            action: 'Re-assigned',
+                            details: `Assignee changed from ${previousAssignee} to ${resolvedAssigneeName}.`
+                        });
+
+                        auditLogMiddleware(
+                            currentUser.id,
+                            'UPDATE',
+                            'Incident',
+                            incident.id,
+                            {
+                                action: 'batch_assign',
+                                previous_assignee: previousAssignee,
+                                new_assignee: resolvedAssigneeName,
+                                assignee_id: assigneeUser?.id ?? assignee_id ?? null
+                            }
+                        );
+
+                        updated += 1;
+                    });
+
+                    return {
+                        success: true,
+                        updated,
+                        skipped_ids,
+                        assignee: resolvedAssigneeName,
+                        assignee_id: assigneeUser?.id ?? assignee_id ?? null
+                    };
+                }
+
                 if (!id) {
                     const { summary, resource_id, rule_id, severity, impact, assignee } = body || {};
                     if (!summary || !resource_id || !rule_id || !severity || !impact) {
