@@ -312,7 +312,20 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
             case 'POST /dashboards': {
                 if (id === 'batch-actions') {
                     const { action, ids } = body;
-                    if (action === 'delete') DB.dashboards.forEach((d: any) => { if (ids.includes(d.id)) d.deleted_at = new Date().toISOString(); });
+                    if (action === 'delete') {
+                        const currentUser = getCurrentUser();
+                        DB.dashboards.forEach((d: any) => {
+                            if (!ids.includes(d.id)) return;
+                            d.deleted_at = new Date().toISOString();
+                            auditLogMiddleware(
+                                currentUser.id,
+                                'DELETE',
+                                'Dashboard',
+                                d.id,
+                                { name: d.name, type: d.type, category: d.category }
+                            );
+                        });
+                    }
                     return { success: true };
                 }
                 // 驗證必填欄位
@@ -354,7 +367,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     'CREATE',
                     'Dashboard',
                     newDashboardData.id,
-                    { name: newDashboardData.name, owner: newDashboardData.owner }
+                    { name: newDashboardData.name, type: newDashboardData.type, category: newDashboardData.category }
                 );
                 return newDashboardData;
             }
@@ -372,7 +385,14 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     'UPDATE',
                     'Dashboard',
                     id,
-                    { old_name: existing.name, new_name: updated.name }
+                    {
+                        old_name: existing.name,
+                        new_name: updated.name,
+                        old_type: existing.type,
+                        new_type: updated.type,
+                        old_category: existing.category,
+                        new_category: updated.category
+                    }
                 );
                 return updated;
             }
@@ -388,7 +408,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         'DELETE',
                         'Dashboard',
                         id,
-                        { name: dashboard.name, owner: dashboard.owner }
+                        { name: dashboard.name, type: dashboard.type, category: dashboard.category }
                     );
                 }
                 return {};
@@ -617,6 +637,77 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     return DB.incidents[index];
                 }
                 break;
+            }
+            case 'PATCH /incidents': {
+                const incidentIndex = DB.incidents.findIndex((i: any) => i.id === id);
+                if (incidentIndex === -1) throw { status: 404 };
+                const existingIncident = DB.incidents[incidentIndex];
+                const currentUser = getCurrentUser();
+                const timestamp = new Date().toISOString();
+                const updatedIncident = {
+                    ...existingIncident,
+                    ...body,
+                    updated_at: timestamp
+                } as Incident;
+
+                if (body?.status && body.status !== existingIncident.status) {
+                    updatedIncident.history = [
+                        ...existingIncident.history,
+                        {
+                            timestamp,
+                            user: currentUser.name,
+                            action: 'Status Updated',
+                            details: `Status changed from '${existingIncident.status}' to '${body.status}'.`
+                        }
+                    ];
+                } else if (body && Object.keys(body).length) {
+                    updatedIncident.history = existingIncident.history;
+                }
+
+                DB.incidents[incidentIndex] = updatedIncident;
+
+                const auditDetails: Record<string, any> = {
+                    summary: updatedIncident.summary,
+                    resource: updatedIncident.resource
+                };
+                if (body?.status && body.status !== existingIncident.status) {
+                    auditDetails.old_status = existingIncident.status;
+                    auditDetails.new_status = body.status;
+                }
+                if (Object.prototype.hasOwnProperty.call(body ?? {}, 'assignee') && body.assignee !== existingIncident.assignee) {
+                    auditDetails.old_assignee = existingIncident.assignee;
+                    auditDetails.new_assignee = body.assignee;
+                }
+                if (Object.prototype.hasOwnProperty.call(body ?? {}, 'severity') && body.severity !== existingIncident.severity) {
+                    auditDetails.old_severity = existingIncident.severity;
+                    auditDetails.new_severity = body.severity;
+                }
+
+                auditLogMiddleware(
+                    currentUser.id,
+                    'UPDATE',
+                    'Incident',
+                    id,
+                    auditDetails
+                );
+
+                return updatedIncident;
+            }
+            case 'DELETE /incidents': {
+                const incidentIndex = DB.incidents.findIndex((i: any) => i.id === id);
+                if (incidentIndex > -1) {
+                    const incident = DB.incidents[incidentIndex];
+                    DB.incidents[incidentIndex].deleted_at = new Date().toISOString();
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'DELETE',
+                        'Incident',
+                        id,
+                        { summary: incident.summary, severity: incident.severity, resource: incident.resource }
+                    );
+                }
+                return {};
             }
 
             case 'GET /alert-rules': {
@@ -899,15 +990,46 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     if (!Array.isArray(ids)) {
                         throw { status: 400, message: 'Invalid payload for batch actions.' };
                     }
+                    const currentUser = getCurrentUser();
                     ids.forEach((rule_id: string) => {
                         const ruleIndex = DB.silence_rules.findIndex((rule: any) => rule.id === rule_id);
                         if (ruleIndex === -1) return;
+                        const rule = DB.silence_rules[ruleIndex];
                         if (action === 'delete') {
-                            DB.silence_rules.splice(ruleIndex, 1);
+                            rule.deleted_at = new Date().toISOString();
+                            auditLogMiddleware(
+                                currentUser.id,
+                                'DELETE',
+                                'SilenceRule',
+                                rule_id,
+                                { name: rule.name, type: rule.type, enabled: rule.enabled }
+                            );
                         } else if (action === 'enable') {
+                            const oldEnabled = rule.enabled;
                             DB.silence_rules[ruleIndex].enabled = true;
+                            DB.silence_rules[ruleIndex].updated_at = new Date().toISOString();
+                            if (oldEnabled !== true) {
+                                auditLogMiddleware(
+                                    currentUser.id,
+                                    'UPDATE',
+                                    'SilenceRule',
+                                    rule_id,
+                                    { name: rule.name, old_enabled: oldEnabled, new_enabled: true }
+                                );
+                            }
                         } else if (action === 'disable') {
+                            const oldEnabled = rule.enabled;
                             DB.silence_rules[ruleIndex].enabled = false;
+                            DB.silence_rules[ruleIndex].updated_at = new Date().toISOString();
+                            if (oldEnabled !== false) {
+                                auditLogMiddleware(
+                                    currentUser.id,
+                                    'UPDATE',
+                                    'SilenceRule',
+                                    rule_id,
+                                    { name: rule.name, old_enabled: oldEnabled, new_enabled: false }
+                                );
+                            }
                         }
                     });
                     return { success: true };
@@ -940,7 +1062,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     'CREATE',
                     'SilenceRule',
                     newSilenceRule.id,
-                    { name: newSilenceRule.name, enabled: newSilenceRule.enabled }
+                    { name: newSilenceRule.name, type: newSilenceRule.type, enabled: newSilenceRule.enabled }
                 );
                 return newSilenceRule;
             case 'PATCH /silence-rules':
@@ -957,7 +1079,14 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     'UPDATE',
                     'SilenceRule',
                     id,
-                    { old_name: existingSilenceRule.name, new_name: updatedSilenceRule.name, old_enabled: existingSilenceRule.enabled, new_enabled: updatedSilenceRule.enabled }
+                    {
+                        old_name: existingSilenceRule.name,
+                        new_name: updatedSilenceRule.name,
+                        old_type: existingSilenceRule.type,
+                        new_type: updatedSilenceRule.type,
+                        old_enabled: existingSilenceRule.enabled,
+                        new_enabled: updatedSilenceRule.enabled
+                    }
                 );
                 return updatedSilenceRule;
             case 'DELETE /silence-rules': {
@@ -972,7 +1101,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         'DELETE',
                         'SilenceRule',
                         id,
-                        { name: rule.name, enabled: rule.enabled }
+                        { name: rule.name, type: rule.type, enabled: rule.enabled }
                     );
                 }
                 return {};
@@ -1064,11 +1193,19 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         throw { status: 400, message: 'Invalid payload for batch actions.' };
                     }
                     let updated = 0;
+                    const currentUser = getCurrentUser();
                     if (action === 'delete') {
                         DB.datasources.forEach((ds: any) => {
                             if (ids.includes(ds.id)) {
                                 ds.deleted_at = new Date().toISOString();
                                 updated += 1;
+                                auditLogMiddleware(
+                                    currentUser.id,
+                                    'DELETE',
+                                    'Datasource',
+                                    ds.id,
+                                    { name: ds.name, type: ds.type, status: ds.status }
+                                );
                             }
                         });
                     } else {
@@ -1082,11 +1219,19 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         throw { status: 400, message: 'Invalid payload for batch actions.' };
                     }
                     let updated = 0;
+                    const currentUser = getCurrentUser();
                     if (action === 'delete') {
                         DB.discovery_jobs.forEach((job: any) => {
                             if (ids.includes(job.id)) {
                                 job.deleted_at = new Date().toISOString();
                                 updated += 1;
+                                auditLogMiddleware(
+                                    currentUser.id,
+                                    'DELETE',
+                                    'DiscoveryJob',
+                                    job.id,
+                                    { name: job.name, kind: job.kind }
+                                );
                             }
                         });
                     } else {
@@ -1164,8 +1309,16 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     }
 
                     const timestamp = new Date().toISOString();
-                    const newDs = { ...body, id: `ds-${uuidv4()}`, created_at: timestamp, status: 'pending' };
+                    const newDs = { ...body, id: `ds-${uuidv4()}`, created_at: timestamp, updated_at: timestamp, status: 'pending' };
                     DB.datasources.unshift(newDs);
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'CREATE',
+                        'Datasource',
+                        newDs.id,
+                        { name: newDs.name, type: newDs.type, status: newDs.status }
+                    );
                     return newDs;
                 }
                 if (id === 'discovery-jobs') {
@@ -1217,6 +1370,14 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         updated_at: timestamp,
                     };
                     DB.discovery_jobs.unshift(newJob);
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'CREATE',
+                        'DiscoveryJob',
+                        newJob.id,
+                        { name: newJob.name, kind: newJob.kind, schedule: newJob.schedule }
+                    );
                     return newJob;
                 }
                 if (id === 'import-discovered') {
@@ -1323,9 +1484,26 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const dsId = subId;
                     const index = DB.datasources.findIndex((d: any) => d.id === dsId);
                     if (index === -1) throw { status: 404 };
+                    const existing = DB.datasources[index];
                     // 更新 updated_at 時間戳
-                    DB.datasources[index] = { ...DB.datasources[index], ...body, updated_at: new Date().toISOString() };
-                    return DB.datasources[index];
+                    const updated = { ...existing, ...body, updated_at: new Date().toISOString() };
+                    DB.datasources[index] = updated;
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'UPDATE',
+                        'Datasource',
+                        dsId,
+                        {
+                            old_name: existing.name,
+                            new_name: updated.name,
+                            old_type: existing.type,
+                            new_type: updated.type,
+                            old_status: existing.status,
+                            new_status: updated.status
+                        }
+                    );
+                    return updated;
                 }
                 if (id === 'discovery-jobs') {
                     const job_id = subId;
@@ -1333,7 +1511,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     if (index === -1) throw { status: 404 };
                     const existingJob = DB.discovery_jobs[index];
                     // 更新 updated_at 時間戳
-                    DB.discovery_jobs[index] = {
+                    const updatedJob = {
                         ...existingJob,
                         ...body,
                         target_config: body?.target_config || existingJob.target_config,
@@ -1342,7 +1520,22 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         tags: Array.isArray(body?.tags) ? body.tags : existingJob.tags,
                         updated_at: new Date().toISOString(),
                     };
-                    return DB.discovery_jobs[index];
+                    DB.discovery_jobs[index] = updatedJob;
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'UPDATE',
+                        'DiscoveryJob',
+                        job_id,
+                        {
+                            name: updatedJob.name,
+                            old_kind: existingJob.kind,
+                            new_kind: updatedJob.kind,
+                            old_schedule: existingJob.schedule,
+                            new_schedule: updatedJob.schedule
+                        }
+                    );
+                    return updatedJob;
                 }
                 const resIndex = DB.resources.findIndex((r: any) => r.id === id);
                 if (resIndex === -1) throw { status: 404 };
@@ -1393,13 +1586,35 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 if (id === 'datasources') {
                     const dsId = subId;
                     const index = DB.datasources.findIndex((d: any) => d.id === dsId);
-                    if (index > -1) (DB.datasources[index] as any).deleted_at = new Date().toISOString();
+                    if (index > -1) {
+                        const datasource = DB.datasources[index];
+                        (DB.datasources[index] as any).deleted_at = new Date().toISOString();
+                        const currentUser = getCurrentUser();
+                        auditLogMiddleware(
+                            currentUser.id,
+                            'DELETE',
+                            'Datasource',
+                            dsId,
+                            { name: datasource.name, type: datasource.type, status: datasource.status }
+                        );
+                    }
                     return {};
                 }
                 if (id === 'discovery-jobs') {
                     const job_id = subId;
                     const index = DB.discovery_jobs.findIndex((j: any) => j.id === job_id);
-                    if (index > -1) (DB.discovery_jobs[index] as any).deleted_at = new Date().toISOString();
+                    if (index > -1) {
+                        const job = DB.discovery_jobs[index];
+                        (DB.discovery_jobs[index] as any).deleted_at = new Date().toISOString();
+                        const currentUser = getCurrentUser();
+                        auditLogMiddleware(
+                            currentUser.id,
+                            'DELETE',
+                            'DiscoveryJob',
+                            job_id,
+                            { name: job.name, kind: job.kind }
+                        );
+                    }
                     return {};
                 }
                 const delResIndex = DB.resources.findIndex((r: any) => r.id === id);
@@ -1455,11 +1670,24 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         throw { status: 400, message: 'Invalid payload for batch actions.' };
                     }
                     let updated = 0;
+                    const currentUser = getCurrentUser();
                     if (action === 'delete') {
                         DB.resource_groups.forEach((group: any) => {
                             if (ids.includes(group.id)) {
                                 group.deleted_at = new Date().toISOString();
                                 updated += 1;
+                                auditLogMiddleware(
+                                    currentUser.id,
+                                    'DELETE',
+                                    'ResourceGroup',
+                                    group.id,
+                                    {
+                                        name: group.name,
+                                        type: group.type,
+                                        owner_team: group.owner_team,
+                                        member_count: Array.isArray(group.member_ids) ? group.member_ids.length : 0
+                                    }
+                                );
                             }
                         });
                     } else {
@@ -1482,13 +1710,18 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 };
                 DB.resource_groups.unshift(newGroup);
                 // Audit log for resource group creation
-                const currentUser5 = getCurrentUser();
+                const currentUserForResourceGroupCreate = getCurrentUser();
                 auditLogMiddleware(
-                    currentUser5.id,
+                    currentUserForResourceGroupCreate.id,
                     'CREATE',
                     'ResourceGroup',
                     newGroup.id,
-                    { name: newGroup.name, type: newGroup.type }
+                    {
+                        name: newGroup.name,
+                        type: newGroup.type,
+                        owner_team: newGroup.owner_team,
+                        member_count: Array.isArray(newGroup.member_ids) ? newGroup.member_ids.length : 0
+                    }
                 );
                 return newGroup;
             case 'PUT /resource-groups':
@@ -1499,13 +1732,22 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 const updatedGroup = { ...existingGroup, ...body, updated_at: new Date().toISOString() };
                 DB.resource_groups[groupIndex] = updatedGroup;
                 // Audit log for resource group update
-                const currentUser6 = getCurrentUser();
+                const currentUserForResourceGroupUpdate = getCurrentUser();
                 auditLogMiddleware(
-                    currentUser6.id,
+                    currentUserForResourceGroupUpdate.id,
                     'UPDATE',
                     'ResourceGroup',
                     id,
-                    { old_name: existingGroup.name, new_name: updatedGroup.name, old_type: existingGroup.type, new_type: updatedGroup.type }
+                    {
+                        old_name: existingGroup.name,
+                        new_name: updatedGroup.name,
+                        old_type: existingGroup.type,
+                        new_type: updatedGroup.type,
+                        old_member_count: Array.isArray(existingGroup.member_ids) ? existingGroup.member_ids.length : 0,
+                        new_member_count: Array.isArray(updatedGroup.member_ids) ? updatedGroup.member_ids.length : 0,
+                        old_owner_team: existingGroup.owner_team,
+                        new_owner_team: updatedGroup.owner_team
+                    }
                 );
                 return updatedGroup;
             case 'DELETE /resource-groups':
@@ -1520,7 +1762,12 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         'DELETE',
                         'ResourceGroup',
                         id,
-                        { name: group.name, type: group.type }
+                        {
+                            name: group.name,
+                            type: group.type,
+                            owner_team: group.owner_team,
+                            member_count: Array.isArray(group.member_ids) ? group.member_ids.length : 0
+                        }
                     );
                 }
                 return {};
@@ -1565,11 +1812,19 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                             throw { status: 400, message: 'Invalid batch action payload for automation scripts.' };
                         }
                         let updated = 0;
+                        const currentUser = getCurrentUser();
                         if (batchAction === 'delete') {
                             DB.playbooks.forEach((script: any) => {
                                 if (ids.includes(script.id)) {
                                     script.deleted_at = new Date().toISOString();
                                     updated += 1;
+                                    auditLogMiddleware(
+                                        currentUser.id,
+                                        'DELETE',
+                                        'AutomationPlaybook',
+                                        script.id,
+                                        { name: script.name, type: script.type }
+                                    );
                                 }
                             });
                         } else {
@@ -1666,11 +1921,47 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         }
                         let updated = 0;
                         const now = new Date().toISOString();
+                        const currentUser = getCurrentUser();
                         DB.automation_triggers.forEach((trigger: any) => {
                             if (!ids.includes(trigger.id)) return;
-                            if (batchAction === 'enable') trigger.enabled = true;
-                            if (batchAction === 'disable') trigger.enabled = false;
-                            if (batchAction === 'delete') trigger.deleted_at = now;
+                            if (batchAction === 'enable') {
+                                const oldEnabled = trigger.enabled;
+                                trigger.enabled = true;
+                                trigger.updated_at = now;
+                                if (oldEnabled !== true) {
+                                    auditLogMiddleware(
+                                        currentUser.id,
+                                        'UPDATE',
+                                        'AutomationTrigger',
+                                        trigger.id,
+                                        { name: trigger.name, old_enabled: oldEnabled, new_enabled: true }
+                                    );
+                                }
+                            }
+                            if (batchAction === 'disable') {
+                                const oldEnabled = trigger.enabled;
+                                trigger.enabled = false;
+                                trigger.updated_at = now;
+                                if (oldEnabled !== false) {
+                                    auditLogMiddleware(
+                                        currentUser.id,
+                                        'UPDATE',
+                                        'AutomationTrigger',
+                                        trigger.id,
+                                        { name: trigger.name, old_enabled: oldEnabled, new_enabled: false }
+                                    );
+                                }
+                            }
+                            if (batchAction === 'delete') {
+                                trigger.deleted_at = now;
+                                auditLogMiddleware(
+                                    currentUser.id,
+                                    'DELETE',
+                                    'AutomationTrigger',
+                                    trigger.id,
+                                    { name: trigger.name, type: trigger.type }
+                                );
+                            }
                             updated += 1;
                         });
                         return { success: true, updated };
@@ -1708,7 +1999,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         'CREATE',
                         'AutomationTrigger',
                         newTrigger.id,
-                        { name: newTrigger.name, type: newTrigger.type }
+                        { name: newTrigger.name, type: newTrigger.type, enabled: newTrigger.enabled }
                     );
                     return newTrigger;
                 }
@@ -1730,7 +2021,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         'UPDATE',
                         'AutomationPlaybook',
                         itemId,
-                        { old_name: existing.name, new_name: updated.name }
+                        { old_name: existing.name, new_name: updated.name, old_type: existing.type, new_type: updated.type }
                     );
                     return updated;
                 }
@@ -1749,7 +2040,14 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         'UPDATE',
                         'AutomationTrigger',
                         itemId,
-                        { old_name: existing.name, new_name: updated.name, old_enabled: existing.enabled, new_enabled: updated.enabled }
+                        {
+                            old_name: existing.name,
+                            new_name: updated.name,
+                            old_type: existing.type,
+                            new_type: updated.type,
+                            old_enabled: existing.enabled,
+                            new_enabled: updated.enabled
+                        }
                     );
                     return updated;
                 }
@@ -1836,8 +2134,36 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 if (id === 'users') {
                     if (subId === 'batch-actions') {
                         const { action: batchAction, ids } = body;
-                        if (batchAction === 'delete') DB.users.forEach((u: any) => { if (ids.includes(u.id)) u.deleted_at = new Date().toISOString(); });
-                        if (batchAction === 'disable') DB.users.forEach((u: any) => { if (ids.includes(u.id)) u.status = 'inactive'; });
+                        const currentUser = getCurrentUser();
+                        if (batchAction === 'delete') {
+                            DB.users.forEach((u: any) => {
+                                if (!ids.includes(u.id)) return;
+                                u.deleted_at = new Date().toISOString();
+                                auditLogMiddleware(
+                                    currentUser.id,
+                                    'DELETE',
+                                    'User',
+                                    u.id,
+                                    { name: u.name, email: u.email, role: u.role }
+                                );
+                            });
+                        }
+                        if (batchAction === 'disable') {
+                            DB.users.forEach((u: any) => {
+                                if (!ids.includes(u.id)) return;
+                                const oldStatus = u.status;
+                                u.status = 'inactive';
+                                if (oldStatus !== 'inactive') {
+                                    auditLogMiddleware(
+                                        currentUser.id,
+                                        'UPDATE',
+                                        'User',
+                                        u.id,
+                                        { name: u.name, old_status: oldStatus, new_status: 'inactive' }
+                                    );
+                                }
+                            });
+                        }
                         return { success: true };
                     }
                     if (subId === 'import') {
@@ -1869,7 +2195,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                             'CREATE',
                             'User',
                             newUser.id,
-                            { name: newUser.name, email: newUser.email }
+                            { name: newUser.name, email: newUser.email, role: newUser.role }
                         );
                         return newUser;
                     }
@@ -1877,7 +2203,20 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 if (id === 'teams') {
                     if (subId === 'batch-actions') {
                         const { action: batchAction, ids } = body;
-                        if (batchAction === 'delete') DB.teams.forEach((t: any) => { if (ids.includes(t.id)) t.deleted_at = new Date().toISOString(); });
+                        if (batchAction === 'delete') {
+                            const currentUser = getCurrentUser();
+                            DB.teams.forEach((t: any) => {
+                                if (!ids.includes(t.id)) return;
+                                t.deleted_at = new Date().toISOString();
+                                auditLogMiddleware(
+                                    currentUser.id,
+                                    'DELETE',
+                                    'Team',
+                                    t.id,
+                                    { name: t.name, member_count: Array.isArray(t.member_ids) ? t.member_ids.length : 0 }
+                                );
+                            });
+                        }
                         return { success: true };
                     }
 
@@ -1905,14 +2244,27 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         'CREATE',
                         'Team',
                         newTeam.id,
-                        { name: newTeam.name, owner_id: newTeam.owner_id }
+                        { name: newTeam.name, owner_id: newTeam.owner_id, member_count: newTeam.member_ids?.length ?? 0 }
                     );
                     return newTeam;
                 }
                 if (id === 'roles') {
                     if (subId === 'batch-actions') {
                         const { action: batchAction, ids } = body;
-                        if (batchAction === 'delete') DB.roles.forEach((r: any) => { if (ids.includes(r.id)) r.deleted_at = new Date().toISOString(); });
+                        if (batchAction === 'delete') {
+                            const currentUser = getCurrentUser();
+                            DB.roles.forEach((r: any) => {
+                                if (!ids.includes(r.id)) return;
+                                r.deleted_at = new Date().toISOString();
+                                auditLogMiddleware(
+                                    currentUser.id,
+                                    'DELETE',
+                                    'Role',
+                                    r.id,
+                                    { name: r.name, permissions_count: Array.isArray(r.permissions) ? r.permissions.length : 0 }
+                                );
+                            });
+                        }
                         return { success: true };
                     }
                     const timestamp = new Date().toISOString();
@@ -1933,7 +2285,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         'CREATE',
                         'Role',
                         newRole.id,
-                        { name: newRole.name, enabled: newRole.enabled }
+                        { name: newRole.name, enabled: newRole.enabled, permissions_count: newRole.permissions?.length ?? 0 }
                     );
                     return newRole;
                 }
@@ -1955,10 +2307,29 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 const currentUser = getCurrentUser();
                 const entityType = id === 'users' ? 'User' : id === 'teams' ? 'Team' : 'Role';
                 const entityDetails = id === 'users'
-                    ? { old_name: existing.name, new_name: baseUpdate.name, old_email: existing.email, new_email: baseUpdate.email }
+                    ? {
+                        old_name: existing.name,
+                        new_name: baseUpdate.name,
+                        old_email: existing.email,
+                        new_email: baseUpdate.email,
+                        old_role: existing.role,
+                        new_role: baseUpdate.role,
+                        old_status: existing.status,
+                        new_status: baseUpdate.status
+                    }
                     : id === 'teams'
-                        ? { old_name: existing.name, new_name: baseUpdate.name }
-                        : { old_name: existing.name, new_name: baseUpdate.name };
+                        ? {
+                            old_name: existing.name,
+                            new_name: baseUpdate.name,
+                            old_member_count: Array.isArray(existing.member_ids) ? existing.member_ids.length : 0,
+                            new_member_count: Array.isArray(baseUpdate.member_ids) ? baseUpdate.member_ids.length : 0
+                        }
+                        : {
+                            old_name: existing.name,
+                            new_name: baseUpdate.name,
+                            old_permissions_count: Array.isArray(existing.permissions) ? existing.permissions.length : 0,
+                            new_permissions_count: Array.isArray(baseUpdate.permissions) ? baseUpdate.permissions.length : 0
+                        };
                 auditLogMiddleware(
                     currentUser.id,
                     'UPDATE',
@@ -1978,12 +2349,17 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     // Audit log for deletion
                     const currentUser = getCurrentUser();
                     const entityType = id === 'users' ? 'User' : id === 'teams' ? 'Team' : 'Role';
+                    const details = id === 'users'
+                        ? { name: item.name, email: item.email, role: item.role }
+                        : id === 'teams'
+                            ? { name: item.name, member_count: Array.isArray(item.member_ids) ? item.member_ids.length : 0 }
+                            : { name: item.name, permissions_count: Array.isArray(item.permissions) ? item.permissions.length : 0 };
                     auditLogMiddleware(
                         currentUser.id,
                         'DELETE',
                         entityType,
                         itemId,
-                        { name: item.name, email: item.email }
+                        details
                     );
                 }
                 return {};
@@ -2140,27 +2516,55 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         throw { status: 400, message: 'Invalid payload for batch actions.' };
                     }
                     let updated = 0;
+                    const currentUser = getCurrentUser();
                     if (action === 'delete') {
                         DB.notification_channels.forEach((channel: any) => {
                             if (ids.includes(channel.id)) {
                                 channel.deleted_at = new Date().toISOString();
                                 updated += 1;
+                                auditLogMiddleware(
+                                    currentUser.id,
+                                    'DELETE',
+                                    'NotificationChannel',
+                                    channel.id,
+                                    { name: channel.name, type: channel.type, enabled: channel.enabled }
+                                );
                             }
                         });
                     } else if (action === 'enable') {
                         DB.notification_channels.forEach((channel: any) => {
                             if (ids.includes(channel.id)) {
+                                const oldEnabled = channel.enabled;
                                 channel.enabled = true;
                                 channel.updated_at = new Date().toISOString();
                                 updated += 1;
+                                if (oldEnabled !== true) {
+                                    auditLogMiddleware(
+                                        currentUser.id,
+                                        'UPDATE',
+                                        'NotificationChannel',
+                                        channel.id,
+                                        { name: channel.name, type: channel.type, old_enabled: oldEnabled, new_enabled: true }
+                                    );
+                                }
                             }
                         });
                     } else if (action === 'disable') {
                         DB.notification_channels.forEach((channel: any) => {
                             if (ids.includes(channel.id)) {
+                                const oldEnabled = channel.enabled;
                                 channel.enabled = false;
                                 channel.updated_at = new Date().toISOString();
                                 updated += 1;
+                                if (oldEnabled !== false) {
+                                    auditLogMiddleware(
+                                        currentUser.id,
+                                        'UPDATE',
+                                        'NotificationChannel',
+                                        channel.id,
+                                        { name: channel.name, type: channel.type, old_enabled: oldEnabled, new_enabled: false }
+                                    );
+                                }
                             }
                         });
                     } else {
@@ -2174,27 +2578,55 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         throw { status: 400, message: 'Invalid payload for batch actions.' };
                     }
                     let updated = 0;
+                    const currentUser = getCurrentUser();
                     if (action === 'delete') {
                         DB.notification_strategies.forEach((strategy: any) => {
                             if (ids.includes(strategy.id)) {
                                 strategy.deleted_at = new Date().toISOString();
                                 updated += 1;
+                                auditLogMiddleware(
+                                    currentUser.id,
+                                    'DELETE',
+                                    'NotificationStrategy',
+                                    strategy.id,
+                                    { name: strategy.name, enabled: strategy.enabled }
+                                );
                             }
                         });
                     } else if (action === 'enable') {
                         DB.notification_strategies.forEach((strategy: any) => {
                             if (ids.includes(strategy.id)) {
+                                const oldEnabled = strategy.enabled;
                                 strategy.enabled = true;
                                 strategy.updated_at = new Date().toISOString();
                                 updated += 1;
+                                if (oldEnabled !== true) {
+                                    auditLogMiddleware(
+                                        currentUser.id,
+                                        'UPDATE',
+                                        'NotificationStrategy',
+                                        strategy.id,
+                                        { name: strategy.name, old_enabled: oldEnabled, new_enabled: true }
+                                    );
+                                }
                             }
                         });
                     } else if (action === 'disable') {
                         DB.notification_strategies.forEach((strategy: any) => {
                             if (ids.includes(strategy.id)) {
+                                const oldEnabled = strategy.enabled;
                                 strategy.enabled = false;
                                 strategy.updated_at = new Date().toISOString();
                                 updated += 1;
+                                if (oldEnabled !== false) {
+                                    auditLogMiddleware(
+                                        currentUser.id,
+                                        'UPDATE',
+                                        'NotificationStrategy',
+                                        strategy.id,
+                                        { name: strategy.name, old_enabled: oldEnabled, new_enabled: false }
+                                    );
+                                }
                             }
                         });
                     } else {
@@ -2320,7 +2752,12 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         'CREATE',
                         'NotificationStrategy',
                         newStrategy.id,
-                        { name: newStrategy.name, enabled: newStrategy.enabled }
+                        {
+                            name: newStrategy.name,
+                            enabled: newStrategy.enabled,
+                            severity_levels: newStrategy.severity_levels,
+                            impact_levels: newStrategy.impact_levels
+                        }
                     );
                     return newStrategy;
                 }
@@ -2352,7 +2789,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         'CREATE',
                         'NotificationChannel',
                         newChannel.id,
-                        { name: newChannel.name, type: newChannel.type }
+                        { name: newChannel.name, type: newChannel.type, enabled: newChannel.enabled }
                     );
                     return newChannel;
                 }
@@ -2378,6 +2815,14 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     }
 
                     DB.tag_definitions.unshift(payload);
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'CREATE',
+                        'TagDefinition',
+                        payload.id,
+                        { key: payload.key, scopes: payload.scopes, writable_roles: payload.writable_roles }
+                    );
                     return payload;
                 }
                 break;
@@ -2398,7 +2843,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         : existingStrategy.impact_levels;
 
                     const timestamp = new Date().toISOString();
-                    DB.notification_strategies[index] = {
+                    const updatedStrategy = {
                         ...existingStrategy,
                         ...body,
                         severity_levels: severity_levels,
@@ -2406,7 +2851,24 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         last_updated: timestamp,
                         updated_at: timestamp
                     };
-                    return DB.notification_strategies[index];
+                    DB.notification_strategies[index] = updatedStrategy;
+                    const currentUser = getCurrentUser();
+                    auditLogMiddleware(
+                        currentUser.id,
+                        'UPDATE',
+                        'NotificationStrategy',
+                        itemId,
+                        {
+                            name: updatedStrategy.name,
+                            old_enabled: existingStrategy.enabled,
+                            new_enabled: updatedStrategy.enabled,
+                            old_severity_levels: existingStrategy.severity_levels,
+                            new_severity_levels: updatedStrategy.severity_levels,
+                            old_impact_levels: existingStrategy.impact_levels,
+                            new_impact_levels: updatedStrategy.impact_levels
+                        }
+                    );
+                    return updatedStrategy;
                 }
                 if (collectionId === 'notification-channels') {
                     const index = DB.notification_channels.findIndex((c: any) => c.id === itemId);
@@ -2422,7 +2884,14 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         'UPDATE',
                         'NotificationChannel',
                         itemId,
-                        { old_name: existing.name, new_name: updated.name, old_enabled: existing.enabled, new_enabled: updated.enabled }
+                        {
+                            old_name: existing.name,
+                            new_name: updated.name,
+                            old_type: existing.type,
+                            new_type: updated.type,
+                            old_enabled: existing.enabled,
+                            new_enabled: updated.enabled
+                        }
                     );
                     return updated;
                 }
@@ -2458,7 +2927,14 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         'UPDATE',
                         'TagDefinition',
                         itemId,
-                        { old_key: existing.key, new_key: next.key, old_scopes: existing.scopes, new_scopes: next.scopes }
+                        {
+                            old_key: existing.key,
+                            new_key: next.key,
+                            old_scopes: existing.scopes,
+                            new_scopes: next.scopes,
+                            old_allowed_values: existing.allowed_values,
+                            new_allowed_values: next.allowed_values
+                        }
                     );
                 }
                 break;
@@ -2469,7 +2945,18 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
 
                 if (collectionId === 'notification-strategies') {
                     const index = DB.notification_strategies.findIndex((s: any) => s.id === itemId);
-                    if (index > -1) (DB.notification_strategies[index] as any).deleted_at = new Date().toISOString();
+                    if (index > -1) {
+                        const strategy = DB.notification_strategies[index];
+                        (DB.notification_strategies[index] as any).deleted_at = new Date().toISOString();
+                        const currentUser = getCurrentUser();
+                        auditLogMiddleware(
+                            currentUser.id,
+                            'DELETE',
+                            'NotificationStrategy',
+                            itemId,
+                            { name: strategy.name, enabled: strategy.enabled }
+                        );
+                    }
                     return {};
                 }
                 if (collectionId === 'notification-channels') {
@@ -2484,7 +2971,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                             'DELETE',
                             'NotificationChannel',
                             itemId,
-                            { name: channel.name, type: channel.type }
+                            { name: channel.name, type: channel.type, enabled: channel.enabled }
                         );
                     }
                     return {};
