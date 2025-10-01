@@ -94,6 +94,18 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '503':
           description: AI service unavailable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  retry_after_seconds:
+                    type: integer
+              example:
+                error: "AI analysis service is temporarily unavailable"
+                retry_after_seconds: 120
 
   # ===================
   # Resource Analysis
@@ -199,6 +211,20 @@ paths:
           description: One or more resources not found
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '503':
+          description: AI service unavailable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  retry_after_seconds:
+                    type: integer
+              example:
+                error: "AI analysis service is temporarily unavailable"
+                retry_after_seconds: 90
 
   # ===================
   # Log Analysis
@@ -260,6 +286,18 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '503':
           description: AI service unavailable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  hint:
+                    type: string
+              example:
+                error: "AI log analysis pipeline is currently overloaded"
+                hint: "Please retry in 2 minutes"
 
   # ===================
   # Predictive Analysis
@@ -351,6 +389,20 @@ paths:
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '503':
+          description: AI service unavailable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  retry_after_seconds:
+                    type: integer
+              example:
+                error: "Prediction service is offline for maintenance"
+                retry_after_seconds: 300
 
   /analysis/predict/incidents:
     post:
@@ -433,6 +485,20 @@ paths:
                   analysis_timestamp: "2024-01-15T10:00:00Z"
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '503':
+          description: AI service unavailable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  retry_after_seconds:
+                    type: integer
+              example:
+                error: "Incident prediction engine is warming up"
+                retry_after_seconds: 45
 
   # ===================
   # Anomaly Detection
@@ -538,3 +604,17 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '503':
+          description: AI service unavailable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  retry_after_seconds:
+                    type: integer
+              example:
+                error: "Anomaly detection service unavailable"
+                retry_after_seconds: 60

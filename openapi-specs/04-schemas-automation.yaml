@@ -6,7 +6,7 @@ components:
     # ===================
     AutomationPlaybook:
       type: object
-      required: [id, name, type, content, created_at]
+      required: [id, name, type, content, enabled, created_at]
       properties:
         id:
           type: string
@@ -16,8 +16,8 @@ components:
           example: 重啟服務腳本
         type:
           type: string
-          enum: [shell, python, ansible, terraform]
-          example: shell
+          enum: ['Shell Script', 'Python', 'Ansible', 'Terraform']
+          example: Shell Script
         content:
           type: string
           example: |
@@ -26,6 +26,13 @@ components:
         description:
           type: string
           example: 自動重啟 Nginx 服務
+        enabled:
+          type: boolean
+          example: true
+        timeout_seconds:
+          type: integer
+          default: 300
+          example: 120
         parameters:
           type: array
           items:
@@ -44,6 +51,9 @@ components:
               type: string
               required: true
               default: nginx
+        execution_count:
+          type: integer
+          example: 42
         last_run_at:
           type: string
           format: date-time
@@ -76,12 +86,18 @@ components:
           maxLength: 200
         type:
           type: string
-          enum: [shell, python, ansible, terraform]
+          enum: ['Shell Script', 'Python', 'Ansible', 'Terraform']
         content:
           type: string
           minLength: 1
         description:
           type: string
+        enabled:
+          type: boolean
+          default: true
+        timeout_seconds:
+          type: integer
+          default: 300
         parameters:
           type: array
           items:
@@ -96,6 +112,12 @@ components:
           type: string
         description:
           type: string
+        enabled:
+          type: boolean
+        timeout_seconds:
+          type: integer
+        execution_count:
+          type: integer
         parameters:
           type: array
           items:
@@ -106,15 +128,15 @@ components:
     # ===================
     AutomationExecution:
       type: object
-      required: [id, script_id, script_name, trigger_source, triggered_by, status, start_time]
+      required: [id, playbook_id, playbook_name, trigger_type, triggered_by, status, started_at]
       properties:
         id:
           type: string
           example: exec-001
-        script_id:
+        playbook_id:
           type: string
-          example: script-restart-service
-        script_name:
+          example: play-001
+        playbook_name:
           type: string
           example: 重啟服務腳本
         incident_id:
@@ -129,22 +151,22 @@ components:
           type: string
           nullable: true
           example: res-web-001
-        trigger_source:
+        trigger_type:
           type: string
-          enum: [manual, event, schedule, webhook]
-          example: event
+          enum: [Manual, Scheduled, Webhook, Incident, Alert]
+          example: Incident
         triggered_by:
           type: string
           example: usr-001
         status:
           type: string
-          enum: [pending, running, success, failed]
-          example: success
-        start_time:
+          enum: [Pending, Running, Success, Failed, Cancelled]
+          example: Success
+        started_at:
           type: string
           format: date-time
           example: "2024-01-15T10:00:00Z"
-        end_time:
+        completed_at:
           type: string
           format: date-time
           nullable: true
@@ -152,18 +174,60 @@ components:
         duration_ms:
           type: integer
           example: 150000
+        parameters:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            namespace: production
         output:
-          type: string
-          example: |
-            Service nginx restarted successfully
-            Active: active (running) since Mon 2024-01-15 10:02:15
-        error:
+          type: object
+          properties:
+            stdout:
+              type: string
+            stderr:
+              type: string
+          example:
+            stdout: Service nginx restarted successfully
+            stderr: ''
+        logs:
+          type: object
+          readOnly: true
+          properties:
+            stdout:
+              type: string
+            stderr:
+              type: string
+        error_message:
           type: string
           nullable: true
           example: null
         resolved_incident:
           type: boolean
           example: true
+
+    AutomationExecutionCreate:
+      type: object
+      required: [playbook_id, trigger_type]
+      properties:
+        playbook_id:
+          type: string
+        trigger_type:
+          type: string
+          enum: [Manual, Scheduled, Webhook, Incident, Alert]
+        triggered_by:
+          type: string
+          description: Identifier of the user initiating the execution
+        parameters:
+          type: object
+          additionalProperties:
+            type: string
+        incident_id:
+          type: string
+        alert_rule_id:
+          type: string
+        target_resource_id:
+          type: string
 
     # ===================
     # Automation Trigger
@@ -188,6 +252,34 @@ components:
         target_playbook_id:
           type: string
           example: script-backup
+        config:
+          type: object
+          description: Configuration details specific to the trigger type
+          properties:
+            schedule:
+              type: object
+              properties:
+                cron:
+                  type: string
+                timezone:
+                  type: string
+                cron_description:
+                  type: string
+            webhook:
+              type: object
+              properties:
+                url:
+                  type: string
+                  format: uri
+                secret:
+                  type: string
+            event:
+              type: object
+              properties:
+                source:
+                  type: string
+                severity:
+                  type: string
         cron:
           type: string
           example: "0 2 * * *"
@@ -234,6 +326,8 @@ components:
           type: boolean
         target_playbook_id:
           type: string
+        config:
+          type: object
         cron:
           type: string
           description: Required for Schedule type
@@ -248,6 +342,8 @@ components:
           type: string
         enabled:
           type: boolean
+        config:
+          type: object
         cron:
           type: string
         event_conditions:

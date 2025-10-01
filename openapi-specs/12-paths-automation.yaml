@@ -226,7 +226,7 @@ paths:
               target_resource_id: "res-001"
               parameters:
                 service_name: "nginx"
-                check_health: true
+                check_health: "true"
       responses:
         '201':
           description: Execution created successfully
@@ -300,8 +300,8 @@ paths:
           description: Filter by trigger type
           schema:
             type: string
-            enum: [Schedule (Cron), Webhook, Event (Incident/Alert)]
-          example: Schedule (Cron)
+            enum: [Schedule, Webhook, Event]
+          example: Schedule
         - name: enabled
           in: query
           description: Filter by enabled status
@@ -347,22 +347,25 @@ paths:
                 summary: Schedule trigger for nightly cleanup
                 value:
                   name: "Nightly Log Cleanup"
-                  type: "Schedule (Cron)"
-                  playbook_id: "playbook-cleanup-001"
+                  type: "Schedule"
+                  target_playbook_id: "playbook-cleanup-001"
                   enabled: true
                   config:
-                    cron_expression: "0 2 * * *"
-                    timezone: "UTC"
+                    schedule:
+                      cron: "0 2 * * *"
+                      timezone: "UTC"
+                      cron_description: "Runs daily at 02:00 UTC"
               eventTrigger:
                 summary: Event trigger for critical incidents
                 value:
                   name: "Auto-restart on Critical Alert"
-                  type: "Event (Incident/Alert)"
-                  playbook_id: "playbook-restart-001"
+                  type: "Event"
+                  target_playbook_id: "playbook-restart-001"
                   enabled: true
                   config:
-                    event_type: "incident.created"
-                    condition: "severity == 'Critical'"
+                    event:
+                      source: "incident.created"
+                      severity: "Critical"
       responses:
         '201':
           description: Trigger created successfully
@@ -440,30 +443,36 @@ paths:
   # ===================
   # Batch Operations
   # ===================
-  /automation/playbooks/batch-enable:
+  /automation/playbooks/batch-actions:
     post:
       tags: [Automation]
-      summary: Batch enable playbooks
-      description: Enable multiple playbooks at once
-      operationId: batchEnablePlaybooks
+      summary: Batch playbook actions
+      description: Perform batch actions on automation playbooks
+      operationId: batchPlaybookActions
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [playbook_ids]
+              required: [action, ids]
               properties:
-                playbook_ids:
+                action:
+                  type: string
+                  enum: [delete]
+                  description: Supported batch action for playbooks
+                ids:
                   type: array
                   items:
                     type: string
                   minItems: 1
+                  description: Identifiers of the playbooks to process
             example:
-              playbook_ids: ["playbook-001", "playbook-002"]
+              action: delete
+              ids: ["play-001", "play-002"]
       responses:
         '200':
-          description: Batch enable completed
+          description: Batch action completed
           content:
             application/json:
               schema:
@@ -473,30 +482,49 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /automation/playbooks/batch-disable:
+  /automation/triggers/batch-actions:
     post:
       tags: [Automation]
-      summary: Batch disable playbooks
-      description: Disable multiple playbooks at once
-      operationId: batchDisablePlaybooks
+      summary: Batch trigger actions
+      description: Enable, disable, or delete multiple automation triggers
+      operationId: batchTriggerActions
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [playbook_ids]
+              required: [action, ids]
               properties:
-                playbook_ids:
+                action:
+                  type: string
+                  enum: [enable, disable, delete]
+                  description: Batch action to apply to triggers
+                ids:
                   type: array
                   items:
                     type: string
                   minItems: 1
-            example:
-              playbook_ids: ["playbook-003", "playbook-004"]
+                  description: Identifiers of the triggers to process
+            examples:
+              enable:
+                summary: Enable triggers
+                value:
+                  action: enable
+                  ids: ["trig-001", "trig-002"]
+              disable:
+                summary: Disable triggers
+                value:
+                  action: disable
+                  ids: ["trig-003", "trig-004"]
+              delete:
+                summary: Delete triggers
+                value:
+                  action: delete
+                  ids: ["trig-005", "trig-006"]
       responses:
         '200':
-          description: Batch disable completed
+          description: Batch action completed
           content:
             application/json:
               schema:

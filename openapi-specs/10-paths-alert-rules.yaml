@@ -112,6 +112,54 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /alert-rules/{id}/trigger:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    post:
+      tags: [Alert Rules]
+      summary: Manually trigger alert rule
+      description: Simulate an alert event and produce an incident for the specified rule
+      operationId: triggerAlertRule
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                context:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  description: Optional context to include in the simulated trigger
+            example:
+              context:
+                initiated_by: admin
+                reason: Manual smoke test
+      responses:
+        '200':
+          description: Alert rule triggered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  incident_id:
+                    type: string
+              example:
+                success: true
+                message: 成功觸發告警規則: CPU 使用率過高
+                incident_id: INC-ABC12345
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
     patch:
       tags: [Alert Rules]
       summary: Update alert rule
@@ -164,31 +212,49 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /alert-rules/batch-enable:
+  /alert-rules/batch-actions:
     post:
       tags: [Alert Rules]
-      summary: Batch enable alert rules
-      description: Enable multiple alert rules at once
-      operationId: batchEnableAlertRules
+      summary: Batch operations for alert rules
+      description: Perform enable, disable, or delete actions on multiple alert rules
+      operationId: batchAlertRuleActions
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [rule_ids]
+              required: [action, ids]
               properties:
-                rule_ids:
+                action:
+                  type: string
+                  enum: [enable, disable, delete]
+                  description: Batch action to apply
+                ids:
                   type: array
                   items:
                     type: string
                   minItems: 1
-                  description: List of alert rule IDs to enable
-            example:
-              rule_ids: ["rule-001", "rule-002", "rule-003"]
+                  description: Identifiers of the target alert rules
+            examples:
+              enable:
+                summary: Enable rules
+                value:
+                  action: enable
+                  ids: ["rule-001", "rule-002", "rule-003"]
+              disable:
+                summary: Disable rules
+                value:
+                  action: disable
+                  ids: ["rule-004", "rule-005"]
+              delete:
+                summary: Delete rules
+                value:
+                  action: delete
+                  ids: ["rule-006", "rule-007"]
       responses:
         '200':
-          description: Batch enable completed
+          description: Batch action completed
           content:
             application/json:
               schema:
@@ -197,85 +263,7 @@ paths:
                 success: true
                 updated: 3
                 skipped_ids: []
-                message: "Successfully enabled 3 alert rules"
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /alert-rules/batch-disable:
-    post:
-      tags: [Alert Rules]
-      summary: Batch disable alert rules
-      description: Disable multiple alert rules at once
-      operationId: batchDisableAlertRules
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [rule_ids]
-              properties:
-                rule_ids:
-                  type: array
-                  items:
-                    type: string
-                  minItems: 1
-                  description: List of alert rule IDs to disable
-            example:
-              rule_ids: ["rule-004", "rule-005"]
-      responses:
-        '200':
-          description: Batch disable completed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BatchResult'
-              example:
-                success: true
-                updated: 2
-                skipped_ids: []
-                message: "Successfully disabled 2 alert rules"
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /alert-rules/batch-delete:
-    post:
-      tags: [Alert Rules]
-      summary: Batch delete alert rules
-      description: Delete multiple alert rules at once
-      operationId: batchDeleteAlertRules
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [rule_ids]
-              properties:
-                rule_ids:
-                  type: array
-                  items:
-                    type: string
-                  minItems: 1
-                  description: List of alert rule IDs to delete
-            example:
-              rule_ids: ["rule-006", "rule-007"]
-      responses:
-        '200':
-          description: Batch delete completed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BatchResult'
-              example:
-                success: true
-                updated: 2
-                skipped_ids: []
-                message: "Successfully deleted 2 alert rules"
+                message: Successfully processed alert rules
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
