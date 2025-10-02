@@ -237,6 +237,31 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /incidents/{id}/notify:
+    parameters:
+      - $ref: "#/components/parameters/IdParam"
+    post:
+      tags: [Incidents]
+      summary: Trigger incident notifications
+      description: Manually trigger the notification workflow for a specific incident.
+      operationId: notifyIncident
+      responses:
+        "200":
+          description: Notification dispatched successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  notification_id:
+                    type: string
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /incidents/batch-close:
     post:
       tags: [Incidents]
