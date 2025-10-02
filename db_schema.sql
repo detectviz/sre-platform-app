@@ -28,7 +28,7 @@ CREATE TYPE resource_status AS ENUM ('healthy', 'warning', 'critical', 'offline'
 
 CREATE TYPE playbook_type AS ENUM ('shell', 'python', 'ansible', 'terraform');
 CREATE TYPE execution_status AS ENUM ('pending', 'running', 'success', 'failed', 'cancelled');
-CREATE TYPE trigger_source AS ENUM ('manual', 'schedule', 'webhook', 'event');
+CREATE TYPE trigger_source AS ENUM ('manual', 'schedule', 'webhook', 'event', 'custom', 'grafana');
 CREATE TYPE trigger_type AS ENUM ('schedule', 'webhook', 'event');
 CREATE TYPE retry_policy AS ENUM ('none', 'fixed', 'exponential');
 
