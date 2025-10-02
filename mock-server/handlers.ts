@@ -835,9 +835,9 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         timestamp,
                         strategy: 'Manual Notification',
                         channel: 'System',
-                        channel_type: 'System' as NotificationChannelType,
+                        channel_type: 'email' as NotificationChannelType,
                         recipient: 'Admin',
-                        status: 'success' as const,
+                        status: 'sent' as const,
                         content: `手動觸發通知: ${incident.summary}`
                     };
 
@@ -847,7 +847,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'NOTIFY',
+                        'execute',
                         'Incident',
                         id,
                         { summary: incident.summary }

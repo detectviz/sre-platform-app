@@ -27,7 +27,7 @@ components:
           example: SRE 平台團隊
         status:
           type: string
-          enum: [active, inactive]
+          enum: [active, invited, inactive]
           example: active
         avatar:
           type: string
@@ -80,7 +80,7 @@ components:
           type: string
         status:
           type: string
-          enum: [active, inactive]
+          enum: [active, invited, inactive]
 
     # ===================
     # Team
