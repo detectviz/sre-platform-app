@@ -15,6 +15,7 @@ interface KeyValueInputProps {
     onChange: (values: KeyValue[]) => void;
     keyPlaceholder?: string;
     valuePlaceholder?: string;
+    addLabel?: string;
 }
 
 const MultiSelectDropdown: React.FC<{
@@ -84,7 +85,7 @@ const MultiSelectDropdown: React.FC<{
     );
 };
 
-const KeyValueInput: React.FC<KeyValueInputProps> = ({ values, onChange, keyPlaceholder = "Key", valuePlaceholder = "Value" }) => {
+const KeyValueInput: React.FC<KeyValueInputProps> = ({ values, onChange, keyPlaceholder = "Key", valuePlaceholder = "Value", addLabel = '新增標籤' }) => {
     const [tagDefinitions, setTagDefinitions] = useState<TagDefinition[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -160,7 +161,7 @@ const KeyValueInput: React.FC<KeyValueInputProps> = ({ values, onChange, keyPlac
                 );
             })}
             <button type="button" onClick={handleAdd} className="text-sm text-sky-400 hover:text-sky-300 flex items-center">
-                <Icon name="plus" className="w-4 h-4 mr-1" /> Add Tag
+                <Icon name="plus" className="w-4 h-4 mr-1" /> {addLabel}
             </button>
         </div>
     );

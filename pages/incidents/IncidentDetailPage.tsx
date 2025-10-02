@@ -10,6 +10,7 @@ import UserAvatar from '../../components/UserAvatar';
 import { useOptions } from '../../contexts/OptionsContext';
 import { showToast } from '../../services/toast';
 import Modal from '../../components/Modal';
+import StatusTag from '../../components/StatusTag';
 
 interface IncidentDetailPageProps {
   incident_id: string;
@@ -116,9 +117,46 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incident_id, on
     }
   };
 
-  const getStyle = (descriptors: StyleDescriptor[] | undefined, value: string | undefined): string => {
-    if (!descriptors || !value) return 'bg-slate-500/20 text-slate-400';
-    return descriptors.find(d => d.value === value)?.class_name || 'bg-slate-500/20 text-slate-400';
+  const getDescriptor = (descriptors: StyleDescriptor[] | undefined, value: string | undefined) => {
+    if (!descriptors || !value) return undefined;
+    return descriptors.find(d => d.value === value);
+  };
+
+  const getLabel = (descriptors: StyleDescriptor[] | undefined, value: string | undefined) => {
+    if (!descriptors || !value) return value || 'N/A';
+    return descriptors.find(d => d.value === value)?.label || value;
+  };
+
+  const translateAction = (action: string) => {
+    const mapping: Record<string, string> = {
+      Created: '建立',
+      'Re-assigned': '重新指派',
+      'Reassigned': '重新指派',
+      'AI Analysis Generated': 'AI 分析已生成',
+      'AI Analysis Triggered': '已觸發 AI 分析',
+      'Automation Executed': '自動化流程已執行',
+      'Notification Sent': '已發送通知',
+      Acknowledged: '已認領',
+      Resolved: '已解決',
+      Silenced: '已靜音',
+      'Note Added': '新增備註',
+      'Note Deleted': '刪除備註',
+    };
+    return mapping[action] || action;
+  };
+
+  const translateDetails = (details: string | undefined) => {
+    if (!details) return '';
+    return details
+      .replace('Incident created from rule', '因規則觸發：')
+      .replace('Assignee changed from', '指派人由')
+      .replace(' to ', ' 變更為 ')
+      .replace('Maintenance window approved and incident silenced.', '維護時段已核准，事件已靜音。')
+      .replace('AI analysis generated.', '已產出 AI 分析報告。')
+      .replace('AI analysis requested.', '已請求 AI 分析。')
+      .replace('Automation playbook executed.', '已執行自動化腳本。')
+      .replace('Notification sent to', '已發送通知給')
+      .replace('Note added:', '新增備註：');
   };
 
   if (isLoading) {
@@ -138,6 +176,10 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incident_id, on
       </div>
     );
   }
+
+  const statusDescriptor = getDescriptor(incidentOptions?.statuses, incident.status);
+  const severityDescriptor = getDescriptor(incidentOptions?.severities, incident.severity);
+  const impactDescriptor = getDescriptor(incidentOptions?.impacts, incident.impact);
 
   const getTimelineIconAndColor = (action: string) => {
     const lowerAction = action.toLowerCase();
@@ -160,19 +202,13 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incident_id, on
         <div className="pb-6 mb-6 border-b border-slate-700/50 shrink-0">
           <dl className="grid gap-6 auto-cols-fr" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
             <InfoItem label="狀態">
-              <span className={`inline-block px-3 py-1 text-sm font-semibold rounded-full capitalize ${getStyle(incidentOptions?.statuses, incident.status)}`}>
-                {incident.status}
-              </span>
+              <StatusTag label={getLabel(incidentOptions?.statuses, incident.status)} className={statusDescriptor?.class_name || ''} />
             </InfoItem>
             <InfoItem label="嚴重性">
-              <span className={`inline-block px-3 py-1 text-sm font-semibold rounded-full border ${getStyle(incidentOptions?.severities, incident.severity)}`}>
-                {incident.severity}
-              </span>
+              <StatusTag label={getLabel(incidentOptions?.severities, incident.severity)} className={severityDescriptor?.class_name || ''} />
             </InfoItem>
             <InfoItem label="影響範圍">
-              <span className={`inline-block px-3 py-1 text-sm font-semibold rounded-full border ${getStyle(incidentOptions?.impacts, incident.impact)}`}>
-                {incident.impact}
-              </span>
+              <StatusTag label={getLabel(incidentOptions?.impacts, incident.impact)} className={impactDescriptor?.class_name || ''} />
             </InfoItem>
             <InfoItem label="資源">
               <Link to={`/resources/${incident.resource_id}`} className="text-sky-400 hover:text-sky-300 hover:underline transition-colors truncate block">
@@ -259,13 +295,13 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incident_id, on
                       <Icon name={icon} className="w-4 h-4 text-white" />
                     </span>
                     <div className="flex items-center justify-between mb-2 gap-4">
-                      <p className="text-sm font-semibold text-white">{event.action}</p>
+                      <p className="text-sm font-semibold text-white">{translateAction(event.action)}</p>
                       <time className="text-xs font-normal text-slate-500 shrink-0">{event.timestamp}</time>
                     </div>
-                    <p className="text-sm font-normal text-slate-400 mb-2">by <span className="font-medium text-slate-300">{event.user}</span></p>
+                    <p className="text-sm font-normal text-slate-400 mb-2">由 <span className="font-medium text-slate-300">{event.user}</span></p>
                     {event.details && (
                       <div className="relative">
-                        <p className="text-sm p-3 bg-slate-900/50 rounded-md border border-slate-700 pr-10 leading-relaxed">{event.details}</p>
+                        <p className="text-sm p-3 bg-slate-900/50 rounded-md border border-slate-700 pr-10 leading-relaxed">{translateDetails(event.details)}</p>
                         {isCurrentUserNote && (
                           <button
                             onClick={() => setDeletingNote(event)}

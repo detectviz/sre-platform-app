@@ -16,6 +16,7 @@ import { showToast } from '../../services/toast';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
 import RuleAnalysisModal from '../../components/RuleAnalysisModal';
 import { useOptions } from '../../contexts/OptionsContext';
+import StatusTag from '../../components/StatusTag';
 
 const PAGE_IDENTIFIER = 'alert_rules';
 
@@ -248,7 +249,22 @@ const AlertRulePage: React.FC = () => {
                 const label = descriptor?.label || rule.severity;
                 return <span className={`px-2 py-1 text-xs font-semibold rounded-full ${pillClass}`}>{label}</span>;
             }
-            case 'automation_enabled': return rule.automation_enabled ? <Icon name="check-circle" className="w-5 h-5 text-green-400" /> : <Icon name="x-circle" className="w-5 h-5 text-slate-500" />;
+            case 'automation_enabled': {
+                const automationLabel = rule.automation_enabled ? '已啟用' : '未啟用';
+                const automationTone = rule.automation_enabled ? 'success' : 'neutral';
+                const automationTooltip = rule.automation_enabled
+                    ? '觸發後會執行對應的自動化流程。'
+                    : '尚未綁定自動化流程。';
+                return (
+                    <StatusTag
+                        label={automationLabel}
+                        tone={automationTone}
+                        icon={rule.automation_enabled ? 'zap' : 'zap-off'}
+                        tooltip={automationTooltip}
+                        dense
+                    />
+                );
+            }
             case 'creator': return rule.creator;
             case 'updated_at': return rule.updated_at;
             default:
