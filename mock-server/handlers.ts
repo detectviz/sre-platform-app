@@ -98,6 +98,33 @@ const sortData = (data: any[], sortBy: string, sortOrder: 'asc' | 'desc') => {
 
 const isActiveEntity = (entity: any) => entity && !entity.deleted_at;
 
+const TIME_RANGE_UNIT_IN_MS: Record<string, number> = {
+    m: 60 * 1000,
+    h: 60 * 60 * 1000,
+    d: 24 * 60 * 60 * 1000,
+};
+
+const parseTimeRangeToMs = (value: unknown): number | null => {
+    if (typeof value !== 'string') {
+        return null;
+    }
+
+    const match = value.trim().match(/^(\d+)([mhd])$/);
+    if (!match) {
+        return null;
+    }
+
+    const amount = Number(match[1]);
+    const unit = match[2];
+    const unitInMs = TIME_RANGE_UNIT_IN_MS[unit];
+
+    if (!Number.isFinite(amount) || amount <= 0 || !unitInMs) {
+        return null;
+    }
+
+    return amount * unitInMs;
+};
+
 const validateForeignKey = (collection: any[], id: string | undefined | null, entityLabel: string) => {
     if (!id) {
         return;
@@ -2810,7 +2837,22 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
             // Analysis
             case 'GET /analysis': {
                 if (id === 'overview') {
-                    return DB.analysis_overview_data;
+                    const overview = JSON.parse(JSON.stringify(DB.analysis_overview_data));
+                    const timeRangeParam = params?.time_range;
+                    const rangeInMs = parseTimeRangeToMs(timeRangeParam);
+
+                    if (Array.isArray(overview?.recent_logs) && rangeInMs !== null) {
+                        const now = Date.now();
+                        overview.recent_logs = overview.recent_logs.filter((log: any) => {
+                            const timestamp = new Date(log.timestamp).getTime();
+                            if (Number.isNaN(timestamp)) {
+                                return true;
+                            }
+                            return now - timestamp <= rangeInMs;
+                        });
+                    }
+
+                    return overview;
                 }
                 if (id === 'capacity-planning') {
                     const generateTrendData = (base: number, trend: number, variance: number) => {

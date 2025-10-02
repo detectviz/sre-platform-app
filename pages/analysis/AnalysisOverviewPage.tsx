@@ -1,6 +1,6 @@
 
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import EChartsReact from '../../components/EChartsReact';
 import Icon from '../../components/Icon';
@@ -10,31 +10,109 @@ import { AnalysisOverviewData, LogEntry, Anomaly, Suggestion } from '../../types
 import api from '../../services/api';
 import { useChartTheme } from '../../contexts/ChartThemeContext';
 import { useLogOptions } from '../../hooks/useLogOptions';
+import LogLevelPill from '../../components/LogLevelPill';
+
+const DEFAULT_TIME_RANGE = '15m';
 
 const AnalysisOverviewPage: React.FC = () => {
     const [overviewData, setOverviewData] = useState<AnalysisOverviewData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [selectedTimeRange, setSelectedTimeRange] = useState<string>(DEFAULT_TIME_RANGE);
     const { theme: chartTheme } = useChartTheme();
+    const { timeRangeOptions, isLoading: isTimeRangeLoading, error: timeRangeError } = useLogOptions();
 
     const navigate = useNavigate();
 
-    const fetchOverviewData = useCallback(async () => {
-        setIsLoading(true);
+    const fetchOverviewData = useCallback(async (timeRange: string, options: { silent?: boolean } = {}) => {
+        const { silent = false } = options;
+        if (silent) {
+            setIsRefreshing(true);
+        } else {
+            setIsLoading(true);
+        }
         setError(null);
         try {
-            const { data } = await api.get<AnalysisOverviewData>('/analysis/overview');
+            const config = timeRange ? { params: { time_range: timeRange } } : undefined;
+            const { data } = await api.get<AnalysisOverviewData>('/analysis/overview', config);
             setOverviewData(data);
         } catch (err) {
             setError('無法獲取分析總覽數據。');
         } finally {
-            setIsLoading(false);
+            if (!silent) {
+                setIsLoading(false);
+            }
+            setIsRefreshing(false);
         }
     }, []);
 
+    const hasLoadedRef = useRef(false);
+
     useEffect(() => {
-        fetchOverviewData();
-    }, [fetchOverviewData]);
+        if (!selectedTimeRange) {
+            return;
+        }
+        const silent = hasLoadedRef.current;
+        void fetchOverviewData(selectedTimeRange, { silent });
+        if (!hasLoadedRef.current) {
+            hasLoadedRef.current = true;
+        }
+    }, [fetchOverviewData, selectedTimeRange]);
+
+    useEffect(() => {
+        if (!timeRangeOptions || timeRangeOptions.length === 0) {
+            return;
+        }
+        setSelectedTimeRange(prev => {
+            if (prev && timeRangeOptions.some(option => option.value === prev)) {
+                return prev;
+            }
+            const fallbackOption = timeRangeOptions.find(option => option.default) ?? timeRangeOptions[0];
+            return fallbackOption.value;
+        });
+    }, [timeRangeOptions]);
+
+    const formatTimeRangeLabel = useCallback((value: string) => {
+        const match = value?.match(/^(\d+)([mhd])$/);
+        if (!match) {
+            return value;
+        }
+        const [, amount, unit] = match;
+        const unitLabel = unit === 'm' ? '分鐘' : unit === 'h' ? '小時' : unit === 'd' ? '天' : unit;
+        return `最近 ${amount} ${unitLabel}`;
+    }, []);
+
+    const selectableTimeRangeOptions = useMemo(() => {
+        if (timeRangeOptions.length > 0) {
+            return timeRangeOptions;
+        }
+        if (!selectedTimeRange) {
+            return [];
+        }
+        return [{ value: selectedTimeRange, label: formatTimeRangeLabel(selectedTimeRange) }];
+    }, [timeRangeOptions, selectedTimeRange, formatTimeRangeLabel]);
+
+    const displayedLogs: LogEntry[] = useMemo(() => overviewData?.recent_logs ?? [], [overviewData]);
+
+    const formatLogTimestamp = useCallback((timestamp: string) => {
+        const parsed = new Date(timestamp);
+        if (Number.isNaN(parsed.getTime())) {
+            return timestamp;
+        }
+        return parsed.toLocaleString();
+    }, []);
+
+    const handleTimeRangeChange = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
+        setSelectedTimeRange(event.target.value);
+    }, []);
+
+    const handleRefreshClick = useCallback(() => {
+        if (!selectedTimeRange) {
+            return;
+        }
+        void fetchOverviewData(selectedTimeRange);
+    }, [fetchOverviewData, selectedTimeRange]);
 
     const handleEventCorrelationClick = (params: any) => {
         if (params.dataType !== 'node' || !params.data.id) return;
@@ -215,7 +293,7 @@ const AnalysisOverviewPage: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <Toolbar rightActions={<><ToolbarButton icon="brain-circuit" text="重新分析" onClick={fetchOverviewData} ai /><ToolbarButton icon="download" text="匯出報表" onClick={handleExport} /></>} />
+            <Toolbar rightActions={<><ToolbarButton icon="brain-circuit" text="重新分析" onClick={handleRefreshClick} ai disabled={isLoading || isRefreshing} /><ToolbarButton icon="download" text="匯出報表" onClick={handleExport} /></>} />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-1 glass-card rounded-xl p-6 flex flex-col text-center">
@@ -263,6 +341,61 @@ const AnalysisOverviewPage: React.FC = () => {
                             </div>
                         ))}
                     </div>
+                </div>
+            </div>
+
+            <div className="glass-card rounded-xl p-6">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-4">
+                    <div>
+                        <h2 className="text-xl font-bold">重要日誌快照</h2>
+                        <p className="text-sm text-slate-400">依據所選時間範圍彙整的高優先日誌事件。</p>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                        {(isTimeRangeLoading || isRefreshing) && (
+                            <Icon name="loader-circle" className="w-4 h-4 animate-spin text-slate-400" />
+                        )}
+                        {timeRangeError && (
+                            <span className="text-xs text-red-400 bg-red-500/10 px-2 py-1 rounded-md">時間選項載入失敗</span>
+                        )}
+                        <select
+                            value={selectedTimeRange}
+                            onChange={handleTimeRangeChange}
+                            disabled={isTimeRangeLoading || selectableTimeRangeOptions.length === 0}
+                            className="bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                        >
+                            {selectableTimeRangeOptions.map(option => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+                {displayedLogs.length === 0 ? (
+                    <div className="text-sm text-slate-400 border border-dashed border-slate-700 rounded-lg p-6 text-center">
+                        指定時間範圍內沒有重要日誌。
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {displayedLogs.map(log => (
+                            <div key={log.id} className="bg-slate-800/50 border border-slate-700/40 rounded-lg px-4 py-3">
+                                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                    <div className="flex items-start space-x-3">
+                                        <LogLevelPill level={log.level} />
+                                        <div>
+                                            <p className="text-sm text-slate-200 font-medium leading-snug">{log.message}</p>
+                                            <p className="text-xs text-slate-400 mt-1">服務：{log.service}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-xs text-slate-400 md:text-right font-mono">{formatLogTimestamp(log.timestamp)}</div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                <div className="mt-4 flex justify-end">
+                    <Link to="/analyzing/logs" className="text-sm text-sky-400 hover:text-sky-300 inline-flex items-center space-x-2">
+                        <span>前往日誌探索</span>
+                        <Icon name="arrow-up-right" className="w-4 h-4" />
+                    </Link>
                 </div>
             </div>
 
