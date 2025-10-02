@@ -248,7 +248,7 @@ export interface Resource {
   owner: string;
   team_id?: string;
   owner_id?: string;
-  tags?: Record<string, string>;
+  tags?: KeyValueTag[];
   last_check_in_at: string;
   created_at: string;
   updated_at: string;

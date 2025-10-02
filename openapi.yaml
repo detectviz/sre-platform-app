@@ -290,6 +290,30 @@ paths:
         '204':
           description: Incident deleted
 
+  /incidents/{id}/notify:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags: [Incidents]
+      summary: Trigger incident notifications
+      description: Manually trigger notification delivery for the specified incident.
+      responses:
+        '200':
+          description: Notification dispatched successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  notification_id:
+                    type: string
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /incidents/batch-close:
     post:
       tags: [Incidents]
@@ -482,6 +506,147 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BatchResult'
+
+  /silence-rules:
+    get:
+      tags: [Silence Rules]
+      summary: List silence rules
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: keyword
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [single, repeat, condition]
+        - name: enabled
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SilenceRule'
+
+    post:
+      tags: [Silence Rules]
+      summary: Create silence rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SilenceRuleCreate'
+      responses:
+        '201':
+          description: Silence rule created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SilenceRule'
+
+  /silence-rules/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    patch:
+      tags: [Silence Rules]
+      summary: Update silence rule
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SilenceRuleUpdate'
+      responses:
+        '200':
+          description: Silence rule updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SilenceRule'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Silence Rules]
+      summary: Delete silence rule
+      responses:
+        '204':
+          description: Silence rule deleted
+
+  /silence-rules/templates:
+    get:
+      tags: [Silence Rules]
+      summary: List silence rule templates
+      responses:
+        '200':
+          description: Template list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SilenceRuleTemplate'
+
+  /silence-rules/batch-actions:
+    post:
+      tags: [Silence Rules]
+      summary: Batch silence rule operations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, ids]
+              properties:
+                action:
+                  type: string
+                  enum: [delete, enable, disable]
+                ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Batch operation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResult'
+
+  /silence-rules/import:
+    post:
+      tags: [Silence Rules]
+      summary: Import silence rules
+      responses:
+        '200':
+          description: Import completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
 
   # ===================
   # Resources
@@ -1689,9 +1854,18 @@ components:
         owner_id:
           type: string
         tags:
-          type: object
-          additionalProperties:
-            type: string
+          type: array
+          items:
+            type: object
+            required: [key, value]
+            properties:
+              id:
+                type: string
+                readOnly: true
+              key:
+                type: string
+              value:
+                type: string
         occurred_at:
           type: string
           format: date-time
@@ -1754,7 +1928,15 @@ components:
           allOf:
             - $ref: '#/components/schemas/IncidentCategory'
         tags:
-          type: object
+          type: array
+          items:
+            type: object
+            required: [key, value]
+            properties:
+              key:
+                type: string
+              value:
+                type: string
 
     IncidentUpdate:
       type: object
@@ -1766,7 +1948,15 @@ components:
         assignee:
           type: string
         tags:
-          type: object
+          type: array
+          items:
+            type: object
+            required: [key, value]
+            properties:
+              key:
+                type: string
+              value:
+                type: string
 
     RuleCondition:
       type: object
@@ -1868,6 +2058,123 @@ components:
           allOf:
             - $ref: '#/components/schemas/IncidentSeverity'
 
+    SilenceMatcher:
+      type: object
+      required: [key, operator, value]
+      properties:
+        key:
+          type: string
+        operator:
+          type: string
+          enum: ['=', '!=', '~=']
+        value:
+          type: string
+
+    SilenceSchedule:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [single, recurring]
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        cron:
+          type: string
+        cron_description:
+          type: string
+        timezone:
+          type: string
+
+    SilenceRule:
+      type: object
+      required: [id, name, enabled, type, matchers, schedule]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        enabled:
+          type: boolean
+        type:
+          type: string
+          enum: [single, repeat, condition]
+        matchers:
+          type: array
+          items:
+            $ref: '#/components/schemas/SilenceMatcher'
+        schedule:
+          $ref: '#/components/schemas/SilenceSchedule'
+        creator:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    SilenceRuleCreate:
+      type: object
+      required: [name, enabled, type, matchers, schedule]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        enabled:
+          type: boolean
+        type:
+          type: string
+          enum: [single, repeat, condition]
+        matchers:
+          type: array
+          items:
+            $ref: '#/components/schemas/SilenceMatcher'
+        schedule:
+          $ref: '#/components/schemas/SilenceSchedule'
+
+    SilenceRuleUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        enabled:
+          type: boolean
+        type:
+          type: string
+          enum: [single, repeat, condition]
+        matchers:
+          type: array
+          items:
+            $ref: '#/components/schemas/SilenceMatcher'
+        schedule:
+          $ref: '#/components/schemas/SilenceSchedule'
+
+    SilenceRuleTemplate:
+      type: object
+      required: [id, name, data]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+
     Resource:
       type: object
       required: [id, name, type, status, created_at]
@@ -1888,9 +2195,18 @@ components:
         ip:
           type: string
         tags:
-          type: object
-          additionalProperties:
-            type: string
+          type: array
+          items:
+            type: object
+            required: [key, value]
+            properties:
+              id:
+                type: string
+                readOnly: true
+              key:
+                type: string
+              value:
+                type: string
         datasource_id:
           type: string
         metrics:
@@ -1924,7 +2240,15 @@ components:
         ip:
           type: string
         tags:
-          type: object
+          type: array
+          items:
+            type: object
+            required: [key, value]
+            properties:
+              key:
+                type: string
+              value:
+                type: string
 
     ResourceUpdate:
       type: object
@@ -1935,7 +2259,15 @@ components:
           allOf:
             - $ref: '#/components/schemas/ResourceStatus'
         tags:
-          type: object
+          type: array
+          items:
+            type: object
+            required: [key, value]
+            properties:
+              key:
+                type: string
+              value:
+                type: string
 
     AutomationPlaybook:
       type: object

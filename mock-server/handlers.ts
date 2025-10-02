@@ -204,30 +204,104 @@ const getConfigEntityCollection = (entityType: ConfigVersion['entity_type']) => 
     }
 };
 
+const ensureArrayTags = (tags: any): { id: string; key: string; value: string }[] => {
+    if (Array.isArray(tags)) {
+        return tags
+            .filter(tag => tag && typeof tag.key === 'string' && typeof tag.value === 'string')
+            .map(tag => ({ id: tag.id ?? `tag-${uuidv4()}`, key: tag.key, value: tag.value }));
+    }
+    if (tags && typeof tags === 'object') {
+        return Object.entries(tags).map(([key, value]) => ({
+            id: `tag-${uuidv4()}`,
+            key,
+            value: String(value)
+        }));
+    }
+    return [];
+};
+
+const setArrayTag = (entity: any, key: string, value: string | undefined): void => {
+    if (!value) {
+        return;
+    }
+    entity.tags = ensureArrayTags(entity.tags);
+    const existing = entity.tags.find((tag: any) => tag.key === key);
+    if (existing) {
+        existing.value = value;
+        if (!existing.id) {
+            existing.id = `tag-${uuidv4()}`;
+        }
+    } else {
+        entity.tags.push({ id: `tag-${uuidv4()}`, key, value });
+    }
+};
+
+const populateOwnerName = (entity: any): void => {
+    if (!entity) {
+        return;
+    }
+    if (entity.owner_id) {
+        const owner = DB.users.find((u: any) => u.id === entity.owner_id && !u.deleted_at);
+        if (owner) {
+            entity.owner = owner.name;
+            return;
+        }
+    }
+    if (entity.team_id) {
+        const team = DB.teams.find((t: any) => t.id === entity.team_id && !t.deleted_at);
+        if (team) {
+            entity.owner = team.name;
+            return;
+        }
+    }
+    if (!entity.owner) {
+        entity.owner = 'Unassigned';
+    }
+};
+
 /**
  * 自動填充 team 和 owner 標籤（從關聯實體自動生成）
  * @param entity 實體物件（需要有 team_id 和/或 owner_id 欄位）
+ * @param options 控制標籤輸出格式
  */
-const autoPopulateReadonlyTags = (entity: any): void => {
-    if (!entity.tags) {
-        entity.tags = {};
-    }
+const autoPopulateReadonlyTags = (entity: any, options: { asArray?: boolean } = {}): void => {
+    const { asArray = false } = options;
 
-    // 自動填充 team 標籤
-    if (entity.team_id) {
-        const team = DB.teams.find((t: any) => t.id === entity.team_id);
-        if (team) {
-            entity.tags.team = team.name;
+    if (asArray) {
+        entity.tags = ensureArrayTags(entity.tags);
+    } else {
+        if (!entity.tags || typeof entity.tags !== 'object' || Array.isArray(entity.tags)) {
+            entity.tags = {};
         }
     }
 
-    // 自動填充 owner 標籤
-    if (entity.owner_id) {
-        const owner = DB.users.find((u: any) => u.id === entity.owner_id);
+    const team = entity.team_id ? DB.teams.find((t: any) => t.id === entity.team_id) : undefined;
+    const owner = entity.owner_id ? DB.users.find((u: any) => u.id === entity.owner_id) : undefined;
+
+    if (asArray) {
+        if (team) {
+            setArrayTag(entity, 'team', team.name);
+        }
+        if (owner) {
+            setArrayTag(entity, 'owner', owner.name);
+        }
+    } else {
+        if (team) {
+            entity.tags.team = team.name;
+        }
         if (owner) {
             entity.tags.owner = owner.name;
         }
     }
+};
+
+const normalizeResourceEntity = (resource: any) => {
+    if (!resource) {
+        return resource;
+    }
+    autoPopulateReadonlyTags(resource, { asArray: true });
+    populateOwnerName(resource);
+    return resource;
 };
 
 /**
@@ -534,6 +608,8 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     }
                 }
 
+                populateOwnerName(newDashboardData);
+
                 // 設置創建和更新時間戳
                 const timestamp = new Date().toISOString();
                 newDashboardData.created_at = timestamp;
@@ -564,6 +640,8 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 }
                 // 更新 updated_at 時間戳
                 const updated = { ...existing, ...body, updated_at: new Date().toISOString() };
+                populateOwnerName(updated);
+                autoPopulateReadonlyTags(updated);
                 DB.dashboards[index] = updated;
                 // Audit log for dashboard update
                 const currentUser = getCurrentUser();
@@ -813,10 +891,6 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         throw { status: 400, message: 'Missing required fields for creating an incident.' };
                     }
 
-                    // 驗證枚舉值
-                    validateEnum(severity, ['critical', 'warning', 'info'], 'severity');
-                    validateEnum(impact, ['high', 'medium', 'low'], 'impact');
-
                     const resource = DB.resources.find((r: any) => r.id === resource_id);
                     if (!resource) {
                         throw { status: 404, message: 'Resource not found.' };
@@ -829,18 +903,20 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
 
                     const timestamp = new Date().toISOString();
                     const newIncidentId = `INC-${uuidv4().slice(0, 8).toUpperCase()}`;
-                    const normalizedSeverity = (severity as string)?.charAt(0).toUpperCase() + (severity as string)?.slice(1).toLowerCase();
-                    const normalizedImpact = (impact as string)?.charAt(0).toUpperCase() + (impact as string)?.slice(1).toLowerCase();
+                    const severityValue = validateEnum(severity, ['critical', 'warning', 'info'], 'severity');
+                    const impactValue = validateEnum(impact, ['high', 'medium', 'low'], 'impact');
+                    const normalizedSeverity = (severityValue as string).toLowerCase() as Incident['severity'];
+                    const normalizedImpact = (impactValue as string).toLowerCase() as Incident['impact'];
                     const newIncident: Incident = {
                         id: newIncidentId,
                         summary,
                         resource: resource.name,
                         resource_id,
-                        impact: normalizedImpact as Incident['impact'],
+                        impact: normalizedImpact,
                         rule: rule.name,
                         rule_id,
                         status: 'new',
-                        severity: normalizedSeverity as Incident['severity'],
+                        severity: normalizedSeverity,
                         assignee: assignee || undefined,
                         team_id: body.team_id,
                         owner_id: body.owner_id,
@@ -990,6 +1066,20 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
 
                 if (Object.prototype.hasOwnProperty.call(updates, 'status')) {
                     updates.status = normalizeIncidentStatus(updates.status);
+                }
+                if (Object.prototype.hasOwnProperty.call(updates ?? {}, 'severity') && updates.severity) {
+                    updates.severity = validateEnum(
+                        (updates.severity as string).toLowerCase(),
+                        ['critical', 'warning', 'info'],
+                        'severity'
+                    );
+                }
+                if (Object.prototype.hasOwnProperty.call(updates ?? {}, 'impact') && updates.impact) {
+                    updates.impact = validateEnum(
+                        (updates.impact as string).toLowerCase(),
+                        ['high', 'medium', 'low'],
+                        'impact'
+                    );
                 }
 
                 const updatedIncident = {
@@ -1473,6 +1563,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
 
             // Resources
             case 'GET /resources': {
+                DB.resources.forEach(normalizeResourceEntity);
                 if (id === 'datasources' && subId && action === 'connection-tests') {
                     const datasource = DB.datasources.find((d: any) => d.id === subId && !d.deleted_at);
                     if (!datasource) {
@@ -1533,13 +1624,14 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 if (id) {
                     const resourceItem = DB.resources.find((r: any) => r.id === id);
                     if (!resourceItem) throw { status: 404 };
-                    return resourceItem;
+                    return normalizeResourceEntity(resourceItem);
                 }
                 let resources = getActive(DB.resources);
                 if (params?.bookmarked) resources = resources.slice(0, 4);
                 if (params?.sort_by && params?.sort_order) {
                     resources = sortData(resources, params.sort_by, params.sort_order);
                 }
+                resources.forEach(normalizeResourceEntity);
                 return paginate(resources, params?.page, params?.page_size);
             }
             case 'GET /resource-links': {
@@ -1874,9 +1966,10 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         created_at: timestamp,
                         updated_at: timestamp
                     };
+                    populateOwnerName(newResource);
                     DB.resources.unshift(newResource);
                     // 自動填充唯讀標籤
-                    autoPopulateReadonlyTags(newResource);
+                    autoPopulateReadonlyTags(newResource, { asArray: true });
 
                     // 紀錄審計日誌
                     const currentUser = getCurrentUser();
@@ -1992,6 +2085,8 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 }
                 // 更新 updated_at 時間戳
                 DB.resources[resIndex] = { ...DB.resources[resIndex], ...body, updated_at: new Date().toISOString() };
+                populateOwnerName(DB.resources[resIndex]);
+                autoPopulateReadonlyTags(DB.resources[resIndex], { asArray: true });
 
                 // 紀錄審計日誌
                 const currentUser = getCurrentUser();
