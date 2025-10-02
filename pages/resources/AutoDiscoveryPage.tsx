@@ -108,10 +108,18 @@ const AutoDiscoveryPage: React.FC = () => {
 
     const getStatusIndicator = (status: DiscoveryJob['status']) => {
         switch (status) {
-            case 'success': return <div className="flex items-center text-green-400"><Icon name="check-circle" className="w-4 h-4 mr-2" /> 成功</div>;
-            case 'failed': return <div className="flex items-center text-red-400"><Icon name="x-circle" className="w-4 h-4 mr-2" /> 失敗</div>;
-            case 'partial_failure': return <div className="flex items-center text-yellow-400"><Icon name="alert-triangle" className="w-4 h-4 mr-2" /> 部分失敗</div>;
-            case 'running': return <div className="flex items-center text-sky-400 animate-pulse"><Icon name="loader-circle" className="w-4 h-4 mr-2 animate-spin" /> 執行中</div>;
+            case 'pending':
+                return <div className="flex items-center text-slate-300"><Icon name="clock" className="w-4 h-4 mr-2" /> 等待中</div>;
+            case 'running':
+                return <div className="flex items-center text-sky-400 animate-pulse"><Icon name="loader-circle" className="w-4 h-4 mr-2 animate-spin" /> 執行中</div>;
+            case 'success':
+                return <div className="flex items-center text-green-400"><Icon name="check-circle" className="w-4 h-4 mr-2" /> 成功</div>;
+            case 'failed':
+                return <div className="flex items-center text-red-400"><Icon name="x-circle" className="w-4 h-4 mr-2" /> 失敗</div>;
+            case 'cancelled':
+                return <div className="flex items-center text-slate-400"><Icon name="slash" className="w-4 h-4 mr-2" /> 已取消</div>;
+            default:
+                return <div className="flex items-center text-slate-400"><Icon name="help-circle" className="w-4 h-4 mr-2" /> {status}</div>;
         }
     };
 
