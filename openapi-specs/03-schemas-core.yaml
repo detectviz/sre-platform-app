@@ -67,7 +67,7 @@ components:
 
     DashboardCreate:
       type: object
-      required: [name, type]
+      required: [name, type, category]
       properties:
         name:
           type: string
@@ -78,7 +78,7 @@ components:
           enum: [built-in, custom, grafana]
         category:
           type: string
-          description: Optional logical grouping for dashboards
+          description: Logical grouping for dashboards used to populate defaults
         description:
           type: string
         owner:
@@ -112,13 +112,79 @@ components:
         grafana_folder_uid:
           type: string
 
+    DashboardTemplate:
+      type: object
+      required: [id, name, description, icon, category]
+      properties:
+        id:
+          type: string
+          example: tpl-001
+        name:
+          type: string
+          example: 微服務健康度
+        description:
+          type: string
+          example: 監控延遲、流量、錯誤率與資源飽和度的預設儀表板模板
+        icon:
+          type: string
+          example: server
+        category:
+          type: string
+          example: 應用程式
+
+    InfraInsightsOptions:
+      type: object
+      required: [time_options, risk_levels, refresh_options, tv_mode_options, theme_options]
+      properties:
+        time_options:
+          type: array
+          items:
+            $ref: '#/components/schemas/LabeledValueOption'
+        risk_levels:
+          type: array
+          items:
+            $ref: '#/components/schemas/ColoredValueOption'
+        refresh_options:
+          type: array
+          items:
+            $ref: '#/components/schemas/LabeledValueOption'
+        tv_mode_options:
+          type: array
+          items:
+            $ref: '#/components/schemas/LabeledValueOption'
+        theme_options:
+          type: array
+          items:
+            $ref: '#/components/schemas/LabeledValueOption'
+
+    LabeledValueOption:
+      type: object
+      required: [label, value]
+      properties:
+        label:
+          type: string
+          example: 最近 30 分鐘
+        value:
+          type: string
+          example: now-30m
+
+    ColoredValueOption:
+      allOf:
+        - $ref: '#/components/schemas/LabeledValueOption'
+        - type: object
+          required: [color]
+          properties:
+            color:
+              type: string
+              example: '#dc2626'
+
     # ===================
     # Incident
     # ===================
     Incident:
       type: object
       required:
-        [id, summary, resource_id, rule_id, status, severity, created_at]
+        [id, summary, resource, resource_id, rule_id, status, severity, impact, created_at]
       properties:
         id:
           type: string
@@ -126,6 +192,9 @@ components:
         summary:
           type: string
           example: API 延遲超過閾值
+        resource:
+          type: string
+          example: api-server-01
         resource_id:
           type: string
           example: res-001
@@ -148,6 +217,14 @@ components:
           type: string
           enum: [high, medium, low]
           example: high
+        priority:
+          type: string
+          enum: [p0, p1, p2, p3]
+          example: p1
+        category:
+          type: string
+          enum: [application, infrastructure, other]
+          example: application
         assignee:
           type: string
           example: 張三
@@ -193,9 +270,11 @@ components:
           example: null
         notifications_sent:
           type: array
+          description: Records of notification attempts for this incident
           items:
-            type: object
-          example: []
+            $ref: '#/components/schemas/NotificationRecord'
+        ai_analysis:
+          $ref: '#/components/schemas/IncidentAnalysis'
         history:
           type: array
           items:
@@ -215,10 +294,15 @@ components:
               user: "System"
               action: "Created"
               details: "Incident created from rule 'API 延遲規則'"
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
 
     IncidentCreate:
       type: object
-      required: [resource_id, rule_id, summary, severity]
+      required: [resource_id, rule_id, summary, severity, impact]
       properties:
         resource_id:
           type: string
@@ -293,7 +377,7 @@ components:
           example: [res-001, res-002]
         target_scope:
           type: string
-          enum: [all, specific, group]
+          enum: [specific, group, tag]
           example: specific
         notification_strategy_ids:
           type: array
@@ -309,33 +393,7 @@ components:
         condition_groups:
           type: array
           items:
-            type: object
-            required: [operator, conditions]
-            properties:
-              operator:
-                type: string
-                enum: [and, or]
-              conditions:
-                type: array
-                minItems: 1
-                items:
-                  type: object
-                  required: [field, operator, value, duration_seconds]
-                  properties:
-                    field:
-                      type: string
-                      example: cpu_usage_percent
-                    operator:
-                      type: string
-                      enum: [">", ">=", "<", "<=", "=="]
-                    value:
-                      oneOf:
-                        - type: number
-                        - type: string
-                    duration_seconds:
-                      type: integer
-                      minimum: 0
-                      example: 300
+            $ref: '#/components/schemas/AlertRuleConditionGroup'
         created_at:
           type: string
           format: date-time
@@ -410,27 +468,29 @@ components:
 
     AlertRuleConditionGroup:
       type: object
-      required: [operator, conditions]
+      required: [logic, severity, conditions]
       properties:
-        operator:
+        logic:
           type: string
-          enum: [AND, OR]
+          enum: [and, or]
+        severity:
+          type: string
+          enum: [critical, warning, info]
         conditions:
           type: array
           minItems: 1
           items:
             type: object
-            required: [field, operator, value, duration_seconds]
+            required: [metric, operator, threshold, duration_minutes]
             properties:
-              field:
+              metric:
                 type: string
               operator:
                 type: string
-              value:
-                oneOf:
-                  - type: number
-                  - type: string
-              duration_seconds:
+                enum: ['>', '>=', '<', '<=']
+              threshold:
+                type: number
+              duration_minutes:
                 type: integer
                 minimum: 0
 
@@ -439,58 +499,53 @@ components:
     # ===================
     Resource:
       type: object
-      required: [id, name, type, status, created_at]
+      required: [id, name, status, type, provider, region, owner, created_at, updated_at]
       properties:
         id:
           type: string
-          example: res-web-001
+          example: res-001
         name:
           type: string
-          example: web-server-01
-        type:
-          type: string
-          example: VM
+          example: api-gateway-prod-01
         status:
           type: string
-          enum: [healthy, warning, critical, offline]
+          enum: [healthy, warning, critical, offline, unknown]
           example: healthy
+        type:
+          type: string
+          example: API Gateway
         provider:
           type: string
           example: AWS
         region:
           type: string
           example: us-east-1
-        ip:
+        owner:
           type: string
-          example: 10.0.1.100
-        metadata:
-          type: object
-          additionalProperties:
-            type: string
-          example:
-            environment: production
-            tier: web
-            service: api-gateway
+          example: SRE Team
+        team_id:
+          type: string
+          example: team-001
+        owner_id:
+          type: string
+          example: usr-001
         tags:
           type: object
           additionalProperties:
             type: string
-          description: 自定義資源標籤，系統會自動補齊 team、owner 等唯讀標籤
+          description: 自定義資源標籤
           example:
             env: production
             service: api-gateway
-            team: SRE Platform
+        monitoring_agent:
+          type: string
+          example: agent-prometheus
         datasource_id:
           type: string
-          example: ds-prometheus-01
-        metrics:
-          type: object
-          additionalProperties:
-            type: number
-          example:
-            cpu: 45.2
-            memory: 67.8
-            disk: 52.1
+          example: ds-001
+        discovered_by_job_id:
+          type: string
+          example: dj-003
         last_check_in_at:
           type: string
           format: date-time
@@ -508,7 +563,7 @@ components:
 
     ResourceCreate:
       type: object
-      required: [name, type]
+      required: [name, type, status, provider, region, owner]
       properties:
         name:
           type: string
@@ -518,22 +573,26 @@ components:
           type: string
         status:
           type: string
-          enum: [healthy, warning, critical, offline]
+          enum: [healthy, warning, critical, offline, unknown]
         provider:
           type: string
         region:
           type: string
-        ip:
+        owner:
           type: string
-        metadata:
-          type: object
-          additionalProperties:
-            type: string
+        team_id:
+          type: string
+        owner_id:
+          type: string
         tags:
           type: object
           additionalProperties:
             type: string
+        monitoring_agent:
+          type: string
         datasource_id:
+          type: string
+        discovered_by_job_id:
           type: string
 
     ResourceUpdate:
@@ -543,19 +602,21 @@ components:
           type: string
         status:
           type: string
-          enum: [healthy, warning, critical, offline]
-        metadata:
-          type: object
-          additionalProperties:
-            type: string
+          enum: [healthy, warning, critical, offline, unknown]
+        owner:
+          type: string
+        team_id:
+          type: string
+        owner_id:
+          type: string
         tags:
           type: object
           additionalProperties:
             type: string
-        metrics:
-          type: object
-          additionalProperties:
-            type: number
+        monitoring_agent:
+          type: string
+        datasource_id:
+          type: string
 
     # ===================
     # Batch Result

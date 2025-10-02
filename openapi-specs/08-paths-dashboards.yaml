@@ -24,6 +24,11 @@ paths:
           schema:
             type: string
           example: 基礎設施
+        - name: keyword
+          in: query
+          description: Case-insensitive keyword for fuzzy name matching
+          schema:
+            type: string
       responses:
         '200':
           description: Successful response with paginated dashboards
@@ -111,42 +116,6 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /dashboards/available-grafana:
-    get:
-      tags: [Dashboards]
-      summary: List available Grafana dashboards
-      description: Retrieve Grafana dashboards that are not yet linked to the platform
-      operationId: listAvailableGrafanaDashboards
-      responses:
-        '200':
-          description: List of available Grafana dashboards
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  required: [uid, title, url]
-                  properties:
-                    uid:
-                      type: string
-                      example: grafana-uid-1
-                    title:
-                      type: string
-                      example: Service Health
-                    url:
-                      type: string
-                      format: uri
-                      example: https://grafana.example.com/d/grafana-uid-1
-                    folder_title:
-                      type: string
-                      example: Production
-                    folder_uid:
-                      type: string
-                      example: prod-folder
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
     patch:
       tags: [Dashboards]
       summary: Update dashboard
@@ -183,6 +152,123 @@ paths:
       responses:
         '204':
           description: Dashboard deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /dashboards/available-grafana:
+    get:
+      tags: [Dashboards]
+      summary: List available Grafana dashboards
+      description: Retrieve Grafana dashboards that are not yet linked to the platform
+      operationId: listAvailableGrafanaDashboards
+      responses:
+        '200':
+          description: List of available Grafana dashboards
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [uid, title, url]
+                  properties:
+                    uid:
+                      type: string
+                      example: grafana-uid-1
+                    title:
+                      type: string
+                      example: Service Health
+                    url:
+                      type: string
+                      format: uri
+                      example: https://grafana.example.com/d/grafana-uid-1
+                    folder_title:
+                      type: string
+                      example: Production
+                    folder_uid:
+                      type: string
+                      example: prod-folder
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /dashboards/templates:
+    get:
+      tags: [Dashboards]
+      summary: List dashboard templates
+      description: Retrieve reusable templates that can be applied when creating dashboards
+      operationId: listDashboardTemplates
+      responses:
+        '200':
+          description: Template catalog
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DashboardTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /dashboards/{id}/service-health:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [Dashboards]
+      summary: Get dashboard service health heatmap
+      description: Retrieve the service health visualization data for supported dashboards (e.g. sre-war-room)
+      operationId: getDashboardServiceHealth
+      responses:
+        '200':
+          description: Heatmap data used to render the service health panel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceHealthData'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /dashboards/{id}/resource-group-status:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [Dashboards]
+      summary: Get dashboard resource group status summary
+      description: Retrieve stacked bar data that summarises resource health per group for dashboards that expose it
+      operationId: getDashboardResourceGroupStatus
+      responses:
+        '200':
+          description: Resource group status series data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceGroupStatusData'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /dashboards/{id}/options:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [Dashboards]
+      summary: Get dashboard-specific option sets
+      description: Retrieve option metadata for dashboards that expose configuration menus (e.g. infrastructure insights)
+      operationId: getDashboardOptions
+      responses:
+        '200':
+          description: Dashboard option metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InfraInsightsOptions'
         '404':
           $ref: '#/components/responses/NotFound'
         '401':

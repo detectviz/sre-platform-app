@@ -11,31 +11,11 @@ paths:
         - $ref: "#/components/parameters/PageSizeParam"
         - $ref: "#/components/parameters/SortByParam"
         - $ref: "#/components/parameters/SortOrderParam"
-        - name: type
+        - name: bookmarked
           in: query
-          description: Filter by resource type
+          description: Limit results to bookmarked resources when set to true
           schema:
-            type: string
-          example: Server
-        - name: status
-          in: query
-          description: Filter by resource status
-          schema:
-            type: string
-            enum: [healthy, warning, critical, unknown]
-          example: healthy
-        - name: environment
-          in: query
-          description: Filter by environment
-          schema:
-            type: string
-          example: production
-        - name: team_id
-          in: query
-          description: Filter by team ID
-          schema:
-            type: string
-          example: team-sre
+            type: boolean
       responses:
         "200":
           description: Successful response with paginated resources
@@ -71,20 +51,15 @@ paths:
             schema:
               $ref: "#/components/schemas/ResourceCreate"
             example:
-              name: "web-server-01"
-              type: "Server"
-              status: "Healthy"
-              metadata:
-                ip: "10.0.1.100"
-                region: "us-west-2"
-                environment: "production"
+              name: "api-gateway-prod-01"
+              type: "API Gateway"
+              status: "healthy"
+              provider: "aws"
+              region: "us-west-2"
+              owner: "SRE Team"
               tags:
-                - key: env
-                  value: production
-                - key: service
-                  value: web
-                - key: tier
-                  value: frontend
+                env: production
+                service: api-gateway
               team_id: "team-sre"
       responses:
         "201":
@@ -138,14 +113,10 @@ paths:
                 summary: Update tags
                 value:
                   tags:
-                    - key: env
-                      value: production
-                    - key: service
-                      value: web
-                    - key: tier
-                      value: frontend
-                    - key: version
-                      value: v2.0
+                    env: production
+                    service: web
+                    tier: frontend
+                    version: v2.0
       responses:
         "200":
           description: Resource updated successfully
