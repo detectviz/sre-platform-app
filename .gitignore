@@ -26,5 +26,5 @@ tmp/
 .vite
 .claude
 .env
-.specify
+.cursor
 .gemini
