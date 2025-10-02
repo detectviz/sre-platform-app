@@ -24,6 +24,8 @@ import AssignIncidentModal from '../../components/AssignIncidentModal';
 import UserAvatar from '../../components/UserAvatar';
 import ImportFromCsvModal from '../../components/ImportFromCsvModal';
 import { TagList } from '../../components/TagList';
+import PageKPIs from '../../components/PageKPIs';
+import StatusTag from '../../components/StatusTag';
 
 
 const PAGE_IDENTIFIER = 'incidents';
@@ -236,9 +238,9 @@ const IncidentListPage: React.FC = () => {
     const isAllSelected = incidents.length > 0 && selectedIds.length === incidents.length;
     const isIndeterminate = selectedIds.length > 0 && selectedIds.length < incidents.length;
 
-    const getStyle = (descriptors: StyleDescriptor[] | undefined, value: string | undefined): string => {
-        if (!descriptors || !value) return 'bg-slate-500/20 text-slate-400';
-        return descriptors.find(d => d.value === value)?.class_name || 'bg-slate-500/20 text-slate-400';
+    const getDescriptor = <T extends StyleDescriptor | any>(descriptors: T[] | undefined, value: string | undefined): T | undefined => {
+        if (!descriptors || !value) return undefined;
+        return descriptors.find(d => d.value === value);
     };
 
     const getLabel = (descriptors: any[] | undefined, value: string | undefined): string => {
@@ -249,13 +251,34 @@ const IncidentListPage: React.FC = () => {
     const renderCellContent = (inc: Incident, columnKey: string) => {
         switch (columnKey) {
             case 'summary':
-                return <span className="font-medium text-white">{inc.summary}</span>;
+                return <span className="font-medium text-white leading-relaxed">{inc.summary}</span>;
             case 'status':
-                return <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStyle(incidentOptions?.statuses, inc.status)}`}>{getLabel(incidentOptions?.statuses, inc.status)}</span>;
+                const statusDescriptor = getDescriptor(incidentOptions?.statuses, inc.status);
+                return (
+                    <StatusTag
+                        label={statusDescriptor?.label || getLabel(incidentOptions?.statuses, inc.status)}
+                        className={statusDescriptor?.class_name || ''}
+                        dense
+                    />
+                );
             case 'severity':
-                return <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(incidentOptions?.severities, inc.severity)}`}>{getLabel(incidentOptions?.severities, inc.severity)}</span>;
+                const severityDescriptor = getDescriptor(incidentOptions?.severities, inc.severity);
+                return (
+                    <StatusTag
+                        label={severityDescriptor?.label || getLabel(incidentOptions?.severities, inc.severity)}
+                        className={severityDescriptor?.class_name || ''}
+                        dense
+                    />
+                );
             case 'impact':
-                return <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStyle(incidentOptions?.impacts, inc.impact)}`}>{getLabel(incidentOptions?.impacts, inc.impact)}</span>;
+                const impactDescriptor = getDescriptor(incidentOptions?.impacts, inc.impact);
+                return (
+                    <StatusTag
+                        label={impactDescriptor?.label || getLabel(incidentOptions?.impacts, inc.impact)}
+                        className={impactDescriptor?.class_name || ''}
+                        dense
+                    />
+                );
             case 'resource':
                 return inc.resource;
             case 'assignee':
@@ -323,16 +346,18 @@ const IncidentListPage: React.FC = () => {
     );
 
     return (
-        <div className="h-full flex flex-col">
-            <Toolbar
-                leftActions={leftActions}
-                rightActions={rightActions}
-                selectedCount={selectedIds.length}
-                onClearSelection={() => setSelectedIds([])}
-                batchActions={batchActions}
-            />
+        <div className="h-full flex flex-col space-y-6">
+            <PageKPIs pageName="incidents" />
+            <div className="flex-1 flex flex-col space-y-4">
+                <Toolbar
+                    leftActions={leftActions}
+                    rightActions={rightActions}
+                    selectedCount={selectedIds.length}
+                    onClearSelection={() => setSelectedIds([])}
+                    batchActions={batchActions}
+                />
 
-            <TableContainer>
+                <TableContainer>
                 <div className="flex-1 overflow-y-auto">
                     <table className="w-full text-sm text-left text-slate-300">
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
@@ -353,15 +378,15 @@ const IncidentListPage: React.FC = () => {
                                 <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchIncidents} />
                             ) : incidents.map((inc) => (
                                 <tr key={inc.id} onClick={() => navigate(`/incidents/${inc.id}`)} className={`border-b border-slate-800 cursor-pointer ${selectedIds.includes(inc.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
-                                    <td className="p-4 w-12" onClick={e => e.stopPropagation()}>
+                                    <td className="p-4 w-12 align-middle" onClick={e => e.stopPropagation()}>
                                         <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded" checked={selectedIds.includes(inc.id)} onChange={(e) => handleSelectOne(e, inc.id)} />
                                     </td>
                                     {visibleColumns.map(key => (
-                                        <td key={key} className="px-6 py-4">
+                                        <td key={key} className="px-6 py-4 align-middle">
                                             {renderCellContent(inc, key)}
                                         </td>
                                     ))}
-                                    <td className="px-6 py-4 text-center" onClick={e => e.stopPropagation()}>
+                                    <td className="px-6 py-4 text-center align-middle" onClick={e => e.stopPropagation()}>
                                         <button onClick={() => handleQuickSilence(inc)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="靜音"><Icon name="bell-off" className="w-4 h-4" /></button>
                                     </td>
                                 </tr>
@@ -370,7 +395,8 @@ const IncidentListPage: React.FC = () => {
                     </table>
                 </div>
                 <Pagination total={totalIncidents} page={currentPage} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
-            </TableContainer>
+                </TableContainer>
+            </div>
 
             <Drawer isOpen={!!incident_id} onClose={() => navigate('/incidents')} title={`事故詳情: ${incident_id}`} width="w-3/5">
                 {incident_id && <IncidentDetailPage incident_id={incident_id} onUpdate={fetchIncidents} currentUser={currentUser} />}

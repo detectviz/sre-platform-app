@@ -9,6 +9,7 @@ import PageKPIs from '../components/PageKPIs';
 import { ServiceHealthData, ResourceGroupStatusData, ResourceGroupStatusKey } from '../types';
 import { useContent } from '../contexts/ContentContext';
 import { useChartTheme } from '../contexts/ChartThemeContext';
+import StatusTag from '../components/StatusTag';
 
 interface BriefingData {
     stability_summary: string;
@@ -164,6 +165,15 @@ const SREWarRoomPage: React.FC = () => {
 
     if (!pageContent) return <div className="flex items-center justify-center h-full"><Icon name="loader-circle" className="w-8 h-8 animate-spin" /></div>;
 
+    const extractHighlight = (text: string | undefined) => {
+        if (!text) return null;
+        const percentMatch = text.match(/[-+]?\d+(\.\d+)?%/);
+        if (percentMatch) return percentMatch[0];
+        const severityMatch = text.match(/\d+\s*嚴重/);
+        if (severityMatch) return severityMatch[0];
+        return null;
+    };
+
   return (
     <div className="space-y-6">
       <PageKPIs pageName="SREWarRoom" />
@@ -182,25 +192,47 @@ const SREWarRoomPage: React.FC = () => {
                 <div className="h-4 bg-slate-700 rounded w-2/3"></div>
             </div>
         ) : aiBriefing ? (
-             <div className="space-y-4 text-slate-300">
-                <div className="glass-card rounded-lg p-4">
-                  <h3 className="font-semibold text-white mb-2 flex items-center"><Icon name="shield-check" className="w-5 h-5 mr-2 text-green-400"/> {pageContent.STABILITY_SUMMARY}</h3>
-                  <p>{aiBriefing.stability_summary}</p>
-                </div>
-                <div className="glass-card rounded-lg p-4 border-l-4 border-orange-400">
-                    <h3 className="font-semibold text-white mb-2 flex items-center"><Icon name="siren" className="w-5 h-5 mr-2 text-orange-400"/> {pageContent.KEY_ANOMALY}</h3>
-                    <p>{aiBriefing.key_anomaly.description} on <Link to={aiBriefing.key_anomaly.resource_path} className="text-sky-400 hover:underline font-semibold">{aiBriefing.key_anomaly.resource_name}</Link></p>
-                </div>
-                <div className="glass-card rounded-lg p-4 border-l-4 border-yellow-400">
-                    <h3 className="font-semibold text-white mb-2 flex items-center"><Icon name="wrench" className="w-5 h-5 mr-2 text-yellow-400"/> {pageContent.RECOMMENDED_ACTION}</h3>
-                    <div className="flex justify-between items-center">
-                        <p>{aiBriefing.recommendation.action_text}</p>
-                        <Link to={aiBriefing.recommendation.button_link}>
-                            <button className="flex items-center text-sm text-white bg-sky-600 hover:bg-sky-700 px-3 py-1.5 rounded-md shrink-0 ml-4">
-                                <Icon name="arrow-right" className="w-4 h-4 mr-2"/>
-                                {aiBriefing.recommendation.button_text}
-                            </button>
-                        </Link>
+             <div className="space-y-5 text-slate-300">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="rounded-xl border border-emerald-500/20 bg-slate-900/40 p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <h3 className="font-semibold text-white flex items-center"><Icon name="shield-check" className="w-5 h-5 mr-2 text-emerald-400"/> {pageContent.STABILITY_SUMMARY}</h3>
+                            {extractHighlight(aiBriefing.stability_summary) && (
+                                <StatusTag label={extractHighlight(aiBriefing.stability_summary)!} tone="success" dense />
+                            )}
+                        </div>
+                        <p className="text-sm leading-relaxed">{aiBriefing.stability_summary}</p>
+                    </div>
+                    <div className="rounded-xl border border-orange-500/30 bg-slate-900/40 p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <h3 className="font-semibold text-white flex items-center"><Icon name="siren" className="w-5 h-5 mr-2 text-orange-400"/> {pageContent.KEY_ANOMALY}</h3>
+                            {extractHighlight(aiBriefing.key_anomaly.description) && (
+                                <StatusTag label={extractHighlight(aiBriefing.key_anomaly.description)!} tone="danger" dense />
+                            )}
+                        </div>
+                        <p className="text-sm leading-relaxed">
+                            {aiBriefing.key_anomaly.description}
+                            <span className="ml-1">
+                                <Link to={aiBriefing.key_anomaly.resource_path} className="text-sky-400 hover:underline font-semibold">
+                                    {aiBriefing.key_anomaly.resource_name}
+                                </Link>
+                            </span>
+                        </p>
+                    </div>
+                    <div className="rounded-xl border border-yellow-400/30 bg-slate-900/40 p-4 flex flex-col justify-between gap-3">
+                        <div>
+                            <h3 className="font-semibold text-white flex items-center mb-3"><Icon name="wrench" className="w-5 h-5 mr-2 text-yellow-300"/> {pageContent.RECOMMENDED_ACTION}</h3>
+                            <p className="text-sm leading-relaxed">{aiBriefing.recommendation.action_text}</p>
+                        </div>
+                        <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-yellow-500/20">
+                            <StatusTag label="建議" tone="warning" dense />
+                            <Link to={aiBriefing.recommendation.button_link}>
+                                <button className="flex items-center text-sm text-white bg-sky-600 hover:bg-sky-700 px-3 py-1.5 rounded-md shadow-sm">
+                                    <Icon name="arrow-right" className="w-4 h-4 mr-2"/>
+                                    {aiBriefing.recommendation.button_text}
+                                </button>
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </div>

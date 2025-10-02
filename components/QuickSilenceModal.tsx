@@ -68,7 +68,7 @@ const QuickSilenceModal: React.FC<QuickSilenceModalProps> = ({ isOpen, onClose, 
               <p className="font-semibold">{incident.resource}</p>
           </div>
           <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">靜音持續時間</label>
+              <label className="block text-sm font-medium text-slate-200 mb-2">靜音持續時間</label>
               {isLoading ? (
                   <div className="animate-pulse grid grid-cols-3 gap-2">
                       {[...Array(6)].map((_, i) => <div key={i} className="h-10 bg-slate-700 rounded-md"></div>)}
@@ -81,7 +81,7 @@ const QuickSilenceModal: React.FC<QuickSilenceModalProps> = ({ isOpen, onClose, 
                           <button
                               key={d.value}
                               onClick={() => setDuration(d.value)}
-                              className={`px-3 py-2 text-sm rounded-md transition-colors ${duration === d.value ? 'bg-sky-600 text-white font-semibold' : 'bg-slate-700/50 hover:bg-slate-700'}`}
+                              className={`h-10 px-3 text-sm rounded-lg border transition-colors ${duration === d.value ? 'bg-sky-600 text-white font-semibold border-sky-400/50 shadow-lg shadow-sky-500/20' : 'bg-slate-800/70 border-slate-700 text-slate-200 hover:bg-slate-700'}`}
                           >
                               {d.label}
                           </button>
@@ -89,10 +89,12 @@ const QuickSilenceModal: React.FC<QuickSilenceModalProps> = ({ isOpen, onClose, 
                   </div>
               )}
           </div>
-          <div className="p-3 bg-slate-800/50 rounded-md text-center">
-              <p className="text-sm text-slate-400">靜音將於 <span className="font-semibold text-sky-400">{getEndTime()}</span> 解除</p>
+          <div className="p-3 bg-slate-800/60 rounded-md text-center border border-slate-700/60 flex items-center justify-center gap-2">
+              <Icon name="clock" className="w-4 h-4 text-sky-300" />
+              <p className="text-sm text-slate-200">靜音將於 <span className="font-semibold text-sky-300">{getEndTime()}</span> 解除</p>
           </div>
-          <div className="text-xs text-slate-500 text-center pt-2">
+          <div className="text-xs text-slate-300 text-center pt-2 flex items-center justify-center gap-2">
+              <Icon name="info" className="w-3.5 h-3.5 text-slate-400" />
               <p>您可以在「靜音規則」頁面檢視、延長或手動管理此靜音。</p>
           </div>
         </div>

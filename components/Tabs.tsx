@@ -15,10 +15,10 @@ interface TabsProps {
 }
 
 const Tabs: React.FC<TabsProps> = ({ tabs }) => {
-  const activeClassName = "border-b-2 border-sky-400 text-white";
-  const inactiveClassName = "border-b-2 border-transparent text-slate-400 hover:text-white hover:border-slate-500";
+  const activeClassName = "border-b-[3px] border-sky-500 text-white";
+  const inactiveClassName = "border-b-[3px] border-transparent text-slate-400 hover:text-slate-100 hover:border-sky-700/60";
   const baseClassName = "flex items-center px-3 py-2 font-medium text-sm transition-colors duration-200";
-  const disabledClassName = "border-b-2 border-transparent text-slate-600 cursor-not-allowed opacity-50";
+  const disabledClassName = "border-b-[3px] border-transparent text-slate-600 cursor-not-allowed opacity-50";
 
   return (
     <div className="border-b border-slate-700/50">
