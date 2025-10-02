@@ -19,7 +19,7 @@ components:
             invalidEnum:
               summary: Invalid enum value
               value:
-                error: "Invalid status. Allowed values: New, Acknowledged, Resolved"
+                error: "Invalid status. Allowed values: new, acknowledged, investigating, resolved, closed, silenced"
 
     NotFound:
       description: Resource Not Found
@@ -86,6 +86,24 @@ components:
             serverError:
               value:
                 error: "An unexpected error occurred. Please try again later."
+
+    AIServiceUnavailable:
+      description: AI Service Unavailable
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                description: 說明 AI 服務暫時無法處理請求的原因。
+              retry_after_seconds:
+                type: integer
+                minimum: 0
+                description: 建議客戶端再次重試前等待的秒數。
+          example:
+            error: AI analysis service is temporarily unavailable
+            retry_after_seconds: 60
 
   securitySchemes:
     bearerAuth:

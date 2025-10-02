@@ -16,8 +16,8 @@ paths:
           description: Filter by incident status
           schema:
             type: string
-            enum: [New, Acknowledged, Investigating, Resolved, Closed, Silenced]
-          example: New
+            enum: [new, acknowledged, investigating, resolved, closed, silenced]
+          example: acknowledged
         - name: severity
           in: query
           description: Filter by severity level
@@ -183,12 +183,12 @@ paths:
               updateStatus:
                 summary: Update status
                 value:
-                  status: "Resolved"
+                  status: "resolved"
               assignIncident:
                 summary: Assign to user
                 value:
                   assignee: "張三"
-                  status: "Acknowledged"
+                  status: "acknowledged"
       responses:
         '200':
           description: Incident updated successfully

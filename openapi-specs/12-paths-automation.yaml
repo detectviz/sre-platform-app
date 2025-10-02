@@ -1,35 +1,19 @@
 # Automation API Paths
 paths:
-  # ===================
-  # Playbooks
-  # ===================
-  /automation/playbooks:
+  /automation/scripts:
     get:
       tags: [Automation]
-      summary: List automation playbooks
-      description: Retrieve a paginated list of automation playbooks
-      operationId: listPlaybooks
+      summary: List automation scripts
+      description: 取得自動化腳本列表，支援分頁與排序。
+      operationId: listAutomationScripts
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PageSizeParam'
         - $ref: '#/components/parameters/SortByParam'
         - $ref: '#/components/parameters/SortOrderParam'
-        - name: type
-          in: query
-          description: Filter by playbook type
-          schema:
-            type: string
-            enum: [Shell Script, Python, Ansible, Terraform]
-          example: Ansible
-        - name: enabled
-          in: query
-          description: Filter by enabled status
-          schema:
-            type: boolean
-          example: true
       responses:
         '200':
-          description: Successful response with paginated playbooks
+          description: 成功取得腳本列表。
           content:
             application/json:
               schema:
@@ -45,43 +29,47 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/AutomationPlaybook'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+              example:
+                page: 1
+                page_size: 10
+                total: 2
+                items:
+                  - id: play-001
+                    name: 重啟故障 Pod
+                    type: shell
+                    enabled: true
+                    run_count: 12
+                    last_run_status: success
+                    last_run_at: '2025-09-23T14:05:10Z'
         '401':
           $ref: '#/components/responses/Unauthorized'
-
     post:
       tags: [Automation]
-      summary: Create automation playbook
-      description: Create a new automation playbook
-      operationId: createPlaybook
+      summary: Create automation script
+      description: 建立新的自動化腳本。
+      operationId: createAutomationScript
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/AutomationPlaybookCreate'
-            examples:
-              ansiblePlaybook:
-                summary: Ansible playbook for service restart
-                value:
-                  name: "Restart Web Service"
-                  type: "Ansible"
-                  description: "Restarts web service and verifies health"
-                  content: "---\n- hosts: webservers\n  tasks:\n    - name: Restart nginx\n      service:\n        name: nginx\n        state: restarted"
-                  enabled: true
-                  timeout_seconds: 300
-              shellScript:
-                summary: Shell script for cleanup
-                value:
-                  name: "Cleanup Old Logs"
-                  type: "Shell Script"
-                  content: "#!/bin/bash\nfind /var/log -name '*.log' -mtime +30 -delete"
-                  enabled: true
-                  timeout_seconds: 60
+            example:
+              name: 重啟故障 Pod
+              type: shell
+              description: 自動重啟 CrashLoopBackOff 狀態的 Pod。
+              content: |
+                #!/bin/bash
+                kubectl rollout restart deployment "$DEPLOYMENT"
+              enabled: true
+              parameters:
+                - name: namespace
+                  label: 命名空間
+                  type: string
+                  required: true
       responses:
         '201':
-          description: Playbook created successfully
+          description: 腳本建立成功。
           content:
             application/json:
               schema:
@@ -91,43 +79,63 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /automation/playbooks/{id}:
-    parameters:
-      - $ref: '#/components/parameters/IdParam'
-
-    get:
+  /automation/scripts/batch-actions:
+    post:
       tags: [Automation]
-      summary: Get playbook by ID
-      description: Retrieve a specific playbook by its ID
-      operationId: getPlaybookById
+      summary: Batch update automation scripts
+      description: 針對多個腳本執行批次操作，目前支援刪除。
+      operationId: batchUpdateAutomationScripts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, ids]
+              properties:
+                action:
+                  type: string
+                  enum: [delete]
+                ids:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+            example:
+              action: delete
+              ids: [play-001, play-002]
       responses:
         '200':
-          description: Successful response
+          description: 批次操作結果。
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AutomationPlaybook'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: '#/components/schemas/BatchResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /automation/scripts/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
     patch:
       tags: [Automation]
-      summary: Update playbook
-      description: Update an existing playbook
-      operationId: updatePlaybook
+      summary: Update automation script
+      description: 更新指定腳本的資訊。
+      operationId: updateAutomationScript
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/AutomationPlaybookUpdate'
             example:
+              description: 更新腳本內容
               enabled: false
-              description: "Updated description"
       responses:
         '200':
-          description: Playbook updated successfully
+          description: 腳本更新成功。
           content:
             application/json:
               schema:
@@ -138,29 +146,60 @@ paths:
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
-
     delete:
       tags: [Automation]
-      summary: Delete playbook
-      description: Delete a playbook
-      operationId: deletePlaybook
+      summary: Soft delete automation script
+      description: 將腳本標記為刪除（soft delete）。
+      operationId: deleteAutomationScript
       responses:
-        '204':
-          description: Playbook deleted successfully
+        '200':
+          description: 刪除成功，回傳空物件。
+          content:
+            application/json:
+              schema:
+                type: object
+              example: {}
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  # ===================
-  # Executions
-  # ===================
+  /automation/scripts/{id}/execute:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags: [Automation]
+      summary: Execute automation script
+      description: 立即執行指定腳本並回傳執行紀錄。
+      operationId: executeAutomationScript
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutomationExecutionRequest'
+            example:
+              parameters:
+                namespace: production
+      responses:
+        '200':
+          description: 腳本已啟動執行。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutomationExecution'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   /automation/executions:
     get:
       tags: [Automation]
       summary: List automation executions
-      description: Retrieve a paginated list of automation executions
-      operationId: listExecutions
+      description: 取得執行紀錄列表，可依狀態或腳本 ID 過濾。
+      operationId: listAutomationExecutions
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PageSizeParam'
@@ -168,27 +207,18 @@ paths:
         - $ref: '#/components/parameters/SortOrderParam'
         - name: status
           in: query
-          description: Filter by execution status
+          description: 依執行狀態過濾。
           schema:
             type: string
-            enum: [Pending, Running, Success, Failed, Cancelled]
-          example: Success
+            enum: [pending, running, success, failed, cancelled]
         - name: playbook_id
           in: query
-          description: Filter by playbook ID
+          description: 依腳本 ID 過濾。
           schema:
             type: string
-          example: playbook-001
-        - name: trigger_type
-          in: query
-          description: Filter by trigger type
-          schema:
-            type: string
-            enum: [Manual, Scheduled, Webhook, Incident, Alert]
-          example: Incident
       responses:
         '200':
-          description: Successful response with paginated executions
+          description: 成功取得執行紀錄。
           content:
             application/json:
               schema:
@@ -204,55 +234,20 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/AutomationExecution'
-        '400':
-          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-    post:
-      tags: [Automation]
-      summary: Create automation execution
-      description: Manually trigger a playbook execution
-      operationId: createExecution
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AutomationExecutionCreate'
-            example:
-              playbook_id: "playbook-001"
-              trigger_type: "Manual"
-              target_resource_id: "res-001"
-              parameters:
-                service_name: "nginx"
-                check_health: "true"
-      responses:
-        '201':
-          description: Execution created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AutomationExecution'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          description: Playbook or resource not found
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /automation/executions/{id}:
+  /automation/executions/{id}/retry:
     parameters:
       - $ref: '#/components/parameters/IdParam'
-
-    get:
+    post:
       tags: [Automation]
-      summary: Get execution by ID
-      description: Retrieve a specific execution by its ID
-      operationId: getExecutionById
+      summary: Retry automation execution
+      description: 根據既有的執行紀錄重新執行腳本。
+      operationId: retryAutomationExecution
       responses:
         '200':
-          description: Successful response
+          description: 已建立新的執行紀錄。
           content:
             application/json:
               schema:
@@ -262,55 +257,25 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-    delete:
-      tags: [Automation]
-      summary: Cancel execution
-      description: Cancel a running or pending execution
-      operationId: cancelExecution
-      responses:
-        '200':
-          description: Execution cancelled successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AutomationExecution'
-        '400':
-          description: Execution cannot be cancelled (already completed)
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  # ===================
-  # Triggers
-  # ===================
   /automation/triggers:
     get:
       tags: [Automation]
       summary: List automation triggers
-      description: Retrieve a paginated list of automation triggers
-      operationId: listTriggers
+      description: 取得自動化觸發器列表，支援分頁與關鍵字搜尋。
+      operationId: listAutomationTriggers
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PageSizeParam'
         - $ref: '#/components/parameters/SortByParam'
         - $ref: '#/components/parameters/SortOrderParam'
-        - name: type
+        - name: keyword
           in: query
-          description: Filter by trigger type
+          description: 依名稱關鍵字過濾。
           schema:
             type: string
-            enum: [Schedule, Webhook, Event]
-          example: Schedule
-        - name: enabled
-          in: query
-          description: Filter by enabled status
-          schema:
-            type: boolean
-          example: true
       responses:
         '200':
-          description: Successful response with paginated triggers
+          description: 成功取得觸發器列表。
           content:
             application/json:
               schema:
@@ -326,96 +291,31 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/AutomationTrigger'
-        '400':
-          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-
     post:
       tags: [Automation]
       summary: Create automation trigger
-      description: Create a new automation trigger
-      operationId: createTrigger
+      description: 建立新的觸發器並關聯指定的腳本。
+      operationId: createAutomationTrigger
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/AutomationTriggerCreate'
-            examples:
-              scheduleTrigger:
-                summary: Schedule trigger for nightly cleanup
-                value:
-                  name: "Nightly Log Cleanup"
-                  type: "Schedule"
-                  target_playbook_id: "playbook-cleanup-001"
-                  enabled: true
-                  config:
-                    schedule:
-                      cron: "0 2 * * *"
-                      timezone: "UTC"
-                      cron_description: "Runs daily at 02:00 UTC"
-              eventTrigger:
-                summary: Event trigger for critical incidents
-                value:
-                  name: "Auto-restart on Critical Alert"
-                  type: "Event"
-                  target_playbook_id: "playbook-restart-001"
-                  enabled: true
-                  config:
-                    event:
-                      source: "incident.created"
-                      severity: "Critical"
+            example:
+              name: 每日日誌歸檔
+              type: Schedule
+              enabled: true
+              target_playbook_id: play-005
+              config:
+                schedule:
+                  cron: '0 3 * * *'
+                  cron_description: 每天 03:00 執行
       responses:
         '201':
-          description: Trigger created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AutomationTrigger'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          description: Playbook not found
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /automation/triggers/{id}:
-    parameters:
-      - $ref: '#/components/parameters/IdParam'
-
-    get:
-      tags: [Automation]
-      summary: Get trigger by ID
-      description: Retrieve a specific trigger by its ID
-      operationId: getTriggerById
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AutomationTrigger'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-    patch:
-      tags: [Automation]
-      summary: Update trigger
-      description: Update an existing trigger
-      operationId: updateTrigger
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AutomationTriggerUpdate'
-            example:
-              enabled: false
-      responses:
-        '200':
-          description: Trigger updated successfully
+          description: 觸發器建立成功。
           content:
             application/json:
               schema:
@@ -424,70 +324,15 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-    delete:
-      tags: [Automation]
-      summary: Delete trigger
-      description: Delete a trigger
-      operationId: deleteTrigger
-      responses:
-        '204':
-          description: Trigger deleted successfully
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  # ===================
-  # Batch Operations
-  # ===================
-  /automation/playbooks/batch-actions:
-    post:
-      tags: [Automation]
-      summary: Batch playbook actions
-      description: Perform batch actions on automation playbooks
-      operationId: batchPlaybookActions
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [action, ids]
-              properties:
-                action:
-                  type: string
-                  enum: [delete]
-                  description: Supported batch action for playbooks
-                ids:
-                  type: array
-                  items:
-                    type: string
-                  minItems: 1
-                  description: Identifiers of the playbooks to process
-            example:
-              action: delete
-              ids: ["play-001", "play-002"]
-      responses:
-        '200':
-          description: Batch action completed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BatchResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
   /automation/triggers/batch-actions:
     post:
       tags: [Automation]
-      summary: Batch trigger actions
-      description: Enable, disable, or delete multiple automation triggers
-      operationId: batchTriggerActions
+      summary: Batch update automation triggers
+      description: 批次啟用、停用或刪除觸發器。
+      operationId: batchUpdateAutomationTriggers
       requestBody:
         required: true
         content:
@@ -499,37 +344,73 @@ paths:
                 action:
                   type: string
                   enum: [enable, disable, delete]
-                  description: Batch action to apply to triggers
                 ids:
                   type: array
                   items:
                     type: string
                   minItems: 1
-                  description: Identifiers of the triggers to process
-            examples:
-              enable:
-                summary: Enable triggers
-                value:
-                  action: enable
-                  ids: ["trig-001", "trig-002"]
-              disable:
-                summary: Disable triggers
-                value:
-                  action: disable
-                  ids: ["trig-003", "trig-004"]
-              delete:
-                summary: Delete triggers
-                value:
-                  action: delete
-                  ids: ["trig-005", "trig-006"]
+            example:
+              action: enable
+              ids: [trig-001, trig-002]
       responses:
         '200':
-          description: Batch action completed
+          description: 批次操作結果。
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BatchResult'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /automation/triggers/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    patch:
+      tags: [Automation]
+      summary: Update automation trigger
+      description: 更新觸發器設定。
+      operationId: updateAutomationTrigger
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutomationTriggerUpdate'
+            example:
+              enabled: false
+              config:
+                schedule:
+                  cron: '0 4 * * *'
+                  cron_description: 調整為每日 04:00
+      responses:
+        '200':
+          description: 觸發器更新成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutomationTrigger'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    delete:
+      tags: [Automation]
+      summary: Soft delete automation trigger
+      description: 將觸發器標記為刪除（soft delete）。
+      operationId: deleteAutomationTrigger
+      responses:
+        '200':
+          description: 刪除成功，回傳空物件。
+          content:
+            application/json:
+              schema:
+                type: object
+              example: {}
+        '404':
+          $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'

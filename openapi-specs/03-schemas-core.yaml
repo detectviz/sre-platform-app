@@ -136,8 +136,9 @@ components:
           example: rule-002
         status:
           type: string
-          enum: [New, Acknowledged, Investigating, Resolved, Closed, Silenced]
-          example: New
+          enum: [new, acknowledged, investigating, resolved, closed, silenced]
+          description: 事件目前的生命週期狀態；`silenced` 代表事件已被靜音且暫停通知。
+          example: new
         severity:
           type: string
           enum: [Critical, Warning, Info]
@@ -162,7 +163,7 @@ components:
           example:
             env: production
             service: api-gateway
-            team: SRE Platform
+            team: "SRE Platform"
         occurred_at:
           type: string
           format: date-time
@@ -242,7 +243,8 @@ components:
       properties:
         status:
           type: string
-          enum: [New, Acknowledged, Investigating, Resolved, Closed]
+          enum: [new, acknowledged, investigating, resolved, closed, silenced]
+          description: 更新事件狀態；`silenced` 可用於暫時停用通知。
         assignee:
           type: string
         tags:
@@ -274,8 +276,8 @@ components:
           example: true
         severity:
           type: string
-          enum: [critical, high, medium, low, info]
-          example: high
+          enum: [critical, warning, info]
+          example: critical
         conditions_summary:
           type: string
           example: "CPU usage > 80% for 5 minutes"
@@ -360,7 +362,7 @@ components:
           default: true
         severity:
           type: string
-          enum: [critical, high, medium, low, info]
+          enum: [critical, warning, info]
         conditions_summary:
           type: string
         automation_enabled:
@@ -392,7 +394,7 @@ components:
           type: boolean
         severity:
           type: string
-          enum: [critical, high, medium, low, info]
+          enum: [critical, warning, info]
         automation_enabled:
           type: boolean
         notification_strategy_ids:
@@ -448,8 +450,8 @@ components:
           example: VM
         status:
           type: string
-          enum: [Healthy, Warning, Critical, Unknown]
-          example: Healthy
+          enum: [healthy, warning, critical, offline]
+          example: healthy
         provider:
           type: string
           example: AWS
@@ -468,14 +470,21 @@ components:
             tier: web
             service: api-gateway
         tags:
-          type: array
-          items:
-            $ref: '#/components/schemas/ResourceTag'
+          type: object
+          additionalProperties:
+            type: string
+          description: 自定義資源標籤，系統會自動補齊 team、owner 等唯讀標籤
+          example:
+            env: production
+            service: api-gateway
+            team: SRE Platform
         datasource_id:
           type: string
           example: ds-prometheus-01
         metrics:
           type: object
+          additionalProperties:
+            type: number
           example:
             cpu: 45.2
             memory: 67.8
@@ -505,6 +514,9 @@ components:
           maxLength: 200
         type:
           type: string
+        status:
+          type: string
+          enum: [healthy, warning, critical, offline]
         provider:
           type: string
         region:
@@ -516,15 +528,9 @@ components:
           additionalProperties:
             type: string
         tags:
-          type: array
-          items:
-            type: object
-            required: [key, value]
-            properties:
-              key:
-                type: string
-              value:
-                type: string
+          type: object
+          additionalProperties:
+            type: string
         datasource_id:
           type: string
 
@@ -535,37 +541,19 @@ components:
           type: string
         status:
           type: string
-          enum: [Healthy, Warning, Critical, Unknown]
+          enum: [healthy, warning, critical, offline]
         metadata:
           type: object
           additionalProperties:
             type: string
         tags:
-          type: array
-          items:
-            type: object
-            required: [key, value]
-            properties:
-              key:
-                type: string
-              value:
-                type: string
+          type: object
+          additionalProperties:
+            type: string
         metrics:
           type: object
-
-    ResourceTag:
-      type: object
-      required: [id, key, value]
-      properties:
-        id:
-          type: string
-          example: tag-01
-        key:
-          type: string
-          example: env
-        value:
-          type: string
-          example: production
+          additionalProperties:
+            type: number
 
     # ===================
     # Batch Result
