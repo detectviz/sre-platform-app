@@ -778,7 +778,7 @@ const Step4 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
                                 {selectedPlaybook.parameters.map(param => {
                                     let inputElement;
                                     const value = formData.automation?.parameters?.[param.name] ?? param.default_value ?? '';
-                                    const hint = paramHints?.[param.name as keyof typeof paramHints];
+                                    const hint = paramHints[param.name as keyof typeof paramHints] as { unit?: string; description?: string } | undefined;
 
                                     switch (param.type) {
                                         case 'boolean': {

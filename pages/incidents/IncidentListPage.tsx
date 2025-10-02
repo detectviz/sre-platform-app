@@ -238,7 +238,7 @@ const IncidentListPage: React.FC = () => {
     const isAllSelected = incidents.length > 0 && selectedIds.length === incidents.length;
     const isIndeterminate = selectedIds.length > 0 && selectedIds.length < incidents.length;
 
-    const getDescriptor = <T extends StyleDescriptor | any>(descriptors: T[] | undefined, value: string | undefined): T | undefined => {
+    const getDescriptor = <T extends { value: any }>(descriptors: T[] | undefined, value: string | undefined): T | undefined => {
         if (!descriptors || !value) return undefined;
         return descriptors.find(d => d.value === value);
     };
@@ -358,43 +358,43 @@ const IncidentListPage: React.FC = () => {
                 />
 
                 <TableContainer>
-                <div className="flex-1 overflow-y-auto">
-                    <table className="w-full text-sm text-left text-slate-300">
-                        <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
-                            <tr>
-                                <th scope="col" className="p-4 w-12">
-                                    <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded" checked={isAllSelected} ref={el => { if (el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
-                                </th>
-                                {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
-                                ))}
-                                <th scope="col" className="px-6 py-3 text-center">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {isLoading || isLoadingOptions ? (
-                                <TableLoader colSpan={visibleColumns.length + 2} />
-                            ) : error ? (
-                                <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchIncidents} />
-                            ) : incidents.map((inc) => (
-                                <tr key={inc.id} onClick={() => navigate(`/incidents/${inc.id}`)} className={`border-b border-slate-800 cursor-pointer ${selectedIds.includes(inc.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
-                                    <td className="p-4 w-12 align-middle" onClick={e => e.stopPropagation()}>
-                                        <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded" checked={selectedIds.includes(inc.id)} onChange={(e) => handleSelectOne(e, inc.id)} />
-                                    </td>
+                    <div className="flex-1 overflow-y-auto">
+                        <table className="w-full text-sm text-left text-slate-300">
+                            <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
+                                <tr>
+                                    <th scope="col" className="p-4 w-12">
+                                        <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded" checked={isAllSelected} ref={el => { if (el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
+                                    </th>
                                     {visibleColumns.map(key => (
-                                        <td key={key} className="px-6 py-4 align-middle">
-                                            {renderCellContent(inc, key)}
-                                        </td>
+                                        <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
                                     ))}
-                                    <td className="px-6 py-4 text-center align-middle" onClick={e => e.stopPropagation()}>
-                                        <button onClick={() => handleQuickSilence(inc)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="靜音"><Icon name="bell-off" className="w-4 h-4" /></button>
-                                    </td>
+                                    <th scope="col" className="px-6 py-3 text-center">操作</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-                <Pagination total={totalIncidents} page={currentPage} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
+                            </thead>
+                            <tbody>
+                                {isLoading || isLoadingOptions ? (
+                                    <TableLoader colSpan={visibleColumns.length + 2} />
+                                ) : error ? (
+                                    <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchIncidents} />
+                                ) : incidents.map((inc) => (
+                                    <tr key={inc.id} onClick={() => navigate(`/incidents/${inc.id}`)} className={`border-b border-slate-800 cursor-pointer ${selectedIds.includes(inc.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
+                                        <td className="p-4 w-12 align-middle" onClick={e => e.stopPropagation()}>
+                                            <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded" checked={selectedIds.includes(inc.id)} onChange={(e) => handleSelectOne(e, inc.id)} />
+                                        </td>
+                                        {visibleColumns.map(key => (
+                                            <td key={key} className="px-6 py-4 align-middle">
+                                                {renderCellContent(inc, key)}
+                                            </td>
+                                        ))}
+                                        <td className="px-6 py-4 text-center align-middle" onClick={e => e.stopPropagation()}>
+                                            <button onClick={() => handleQuickSilence(inc)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="靜音"><Icon name="bell-off" className="w-4 h-4" /></button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    <Pagination total={totalIncidents} page={currentPage} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
                 </TableContainer>
             </div>
 
