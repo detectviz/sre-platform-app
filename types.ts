@@ -1,5 +1,64 @@
 import React from 'react';
 
+// ----- Shared Enumerations (align with docs/enums-ssot.md) -----
+export type IncidentStatus = 'new' | 'acknowledged' | 'resolved' | 'silenced';
+export type IncidentSeverity = 'critical' | 'warning' | 'info';
+export type IncidentImpact = 'high' | 'medium' | 'low';
+export type IncidentPriority = 'p0' | 'p1' | 'p2' | 'p3';
+export type IncidentCategory = 'infrastructure' | 'application' | 'network' | 'security' | 'other';
+
+export type ResourceStatus = 'healthy' | 'warning' | 'critical' | 'offline' | 'unknown';
+
+export type DiscoveryJobKind = 'k8s' | 'snmp' | 'cloud_provider' | 'static_range' | 'custom_script';
+export type DiscoveredResourceStatus = 'new' | 'imported' | 'ignored';
+
+export type ConditionLogic = 'and' | 'or';
+export type HttpMethod = 'get' | 'post' | 'put' | 'patch' | 'delete';
+
+export type AutomationPlaybookType = 'shell' | 'python' | 'ansible' | 'terraform';
+export type ExecutionStatus = 'pending' | 'running' | 'success' | 'failed' | 'cancelled';
+export type TriggerSource = 'manual' | 'schedule' | 'webhook' | 'event';
+export type TriggerType = 'schedule' | 'webhook' | 'event';
+export type RetryPolicy = 'none' | 'fixed' | 'exponential';
+
+export type NotificationChannelType = 'email' | 'webhook' | 'slack' | 'line' | 'sms';
+export type NotificationStatus = 'pending' | 'sent' | 'failed';
+export type TestResult = 'success' | 'failed' | 'not_tested';
+
+export type UserRole = 'admin' | 'sre' | 'developer' | 'viewer';
+export type UserStatus = 'active' | 'invited' | 'inactive';
+
+export type DashboardType = 'built-in' | 'custom' | 'grafana';
+
+export type DatasourceType = 'victoriametrics' | 'grafana' | 'elasticsearch' | 'prometheus' | 'custom';
+export type AuthMethod = 'token' | 'basic_auth' | 'keycloak_integration' | 'none';
+export type ConnectionStatus = 'ok' | 'error' | 'pending';
+
+export type AuditAction =
+  | 'create'
+  | 'read'
+  | 'update'
+  | 'delete'
+  | 'execute'
+  | 'login'
+  | 'logout'
+  | 'permission_change';
+export type AuditResult = 'success' | 'failure';
+
+export type RiskLevel = 'high' | 'medium' | 'low';
+export type OptimizationType = 'cost' | 'performance' | 'security';
+export type InsightType = 'trend' | 'anomaly' | 'forecast';
+
+export type EntityType =
+  | 'alertrule'
+  | 'automationplaybook'
+  | 'dashboard'
+  | 'notificationstrategy'
+  | 'silencerule'
+  | 'resource'
+  | 'team'
+  | 'user';
+
 export interface NavItem {
   key: string;
   label: string;
@@ -62,7 +121,7 @@ export interface NotificationRecord {
   /** Identifier of the notification strategy that generated the notification. */
   strategy_id?: string;
   /** Delivery status for the notification attempt. */
-  status: 'pending' | 'sent' | 'failed';
+  status: NotificationStatus;
   /** ISO 8601 timestamp describing when the notification was sent. */
   sent_at: string;
   /** Optional metadata that provides additional delivery details. */
@@ -129,11 +188,6 @@ export interface RuleAnalysisReport {
   recommendations: RuleAnalysisRecommendation[];
 }
 
-
-export type IncidentStatus = 'new' | 'acknowledged' | 'resolved' | 'silenced';
-export type IncidentSeverity = 'critical' | 'warning' | 'info';
-export type IncidentImpact = 'high' | 'medium' | 'low';
-
 export interface Incident {
   id: string;
   summary: string;
@@ -142,6 +196,8 @@ export interface Incident {
   status: IncidentStatus;
   severity: IncidentSeverity;
   impact: IncidentImpact;
+  priority?: IncidentPriority;
+  category?: IncidentCategory;
   rule: string;
   rule_id: string;
   assignee?: string;
@@ -183,7 +239,7 @@ export interface LayoutWidget {
 export interface Resource {
   id: string;
   name: string;
-  status: 'healthy' | 'warning' | 'critical' | 'offline' | 'unknown';
+  status: ResourceStatus;
   type: string;
   provider: string;
   region: string;
@@ -240,10 +296,10 @@ export interface AutomationPlaybook {
   name: string;
   description: string;
   trigger: string;
-  type: 'shell' | 'python' | 'ansible' | 'terraform';
+  type: AutomationPlaybookType;
   content: string;
   last_run_at: string;
-  last_run_status: 'success' | 'failed' | 'running';
+  last_run_status: ExecutionStatus;
   run_count: number;
   created_at: string;
   updated_at: string;
@@ -260,8 +316,8 @@ export interface AutomationExecution {
   /** Identifier of the alert rule responsible for the automation trigger. */
   alert_rule_id?: string;
   target_resource_id?: string;
-  status: 'success' | 'failed' | 'running' | 'pending';
-  trigger_source: 'manual' | 'event' | 'schedule' | 'webhook';
+  status: ExecutionStatus;
+  trigger_source: TriggerSource;
   triggered_by: string;
   start_time: string;
   end_time?: string;
@@ -275,8 +331,6 @@ export interface AutomationExecution {
   deleted_at?: string;
 }
 
-export type TriggerType = 'schedule' | 'webhook' | 'event';
-
 export interface AutomationTrigger {
   id: string;
   name: string;
@@ -284,6 +338,7 @@ export interface AutomationTrigger {
   type: TriggerType;
   enabled: boolean;
   target_playbook_id: string;
+  retry_policy?: RetryPolicy;
   config: {
     cron?: string;
     cron_description?: string;
@@ -318,9 +373,9 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'sre' | 'developer' | 'viewer';
+  role: UserRole;
   team: string;
-  status: 'active' | 'invited' | 'inactive';
+  status: UserStatus;
   last_login_at: string | null;
   created_at: string;
   updated_at: string;
@@ -359,9 +414,9 @@ export interface AuditLog {
   id: string;
   timestamp: string;
   user: { id: string, name: string };
-  action: string;
+  action: AuditAction;
   target: { type: string, name: string };
-  result: 'success' | 'failure';
+  result: AuditResult;
   ip: string;
   details: Record<string, any>;
 }
@@ -374,9 +429,9 @@ export interface RuleCondition {
 }
 
 export interface ConditionGroup {
-  logic: 'and' | 'or';
+  logic: ConditionLogic;
   conditions: RuleCondition[];
-  severity: 'critical' | 'warning' | 'info';
+  severity: IncidentSeverity;
 }
 
 export interface AutomationSetting {
@@ -476,8 +531,6 @@ export interface SilenceRuleTemplate {
   data: Partial<SilenceRule>;
 }
 
-export type NotificationChannelType = 'email' | 'webhook' | 'slack' | 'line' | 'sms';
-
 export interface NotificationChannel {
   id: string;
   name: string;
@@ -488,12 +541,12 @@ export interface NotificationChannel {
     cc?: string;
     bcc?: string;
     webhook_url?: string;
-    http_method?: 'post' | 'put' | 'get';
+    http_method?: HttpMethod;
     mention?: string;
     access_token?: string;
     phone_number?: string;
   };
-  last_test_result: 'success' | 'failed' | 'not_tested';
+  last_test_result: TestResult;
   last_tested_at: string;
   created_at: string;
   updated_at: string;
@@ -523,7 +576,7 @@ export interface NotificationHistoryRecord {
   channel: string;
   channel_type: NotificationChannelType;
   recipient: string;
-  status: 'pending' | 'sent' | 'failed';
+  status: NotificationStatus;
   content: string;
   /** Identifier of the incident associated with the notification event. */
   incident_id?: string;
@@ -919,7 +972,7 @@ export interface SilenceRuleOptions {
 
 export interface InfraInsightsOptions {
   time_options: { label: string, value: string }[];
-  risk_levels: ColorDescriptor[];
+  risk_levels: ColorDescriptor<RiskLevel>[];
   refresh_options: { label: string, value: string }[];
   tv_mode_options: { label: string, value: string }[];
   theme_options: { label: string, value: string }[];
@@ -929,6 +982,8 @@ export interface IncidentOptions {
   statuses: StyleDescriptor<Incident['status']>[];
   severities: StyleDescriptor<Incident['severity']>[];
   impacts: StyleDescriptor<Incident['impact']>[];
+  priorities?: StyleDescriptor<IncidentPriority>[];
+  categories?: StyleDescriptor<IncidentCategory>[];
   quick_silence_durations: { label: string, value: number }[];
 }
 
@@ -973,7 +1028,7 @@ export interface PersonnelOptions {
 }
 
 export interface AuditLogOptions {
-  action_types: string[];
+  action_types: AuditAction[];
 }
 
 export interface AutomationScriptOptions {
@@ -983,7 +1038,7 @@ export interface AutomationScriptOptions {
 
 export interface NotificationChannelOptions {
   channel_types: StyleDescriptor<NotificationChannelType>[];
-  http_methods: ('post' | 'put' | 'get')[];
+  http_methods: HttpMethod[];
 }
 
 export interface NotificationStrategyOptions {
@@ -1001,6 +1056,7 @@ export interface AutomationTriggerOptions {
   condition_keys: string[];
   severity_options: { value: AlertRule['severity'], label: string }[];
   default_configs: Record<TriggerType, Partial<AutomationTrigger['config']>>;
+  retry_policies?: { value: RetryPolicy, label: string }[];
 }
 
 export interface TopologyOptions {
@@ -1022,11 +1078,6 @@ export interface LogExplorerFilters {
   keyword?: string;
   time_range?: string;
 }
-
-// --- Datasource & Discovery Types ---
-export type DatasourceType = 'victoriametrics' | 'grafana' | 'elasticsearch' | 'prometheus' | 'custom' | '自訂';
-export type AuthMethod = 'token' | 'basic_auth' | 'keycloak_integration' | 'keycloak_整合' | 'none' | '無';
-export type ConnectionStatus = 'ok' | 'error' | 'pending';
 
 export interface DatasourceTestResponse {
   success: boolean;
@@ -1056,7 +1107,7 @@ export interface ResourceLink {
 // 新增 ConfigVersion 接口定義
 export interface ConfigVersion<T = any> {
   id: string;
-  entity_type: 'alertrule' | 'automationplaybook' | 'dashboard' | 'notificationstrategy' | 'silencerule' | 'resource' | 'team' | 'user';
+  entity_type: EntityType;
   entity_id: string;
   version: number;
   config_snapshot: T;
@@ -1077,8 +1128,7 @@ export interface Datasource {
   deleted_at?: string;
 }
 
-export type DiscoveryJobKind = 'k8s' | 'snmp' | 'cloud_provider' | 'static_range' | 'custom_script';
-export type DiscoveryJobStatus = 'success' | 'partial_failure' | 'failed' | 'running';
+export type DiscoveryJobStatus = ExecutionStatus;
 
 export type ExporterTemplateId = 'none' | 'node_exporter' | 'snmp_exporter' | 'modbus_exporter' | 'ipmi_exporter';
 
@@ -1149,7 +1199,7 @@ export interface ResourceOverviewData {
 export interface ResourceRisk {
   resource_id: string;
   resource_name: string;
-  risk_level: 'high' | 'medium' | 'low';
+  risk_level: RiskLevel;
   reason: string;
   recommendation: string;
 }
@@ -1158,7 +1208,7 @@ export interface OptimizationSuggestion {
   resource_id: string;
   resource_name: string;
   suggestion: string;
-  type: 'cost' | 'performance' | 'security';
+  type: OptimizationType;
 }
 
 export interface ResourceAnalysis {

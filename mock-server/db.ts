@@ -1,5 +1,5 @@
 import {
-    Dashboard, DashboardTemplate, Incident, AlertRule, AlertRuleTemplate, SilenceRule, SilenceRuleTemplate,
+    Dashboard, DashboardTemplate, Incident, IncidentPriority, IncidentCategory, AlertRule, AlertRuleTemplate, SilenceRule, SilenceRuleTemplate,
     Resource, ResourceGroup, AutomationPlaybook, AutomationExecution, AutomationTrigger, User, Team, Role,
     AuditLog, TagDefinition, NotificationItem, NotificationStrategy, NotificationChannel,
     NotificationHistoryRecord, LoginHistoryRecord, LogEntry, MailSettings, AuthSettings, LayoutWidget,
@@ -1184,9 +1184,10 @@ const MOCK_DASHBOARD_TEMPLATES: DashboardTemplate[] = [
     { id: 'tpl-002', name: '業務 KPI 總覽', description: '追蹤關鍵業務指標，如用戶註冊數、營收、轉換率等。適用於產品經理、業務團隊使用。', icon: 'briefcase', category: '業務' },
 ];
 const MOCK_INCIDENTS: Incident[] = [
-    { id: 'INC-001', summary: 'API 延遲超過閾值', resource: 'api-server-01', resource_id: 'res-001', impact: 'high', rule: 'API 延遲規則', rule_id: 'rule-002', status: 'new', severity: 'warning', assignee: '張三', team_id: 'team-001', owner_id: 'usr-001', tags: { team: 'SRE Platform', owner: 'Alice Chen', env: 'production', service: 'api-gateway' }, occurred_at: '2024-01-15T10:30:00Z', created_at: '2024-01-15T10:30:00Z', updated_at: '2024-01-15T10:30:00Z', acknowledged_at: undefined, resolved_at: undefined, silenced_by: undefined, notifications_sent: undefined, history: [{ timestamp: '2024-01-15T10:30:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "API 延遲規則".' }] },
-    { id: 'INC-002', summary: '資料庫連接超時', resource: 'db-primary', resource_id: 'res-002', impact: 'high', rule: '資料庫連接規則', rule_id: 'rule-db-conn', status: 'acknowledged', severity: 'critical', assignee: '李四', team_id: 'team-002', owner_id: 'usr-002', tags: { team: 'Core Infrastructure', owner: 'Bob Lee', env: 'production', service: 'database' }, occurred_at: '2024-01-15T10:15:00Z', created_at: '2024-01-15T10:15:00Z', updated_at: '2024-01-15T10:15:00Z', acknowledged_at: '2024-01-15T10:20:00Z', resolved_at: undefined, silenced_by: undefined, notifications_sent: undefined, history: [{ timestamp: '2024-01-15T10:15:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "資料庫連接規則".' }] },
-    { id: 'INC-003', summary: 'CPU 使用率異常', resource: 'web-prod-12', resource_id: 'res-004', impact: 'medium', rule: 'CPU 使用率規則', rule_id: 'rule-cpu', status: 'resolved', severity: 'warning', assignee: '王五', team_id: 'team-003', owner_id: 'usr-003', tags: { team: 'API Services', owner: 'Charlie Wu', env: 'production' }, occurred_at: '2024-01-15T09:45:00Z', created_at: '2024-01-15T09:45:00Z', updated_at: '2024-01-15T09:45:00Z', acknowledged_at: '2024-01-15T10:00:00Z', resolved_at: '2024-01-15T10:05:00Z', silenced_by: undefined, notifications_sent: undefined, history: [{ timestamp: '2024-01-15T09:45:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "CPU 使用率規則".' }] },
+    { id: 'INC-001', summary: 'API 延遲超過閾值', resource: 'api-server-01', resource_id: 'res-001', impact: 'high', priority: 'p1', category: 'application', rule: 'API 延遲規則', rule_id: 'rule-002', status: 'new', severity: 'warning', assignee: '張三', team_id: 'team-001', owner_id: 'usr-001', tags: { team: 'SRE Platform', owner: 'Alice Chen', env: 'production', service: 'api-gateway' }, occurred_at: '2024-01-15T10:30:00Z', created_at: '2024-01-15T10:30:00Z', updated_at: '2024-01-15T10:30:00Z', acknowledged_at: undefined, resolved_at: undefined, silenced_by: undefined, notifications_sent: undefined, history: [{ timestamp: '2024-01-15T10:30:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "API 延遲規則".' }] },
+    { id: 'INC-002', summary: '資料庫連接超時', resource: 'db-primary', resource_id: 'res-002', impact: 'high', priority: 'p0', category: 'infrastructure', rule: '資料庫連接規則', rule_id: 'rule-db-conn', status: 'acknowledged', severity: 'critical', assignee: '李四', team_id: 'team-002', owner_id: 'usr-002', tags: { team: 'Core Infrastructure', owner: 'Bob Lee', env: 'production', service: 'database' }, occurred_at: '2024-01-15T10:15:00Z', created_at: '2024-01-15T10:15:00Z', updated_at: '2024-01-15T10:15:00Z', acknowledged_at: '2024-01-15T10:20:00Z', resolved_at: undefined, silenced_by: undefined, notifications_sent: undefined, history: [{ timestamp: '2024-01-15T10:15:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "資料庫連接規則".' }] },
+    { id: 'INC-003', summary: 'CPU 使用率異常', resource: 'web-prod-12', resource_id: 'res-004', impact: 'medium', priority: 'p2', category: 'application', rule: 'CPU 使用率規則', rule_id: 'rule-cpu', status: 'resolved', severity: 'warning', assignee: '王五', team_id: 'team-003', owner_id: 'usr-003', tags: { team: 'API Services', owner: 'Charlie Wu', env: 'production' }, occurred_at: '2024-01-15T09:45:00Z', created_at: '2024-01-15T09:45:00Z', updated_at: '2024-01-15T09:45:00Z', acknowledged_at: '2024-01-15T10:00:00Z', resolved_at: '2024-01-15T10:05:00Z', silenced_by: undefined, notifications_sent: undefined, history: [{ timestamp: '2024-01-15T09:45:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "CPU 使用率規則".' }] },
+    { id: 'INC-004', summary: 'Edge gateway maintenance window', resource: 'edge-gw-1', resource_id: 'res-007', impact: 'low', priority: 'p3', category: 'other', rule: '維運公告', rule_id: 'rule-maint', status: 'silenced', severity: 'info', assignee: undefined, team_id: 'team-001', owner_id: 'usr-001', tags: { team: 'SRE Platform', env: 'staging' }, occurred_at: '2024-01-14T22:00:00Z', created_at: '2024-01-14T21:45:00Z', updated_at: '2024-01-14T21:45:00Z', acknowledged_at: undefined, resolved_at: undefined, silenced_by: 'usr-001', notifications_sent: undefined, history: [{ timestamp: '2024-01-14T21:45:00Z', user: 'System', action: 'Created', details: 'Maintenance notice created for edge gateway.' }, { timestamp: '2024-01-14T21:50:00Z', user: 'Admin User', action: 'Silenced', details: 'Maintenance window approved and incident silenced.' }] },
 ];
 const MOCK_QUICK_SILENCE_DURATIONS = [1, 2, 4, 8, 12, 24]; // hours
 const MOCK_ALERT_RULE_DEFAULT: Partial<AlertRule> = {
@@ -1409,9 +1410,25 @@ const MOCK_AUTOMATION_EXECUTIONS: AutomationExecution[] = [
         alert_rule_id: 'rule-002',          // 新增：關聯規則 ID
         target_resource_id: 'res-002'      // 新增：關聯資源 ID
     },
+    {
+        id: 'exec-002',
+        script_id: 'play-002',
+        script_name: '擴展 Web 層',
+        status: 'cancelled',
+        trigger_source: 'manual',
+        triggered_by: 'User: Admin User',
+        start_time: '2025-09-23T12:00:00Z',
+        end_time: '2025-09-23T12:00:10Z',
+        duration_ms: 10000,
+        parameters: { instance_count: 2 },
+        logs: { stdout: 'Execution cancelled before completion.', stderr: '' },
+        incident_id: undefined,
+        alert_rule_id: undefined,
+        target_resource_id: 'res-003'
+    },
 ];
 const MOCK_AUTOMATION_TRIGGERS: AutomationTrigger[] = [
-    { id: 'trig-001', name: '每日日誌歸檔', description: '在每天凌晨 3 點運行「歸檔舊日誌」腳本。', type: 'schedule', enabled: true, target_playbook_id: 'play-005', config: { cron: '0 3 * * *', cron_description: '每日 03:00' }, last_triggered_at: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(), creator: 'Admin User', created_at: '2025-09-19T08:00:00Z', updated_at: '2025-09-19T08:00:00Z' },
+    { id: 'trig-001', name: '每日日誌歸檔', description: '在每天凌晨 3 點運行「歸檔舊日誌」腳本。', type: 'schedule', enabled: true, target_playbook_id: 'play-005', retry_policy: 'none', config: { cron: '0 3 * * *', cron_description: '每日 03:00' }, last_triggered_at: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(), creator: 'Admin User', created_at: '2025-09-19T08:00:00Z', updated_at: '2025-09-19T08:00:00Z' },
 ];
 const MOCK_USERS: User[] = [
     { id: 'usr-001', name: 'Admin User', email: 'admin@sre.platform', role: 'admin', team: 'SRE Platform', status: 'active', last_login_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(), created_at: '2024-01-01T09:00:00Z', updated_at: '2024-01-15T10:00:00Z' },
@@ -1456,7 +1473,7 @@ const AVAILABLE_PERMISSIONS: { module: string; description: string; actions: { k
     { module: 'Settings', description: '管理平台設定', actions: [{ key: 'read', label: '讀取' }, { key: 'update', label: '更新' }] },
 ];
 const MOCK_AUDIT_LOGS: AuditLog[] = [
-    { id: 'log-001', timestamp: '2024-01-15T11:05:00Z', user: { id: 'usr-001', name: 'Admin User' }, action: 'LOGIN_SUCCESS', target: { type: 'System', name: 'Authentication' }, result: 'success', ip: '192.168.1.10', details: { client: 'WebApp' } },
+    { id: 'log-001', timestamp: '2024-01-15T11:05:00Z', user: { id: 'usr-001', name: 'Admin User' }, action: 'login', target: { type: 'System', name: 'Authentication' }, result: 'success', ip: '192.168.1.10', details: { client: 'WebApp' } },
 ];
 const MOCK_TAG_DEFINITIONS: TagDefinition[] = createTagDefinitions();
 const MOCK_NOTIFICATIONS: NotificationItem[] = [
@@ -2391,6 +2408,21 @@ const INCIDENT_IMPACT_STYLES: Record<string, { label: string; class_name: string
     low: { label: '低', class_name: 'bg-yellow-950/40 border border-yellow-500/40 text-yellow-300 backdrop-blur-sm shadow-sm' },
 };
 
+const INCIDENT_PRIORITY_STYLES: Record<IncidentPriority, { label: string; class_name: string }> = {
+    p0: { label: 'P0 (最高)', class_name: 'bg-red-950/40 border border-red-500/40 text-red-300 backdrop-blur-sm shadow-sm' },
+    p1: { label: 'P1 (高)', class_name: 'bg-orange-950/40 border border-orange-500/40 text-orange-300 backdrop-blur-sm shadow-sm' },
+    p2: { label: 'P2 (中)', class_name: 'bg-amber-950/40 border border-amber-500/40 text-amber-300 backdrop-blur-sm shadow-sm' },
+    p3: { label: 'P3 (低)', class_name: 'bg-sky-950/40 border border-sky-500/40 text-sky-300 backdrop-blur-sm shadow-sm' },
+};
+
+const INCIDENT_CATEGORY_STYLES: Record<IncidentCategory, { label: string; class_name: string }> = {
+    infrastructure: { label: '基礎設施', class_name: 'bg-slate-950/40 border border-slate-500/40 text-slate-300 backdrop-blur-sm shadow-sm' },
+    application: { label: '應用程式', class_name: 'bg-purple-950/40 border border-purple-500/40 text-purple-300 backdrop-blur-sm shadow-sm' },
+    network: { label: '網路', class_name: 'bg-cyan-950/40 border border-cyan-500/40 text-cyan-300 backdrop-blur-sm shadow-sm' },
+    security: { label: '安全', class_name: 'bg-rose-950/40 border border-rose-500/40 text-rose-300 backdrop-blur-sm shadow-sm' },
+    other: { label: '其他', class_name: 'bg-stone-950/40 border border-stone-500/40 text-stone-300 backdrop-blur-sm shadow-sm' },
+};
+
 const buildIncidentStyleOptions = <T extends string>(values: T[], styleMap: Record<string, { label: string; class_name: string }>): StyleDescriptor<T>[] =>
     values.map((value: T) => ({
         value,
@@ -2402,6 +2434,8 @@ const MOCK_INCIDENT_OPTIONS: IncidentOptions = {
     statuses: buildIncidentStyleOptions(getEnumValuesForTag('status') as Incident['status'][], INCIDENT_STATUS_STYLES),
     severities: buildIncidentStyleOptions(getEnumValuesForTag('severity') as Incident['severity'][], INCIDENT_SEVERITY_STYLES),
     impacts: buildIncidentStyleOptions(getEnumValuesForTag('impact') as Incident['impact'][], INCIDENT_IMPACT_STYLES),
+    priorities: buildIncidentStyleOptions(getEnumValuesForTag('priority') as IncidentPriority[], INCIDENT_PRIORITY_STYLES),
+    categories: buildIncidentStyleOptions(getEnumValuesForTag('category') as IncidentCategory[], INCIDENT_CATEGORY_STYLES),
     quick_silence_durations: [
         { label: '1 小時', value: 1 },
         { label: '4 小時', value: 4 },
@@ -2444,12 +2478,14 @@ const MOCK_RESOURCE_OPTIONS: ResourceOptions = {
         { value: 'warning', label: '警告', class_name: 'bg-amber-950/40 border border-amber-500/40 text-amber-300 backdrop-blur-sm shadow-sm' },
         { value: 'critical', label: '嚴重', class_name: 'bg-red-950/40 border border-red-500/40 text-red-300 backdrop-blur-sm shadow-sm' },
         { value: 'offline', label: '離線', class_name: 'bg-slate-950/40 border border-slate-500/40 text-slate-300 backdrop-blur-sm shadow-sm' },
+        { value: 'unknown', label: '未知', class_name: 'bg-slate-800/40 border border-slate-600/40 text-slate-200 backdrop-blur-sm shadow-sm' },
     ],
     status_colors: [
         { value: 'healthy', label: '正常', color: '#10b981' },
         { value: 'warning', label: '警告', color: '#f97316' },
         { value: 'critical', label: '嚴重', color: '#dc2626' },
         { value: 'offline', label: '離線', color: '#64748b' },
+        { value: 'unknown', label: '未知', color: '#94a3b8' },
     ],
     types: [
         { value: 'API Gateway', label: 'API Gateway', class_name: 'bg-blue-950/40 border border-blue-500/40 text-blue-300 backdrop-blur-sm shadow-sm' },
@@ -2484,6 +2520,7 @@ const MOCK_AUTOMATION_EXECUTION_OPTIONS: AutomationExecutionOptions = {
         { value: 'failed', label: '失敗', class_name: 'bg-red-500/20 text-red-400' },
         { value: 'running', label: '執行中', class_name: 'bg-sky-500/20 text-sky-400' },
         { value: 'pending', label: '等待中', class_name: 'bg-yellow-500/20 text-yellow-400' },
+        { value: 'cancelled', label: '已取消', class_name: 'bg-slate-500/20 text-slate-300' },
     ],
     trigger_sources: [
         { value: 'event', label: '事件觸發', class_name: 'bg-red-950/40 border border-red-500/40 text-red-300 backdrop-blur-sm shadow-sm' },
@@ -2501,7 +2538,7 @@ const MOCK_NOTIFICATION_CHANNEL_OPTIONS: NotificationChannelOptions = {
         { value: 'line', label: 'LINE 通知', class_name: 'bg-green-950/40 border border-green-500/40 text-green-300 backdrop-blur-sm shadow-sm' },
         { value: 'sms', label: '簡訊', class_name: 'bg-orange-950/40 border border-orange-500/40 text-orange-300 backdrop-blur-sm shadow-sm' }
     ],
-    http_methods: ['post', 'put', 'get']
+    http_methods: ['get', 'post', 'put', 'patch', 'delete']
 };
 
 const MOCK_AUTOMATION_TRIGGER_SEVERITY_OPTIONS = MOCK_ALERT_RULE_OPTIONS.severities.map(({ value, label }) => ({ value, label }));
@@ -2518,7 +2555,12 @@ const MOCK_AUTOMATION_TRIGGER_OPTIONS: AutomationTriggerOptions = {
         'schedule': { cron: '0 * * * *' },
         'webhook': { webhook_url: 'https://sre.platform/api/v1/webhooks/hook-generated-id' },
         'event': { event_conditions: `severity = ${MOCK_AUTOMATION_TRIGGER_SEVERITY_OPTIONS[0]?.value ?? 'critical'}` }
-    }
+    },
+    retry_policies: [
+        { value: 'none', label: '不重試' },
+        { value: 'fixed', label: '固定間隔重試' },
+        { value: 'exponential', label: '指數回退重試' },
+    ]
 };
 
 const MOCK_PERSONNEL_OPTIONS: PersonnelOptions = {
@@ -2540,7 +2582,7 @@ const MOCK_DASHBOARD_OPTIONS: DashboardOptions = {
 };
 
 const MOCK_AUDIT_LOG_OPTIONS: AuditLogOptions = {
-    action_types: ['LOGIN_SUCCESS', 'UPDATE_ALERT_RULE', 'CREATE_USER', 'DELETE_RESOURCE'],
+    action_types: ['login', 'update', 'create', 'delete'],
 };
 
 const MOCK_LOG_OPTIONS: LogOptions = {
@@ -2705,7 +2747,7 @@ const MOCK_DISCOVERY_JOBS: DiscoveryJob[] = [
         kind: 'snmp',
         schedule: '30 * * * *', // 每小時 30 分
         last_run_at: '2025-09-23T10:30:05Z',
-        status: 'partial_failure',
+        status: 'failed',
         target_config: { community: 'public', ip_range: '10.1.1.1/24' },
         exporter_binding: { template_id: 'snmp_exporter', mib_profile_id: 'snmp-default' },
         edge_gateway: { enabled: true, gateway_id: 'edge-gw-1' },

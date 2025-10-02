@@ -208,12 +208,12 @@ paths:
           in: query
           schema:
             type: string
-            enum: [new, acknowledged, investigating, resolved, closed, silenced]
+            enum: [new, acknowledged, resolved, silenced]
         - name: severity
           in: query
           schema:
             type: string
-            enum: [Critical, Warning, Info]
+            enum: [critical, warning, info]
         - name: assignee
           in: query
           schema:
@@ -395,7 +395,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [critical, high, medium, low, info]
+            enum: [critical, warning, info]
       responses:
         '200':
           description: Successful response
@@ -727,7 +727,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [pending, running, success, failed]
+            enum: [pending, running, success, failed, cancelled]
       responses:
         '200':
           description: Successful response
@@ -798,7 +798,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [Admin, SRE, Developer, Viewer]
+            enum: [admin, sre, developer, viewer]
       responses:
         '200':
           description: Successful response
@@ -877,7 +877,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [Email, Webhook, Slack, LINE Notify, SMS]
+            enum: [email, webhook, slack, line, sms]
       responses:
         '200':
           description: Successful response
@@ -1015,7 +1015,7 @@ paths:
                 properties:
                   status:
                     type: string
-                    enum: [healthy, degraded, down]
+                    enum: [healthy, warning, critical, offline, unknown]
                   timestamp:
                     type: string
                     format: date-time
@@ -1231,16 +1231,22 @@ components:
           type: string
         status:
           type: string
-          enum: [new, acknowledged, investigating, resolved, closed, silenced]
+          enum: [new, acknowledged, resolved, silenced]
           description: Incident lifecycle status; `silenced` indicates notifications are temporarily suppressed.
           example: new
         severity:
           type: string
-          enum: [Critical, Warning, Info]
+          enum: [critical, warning, info]
           example: Warning
         impact:
           type: string
-          enum: [High, Medium, Low]
+          enum: [high, medium, low]
+        priority:
+          type: string
+          enum: [p0, p1, p2, p3]
+        category:
+          type: string
+          enum: [infrastructure, application, network, security, other]
         assignee:
           type: string
         team_id:
@@ -1302,10 +1308,16 @@ components:
           type: string
         severity:
           type: string
-          enum: [Critical, Warning, Info]
+          enum: [critical, warning, info]
         impact:
           type: string
-          enum: [High, Medium, Low]
+          enum: [high, medium, low]
+        priority:
+          type: string
+          enum: [p0, p1, p2, p3]
+        category:
+          type: string
+          enum: [infrastructure, application, network, security, other]
         tags:
           type: object
 
@@ -1314,7 +1326,7 @@ components:
       properties:
         status:
           type: string
-          enum: [new, acknowledged, investigating, resolved, closed, silenced]
+          enum: [new, acknowledged, resolved, silenced]
           description: Update the incident lifecycle state; use `silenced` to pause notifications.
         assignee:
           type: string
@@ -1333,7 +1345,7 @@ components:
           type: boolean
         severity:
           type: string
-          enum: [critical, high, medium, low, info]
+          enum: [critical, warning, info]
         conditions_summary:
           type: string
         automation_enabled:
@@ -1374,7 +1386,7 @@ components:
           default: true
         severity:
           type: string
-          enum: [critical, high, medium, low, info]
+          enum: [critical, warning, info]
         conditions_summary:
           type: string
         automation_enabled:
@@ -1482,6 +1494,7 @@ components:
           format: date-time
         last_run_status:
           type: string
+          enum: [pending, running, success, failed, cancelled]
         run_count:
           type: integer
         created_at:
@@ -1537,12 +1550,12 @@ components:
           type: string
         trigger_source:
           type: string
-          enum: [manual, event, schedule, webhook]
+          enum: [manual, schedule, webhook, event]
         triggered_by:
           type: string
         status:
           type: string
-          enum: [pending, running, success, failed]
+          enum: [pending, running, success, failed, cancelled]
         start_time:
           type: string
           format: date-time
@@ -1568,11 +1581,14 @@ components:
           type: string
         type:
           type: string
-          enum: [Schedule, Webhook, Event]
+          enum: [schedule, webhook, event]
         enabled:
           type: boolean
         target_playbook_id:
           type: string
+        retry_policy:
+          type: string
+          enum: [none, fixed, exponential]
         cron:
           type: string
         webhook_url:
@@ -1597,11 +1613,14 @@ components:
           type: string
         type:
           type: string
-          enum: [Schedule, Webhook, Event]
+          enum: [schedule, webhook, event]
         enabled:
           type: boolean
         target_playbook_id:
           type: string
+        retry_policy:
+          type: string
+          enum: [none, fixed, exponential]
         cron:
           type: string
         event_conditions:
@@ -1620,7 +1639,7 @@ components:
           format: email
         role:
           type: string
-          enum: [Admin, SRE, Developer, Viewer]
+          enum: [admin, sre, developer, viewer]
         team:
           type: string
         status:
@@ -1653,7 +1672,7 @@ components:
           format: email
         role:
           type: string
-          enum: [Admin, SRE, Developer, Viewer]
+          enum: [admin, sre, developer, viewer]
         team:
           type: string
 
@@ -1717,7 +1736,7 @@ components:
           type: string
         type:
           type: string
-          enum: [Email, Webhook (通用), Slack, LINE Notify, SMS]
+          enum: [email, webhook, slack, line, sms]
         enabled:
           type: boolean
         config:
@@ -1742,7 +1761,7 @@ components:
           type: string
         type:
           type: string
-          enum: [Email, Webhook (通用), Slack, LINE Notify, SMS]
+          enum: [email, webhook, slack, line, sms]
         enabled:
           type: boolean
         config:
@@ -1828,7 +1847,7 @@ components:
           type: string
         risk_level:
           type: string
-          enum: [low, medium, high, critical]
+          enum: [high, medium, low]
         risk_analysis:
           type: string
         optimization_suggestions:

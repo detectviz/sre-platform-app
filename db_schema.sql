@@ -21,13 +21,16 @@ CREATE TYPE dashboard_type AS ENUM ('built-in', 'custom', 'grafana');
 CREATE TYPE incident_status AS ENUM ('new', 'acknowledged', 'resolved', 'silenced');
 CREATE TYPE incident_severity AS ENUM ('critical', 'warning', 'info');
 CREATE TYPE incident_impact AS ENUM ('high', 'medium', 'low');
+CREATE TYPE incident_priority AS ENUM ('p0', 'p1', 'p2', 'p3');
+CREATE TYPE incident_category AS ENUM ('infrastructure', 'application', 'network', 'security', 'other');
 
 CREATE TYPE resource_status AS ENUM ('healthy', 'warning', 'critical', 'offline', 'unknown');
 
 CREATE TYPE playbook_type AS ENUM ('shell', 'python', 'ansible', 'terraform');
-CREATE TYPE execution_status AS ENUM ('pending', 'running', 'success', 'failed');
+CREATE TYPE execution_status AS ENUM ('pending', 'running', 'success', 'failed', 'cancelled');
 CREATE TYPE trigger_source AS ENUM ('manual', 'schedule', 'webhook', 'event');
 CREATE TYPE trigger_type AS ENUM ('schedule', 'webhook', 'event');
+CREATE TYPE retry_policy AS ENUM ('none', 'fixed', 'exponential');
 
 -- User & IAM Types
 CREATE TYPE user_role AS ENUM ('admin', 'sre', 'developer', 'viewer');
@@ -40,11 +43,11 @@ CREATE TYPE condition_logic AS ENUM ('and', 'or');
 
 -- Notification Types
 CREATE TYPE notification_channel_type AS ENUM ('email', 'webhook', 'slack', 'line', 'sms');
-CREATE TYPE notification_status AS ENUM ('sent', 'failed', 'pending');
+CREATE TYPE notification_status AS ENUM ('pending', 'sent', 'failed');
 CREATE TYPE test_result AS ENUM ('success', 'failed', 'not_tested');
 
 -- Audit Types
-CREATE TYPE audit_action AS ENUM ('create', 'read', 'update', 'delete', 'execute');
+CREATE TYPE audit_action AS ENUM ('create', 'read', 'update', 'delete', 'execute', 'login', 'logout', 'permission_change');
 CREATE TYPE audit_result AS ENUM ('success', 'failure');
 
 -- Datasource Types
@@ -54,13 +57,11 @@ CREATE TYPE connection_status AS ENUM ('ok', 'error', 'pending');
 
 -- Discovery Types
 CREATE TYPE discovery_job_kind AS ENUM ('k8s', 'snmp', 'cloud_provider', 'static_range', 'custom_script');
-CREATE TYPE discovery_job_status AS ENUM ('success', 'partial_failure', 'failed', 'running');
 CREATE TYPE discovered_resource_status AS ENUM ('new', 'imported', 'ignored');
 
 -- Analysis Types
-CREATE TYPE risk_level AS ENUM ('low', 'medium', 'high', 'critical');
-CREATE TYPE optimization_type AS ENUM ('performance', 'cost', 'security', 'reliability');
-CREATE TYPE priority_level AS ENUM ('low', 'medium', 'high', 'critical');
+CREATE TYPE risk_level AS ENUM ('high', 'medium', 'low');
+CREATE TYPE optimization_type AS ENUM ('cost', 'performance', 'security');
 
 -- =====================================================
 -- CORE TABLES
@@ -232,7 +233,7 @@ CREATE TABLE discovery_jobs (
     name VARCHAR(255) NOT NULL,
     kind discovery_job_kind NOT NULL,
     schedule VARCHAR(255) NOT NULL,
-    status discovery_job_status NOT NULL DEFAULT 'success',
+    status execution_status NOT NULL DEFAULT 'pending',
     target_config JSONB NOT NULL,
     exporter_binding JSONB,
     edge_gateway JSONB,
@@ -314,6 +315,8 @@ CREATE TABLE incidents (
     status incident_status NOT NULL DEFAULT 'new',
     severity incident_severity NOT NULL,
     impact incident_impact NOT NULL,
+    priority incident_priority NOT NULL DEFAULT 'p2',
+    category incident_category NOT NULL DEFAULT 'other',
     assignee VARCHAR(255),
     team_id VARCHAR(255) REFERENCES teams(id),
     owner_id VARCHAR(255) REFERENCES users(id),
@@ -334,6 +337,8 @@ CREATE INDEX idx_incidents_rule_id ON incidents(rule_id);
 CREATE INDEX idx_incidents_status ON incidents(status);
 CREATE INDEX idx_incidents_severity ON incidents(severity);
 CREATE INDEX idx_incidents_impact ON incidents(impact);
+CREATE INDEX idx_incidents_priority ON incidents(priority);
+CREATE INDEX idx_incidents_category ON incidents(category);
 CREATE INDEX idx_incidents_assignee ON incidents(assignee);
 CREATE INDEX idx_incidents_team_id ON incidents(team_id);
 CREATE INDEX idx_incidents_occurred_at ON incidents(occurred_at);
@@ -422,6 +427,7 @@ CREATE TABLE automation_triggers (
     type trigger_type NOT NULL,
     enabled BOOLEAN NOT NULL DEFAULT true,
     playbook_id VARCHAR(255) NOT NULL REFERENCES automation_playbooks(id),
+    retry_policy retry_policy NOT NULL DEFAULT 'none',
     config JSONB NOT NULL,
     last_triggered_at TIMESTAMPTZ,
     creator VARCHAR(255) NOT NULL REFERENCES users(id),

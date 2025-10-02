@@ -1,5 +1,5 @@
 import { DB, uuidv4 } from './db';
-import type { ConnectionStatus, DiscoveryJob, Incident, NotificationStrategy, Resource, ResourceLink, ConfigVersion, TabConfigMap, TagDefinition, NotificationChannelType } from '../types';
+import type { ConnectionStatus, DiscoveryJob, Incident, NotificationStrategy, Resource, ResourceLink, ConfigVersion, TabConfigMap, TagDefinition, NotificationChannelType, RetryPolicy } from '../types';
 import { auditLogMiddleware } from './auditLog';
 
 type HttpMethod = 'get' | 'post' | 'put' | 'patch' | 'delete';
@@ -411,7 +411,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                             d.deleted_at = new Date().toISOString();
                             auditLogMiddleware(
                                 currentUser.id,
-                                'DELETE',
+                                'delete',
                                 'Dashboard',
                                 d.id,
                                 { name: d.name, type: d.type, category: d.category }
@@ -456,7 +456,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 const currentUser = getCurrentUser();
                 auditLogMiddleware(
                     currentUser.id,
-                    'CREATE',
+                    'create',
                     'Dashboard',
                     newDashboardData.id,
                     { name: newDashboardData.name, type: newDashboardData.type, category: newDashboardData.category }
@@ -480,7 +480,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 const currentUser = getCurrentUser();
                 auditLogMiddleware(
                     currentUser.id,
-                    'UPDATE',
+                    'update',
                     'Dashboard',
                     id,
                     {
@@ -503,7 +503,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'DELETE',
+                        'delete',
                         'Dashboard',
                         id,
                         { name: dashboard.name, type: dashboard.type, category: dashboard.category }
@@ -627,7 +627,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
 
                         auditLogMiddleware(
                             currentUser.id,
-                            'UPDATE',
+                            'update',
                             'Incident',
                             incident.id,
                             {
@@ -695,7 +695,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
 
                         auditLogMiddleware(
                             currentUser.id,
-                            'UPDATE',
+                            'update',
                             'Incident',
                             incident.id,
                             {
@@ -778,7 +778,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'CREATE',
+                        'create',
                         'Incident',
                         newIncident.id,
                         { summary: newIncident.summary, severity: newIncident.severity, resource: newIncident.resource }
@@ -945,7 +945,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
 
                 auditLogMiddleware(
                     currentUser.id,
-                    'UPDATE',
+                    'update',
                     'Incident',
                     id,
                     auditDetails
@@ -961,7 +961,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'DELETE',
+                        'delete',
                         'Incident',
                         id,
                         { summary: incident.summary, severity: incident.severity, resource: incident.resource }
@@ -1104,7 +1104,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'CREATE',
+                        'create',
                         'Incident',
                         newIncident.id,
                         { summary: newIncident.summary, severity: newIncident.severity, resource: newIncident.resource }
@@ -1175,7 +1175,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 const currentUser3 = getCurrentUser();
                 auditLogMiddleware(
                     currentUser3.id,
-                    'CREATE',
+                    'create',
                     'AlertRule',
                     newRule.id,
                     { name: newRule.name, severity: newRule.severity }
@@ -1209,7 +1209,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 const currentUser2 = getCurrentUser();
                 auditLogMiddleware(
                     currentUser2.id,
-                    'UPDATE',
+                    'update',
                     'AlertRule',
                     id,
                     {
@@ -1231,7 +1231,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'DELETE',
+                        'delete',
                         'AlertRule',
                         id,
                         { name: rule.name, severity: rule.severity }
@@ -1274,7 +1274,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                             rule.deleted_at = new Date().toISOString();
                             auditLogMiddleware(
                                 currentUser.id,
-                                'DELETE',
+                                'delete',
                                 'SilenceRule',
                                 rule_id,
                                 { name: rule.name, type: rule.type, enabled: rule.enabled }
@@ -1286,7 +1286,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                             if (oldEnabled !== true) {
                                 auditLogMiddleware(
                                     currentUser.id,
-                                    'UPDATE',
+                                    'update',
                                     'SilenceRule',
                                     rule_id,
                                     { name: rule.name, old_enabled: oldEnabled, new_enabled: true }
@@ -1299,7 +1299,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                             if (oldEnabled !== false) {
                                 auditLogMiddleware(
                                     currentUser.id,
-                                    'UPDATE',
+                                    'update',
                                     'SilenceRule',
                                     rule_id,
                                     { name: rule.name, old_enabled: oldEnabled, new_enabled: false }
@@ -1334,7 +1334,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 const currentUser = getCurrentUser();
                 auditLogMiddleware(
                     currentUser.id,
-                    'CREATE',
+                    'create',
                     'SilenceRule',
                     newSilenceRule.id,
                     { name: newSilenceRule.name, type: newSilenceRule.type, enabled: newSilenceRule.enabled }
@@ -1351,7 +1351,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 const currentUser4 = getCurrentUser();
                 auditLogMiddleware(
                     currentUser4.id,
-                    'UPDATE',
+                    'update',
                     'SilenceRule',
                     id,
                     {
@@ -1373,7 +1373,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'DELETE',
+                        'delete',
                         'SilenceRule',
                         id,
                         { name: rule.name, type: rule.type, enabled: rule.enabled }
@@ -1476,7 +1476,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                                 updated += 1;
                                 auditLogMiddleware(
                                     currentUser.id,
-                                    'DELETE',
+                                    'delete',
                                     'Datasource',
                                     ds.id,
                                     { name: ds.name, type: ds.type, status: ds.status }
@@ -1502,7 +1502,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                                 updated += 1;
                                 auditLogMiddleware(
                                     currentUser.id,
-                                    'DELETE',
+                                    'delete',
                                     'DiscoveryJob',
                                     job.id,
                                     { name: job.name, kind: job.kind }
@@ -1589,7 +1589,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'CREATE',
+                        'create',
                         'Datasource',
                         newDs.id,
                         { name: newDs.name, type: newDs.type, status: newDs.status }
@@ -1617,7 +1617,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         setTimeout(() => {
                             const idx = DB.discovery_jobs.findIndex((j: any) => j.id === job_id);
                             if (idx > -1) {
-                                DB.discovery_jobs[idx].status = Math.random() > 0.2 ? 'success' : 'partial_failure';
+                                DB.discovery_jobs[idx].status = Math.random() > 0.2 ? 'success' : 'failed';
                                 DB.discovery_jobs[idx].last_run_at = new Date().toISOString();
                             }
                         }, 3000);
@@ -1635,8 +1635,8 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         ...body,
                         id: `dj-${uuidv4()}`,
                         last_run_at: 'N/A',
-                        status: 'success',
-                        kind: body?.kind || 'K8s',
+                        status: 'pending',
+                        kind: body?.kind || 'k8s',
                         target_config: body?.target_config || {},
                         exporter_binding: body?.exporter_binding || { template_id: 'node_exporter' },
                         edge_gateway: body?.edge_gateway || { enabled: false },
@@ -1648,7 +1648,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'CREATE',
+                        'create',
                         'DiscoveryJob',
                         newJob.id,
                         { name: newJob.name, kind: newJob.kind, schedule: newJob.schedule }
@@ -1707,7 +1707,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
 
                     // 驗證枚舉值
                     if (body.status) {
-                        validateEnum(body.status, ['healthy', 'warning', 'critical', 'offline'], 'status');
+                        validateEnum(body.status, ['healthy', 'warning', 'critical', 'offline', 'unknown'], 'status');
                     }
 
                     const timestamp = new Date().toISOString();
@@ -1725,7 +1725,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'CREATE',
+                        'create',
                         'Resource',
                         newResource.id,
                         { name: newResource.name, type: newResource.type }
@@ -1753,7 +1753,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 const currentUser = getCurrentUser();
                 auditLogMiddleware(
                     currentUser.id,
-                    'CREATE',
+                    'create',
                     'ResourceLink',
                     newLink.id,
                     { source_resource_id: newLink.source_resource_id, target_resource_id: newLink.target_resource_id, link_type: newLink.link_type }
@@ -1772,7 +1772,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'UPDATE',
+                        'update',
                         'Datasource',
                         dsId,
                         {
@@ -1805,7 +1805,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'UPDATE',
+                        'update',
                         'DiscoveryJob',
                         job_id,
                         {
@@ -1831,7 +1831,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     validateForeignKey(DB.datasources, body?.datasource_id, 'Datasource');
                 }
                 if (Object.prototype.hasOwnProperty.call(body ?? {}, 'status') && body?.status) {
-                    validateEnum(body.status, ['healthy', 'warning', 'critical', 'offline'], 'status');
+                    validateEnum(body.status, ['healthy', 'warning', 'critical', 'offline', 'unknown'], 'status');
                 }
                 // 更新 updated_at 時間戳
                 DB.resources[resIndex] = { ...DB.resources[resIndex], ...body, updated_at: new Date().toISOString() };
@@ -1840,7 +1840,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 const currentUser = getCurrentUser();
                 auditLogMiddleware(
                     currentUser.id,
-                    'UPDATE',
+                    'update',
                     'Resource',
                     id,
                     {
@@ -1869,7 +1869,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 const currentUser = getCurrentUser();
                 auditLogMiddleware(
                     currentUser.id,
-                    'UPDATE',
+                    'update',
                     'ResourceLink',
                     id,
                     {
@@ -1891,7 +1891,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         const currentUser = getCurrentUser();
                         auditLogMiddleware(
                             currentUser.id,
-                            'DELETE',
+                            'delete',
                             'Datasource',
                             dsId,
                             { name: datasource.name, type: datasource.type, status: datasource.status }
@@ -1908,7 +1908,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         const currentUser = getCurrentUser();
                         auditLogMiddleware(
                             currentUser.id,
-                            'DELETE',
+                            'delete',
                             'DiscoveryJob',
                             job_id,
                             { name: job.name, kind: job.kind }
@@ -1925,7 +1925,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'DELETE',
+                        'delete',
                         'Resource',
                         id,
                         { name: resource.name, type: resource.type }
@@ -1942,7 +1942,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'DELETE',
+                        'delete',
                         'ResourceLink',
                         id,
                         {
@@ -1977,7 +1977,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                                 updated += 1;
                                 auditLogMiddleware(
                                     currentUser.id,
-                                    'DELETE',
+                                    'delete',
                                     'ResourceGroup',
                                     group.id,
                                     {
@@ -2013,7 +2013,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 const currentUserForResourceGroupCreate = getCurrentUser();
                 auditLogMiddleware(
                     currentUserForResourceGroupCreate.id,
-                    'CREATE',
+                    'create',
                     'ResourceGroup',
                     newGroup.id,
                     {
@@ -2041,7 +2041,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 const currentUserForResourceGroupUpdate = getCurrentUser();
                 auditLogMiddleware(
                     currentUserForResourceGroupUpdate.id,
-                    'UPDATE',
+                    'update',
                     'ResourceGroup',
                     id,
                     {
@@ -2065,7 +2065,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'DELETE',
+                        'delete',
                         'ResourceGroup',
                         id,
                         {
@@ -2126,7 +2126,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                                     updated += 1;
                                     auditLogMiddleware(
                                         currentUser.id,
-                                        'DELETE',
+                                        'delete',
                                         'AutomationPlaybook',
                                         script.id,
                                         { name: script.name, type: script.type }
@@ -2190,7 +2190,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'CREATE',
+                        'create',
                         'AutomationPlaybook',
                         newScript.id,
                         { name: newScript.name, type: newScript.type }
@@ -2237,7 +2237,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                                 if (oldEnabled !== true) {
                                     auditLogMiddleware(
                                         currentUser.id,
-                                        'UPDATE',
+                                        'update',
                                         'AutomationTrigger',
                                         trigger.id,
                                         { name: trigger.name, old_enabled: oldEnabled, new_enabled: true }
@@ -2251,7 +2251,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                                 if (oldEnabled !== false) {
                                     auditLogMiddleware(
                                         currentUser.id,
-                                        'UPDATE',
+                                        'update',
                                         'AutomationTrigger',
                                         trigger.id,
                                         { name: trigger.name, old_enabled: oldEnabled, new_enabled: false }
@@ -2262,7 +2262,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                                 trigger.deleted_at = now;
                                 auditLogMiddleware(
                                     currentUser.id,
-                                    'DELETE',
+                                    'delete',
                                     'AutomationTrigger',
                                     trigger.id,
                                     { name: trigger.name, type: trigger.type }
@@ -2278,9 +2278,15 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     if (!name || !type || enabled === undefined || !target_playbook_id) {
                         throw { status: 400, message: 'Missing required fields for automation trigger' };
                     }
-                    if (!['Schedule', 'Webhook', 'Event'].includes(type)) {
+                    if (!['schedule', 'webhook', 'event'].includes(type)) {
                         throw { status: 400, message: 'Invalid trigger type' };
                     }
+
+                    const retryPolicy = validateEnum(
+                        (body.retry_policy ?? 'none') as RetryPolicy,
+                        ['none', 'fixed', 'exponential'] as RetryPolicy[],
+                        'retry_policy'
+                    );
 
                     // 驗證外鍵
                     if (body.target_playbook_id) {
@@ -2293,6 +2299,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const timestamp = new Date().toISOString();
                     const newTrigger = {
                         ...body,
+                        retry_policy: retryPolicy,
                         id: `trig-${uuidv4()}`,
                         created_at: timestamp,
                         updated_at: timestamp
@@ -2302,7 +2309,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'CREATE',
+                        'create',
                         'AutomationTrigger',
                         newTrigger.id,
                         { name: newTrigger.name, type: newTrigger.type, enabled: newTrigger.enabled }
@@ -2318,13 +2325,23 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     if (index === -1) throw { status: 404 };
                     const existing = DB.playbooks[index];
                     // 更新 updated_at 時間戳
-                    const updated = { ...existing, ...body, updated_at: new Date().toISOString() };
+                    let normalizedRetryPolicy: RetryPolicy = (existing.retry_policy as RetryPolicy) ?? 'none';
+                    if (Object.prototype.hasOwnProperty.call(body ?? {}, 'retry_policy')) {
+                        if (body?.retry_policy !== undefined) {
+                            normalizedRetryPolicy = validateEnum(
+                                body.retry_policy as RetryPolicy,
+                                ['none', 'fixed', 'exponential'] as RetryPolicy[],
+                                'retry_policy'
+                            );
+                        }
+                    }
+                    const updated = { ...existing, ...body, retry_policy: normalizedRetryPolicy, updated_at: new Date().toISOString() };
                     DB.playbooks[index] = updated;
                     // Audit log for automation playbook update
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'UPDATE',
+                        'update',
                         'AutomationPlaybook',
                         itemId,
                         { old_name: existing.name, new_name: updated.name, old_type: existing.type, new_type: updated.type }
@@ -2349,7 +2366,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'UPDATE',
+                        'update',
                         'AutomationTrigger',
                         itemId,
                         {
@@ -2376,7 +2393,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         const currentUser = getCurrentUser();
                         auditLogMiddleware(
                             currentUser.id,
-                            'DELETE',
+                            'delete',
                             'AutomationPlaybook',
                             itemId,
                             { name: playbook.name, type: playbook.type }
@@ -2394,7 +2411,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         const currentUser = getCurrentUser();
                         auditLogMiddleware(
                             currentUser.id,
-                            'DELETE',
+                            'delete',
                             'AutomationTrigger',
                             itemId,
                             { name: trigger.name, type: trigger.type }
@@ -2453,7 +2470,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                                 u.deleted_at = new Date().toISOString();
                                 auditLogMiddleware(
                                     currentUser.id,
-                                    'DELETE',
+                                    'delete',
                                     'User',
                                     u.id,
                                     { name: u.name, email: u.email, role: u.role }
@@ -2468,7 +2485,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                                 if (oldStatus !== 'inactive') {
                                     auditLogMiddleware(
                                         currentUser.id,
-                                        'UPDATE',
+                                        'update',
                                         'User',
                                         u.id,
                                         { name: u.name, old_status: oldStatus, new_status: 'inactive' }
@@ -2504,7 +2521,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         const currentUser = getCurrentUser();
                         auditLogMiddleware(
                             currentUser.id,
-                            'CREATE',
+                            'create',
                             'User',
                             newUser.id,
                             { name: newUser.name, email: newUser.email, role: newUser.role }
@@ -2522,7 +2539,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                                 t.deleted_at = new Date().toISOString();
                                 auditLogMiddleware(
                                     currentUser.id,
-                                    'DELETE',
+                                    'delete',
                                     'Team',
                                     t.id,
                                     { name: t.name, member_count: Array.isArray(t.member_ids) ? t.member_ids.length : 0 }
@@ -2553,7 +2570,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'CREATE',
+                        'create',
                         'Team',
                         newTeam.id,
                         { name: newTeam.name, owner_id: newTeam.owner_id, member_count: newTeam.member_ids?.length ?? 0 }
@@ -2570,7 +2587,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                                 r.deleted_at = new Date().toISOString();
                                 auditLogMiddleware(
                                     currentUser.id,
-                                    'DELETE',
+                                    'delete',
                                     'Role',
                                     r.id,
                                     { name: r.name, permissions_count: Array.isArray(r.permissions) ? r.permissions.length : 0 }
@@ -2594,7 +2611,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'CREATE',
+                        'create',
                         'Role',
                         newRole.id,
                         { name: newRole.name, enabled: newRole.enabled, permissions_count: newRole.permissions?.length ?? 0 }
@@ -2655,7 +2672,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         };
                 auditLogMiddleware(
                     currentUser.id,
-                    'UPDATE',
+                    'update',
                     entityType,
                     itemId,
                     entityDetails
@@ -2679,7 +2696,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                             : { name: item.name, permissions_count: Array.isArray(item.permissions) ? item.permissions.length : 0 };
                     auditLogMiddleware(
                         currentUser.id,
-                        'DELETE',
+                        'delete',
                         entityType,
                         itemId,
                         details
@@ -3047,7 +3064,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                                 updated += 1;
                                 auditLogMiddleware(
                                     currentUser.id,
-                                    'DELETE',
+                                    'delete',
                                     'NotificationChannel',
                                     channel.id,
                                     { name: channel.name, type: channel.type, enabled: channel.enabled }
@@ -3064,7 +3081,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                                 if (oldEnabled !== true) {
                                     auditLogMiddleware(
                                         currentUser.id,
-                                        'UPDATE',
+                                        'update',
                                         'NotificationChannel',
                                         channel.id,
                                         { name: channel.name, type: channel.type, old_enabled: oldEnabled, new_enabled: true }
@@ -3082,7 +3099,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                                 if (oldEnabled !== false) {
                                     auditLogMiddleware(
                                         currentUser.id,
-                                        'UPDATE',
+                                        'update',
                                         'NotificationChannel',
                                         channel.id,
                                         { name: channel.name, type: channel.type, old_enabled: oldEnabled, new_enabled: false }
@@ -3109,7 +3126,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                                 updated += 1;
                                 auditLogMiddleware(
                                     currentUser.id,
-                                    'DELETE',
+                                    'delete',
                                     'NotificationStrategy',
                                     strategy.id,
                                     { name: strategy.name, enabled: strategy.enabled }
@@ -3126,7 +3143,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                                 if (oldEnabled !== true) {
                                     auditLogMiddleware(
                                         currentUser.id,
-                                        'UPDATE',
+                                        'update',
                                         'NotificationStrategy',
                                         strategy.id,
                                         { name: strategy.name, old_enabled: oldEnabled, new_enabled: true }
@@ -3144,7 +3161,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                                 if (oldEnabled !== false) {
                                     auditLogMiddleware(
                                         currentUser.id,
-                                        'UPDATE',
+                                        'update',
                                         'NotificationStrategy',
                                         strategy.id,
                                         { name: strategy.name, old_enabled: oldEnabled, new_enabled: false }
@@ -3171,7 +3188,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                                 updated += 1;
                                 auditLogMiddleware(
                                     currentUser.id,
-                                    'DELETE',
+                                    'delete',
                                     'TagDefinition',
                                     tag.id,
                                     { key: tag.key, scopes: tag.scopes }
@@ -3213,7 +3230,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'CREATE',
+                        'create',
                         'TagDefinition',
                         newTag.id,
                         { key: newTag.key, scopes: newTag.scopes }
@@ -3286,7 +3303,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'CREATE',
+                        'create',
                         'NotificationStrategy',
                         newStrategy.id,
                         {
@@ -3323,7 +3340,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'CREATE',
+                        'create',
                         'NotificationChannel',
                         newChannel.id,
                         { name: newChannel.name, type: newChannel.type, enabled: newChannel.enabled }
@@ -3355,7 +3372,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'CREATE',
+                        'create',
                         'TagDefinition',
                         payload.id,
                         { key: payload.key, scopes: payload.scopes, writable_roles: payload.writable_roles }
@@ -3398,7 +3415,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'UPDATE',
+                        'update',
                         'NotificationStrategy',
                         itemId,
                         {
@@ -3424,7 +3441,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'UPDATE',
+                        'update',
                         'NotificationChannel',
                         itemId,
                         {
@@ -3467,7 +3484,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const currentUser = getCurrentUser();
                     auditLogMiddleware(
                         currentUser.id,
-                        'UPDATE',
+                        'update',
                         'TagDefinition',
                         itemId,
                         {
@@ -3494,7 +3511,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         const currentUser = getCurrentUser();
                         auditLogMiddleware(
                             currentUser.id,
-                            'DELETE',
+                            'delete',
                             'NotificationStrategy',
                             itemId,
                             { name: strategy.name, enabled: strategy.enabled }
@@ -3511,7 +3528,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         const currentUser = getCurrentUser();
                         auditLogMiddleware(
                             currentUser.id,
-                            'DELETE',
+                            'delete',
                             'NotificationChannel',
                             itemId,
                             { name: channel.name, type: channel.type, enabled: channel.enabled }
@@ -3531,7 +3548,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         const tag = DB.tag_definitions[index];
                         auditLogMiddleware(
                             currentUser.id,
-                            'DELETE',
+                            'delete',
                             'TagDefinition',
                             itemId,
                             { key: tag.key, scopes: tag.scopes }
