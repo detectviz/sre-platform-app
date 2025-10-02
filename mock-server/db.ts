@@ -1142,8 +1142,30 @@ const MOCK_NAV_ITEMS: NavItem[] = [
     },
 ];
 const MOCK_DASHBOARDS: Dashboard[] = [
-    { id: 'sre-war-room', name: 'SRE 戰情室', type: 'built-in', category: '業務與 SLA', description: '跨團隊即時戰情看板，聚焦重大事件與 SLA 指標。', owner: '事件指揮中心', created_at: '2025-09-18T17:15:00Z', updated_at: '2025-09-18T17:15:00Z', path: '/sre-war-room' },
-    { id: 'infrastructure-insights', name: '基礎設施洞察', type: 'built-in', category: '基礎設施', description: '整合多雲與多中心資源健康狀態。', owner: 'SRE 平台團隊', created_at: '2025-09-18T16:30:00Z', updated_at: '2025-09-18T16:30:00Z', path: '/dashboard/infrastructure-insights' },
+    {
+        id: 'sre-war-room',
+        name: 'SRE 戰情室',
+        type: 'built-in',
+        category: '業務與 SLA',
+        description: '跨團隊即時戰情看板，聚焦重大事件與 SLA 指標。',
+        owner: '事件指揮中心',
+        created_at: '2025-09-18T17:15:00Z',
+        updated_at: '2025-09-18T17:15:00Z',
+        path: '/sre-war-room',
+        resource_ids: ['res-001', 'res-002', 'res-003', 'res-007'],
+    },
+    {
+        id: 'infrastructure-insights',
+        name: '基礎設施洞察',
+        type: 'built-in',
+        category: '基礎設施',
+        description: '整合多雲與多中心資源健康狀態。',
+        owner: 'SRE 平台團隊',
+        created_at: '2025-09-18T16:30:00Z',
+        updated_at: '2025-09-18T16:30:00Z',
+        path: '/dashboard/infrastructure-insights',
+        resource_ids: ['res-001', 'res-002', 'res-003', 'res-004'],
+    },
     {
         id: 'resource-overview',
         name: '資源總覽儀表板',
@@ -1153,10 +1175,39 @@ const MOCK_DASHBOARDS: Dashboard[] = [
         owner: 'SRE 平台團隊',
         created_at: '2025-09-27T10:00:00Z',
         updated_at: '2025-09-27T10:00:00Z',
-        path: '/dashboard/resource-overview'
+        path: '/dashboard/resource-overview',
+        resource_ids: ['res-001', 'res-002', 'res-003', 'res-004', 'res-007'],
     },
-    { id: 'api-service-status', name: 'API 服務狀態', type: 'grafana', category: '業務與 SLA', description: 'API 響應時間、錯誤率、吞吐量等服務指標。', owner: 'SRE 平台團隊', created_at: '2025-09-18T16:45:00Z', updated_at: '2025-09-18T16:45:00Z', path: '/dashboard/api-service-status', grafana_url: `${DEFAULT_GRAFANA_BASE_URL}/d/aead3d54-423b-4a91-b91c-dbdf40d7fff5`, grafana_dashboard_uid: 'aead3d54-423b-4a91-b91c-dbdf40d7fff5', grafana_folder_uid: 'biz-folder' },
-    { id: 'user-experience-monitoring', name: '用戶體驗監控', type: 'grafana', category: '營運與容量', description: '頁面載入時間、用戶行為分析、錯誤追蹤。', owner: '前端團隊', created_at: '2025-09-18T17:00:00Z', updated_at: '2025-09-18T17:00:00Z', path: '/dashboard/user-experience-monitoring', grafana_url: `${DEFAULT_GRAFANA_BASE_URL}/d/another-dashboard-id-for-ux`, grafana_dashboard_uid: 'another-dashboard-id-for-ux', grafana_folder_uid: 'ux-folder' },
+    {
+        id: 'api-service-status',
+        name: 'API 服務狀態',
+        type: 'grafana',
+        category: '業務與 SLA',
+        description: 'API 響應時間、錯誤率、吞吐量等服務指標。',
+        owner: 'SRE 平台團隊',
+        created_at: '2025-09-18T16:45:00Z',
+        updated_at: '2025-09-18T16:45:00Z',
+        path: '/dashboard/api-service-status',
+        grafana_url: `${DEFAULT_GRAFANA_BASE_URL}/d/aead3d54-423b-4a91-b91c-dbdf40d7fff5`,
+        grafana_dashboard_uid: 'aead3d54-423b-4a91-b91c-dbdf40d7fff5',
+        grafana_folder_uid: 'biz-folder',
+        resource_ids: ['res-001', 'res-007'],
+    },
+    {
+        id: 'user-experience-monitoring',
+        name: '用戶體驗監控',
+        type: 'grafana',
+        category: '營運與容量',
+        description: '頁面載入時間、用戶行為分析、錯誤追蹤。',
+        owner: '前端團隊',
+        created_at: '2025-09-18T17:00:00Z',
+        updated_at: '2025-09-18T17:00:00Z',
+        path: '/dashboard/user-experience-monitoring',
+        grafana_url: `${DEFAULT_GRAFANA_BASE_URL}/d/another-dashboard-id-for-ux`,
+        grafana_dashboard_uid: 'another-dashboard-id-for-ux',
+        grafana_folder_uid: 'ux-folder',
+        resource_ids: ['res-004'],
+    },
     {
         id: 'custom-built-in-1',
         name: 'My Custom Dashboard',
@@ -1173,6 +1224,7 @@ const MOCK_DASHBOARDS: Dashboard[] = [
             { i: 'sre_resolved_today', x: 8, y: 0, w: 4, h: 2 },
             { i: 'sre_automation_rate', x: 0, y: 2, w: 12, h: 2 },
         ],
+        resource_ids: ['res-001', 'res-002', 'res-003'],
     },
 ];
 const MOCK_AVAILABLE_GRAFANA_DASHBOARDS = [
@@ -1625,6 +1677,11 @@ const MOCK_LOGIN_HISTORY: LoginHistoryRecord[] = [
 ];
 const MOCK_LOGS: LogEntry[] = [
     { id: 'log-1', timestamp: new Date().toISOString(), level: 'error', service: 'payment-service', message: 'Failed to process payment', details: { transaction_id: 'txn-123' } },
+    { id: 'log-2', timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(), level: 'warning', service: 'api-gateway', message: 'High latency detected on /checkout endpoint', details: { latency_ms: 920 } },
+    { id: 'log-3', timestamp: new Date(Date.now() - 70 * 60 * 1000).toISOString(), level: 'error', service: 'order-service', message: 'Circuit breaker opened due to downstream failures', details: { failure_count: 27 } },
+    { id: 'log-4', timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), level: 'info', service: 'deployment-service', message: 'Blue/green deployment completed successfully', details: { version: 'v2025.09.24.1' } },
+    { id: 'log-5', timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), level: 'warning', service: 'database', message: 'Connection pool saturation exceeded 85%', details: { pool: 'primary-read' } },
+    { id: 'log-6', timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(), level: 'error', service: 'billing-service', message: 'Recurring invoice generation timeout', details: { job_id: 'billing-7821' } },
 ];
 const MOCK_LOG_TIME_OPTIONS: { label: string, value: string }[] = [
     { label: '最近 15 分鐘', value: '15m' },
