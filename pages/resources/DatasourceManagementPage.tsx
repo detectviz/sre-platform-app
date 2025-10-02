@@ -9,12 +9,16 @@ import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
 import { showToast } from '../../services/toast';
 import DatasourceEditModal from '../../components/DatasourceEditModal';
+import { useOptions } from '../../contexts/OptionsContext';
 
 const DatasourceManagementPage: React.FC = () => {
     const [datasources, setDatasources] = useState<Datasource[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [filters, setFilters] = useState<DatasourceFilters>({});
+
+    const { options } = useOptions();
+    const datasourceOptions = options?.datasources;
 
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingDatasource, setEditingDatasource] = useState<Datasource | null>(null);
@@ -131,7 +135,14 @@ const DatasourceManagementPage: React.FC = () => {
                             ) : datasources.map((ds) => (
                                 <tr key={ds.id} className="border-b border-slate-800 hover:bg-slate-800/40">
                                     <td className="px-6 py-4 font-medium text-white">{ds.name}</td>
-                                    <td className="px-6 py-4">{ds.type}</td>
+                                    <td className="px-6 py-4">{
+                                        (() => {
+                                            const typeDescriptor = datasourceOptions?.types.find(t => t.value === ds.type);
+                                            const pillClass = typeDescriptor?.class_name || 'bg-slate-800/60 border border-slate-600 text-slate-200';
+                                            const label = typeDescriptor?.label || ds.type;
+                                            return <span className={`px-2 py-1 text-xs font-semibold rounded-full ${pillClass}`}>{label}</span>;
+                                        })()
+                                    }</td>
                                     <td className="px-6 py-4">{getStatusIndicator(ds.status)}</td>
                                     <td className="px-6 py-4">{ds.created_at}</td>
                                     <td className="px-6 py-4 text-center space-x-1">

@@ -177,8 +177,12 @@ const AutomationHistoryPage: React.FC = () => {
                         )}
                     </div>
                 );
-            case 'trigger_source':
-                return getTriggerSourceLabel(ex.trigger_source);
+            case 'trigger_source': {
+                const sourceDescriptor = executionOptions?.trigger_sources.find(s => s.value === ex.trigger_source);
+                const pillClass = sourceDescriptor?.class_name || 'bg-slate-800/60 border border-slate-600 text-slate-200';
+                const label = sourceDescriptor?.label || getTriggerSourceLabel(ex.trigger_source);
+                return <span className={`px-2 py-1 text-xs font-semibold rounded-full ${pillClass}`}>{label}</span>;
+            }
             case 'triggered_by':
                 return ex.triggered_by;
             case 'start_time':

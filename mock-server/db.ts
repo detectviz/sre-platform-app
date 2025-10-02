@@ -479,7 +479,7 @@ const PAGE_CONTENT = {
         BUILT_IN_TOOLTIP: '內建儀表板',
         GRAFANA_TOOLTIP: 'Grafana 儀表板',
         ALL_CATEGORIES: '全部',
-        FETCH_ERROR: '無法獲取儀表板列表。',
+        FETCH_ERROR: '無法獲取儀表板。',
         SAVE_ERROR: 'Failed to save dashboard.',
         DELETE_ERROR: 'Failed to delete dashboard.',
         UPDATE_ERROR: 'Failed to update dashboard.',
@@ -1338,13 +1338,13 @@ const MOCK_SILENCE_RULE_OPTIONS: SilenceRuleOptions = {
         { value: 6, label: '六' }
     ],
     types: [
-        { value: 'single', label: 'Single Event' },
-        { value: 'repeat', label: 'Recurring' },
-        { value: 'condition', label: 'Conditional' }
+        { value: 'single', label: '單一事件', class_name: 'bg-blue-950/40 border border-blue-500/40 text-blue-300 backdrop-blur-sm shadow-sm' },
+        { value: 'repeat', label: '重複', class_name: 'bg-purple-950/40 border border-purple-500/40 text-purple-300 backdrop-blur-sm shadow-sm' },
+        { value: 'condition', label: '條件式', class_name: 'bg-green-950/40 border border-green-500/40 text-green-300 backdrop-blur-sm shadow-sm' }
     ],
     statuses: [
-        { value: true, label: 'Enabled' },
-        { value: false, label: 'Disabled' }
+        { value: true, label: '啟用', class_name: 'bg-green-950/40 border border-green-500/40 text-green-300 backdrop-blur-sm shadow-sm' },
+        { value: false, label: '停用', class_name: 'bg-slate-950/40 border border-slate-500/40 text-slate-300 backdrop-blur-sm shadow-sm' }
     ],
     recurrence_types: [
         { value: 'daily', label: '每日' },
@@ -2333,7 +2333,7 @@ const MOCK_TAB_CONFIGS: TabConfigMap = {
         { label: '拓撲視圖', path: '/resources/topology', icon: 'share-2' },
     ],
     dashboards: [
-        { label: '儀表板列表', path: '/dashboards', icon: 'layout-dashboard' },
+        { label: '儀表板', path: '/dashboards', icon: 'layout-dashboard' },
         { label: '範本市集', path: '/dashboards/templates', icon: 'album' },
     ],
     analysis: [
@@ -2380,15 +2380,15 @@ const INCIDENT_STATUS_STYLES: Record<Incident['status'], { label: string; class_
 };
 
 const INCIDENT_SEVERITY_STYLES: Record<string, { label: string; class_name: string }> = {
-    Info: { label: '資訊', class_name: 'bg-sky-950/40 border border-sky-500/40 text-sky-300 backdrop-blur-sm shadow-sm' },
-    Warning: { label: '警告', class_name: 'bg-amber-950/40 border border-amber-500/40 text-amber-300 backdrop-blur-sm shadow-sm' },
-    Critical: { label: '嚴重', class_name: 'bg-red-950/40 border border-red-500/40 text-red-300 backdrop-blur-sm shadow-sm' },
+    info: { label: '資訊', class_name: 'bg-sky-950/40 border border-sky-500/40 text-sky-300 backdrop-blur-sm shadow-sm' },
+    warning: { label: '警告', class_name: 'bg-amber-950/40 border border-amber-500/40 text-amber-300 backdrop-blur-sm shadow-sm' },
+    critical: { label: '嚴重', class_name: 'bg-red-950/40 border border-red-500/40 text-red-300 backdrop-blur-sm shadow-sm' },
 };
 
 const INCIDENT_IMPACT_STYLES: Record<string, { label: string; class_name: string }> = {
-    High: { label: '高', class_name: 'bg-red-950/40 border border-red-500/40 text-red-300 backdrop-blur-sm shadow-sm' },
-    Medium: { label: '中', class_name: 'bg-amber-950/40 border border-amber-500/40 text-amber-300 backdrop-blur-sm shadow-sm' },
-    Low: { label: '低', class_name: 'bg-yellow-950/40 border border-yellow-500/40 text-yellow-300 backdrop-blur-sm shadow-sm' },
+    high: { label: '高', class_name: 'bg-red-950/40 border border-red-500/40 text-red-300 backdrop-blur-sm shadow-sm' },
+    medium: { label: '中', class_name: 'bg-amber-950/40 border border-amber-500/40 text-amber-300 backdrop-blur-sm shadow-sm' },
+    low: { label: '低', class_name: 'bg-yellow-950/40 border border-yellow-500/40 text-yellow-300 backdrop-blur-sm shadow-sm' },
 };
 
 const buildIncidentStyleOptions = <T extends string>(values: T[], styleMap: Record<string, { label: string; class_name: string }>): StyleDescriptor<T>[] =>
@@ -2425,14 +2425,14 @@ const MOCK_ALERT_RULE_OPTIONS: AlertRuleOptions = {
         class_name: ALERT_RULE_SEVERITY_DESCRIPTORS[value].class_name,
     })),
     statuses: [
-        { value: true, label: 'Enabled' },
-        { value: false, label: 'Disabled' }
+        { value: true, label: '啟用' },
+        { value: false, label: '停用' }
     ],
     operators: ['>', '<', '>=', '<='],
     scope_modes: [
-        { value: 'all', label: 'All Resources (by type)' },
-        { value: 'group', label: 'By Resource Group' },
-        { value: 'specific', label: 'Specific Resources' },
+        { value: 'all', label: '所有資源（按類型）' },
+        { value: 'group', label: '按資源群組' },
+        { value: 'specific', label: '特定資源' },
     ],
     variables: ['{{severity}}', '{{resource.name}}', '{{metric}}', '{{value}}', '{{threshold}}', '{{duration}}'],
     step_titles: ["選擇監控目標", "設定基本資訊", "定義觸發條件", "事件定義與通知", "設定自動化響應"],
@@ -2440,18 +2440,24 @@ const MOCK_ALERT_RULE_OPTIONS: AlertRuleOptions = {
 
 const MOCK_RESOURCE_OPTIONS: ResourceOptions = {
     statuses: [
-        { value: 'healthy', label: 'Healthy', class_name: 'bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 backdrop-blur-sm shadow-sm' },
-        { value: 'warning', label: 'Warning', class_name: 'bg-amber-950/40 border border-amber-500/40 text-amber-300 backdrop-blur-sm shadow-sm' },
-        { value: 'critical', label: 'Critical', class_name: 'bg-red-950/40 border border-red-500/40 text-red-300 backdrop-blur-sm shadow-sm' },
-        { value: 'offline', label: 'Offline', class_name: 'bg-slate-950/40 border border-slate-500/40 text-slate-300 backdrop-blur-sm shadow-sm' },
+        { value: 'healthy', label: '正常', class_name: 'bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 backdrop-blur-sm shadow-sm' },
+        { value: 'warning', label: '警告', class_name: 'bg-amber-950/40 border border-amber-500/40 text-amber-300 backdrop-blur-sm shadow-sm' },
+        { value: 'critical', label: '嚴重', class_name: 'bg-red-950/40 border border-red-500/40 text-red-300 backdrop-blur-sm shadow-sm' },
+        { value: 'offline', label: '離線', class_name: 'bg-slate-950/40 border border-slate-500/40 text-slate-300 backdrop-blur-sm shadow-sm' },
     ],
     status_colors: [
-        { value: 'healthy', label: 'Healthy', color: '#10b981' },
-        { value: 'warning', label: 'Warning', color: '#f97316' },
-        { value: 'critical', label: 'Critical', color: '#dc2626' },
-        { value: 'offline', label: 'Offline', color: '#64748b' },
+        { value: 'healthy', label: '正常', color: '#10b981' },
+        { value: 'warning', label: '警告', color: '#f97316' },
+        { value: 'critical', label: '嚴重', color: '#dc2626' },
+        { value: 'offline', label: '離線', color: '#64748b' },
     ],
-    types: ['API Gateway', 'RDS Database', 'EKS Cluster', 'EC2 Instance', 'Kubernetes Service'],
+    types: [
+        { value: 'API Gateway', label: 'API Gateway', class_name: 'bg-blue-950/40 border border-blue-500/40 text-blue-300 backdrop-blur-sm shadow-sm' },
+        { value: 'RDS Database', label: 'RDS Database', class_name: 'bg-green-950/40 border border-green-500/40 text-green-300 backdrop-blur-sm shadow-sm' },
+        { value: 'EKS Cluster', label: 'EKS Cluster', class_name: 'bg-purple-950/40 border border-purple-500/40 text-purple-300 backdrop-blur-sm shadow-sm' },
+        { value: 'EC2 Instance', label: 'EC2 Instance', class_name: 'bg-orange-950/40 border border-orange-500/40 text-orange-300 backdrop-blur-sm shadow-sm' },
+        { value: 'Kubernetes Service', label: 'Kubernetes Service', class_name: 'bg-cyan-950/40 border border-cyan-500/40 text-cyan-300 backdrop-blur-sm shadow-sm' }
+    ],
     providers: ['AWS', 'GCP', 'Azure', 'On-Premise'],
     regions: ['us-east-1', 'us-west-2', 'eu-central-1', 'ap-northeast-1'],
     owners: ['SRE Team', 'DBA Team', 'Web Team', 'API Services'],
@@ -2459,16 +2465,16 @@ const MOCK_RESOURCE_OPTIONS: ResourceOptions = {
 
 const MOCK_AUTOMATION_SCRIPT_OPTIONS: AutomationScriptOptions = {
     playbook_types: [
-        { value: 'shell', label: 'Shell' },
-        { value: 'python', label: 'Python' },
-        { value: 'ansible', label: 'Ansible' },
-        { value: 'terraform', label: 'Terraform' }
+        { value: 'shell', label: 'Shell 腳本' },
+        { value: 'python', label: 'Python 腳本' },
+        { value: 'ansible', label: 'Ansible 劇本' },
+        { value: 'terraform', label: 'Terraform 配置' }
     ],
     parameter_types: [
-        { value: 'string', label: 'String' },
-        { value: 'number', label: 'Number' },
-        { value: 'enum', label: 'Enum' },
-        { value: 'boolean', label: 'Boolean' }
+        { value: 'string', label: '字串' },
+        { value: 'number', label: '數字' },
+        { value: 'enum', label: '枚舉' },
+        { value: 'boolean', label: '布林值' }
     ]
 };
 
@@ -2480,20 +2486,20 @@ const MOCK_AUTOMATION_EXECUTION_OPTIONS: AutomationExecutionOptions = {
         { value: 'pending', label: '等待中', class_name: 'bg-yellow-500/20 text-yellow-400' },
     ],
     trigger_sources: [
-        { value: 'event', label: '事件觸發' },
-        { value: 'manual', label: '手動執行' },
-        { value: 'schedule', label: '排程觸發' },
-        { value: 'webhook', label: 'Webhook' },
+        { value: 'event', label: '事件觸發', class_name: 'bg-red-950/40 border border-red-500/40 text-red-300 backdrop-blur-sm shadow-sm' },
+        { value: 'manual', label: '手動執行', class_name: 'bg-blue-950/40 border border-blue-500/40 text-blue-300 backdrop-blur-sm shadow-sm' },
+        { value: 'schedule', label: '排程觸發', class_name: 'bg-green-950/40 border border-green-500/40 text-green-300 backdrop-blur-sm shadow-sm' },
+        { value: 'webhook', label: 'Webhook', class_name: 'bg-purple-950/40 border border-purple-500/40 text-purple-300 backdrop-blur-sm shadow-sm' },
     ],
 };
 
 const MOCK_NOTIFICATION_CHANNEL_OPTIONS: NotificationChannelOptions = {
     channel_types: [
-        { value: 'email', label: 'Email' },
-        { value: 'webhook', label: 'Webhook (通用)' },
-        { value: 'slack', label: 'Slack' },
-        { value: 'line', label: 'LINE Notify' },
-        { value: 'sms', label: 'SMS' }
+        { value: 'email', label: '郵件', class_name: 'bg-blue-950/40 border border-blue-500/40 text-blue-300 backdrop-blur-sm shadow-sm' },
+        { value: 'webhook', label: 'Webhook (通用)', class_name: 'bg-green-950/40 border border-green-500/40 text-green-300 backdrop-blur-sm shadow-sm' },
+        { value: 'slack', label: 'Slack', class_name: 'bg-purple-950/40 border border-purple-500/40 text-purple-300 backdrop-blur-sm shadow-sm' },
+        { value: 'line', label: 'LINE 通知', class_name: 'bg-green-950/40 border border-green-500/40 text-green-300 backdrop-blur-sm shadow-sm' },
+        { value: 'sms', label: '簡訊', class_name: 'bg-orange-950/40 border border-orange-500/40 text-orange-300 backdrop-blur-sm shadow-sm' }
     ],
     http_methods: ['post', 'put', 'get']
 };
@@ -2517,14 +2523,19 @@ const MOCK_AUTOMATION_TRIGGER_OPTIONS: AutomationTriggerOptions = {
 
 const MOCK_PERSONNEL_OPTIONS: PersonnelOptions = {
     statuses: [
-        { value: 'active', label: 'Active', class_name: 'bg-green-500/20 text-green-400' },
-        { value: 'invited', label: 'Invited', class_name: 'bg-yellow-500/20 text-yellow-400' },
-        { value: 'inactive', label: 'Inactive', class_name: 'bg-slate-500/20 text-slate-400' },
+        { value: 'active', label: '活躍', class_name: 'bg-green-500/20 text-green-400' },
+        { value: 'invited', label: '已邀請', class_name: 'bg-yellow-500/20 text-yellow-400' },
+        { value: 'inactive', label: '非活躍', class_name: 'bg-slate-500/20 text-slate-400' },
     ],
 };
 
 const MOCK_DASHBOARD_OPTIONS: DashboardOptions = {
-    categories: ['業務與 SLA', '基礎設施', '營運與容量', '團隊自訂'],
+    categories: [
+        { value: '業務與 SLA', label: '業務與 SLA', class_name: 'bg-blue-950/40 border border-blue-500/40 text-blue-300 backdrop-blur-sm shadow-sm' },
+        { value: '基礎設施', label: '基礎設施', class_name: 'bg-green-950/40 border border-green-500/40 text-green-300 backdrop-blur-sm shadow-sm' },
+        { value: '營運與容量', label: '營運與容量', class_name: 'bg-purple-950/40 border border-purple-500/40 text-purple-300 backdrop-blur-sm shadow-sm' },
+        { value: '團隊自訂', label: '團隊自訂', class_name: 'bg-orange-950/40 border border-orange-500/40 text-orange-300 backdrop-blur-sm shadow-sm' }
+    ],
     owners: ['事件指揮中心', 'SRE 平台團隊', '前端團隊', 'Admin User'],
 };
 
@@ -2539,9 +2550,9 @@ const MOCK_LOG_OPTIONS: LogOptions = {
 const MOCK_INFRA_INSIGHTS_OPTIONS: InfraInsightsOptions = {
     time_options: MOCK_GRAFANA_OPTIONS.time_options,
     risk_levels: [
-        { value: 'high', label: 'High', color: '#dc2626' },
-        { value: 'medium', label: 'Medium', color: '#f97316' },
-        { value: 'low', label: 'Low', color: '#10b981' },
+        { value: 'high', label: '高風險', color: '#dc2626' },
+        { value: 'medium', label: '中風險', color: '#f97316' },
+        { value: 'low', label: '低風險', color: '#10b981' },
     ],
     refresh_options: MOCK_GRAFANA_OPTIONS.refresh_options,
     tv_mode_options: MOCK_GRAFANA_OPTIONS.tv_mode_options,
@@ -2556,32 +2567,49 @@ const MOCK_TAG_MANAGEMENT_OPTIONS: TagManagementOptions = {
 
 const MOCK_TOPOLOGY_OPTIONS: TopologyOptions = {
     layouts: [
-        { value: 'force', label: 'Force' },
-        { value: 'circular', label: 'Circular' },
+        { value: 'force', label: '力導向' },
+        { value: 'circular', label: '環狀' },
     ]
 };
 
 const MOCK_NOTIFICATION_HISTORY_OPTIONS: NotificationHistoryOptions = {
     statuses: [
-        { value: 'sent', label: 'Success' },
-        { value: 'failed', label: 'Failed' },
+        { value: 'sent', label: '已發送' },
+        { value: 'failed', label: '發送失敗' },
     ],
     channel_types: [
-        { value: 'email', label: 'Email' },
+        { value: 'email', label: '郵件' },
         { value: 'webhook', label: 'Webhook (通用)' },
         { value: 'slack', label: 'Slack' },
-        { value: 'line', label: 'LINE Notify' },
-        { value: 'sms', label: 'SMS' },
+        { value: 'line', label: 'LINE 通知' },
+        { value: 'sms', label: '簡訊' },
     ],
 };
 
 const MOCK_DATASOURCE_OPTIONS: DatasourceOptions = {
-    types: ['victoriametrics', 'grafana', 'elasticsearch', 'prometheus', '自訂'],
-    auth_methods: ['token', 'basic_auth', 'keycloak_整合', '無'],
+    types: [
+        { value: 'victoriametrics', label: 'VictoriaMetrics', class_name: 'bg-blue-950/40 border border-blue-500/40 text-blue-300 backdrop-blur-sm shadow-sm' },
+        { value: 'grafana', label: 'Grafana', class_name: 'bg-orange-950/40 border border-orange-500/40 text-orange-300 backdrop-blur-sm shadow-sm' },
+        { value: 'elasticsearch', label: 'Elasticsearch', class_name: 'bg-green-950/40 border border-green-500/40 text-green-300 backdrop-blur-sm shadow-sm' },
+        { value: 'prometheus', label: 'Prometheus', class_name: 'bg-purple-950/40 border border-purple-500/40 text-purple-300 backdrop-blur-sm shadow-sm' },
+        { value: 'custom', label: '自訂', class_name: 'bg-slate-950/40 border border-slate-500/40 text-slate-300 backdrop-blur-sm shadow-sm' }
+    ],
+    auth_methods: [
+        { value: 'token', label: 'Token', class_name: 'bg-blue-950/40 border border-blue-500/40 text-blue-300 backdrop-blur-sm shadow-sm' },
+        { value: 'basic_auth', label: '基本認證', class_name: 'bg-green-950/40 border border-green-500/40 text-green-300 backdrop-blur-sm shadow-sm' },
+        { value: 'keycloak_integration', label: 'Keycloak 整合', class_name: 'bg-purple-950/40 border border-purple-500/40 text-purple-300 backdrop-blur-sm shadow-sm' },
+        { value: 'none', label: '無', class_name: 'bg-slate-950/40 border border-slate-500/40 text-slate-300 backdrop-blur-sm shadow-sm' }
+    ],
 };
 
 const MOCK_AUTO_DISCOVERY_OPTIONS: AutoDiscoveryOptions = {
-    job_kinds: ['k8s', 'snmp', 'cloud_provider', 'static_range', 'custom_script'],
+    job_kinds: [
+        { value: 'k8s', label: 'Kubernetes', class_name: 'bg-blue-950/40 border border-blue-500/40 text-blue-300 backdrop-blur-sm shadow-sm' },
+        { value: 'snmp', label: 'SNMP', class_name: 'bg-green-950/40 border border-green-500/40 text-green-300 backdrop-blur-sm shadow-sm' },
+        { value: 'cloud_provider', label: '雲提供商', class_name: 'bg-purple-950/40 border border-purple-500/40 text-purple-300 backdrop-blur-sm shadow-sm' },
+        { value: 'static_range', label: '靜態範圍', class_name: 'bg-orange-950/40 border border-orange-500/40 text-orange-300 backdrop-blur-sm shadow-sm' },
+        { value: 'custom_script', label: '自訂腳本', class_name: 'bg-slate-950/40 border border-slate-500/40 text-slate-300 backdrop-blur-sm shadow-sm' }
+    ],
     exporter_templates: [
         { id: 'none', name: '不部署 Exporter', description: '僅建立資源資料，不自動綁定監控代理。' },
         { id: 'node_exporter', name: 'Node Exporter', description: '適用於 Linux/Windows 主機的系統監控。', supports_overrides: true },

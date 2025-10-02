@@ -253,7 +253,12 @@ const ResourceListPage: React.FC = () => {
                     </span>
                 );
             case 'name': return <span className="font-medium text-white">{res.name}</span>;
-            case 'type': return res.type;
+            case 'type': {
+                const typeDescriptor = resourceOptions?.types.find(t => t.value === res.type);
+                const pillClass = typeDescriptor?.class_name || 'bg-slate-800/60 border border-slate-600 text-slate-200';
+                const label = typeDescriptor?.label || res.type;
+                return <span className={`px-2 py-1 text-xs font-semibold rounded-full ${pillClass}`}>{label}</span>;
+            }
             case 'provider': return res.provider;
             case 'region': return res.region;
             case 'owner': return res.owner;

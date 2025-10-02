@@ -15,7 +15,7 @@
 ## 🎯 適用範圍
 
 本規範適用於所有返回集合資料的 `GET` 端點，包括但不限於：
-- `/dashboards` - 儀表板列表
+- `/dashboards` - 儀表板
 - `/incidents` - 事件列表
 - `/alert-rules` - 告警規則列表
 - `/resources` - 資源列表

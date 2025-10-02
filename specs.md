@@ -101,7 +101,7 @@
 -   **定位**: 統一的系統監控與業務洞察儀表板入口。
 -   **核心功能**:
     -   **混合儀表板支援**: 支援管理「內建儀表板」和連結外部「Grafana 儀表板」。
-    -   **儀表板列表 (`DashboardListPage`)**:
+    -   **儀表板 (`DashboardListPage`)**:
         -   **統一搜尋 Modal**: 工具列左側的「搜索和篩選」按鈕開啟 `UnifiedSearchModal`，可輸入關鍵字、類型、擁有者等條件；提交後會套用至 `/dashboards` API 參數並重設頁碼。
         -   **欄位設定與快取**: 「欄位設定」按鈕開啟 `ColumnSettingsModal`，勾選後儲存到 `/settings/column-config/{pageKey}`，同時更新 `TableContainer` 的顯示欄位；首次載入若無個人化設定則以 `/pages/columns/{pageKey}` 提供的預設欄位渲染。
         -   **匯入/匯出**: 工具列提供 `ImportFromCsvModal` 匯入儀表板定義；匯出則依勾選狀態使用 `exportToCsv` 下載，目前勾選輸出選取儀表板，未勾選則匯出當前頁資料，若列表為空會提示「沒有可匯出的資料」。

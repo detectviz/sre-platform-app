@@ -820,7 +820,7 @@ export interface PreferenceOptions {
 
 // --- API Option Types (v2.17 Refactor) ---
 
-export interface StyleDescriptor<T extends string = string> {
+export interface StyleDescriptor<T = string> {
   value: T;
   label: string;
   class_name: string;
@@ -912,8 +912,8 @@ export interface SilenceRuleOptions {
   values: Record<string, string[]>;
   default_matcher: SilenceMatcher;
   weekdays: { value: number, label: string }[];
-  types: { value: SilenceRule['type'], label: string }[];
-  statuses: { value: boolean, label: string }[];
+  types: StyleDescriptor<SilenceRule['type']>[];
+  statuses: StyleDescriptor<boolean>[];
   recurrence_types: { value: 'daily' | 'weekly' | 'monthly' | 'custom', label: string }[];
 }
 
@@ -943,7 +943,7 @@ export interface AlertRuleOptions {
 
 export interface AutomationExecutionOptions {
   statuses: StyleDescriptor<AutomationExecution['status']>[];
-  trigger_sources: { value: AutomationExecution['trigger_source']; label: string }[];
+  trigger_sources: StyleDescriptor<AutomationExecution['trigger_source']>[];
 }
 
 export interface AutomationPlaybookOptions {
@@ -962,7 +962,7 @@ export interface NotificationOptions {
 export interface ResourceOptions {
   statuses: StyleDescriptor<Resource['status']>[];
   status_colors: ColorDescriptor<Resource['status']>[];
-  types: string[];
+  types: StyleDescriptor<string>[];
   providers: string[];
   regions: string[];
   owners: string[];
@@ -982,7 +982,7 @@ export interface AutomationScriptOptions {
 }
 
 export interface NotificationChannelOptions {
-  channel_types: { value: NotificationChannelType, label: string }[];
+  channel_types: StyleDescriptor<NotificationChannelType>[];
   http_methods: ('post' | 'put' | 'get')[];
 }
 
@@ -1008,7 +1008,7 @@ export interface TopologyOptions {
 }
 
 export interface DashboardOptions {
-  categories: string[];
+  categories: StyleDescriptor<string>[];
   owners: string[];
 }
 
@@ -1174,8 +1174,8 @@ export interface LicenseInfo {
 }
 
 export interface DatasourceOptions {
-  types: DatasourceType[];
-  auth_methods: AuthMethod[];
+  types: StyleDescriptor<DatasourceType>[];
+  auth_methods: StyleDescriptor<AuthMethod>[];
 }
 
 export interface ExporterTemplateOption {
@@ -1201,7 +1201,7 @@ export interface EdgeGatewayOption {
 }
 
 export interface AutoDiscoveryOptions {
-  job_kinds: DiscoveryJobKind[];
+  job_kinds: StyleDescriptor<DiscoveryJobKind>[];
   exporter_templates: ExporterTemplateOption[];
   mib_profiles: MibProfileOption[];
   edge_gateways: EdgeGatewayOption[];

@@ -11,6 +11,7 @@ import TableError from '../../../components/TableError';
 import UnifiedSearchModal from '../../../components/UnifiedSearchModal';
 import ColumnSettingsModal from '../../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../../contexts/PageMetadataContext';
+import { useOptions } from '../../../contexts/OptionsContext';
 import { showToast } from '../../../services/toast';
 
 type IconConfig = Record<NotificationChannelType | 'Default', { icon: string; color: string; }>;
@@ -36,6 +37,8 @@ const NotificationChannelPage: React.FC = () => {
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
 
     const { metadata: pageMetadata } = usePageMetadata();
+    const { options } = useOptions();
+    const notificationChannelOptions = options?.notification_channels;
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
 
     const fetchChannels = useCallback(async () => {
@@ -212,13 +215,17 @@ const NotificationChannelPage: React.FC = () => {
                     </label>
                 );
             case 'name': return <span className="font-medium text-white">{channel.name}</span>;
-            case 'type':
+            case 'type': {
+                const typeDescriptor = notificationChannelOptions?.channel_types.find(t => t.value === channel.type);
+                const pillClass = typeDescriptor?.class_name || 'bg-slate-800/60 border border-slate-600 text-slate-200';
+                const label = typeDescriptor?.label || channel.type;
                 return (
-                    <span className={`flex items-center font-semibold ${color}`}>
-                        <Icon name={icon} className="w-4 h-4 mr-2" />
-                        {channel.type}
+                    <span className={`flex items-center font-semibold px-2 py-1 text-xs rounded-full ${pillClass}`}>
+                        <Icon name={icon} className="w-3 h-3 mr-1.5" />
+                        {label}
                     </span>
                 );
+            }
             case 'last_test_result':
                 return (
                     <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full capitalize ${getTestResultPill(channel.last_test_result)}`}>

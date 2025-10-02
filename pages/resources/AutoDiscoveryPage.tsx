@@ -11,12 +11,16 @@ import { showToast } from '../../services/toast';
 import AutoDiscoveryEditModal from '../../components/AutoDiscoveryEditModal';
 import Drawer from '../../components/Drawer';
 import DiscoveryJobResultDrawer from '../../components/DiscoveryJobResultDrawer';
+import { useOptions } from '../../contexts/OptionsContext';
 
 const AutoDiscoveryPage: React.FC = () => {
     const [jobs, setJobs] = useState<DiscoveryJob[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [filters, setFilters] = useState<DiscoveryJobFilters>({});
+
+    const { options } = useOptions();
+    const autoDiscoveryOptions = options?.auto_discovery;
 
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingJob, setEditingJob] = useState<DiscoveryJob | null>(null);
@@ -139,7 +143,14 @@ const AutoDiscoveryPage: React.FC = () => {
                             ) : jobs.map((job) => (
                                 <tr key={job.id} className="border-b border-slate-800 hover:bg-slate-800/40">
                                     <td className="px-6 py-4 font-medium text-white">{job.name}</td>
-                                    <td className="px-6 py-4">{job.kind}</td>
+                                    <td className="px-6 py-4">{
+                                        (() => {
+                                            const kindDescriptor = autoDiscoveryOptions?.job_kinds.find(k => k.value === job.kind);
+                                            const pillClass = kindDescriptor?.class_name || 'bg-slate-800/60 border border-slate-600 text-slate-200';
+                                            const label = kindDescriptor?.label || job.kind;
+                                            return <span className={`px-2 py-1 text-xs font-semibold rounded-full ${pillClass}`}>{label}</span>;
+                                        })()
+                                    }</td>
                                     <td className="px-6 py-4 font-mono">{job.schedule}</td>
                                     <td className="px-6 py-4">{job.last_run_at}</td>
                                     <td className="px-6 py-4">{getStatusIndicator(job.status)}</td>

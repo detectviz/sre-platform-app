@@ -41,7 +41,7 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
 
   useEffect(() => {
     if (isOpen && autoDiscoveryOptions) {
-      const defaultKind = (job?.kind as DiscoveryJobKind) || autoDiscoveryOptions.job_kinds[0] || 'k8s';
+      const defaultKind = (job?.kind as DiscoveryJobKind) || autoDiscoveryOptions.job_kinds[0]?.value || 'k8s';
       const defaultTemplate = job?.exporter_binding?.template_id || getDefaultTemplateForKind(defaultKind);
       const initialData: Partial<DiscoveryJob> = job
         ? {

@@ -14,6 +14,7 @@ import ImportFromCsvModal from '../../components/ImportFromCsvModal';
 import ColumnSettingsModal from '../../components/ColumnSettingsModal';
 import { showToast } from '../../services/toast';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
+import { useOptions } from '../../contexts/OptionsContext';
 import RuleAnalysisModal from '../../components/RuleAnalysisModal';
 
 const PAGE_IDENTIFIER = 'silence_rules';
@@ -40,6 +41,8 @@ const SilenceRulePage: React.FC = () => {
     const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
 
     const { metadata: pageMetadata } = usePageMetadata();
+    const { options } = useOptions();
+    const silenceRuleOptions = options?.silence_rules;
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
 
     const fetchRules = useCallback(async () => {
@@ -226,7 +229,12 @@ const SilenceRulePage: React.FC = () => {
                     </label>
                 );
             case 'name': return <span className="font-medium text-white">{rule.name}</span>;
-            case 'type': return <span className="capitalize">{rule.type}</span>;
+            case 'type': {
+                const typeDescriptor = silenceRuleOptions?.types.find(t => t.value === rule.type);
+                const pillClass = typeDescriptor?.class_name || 'bg-slate-800/60 border border-slate-600 text-slate-200';
+                const label = typeDescriptor?.label || rule.type;
+                return <span className={`px-2 py-1 text-xs font-semibold rounded-full ${pillClass}`}>{label}</span>;
+            }
             case 'matchers': return <code className="text-xs">{rule.matchers.map(m => `${m.key}${m.operator}"${m.value}"`).join(', ')}</code>;
             case 'schedule':
                 if (rule.schedule.type === 'single') return `${rule.schedule.starts_at} -> ${rule.schedule.ends_at}`;

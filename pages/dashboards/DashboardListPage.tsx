@@ -29,7 +29,7 @@ const DashboardListPage: React.FC = () => {
     const [totalDashboards, setTotalDashboards] = useState(0);
     const [allColumns, setAllColumns] = useState<TableColumn[]>([]);
 
-    const { options, isLoading: isLoadingOptions } = useOptions();
+    const { options: dashboardOptions, isLoading: isLoadingOptions } = useOptions();
     const { content } = useContent();
     const pageContent = content?.DASHBOARD_LIST;
     const globalContent = content?.GLOBAL;
@@ -232,8 +232,12 @@ const DashboardListPage: React.FC = () => {
             case 'type':
                 const typeLabel = dashboard.type === 'built-in' ? '內建' : dashboard.type === 'grafana' ? 'Grafana' : dashboard.type;
                 return <span className={`px-2 py-1 text-xs rounded-full ${dashboard.type === 'built-in' ? 'bg-cyan-900 text-cyan-300' : 'bg-green-900 text-green-300'}`}>{typeLabel}</span>;
-            case 'category':
-                return dashboard.category;
+            case 'category': {
+                const categoryDescriptor = dashboardOptions?.dashboards?.categories.find(c => c.value === dashboard.category);
+                const pillClass = categoryDescriptor?.class_name || 'bg-slate-800/60 border border-slate-600 text-slate-200';
+                const label = categoryDescriptor?.label || dashboard.category;
+                return <span className={`px-2 py-1 text-xs font-semibold rounded-full ${pillClass}`}>{label}</span>;
+            }
             case 'owner':
                 return dashboard.owner;
             case 'updated_at':
