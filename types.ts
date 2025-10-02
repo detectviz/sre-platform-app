@@ -17,7 +17,7 @@ export type HttpMethod = 'get' | 'post' | 'put' | 'patch' | 'delete';
 
 export type AutomationPlaybookType = 'shell' | 'python' | 'ansible' | 'terraform';
 export type ExecutionStatus = 'pending' | 'running' | 'success' | 'failed' | 'cancelled';
-export type TriggerSource = 'manual' | 'schedule' | 'webhook' | 'event';
+export type TriggerSource = 'manual' | 'schedule' | 'webhook' | 'event' | 'custom' | 'grafana';
 export type TriggerType = 'schedule' | 'webhook' | 'event';
 export type RetryPolicy = 'none' | 'fixed' | 'exponential';
 

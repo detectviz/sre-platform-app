@@ -1426,6 +1426,66 @@ const MOCK_AUTOMATION_EXECUTIONS: AutomationExecution[] = [
         alert_rule_id: undefined,
         target_resource_id: 'res-003'
     },
+    {
+        id: 'exec-003',
+        script_id: 'play-002',
+        script_name: '擴展 Web 層',
+        status: 'running',
+        trigger_source: 'schedule',
+        triggered_by: 'Automation Trigger: 每日日誌歸檔',
+        start_time: '2025-09-24T08:00:00Z',
+        parameters: { instance_count: 4 },
+        logs: { stdout: 'Scaling workflow in progress...', stderr: '' },
+        incident_id: undefined,
+        alert_rule_id: undefined,
+        target_resource_id: 'res-004'
+    },
+    {
+        id: 'exec-004',
+        script_id: 'play-001',
+        script_name: '重啟故障 Pod',
+        status: 'pending',
+        trigger_source: 'webhook',
+        triggered_by: 'Webhook: GitOps pipeline',
+        start_time: '2025-09-24T07:45:00Z',
+        parameters: { namespace: 'staging' },
+        logs: { stdout: 'Webhook received. Waiting for executor.', stderr: '' },
+        incident_id: 'INC-005',
+        alert_rule_id: undefined,
+        target_resource_id: 'res-007'
+    },
+    {
+        id: 'exec-005',
+        script_id: 'play-002',
+        script_name: '擴展 Web 層',
+        status: 'failed',
+        trigger_source: 'custom',
+        triggered_by: 'Custom Dashboard Action',
+        start_time: '2025-09-23T05:15:00Z',
+        end_time: '2025-09-23T05:15:12Z',
+        duration_ms: 12000,
+        parameters: { instance_count: 3 },
+        logs: { stdout: 'Custom action started...', stderr: 'Grafana datasource unreachable.' },
+        incident_id: undefined,
+        alert_rule_id: 'rule-004',
+        target_resource_id: 'res-003'
+    },
+    {
+        id: 'exec-006',
+        script_id: 'play-001',
+        script_name: '重啟故障 Pod',
+        status: 'success',
+        trigger_source: 'grafana',
+        triggered_by: 'Grafana Runbook Panel',
+        start_time: '2025-09-22T22:10:00Z',
+        end_time: '2025-09-22T22:10:05Z',
+        duration_ms: 5000,
+        parameters: { namespace: 'production', pod_name: 'api-server-01' },
+        logs: { stdout: 'Restart issued from Grafana integration.', stderr: '' },
+        incident_id: 'INC-001',
+        alert_rule_id: 'rule-001',
+        target_resource_id: 'res-002'
+    },
 ];
 const MOCK_AUTOMATION_TRIGGERS: AutomationTrigger[] = [
     { id: 'trig-001', name: '每日日誌歸檔', description: '在每天凌晨 3 點運行「歸檔舊日誌」腳本。', type: 'schedule', enabled: true, target_playbook_id: 'play-005', retry_policy: 'none', config: { cron: '0 3 * * *', cron_description: '每日 03:00' }, last_triggered_at: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(), creator: 'Admin User', created_at: '2025-09-19T08:00:00Z', updated_at: '2025-09-19T08:00:00Z' },
@@ -2527,6 +2587,8 @@ const MOCK_AUTOMATION_EXECUTION_OPTIONS: AutomationExecutionOptions = {
         { value: 'manual', label: '手動執行', class_name: 'bg-blue-950/40 border border-blue-500/40 text-blue-300 backdrop-blur-sm shadow-sm' },
         { value: 'schedule', label: '排程觸發', class_name: 'bg-green-950/40 border border-green-500/40 text-green-300 backdrop-blur-sm shadow-sm' },
         { value: 'webhook', label: 'Webhook', class_name: 'bg-purple-950/40 border border-purple-500/40 text-purple-300 backdrop-blur-sm shadow-sm' },
+        { value: 'custom', label: '自定義觸發', class_name: 'bg-amber-950/40 border border-amber-500/40 text-amber-300 backdrop-blur-sm shadow-sm' },
+        { value: 'grafana', label: 'Grafana 儀表板', class_name: 'bg-orange-950/40 border border-orange-500/40 text-orange-300 backdrop-blur-sm shadow-sm' },
     ],
 };
 

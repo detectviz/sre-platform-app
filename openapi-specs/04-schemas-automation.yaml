@@ -177,7 +177,7 @@ components:
           example: running
         trigger_source:
           type: string
-          enum: [manual, event, incident, alert, scheduled, webhook]
+          enum: [manual, schedule, webhook, event, custom, grafana]
           example: manual
         triggered_by:
           type: string

@@ -115,12 +115,14 @@ enum: ['pending', 'running', 'success', 'failed', 'cancelled']
 
 #### 觸發來源 (TriggerSource)
 ```typescript
-enum: ['manual', 'schedule', 'webhook', 'event']
+enum: ['manual', 'schedule', 'webhook', 'event', 'custom', 'grafana']
 ```
 - `manual`: 手動觸發
 - `schedule`: 排程觸發
 - `webhook`: Webhook 觸發
 - `event`: 事件觸發
+- `custom`: 自定義儀表板或內部整合觸發
+- `grafana`: Grafana 外部儀表板觸發
 
 #### 觸發器類型 (TriggerType)
 ```typescript

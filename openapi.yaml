@@ -1550,7 +1550,7 @@ components:
           type: string
         trigger_source:
           type: string
-          enum: [manual, schedule, webhook, event]
+          enum: [manual, schedule, webhook, event, custom, grafana]
         triggered_by:
           type: string
         status:
