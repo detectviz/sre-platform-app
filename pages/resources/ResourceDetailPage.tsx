@@ -145,7 +145,7 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resource_id }) 
                     <p className="font-semibold text-white">{inc.summary}</p>
                     <p className="text-xs text-slate-400">{inc.occurred_at}</p>
                   </div>
-                  <span className={`px-2 py-1 text-xs font-semibold rounded-full capitalize ${inc.status === 'New' ? 'text-orange-400' : 'text-slate-400'}`}>{inc.status}</span>
+                  <span className={`px-2 py-1 text-xs font-semibold rounded-full capitalize ${inc.status === 'new' ? 'text-orange-400' : 'text-slate-400'}`}>{inc.status}</span>
                 </div>
               </Link>
             ))

@@ -3,7 +3,7 @@
 以下清單依據 `tag-registry.ts` 內標記為系統保留（`system: true`）的定義彙整，並依主要情境分類。除非另有說明，所有鍵的命名規範皆遵循 `^[a-z0-9_]{1,32}$`，值長度不超過 128 個字元，布林值限定為 `true | false`，時間以 ISO 8601 格式表示。
 
 ## 通用（Environment & Organization）
-- **env**（字串） — 建議值：`prod`、`staging`、`dev`、`local`
+- **env**（字串） — 建議值：`production`、`staging`、`development`
 - **region**（字串）
 - **zone**（字串）
 - **site**（字串）
@@ -21,7 +21,7 @@
 - **tags.schema_version**（字串，唯一且僅限平台管理員調整）
 
 ## 資源（Resource）
-- **resource_type**（枚舉） — `vm`、`pod`、`service`、`device`、`plc`、`bmc`、`switch`
+- **resource_type**（枚舉） — `vm`、`pod`、`service`、`device`
 - **os**（字串）
 - **distro**（字串）
 - **kernel**（字串）
@@ -36,7 +36,7 @@
 - **edge_gateway**（布林）
 
 ## 資料來源與匯出器（Datasource & Exporter）
-- **datasource_type**（枚舉） — `prometheus`、`victoriametrics`、`loki`、`tempo`、`grafana`
+- **datasource_type**（枚舉） — `victoriametrics`、`grafana`、`elasticsearch`、`prometheus`、`custom`
 - **datasource_id**（字串，需唯一）
 - **exporter_type**（枚舉） — `node`、`snmp`、`modbus`、`ipmi`、`cadvisor`、`kube_state`
 - **protocol**（枚舉） — `snmp`、`modbus`、`opcua`、`ipmi`、`mqtt`
@@ -62,8 +62,8 @@
 - **threshold_profile**（字串）
 - **window**（字串，使用 ISO 8601 duration）
 - **operator**（枚舉） — `>`、`>=`、`<`、`<=`
-- **datasource_type**（枚舉） — `prometheus`、`victoriametrics`、`loki`、`tempo`、`grafana`
-- **resource_type**（枚舉） — `vm`、`pod`、`service`、`device`、`plc`、`bmc`、`switch`
+- **datasource_type**（枚舉） — `victoriametrics`、`grafana`、`elasticsearch`、`prometheus`、`custom`
+- **resource_type**（枚舉） — `vm`、`pod`、`service`、`device`
 - **cluster**（字串）
 - **namespace**（字串）
 - **workload**（字串）
@@ -73,11 +73,11 @@
 - **sla**（字串）
 
 ## 事件（Incident）
-- **status**（枚舉） — `New`、`Acknowledged`、`Resolved`、`Silenced`
-- **severity**（枚舉） — `Info`、`Warning`、`Critical`
-- **impact**（枚舉） — `High`、`Medium`、`Low`
-- **resource_type**（枚舉） — `vm`、`pod`、`service`、`device`、`plc`、`bmc`、`switch`
-- **datasource_type**（枚舉） — `prometheus`、`victoriametrics`、`loki`、`tempo`、`grafana`
+- **status**（枚舉） — `new`、`acknowledged`、`resolved`、`silenced`
+- **severity**（枚舉） — `critical`、`warning`、`info`
+- **impact**（枚舉） — `high`、`medium`、`low`
+- **resource_type**（枚舉） — `vm`、`pod`、`service`、`device`
+- **datasource_type**（枚舉） — `victoriametrics`、`grafana`、`elasticsearch`、`prometheus`、`custom`
 - **cluster**（字串）
 - **namespace**（字串）
 - **workload**（字串）
@@ -95,23 +95,23 @@
 - **maintenance_window**（字串）
 
 ## 通知（Notification Policy）
-- **channel**（枚舉） — `email`、`slack`、`pagerduty`、`webhook`
+- **channel**（枚舉） — `email`、`webhook`、`slack`、`line`、`sms`
 - **routing_key**（字串，需唯一）
 - **oncall_team**（字串）
-- **status**（枚舉） — `New`、`Acknowledged`、`Resolved`、`Silenced`
-- **severity**（枚舉） — `Info`、`Warning`、`Critical`
-- **impact**（枚舉） — `High`、`Medium`、`Low`
+- **status**（枚舉） — `new`、`acknowledged`、`resolved`、`silenced`
+- **severity**（枚舉） — `critical`、`warning`、`info`
+- **impact**（枚舉） — `high`、`medium`、`low`
 - **service**（字串）
 - **team**（字串）
 - **sla**（字串）
 
 ## 自動化（Automation）
+- **playbook_type**（枚舉） — `shell`、`python`、`ansible`、`terraform`
 - **playbook_id**（字串）
-- **playbook_type**（枚舉） — `shell`、`python`、`ansible`、`n8n`
 - **safe_mode**（布林）
-- **status**（枚舉） — `New`、`Acknowledged`、`Resolved`、`Silenced`
-- **severity**（枚舉） — `Info`、`Warning`、`Critical`
-- **impact**（枚舉） — `High`、`Medium`、`Low`
+- **status**（枚舉） — `new`、`acknowledged`、`resolved`、`silenced`
+- **severity**（枚舉） — `critical`、`warning`、`info`
+- **impact**（枚舉） — `high`、`medium`、`low`
 - **resource_id**（字串）
 - **service**（字串）
 - **component**（字串）

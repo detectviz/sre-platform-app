@@ -188,7 +188,7 @@ const IncidentDetailPage: React.FC<IncidentDetailPageProps> = ({ incident_id, on
               <span className="text-slate-200">{incident.occurred_at}</span>
             </InfoItem>
             <InfoItem label="指派給">
-              {incident.status === 'New' || !incident.assignee ? (
+              {incident.status === 'new' || !incident.assignee ? (
                 <div className="flex items-center flex-wrap gap-2">
                   <span className="text-slate-400">無</span>
                   <button onClick={handleAcknowledge} className="px-3 py-1.5 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-full transition-colors flex items-center shadow-sm">

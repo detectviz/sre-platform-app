@@ -86,20 +86,18 @@ const createTagDefinition = (entry: TagRegistryEntry): TagDefinition => {
     'status': [
       { id: 'status-new', value: 'new', usage_count: 0 },
       { id: 'status-acknowledged', value: 'acknowledged', usage_count: 0 },
-      { id: 'status-investigating', value: 'investigating', usage_count: 0 },
       { id: 'status-resolved', value: 'resolved', usage_count: 0 },
-      { id: 'status-closed', value: 'closed', usage_count: 0 },
       { id: 'status-silenced', value: 'silenced', usage_count: 0 },
     ],
     'severity': [
-      { id: 'severity-Info', value: 'Info', usage_count: 0 },
-      { id: 'severity-Warning', value: 'Warning', usage_count: 0 },
-      { id: 'severity-Critical', value: 'Critical', usage_count: 0 },
+      { id: 'severity-critical', value: 'critical', usage_count: 0 },
+      { id: 'severity-warning', value: 'warning', usage_count: 0 },
+      { id: 'severity-info', value: 'info', usage_count: 0 },
     ],
     'impact': [
-      { id: 'impact-High', value: 'High', usage_count: 0 },
-      { id: 'impact-Medium', value: 'Medium', usage_count: 0 },
-      { id: 'impact-Low', value: 'Low', usage_count: 0 },
+      { id: 'impact-high', value: 'high', usage_count: 0 },
+      { id: 'impact-medium', value: 'medium', usage_count: 0 },
+      { id: 'impact-low', value: 'low', usage_count: 0 },
     ],
     'cluster': [
       { id: 'cluster-prod-us-east', value: 'prod-us-east', usage_count: 0 },
@@ -114,8 +112,11 @@ const createTagDefinition = (entry: TagRegistryEntry): TagDefinition => {
       { id: 'resource_type-device', value: 'device', usage_count: 0 },
     ],
     'datasource_type': [
+      { id: 'datasource_type-victoriametrics', value: 'victoriametrics', usage_count: 0 },
+      { id: 'datasource_type-grafana', value: 'grafana', usage_count: 0 },
+      { id: 'datasource_type-elasticsearch', value: 'elasticsearch', usage_count: 0 },
       { id: 'datasource_type-prometheus', value: 'prometheus', usage_count: 0 },
-      { id: 'datasource_type-loki', value: 'loki', usage_count: 0 },
+      { id: 'datasource_type-custom', value: 'custom', usage_count: 0 },
     ],
   };
 
@@ -136,14 +137,14 @@ export const getTagRegistryEntry = (key: string): TagRegistryEntry | undefined =
 export const getEnumValuesForTag = (key: string): string[] => {
   // 為系統標籤提供預設值
   const defaultValues: Record<string, string[]> = {
-    'status': ['new', 'acknowledged', 'investigating', 'resolved', 'closed', 'silenced'],
-    'severity': ['Info', 'Warning', 'Critical'],
-    'impact': ['High', 'Medium', 'Low'],
+    'status': ['new', 'acknowledged', 'resolved', 'silenced'],
+    'severity': ['critical', 'warning', 'info'],
+    'impact': ['high', 'medium', 'low'],
     'env': ['production', 'staging', 'development'],
     'service': ['api-gateway', 'user-service', 'order-service', 'payment-service', 'notification-service'],
     'cluster': ['prod-us-east', 'prod-us-west', 'staging', 'dev'],
     'resource_type': ['vm', 'pod', 'service', 'device'],
-    'datasource_type': ['prometheus', 'loki'],
+    'datasource_type': ['victoriametrics', 'grafana', 'elasticsearch', 'prometheus', 'custom'],
   };
   return defaultValues[key] ?? [];
 };
