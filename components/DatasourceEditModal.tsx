@@ -26,9 +26,9 @@ const DatasourceEditModal: React.FC<DatasourceEditModalProps> = ({ isOpen, onClo
         if (isOpen && datasourceOptions) {
             setFormData(datasource || {
                 name: '',
-                type: datasourceOptions.types[0] || 'Prometheus',
+                type: datasourceOptions.types[0]?.value || 'prometheus',
                 url: '',
-                authMethod: datasourceOptions.auth_methods[0] || 'None',
+                auth_method: datasourceOptions.auth_methods[0]?.value || 'none',
                 tags: []
             });
         }
@@ -55,8 +55,8 @@ const DatasourceEditModal: React.FC<DatasourceEditModalProps> = ({ isOpen, onClo
                 name: formData.name,
                 type: formData.type,
                 url: formData.url,
-                authMethod: formData.auth_method,
-                tags: formData.tags,
+                auth_method: formData.auth_method || datasourceOptions?.auth_methods[0]?.value || 'none',
+                tags: Array.isArray(formData.tags) ? formData.tags : [],
             };
             const { data } = await api.post<DatasourceTestResponse>('/resources/datasources/test', payload);
             if (formData.id) {
@@ -99,13 +99,17 @@ const DatasourceEditModal: React.FC<DatasourceEditModalProps> = ({ isOpen, onClo
                     <FormRow label="類型">
                         <select value={formData.type || ''} onChange={e => handleChange('type', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoadingOptions}>
                             {isLoadingOptions && <option>載入中...</option>}
-                            {datasourceOptions?.types.map(t => <option key={t} value={t}>{t}</option>)}
+                            {datasourceOptions?.types.map(option => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                            ))}
                         </select>
                     </FormRow>
                     <FormRow label="驗證方式">
                         <select value={formData.auth_method || ''} onChange={e => handleChange('auth_method', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoadingOptions}>
                             {isLoadingOptions && <option>載入中...</option>}
-                            {datasourceOptions?.auth_methods.map(m => <option key={m} value={m}>{m}</option>)}
+                            {datasourceOptions?.auth_methods.map(method => (
+                                <option key={method.value} value={method.value}>{method.label}</option>
+                            ))}
                         </select>
                     </FormRow>
                 </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { MailSettings } from '../../../types';
+import { MailSettings, MailTestResponse } from '../../../types';
 import Icon from '../../../components/Icon';
 import FormRow from '../../../components/FormRow';
 import api from '../../../services/api';
@@ -8,7 +8,7 @@ const MailSettingsPage: React.FC = () => {
     const [settings, setSettings] = useState<MailSettings | null>(null);
     const [password, setPassword] = useState('**********');
     const [isTesting, setIsTesting] = useState(false);
-    const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+    const [testResult, setTestResult] = useState<MailTestResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -39,10 +39,10 @@ const MailSettingsPage: React.FC = () => {
         setIsTesting(true);
         setTestResult(null);
         try {
-            const { data } = await api.post<{ success: boolean; message: string }>('/settings/mail/test', {});
+            const { data } = await api.post<MailTestResponse>('/settings/mail/test', {});
             setTestResult(data);
         } catch (err) {
-            setTestResult({ success: false, message: 'Failed to initiate test.' });
+            setTestResult({ success: false, result: 'failed', message: 'Failed to initiate test.', tested_at: new Date().toISOString() });
         } finally {
             setIsTesting(false);
         }
@@ -86,7 +86,7 @@ const MailSettingsPage: React.FC = () => {
                         <FormRow label="加密方式">
                             <select value={settings.encryption} onChange={e => handleChange('encryption', e.target.value)}
                                     className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
-                                {settings.encryptionModes?.map(mode => (
+                                {settings.encryption_modes?.map(mode => (
                                     <option key={mode} value={mode}>{mode.toUpperCase()}</option>
                                 )) || <option value="none">無</option>}
                             </select>
@@ -121,7 +121,8 @@ const MailSettingsPage: React.FC = () => {
                 </div>
                 {testResult && (
                     <div className={`mt-4 p-3 rounded-md text-sm border ${testResult.success ? 'bg-green-900/30 border-green-700/50 text-green-300' : 'bg-red-900/30 border-red-700/50 text-red-300'}`}>
-                        {testResult.message}
+                        <div>{testResult.message}</div>
+                        <div className="text-xs text-slate-400 mt-1">測試時間：{new Date(testResult.tested_at).toLocaleString()}</div>
                     </div>
                 )}
             </div>

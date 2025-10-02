@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import FormRow from './FormRow';
 import Icon from './Icon';
-import { NotificationChannel, NotificationChannelType } from '../types';
+import { NotificationChannel, NotificationChannelType, NotificationChannelTestResponse } from '../types';
 import { useOptions } from '../contexts/OptionsContext';
 import { showToast } from '../services/toast';
+import api from '../services/api';
 
 interface MultiEmailInputProps {
   value: string; // Comma-separated string
@@ -88,6 +89,7 @@ interface NotificationChannelEditModalProps {
 const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> = ({ isOpen, onClose, onSave, channel }) => {
     const [formData, setFormData] = useState<Partial<NotificationChannel>>({});
     const [isTokenVisible, setIsTokenVisible] = useState(false);
+    const [isTesting, setIsTesting] = useState(false);
     const { options, isLoading: isLoadingOptions } = useOptions();
     const channelOptions = options?.notification_channels;
 
@@ -123,8 +125,49 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
         }));
     };
 
-    const handleTest = () => {
-        showToast(`正在向管道「${formData.name}」發送測試訊息...`, 'success');
+    const handleTest = async () => {
+        if (!formData?.id) {
+            showToast('請先儲存管道後再發送測試通知。', 'warning');
+            return;
+        }
+
+        setIsTesting(true);
+
+        const recipients = (formData.config?.to || '')
+            .split(/[\s,;]+/)
+            .map(recipient => recipient.trim())
+            .filter(Boolean);
+
+        const payload: Record<string, unknown> = {
+            message: formData.name ? `這是一則測試通知：${formData.name}` : '這是一則測試通知',
+        };
+
+        if (recipients.length > 0) {
+            payload.recipients = recipients;
+        }
+
+        try {
+            const { data } = await api.post<NotificationChannelTestResponse>(
+                `/settings/notification-channels/${formData.id}/test`,
+                payload,
+            );
+
+            showToast(data.message || '測試通知已發送。', data.success ? 'success' : 'error');
+
+            setFormData(prev => ({
+                ...prev,
+                last_test_result: data.result,
+                last_tested_at: data.tested_at,
+            }));
+        } catch (error: any) {
+            const errorMessage =
+                (error?.data?.message as string | undefined) ||
+                (error?.message as string | undefined) ||
+                '測試通知發送失敗，請稍後再試。';
+            showToast(errorMessage, 'error');
+        } finally {
+            setIsTesting(false);
+        }
     };
 
     const renderDynamicFields = () => {
@@ -221,7 +264,14 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
             footer={
                 <div className="flex justify-end space-x-2">
                     <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">取消</button>
-                    <button onClick={handleTest} className="px-4 py-2 text-sm font-medium text-white bg-slate-600 hover:bg-slate-500 rounded-md">發送測試</button>
+                    <button
+                        onClick={handleTest}
+                        disabled={!formData?.id || isTesting}
+                        title={formData?.id ? undefined : '請先儲存管道後再測試'}
+                        className="px-4 py-2 text-sm font-medium text-white bg-slate-600 hover:bg-slate-500 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isTesting ? '測試中...' : '發送測試'}
+                    </button>
                     <button onClick={handleSave} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md">儲存</button>
                 </div>
             }

@@ -7,7 +7,7 @@ import { createServer } from 'http';
 import { URL } from 'url';
 import 'dotenv/config';
 
-const ALLOWED_METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
+const ALLOWED_METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD']);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const distDir = path.join(__dirname, 'dist');
@@ -144,7 +144,7 @@ const sendJson = (res, status, payload) => {
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,HEAD,OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization'
   });
   res.end(payload ? JSON.stringify(payload) : undefined);

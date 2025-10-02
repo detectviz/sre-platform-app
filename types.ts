@@ -33,6 +33,7 @@ export type DashboardType = 'built-in' | 'custom' | 'grafana';
 export type DatasourceType = 'victoriametrics' | 'grafana' | 'elasticsearch' | 'prometheus' | 'custom';
 export type AuthMethod = 'token' | 'basic_auth' | 'keycloak_integration' | 'none';
 export type ConnectionStatus = 'ok' | 'error' | 'pending';
+export type MailEncryptionMode = 'none' | 'tls' | 'ssl';
 
 export type AuditAction =
   | 'create'
@@ -358,8 +359,15 @@ export interface MailSettings {
   username: string;
   sender_name: string;
   sender_email: string;
-  encryption: 'none' | 'tls' | 'ssl';
-  encryption_modes?: string[];
+  encryption: MailEncryptionMode;
+  encryption_modes?: MailEncryptionMode[];
+}
+
+export interface MailTestResponse {
+  success: boolean;
+  result: TestResult;
+  message: string;
+  tested_at: string;
 }
 
 export interface GrafanaSettings {
@@ -367,6 +375,14 @@ export interface GrafanaSettings {
   url: string;
   api_key: string;
   org_id: number;
+}
+
+export interface GrafanaTestResponse {
+  success: boolean;
+  result: TestResult;
+  message: string;
+  detected_version?: string;
+  tested_at?: string;
 }
 
 export interface User {
@@ -582,19 +598,56 @@ export interface NotificationHistoryRecord {
   incident_id?: string;
 }
 
+export interface NotificationChannelTestResponse {
+  success: boolean;
+  result: TestResult;
+  message: string;
+  tested_at: string;
+}
+
+export type LoginStatus = 'success' | 'failed';
+
 export interface LoginHistoryRecord {
   id: string;
   timestamp: string;
   ip: string;
   device: string;
-  status: 'success' | 'failed';
+  status: LoginStatus;
 }
 
+export type UserPreferenceTheme = 'dark' | 'light' | 'system';
+export type UserPreferenceLanguage = 'en' | 'zh-TW';
+
 export interface UserPreferences {
-  theme: 'dark' | 'light' | 'system';
-  language: 'en' | 'zh-TW';
+  theme: UserPreferenceTheme;
+  language: UserPreferenceLanguage;
   timezone: string;
   default_page: string;
+  last_exported_at?: string;
+  last_export_format?: string;
+}
+
+export interface UserPreferenceExportJob {
+  id: string;
+  user_id: string;
+  format: string;
+  status: ExecutionStatus;
+  download_url: string;
+  expires_at: string;
+  created_at: string;
+  completed_at?: string;
+}
+
+export interface UserPreferenceExportResponse {
+  download_url: string;
+  expires_at: string;
+  format: string;
+  job: {
+    id: string;
+    status: ExecutionStatus;
+    created_at: string;
+    completed_at?: string;
+  };
 }
 
 export interface AuthSettings {
@@ -647,6 +700,29 @@ export interface TagDefinition extends TagRegistryEntry {
   allowed_values: TagValue[];
   usage_count: number;
   deleted_at?: string;
+}
+
+export interface TagBulkImportJob {
+  id: string;
+  filename: string;
+  status: ExecutionStatus;
+  total_records: number;
+  imported_records: number;
+  failed_records: number;
+  error_log?: string[];
+  uploaded_by: string;
+  created_at: string;
+  completed_at?: string;
+}
+
+export interface TagBulkImportResponse {
+  job: TagBulkImportJob;
+  summary: {
+    imported: number;
+    failed: number;
+    skipped: number;
+  };
+  message?: string;
 }
 
 export interface TagManagementFilters {
@@ -1079,11 +1155,25 @@ export interface LogExplorerFilters {
   time_range?: string;
 }
 
+export interface DatasourceConnectionTestLog {
+  id: string;
+  datasource_id: string;
+  status: ConnectionStatus;
+  result: TestResult;
+  latency_ms?: number;
+  message: string;
+  tested_at: string;
+  tested_by: string;
+}
+
 export interface DatasourceTestResponse {
   success: boolean;
   status: ConnectionStatus;
+  result: TestResult;
   latency_ms?: number;
   message: string;
+  tested_at: string;
+  tested_by: string;
 }
 
 export interface KeyValueTag {

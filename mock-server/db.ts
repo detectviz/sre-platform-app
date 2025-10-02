@@ -3,7 +3,7 @@ import {
     Resource, ResourceGroup, AutomationPlaybook, AutomationExecution, AutomationTrigger, User, Team, Role,
     AuditLog, TagDefinition, NotificationItem, NotificationStrategy, NotificationChannel,
     NotificationHistoryRecord, LoginHistoryRecord, LogEntry, MailSettings, AuthSettings, LayoutWidget,
-    UserPreferences,
+    UserPreferences, DatasourceConnectionTestLog, TagBulkImportJob, UserPreferenceExportJob,
     IncidentAnalysis,
     MultiIncidentAnalysis,
     RuleAnalysisReport,
@@ -1536,6 +1536,21 @@ const MOCK_AUDIT_LOGS: AuditLog[] = [
     { id: 'log-001', timestamp: '2024-01-15T11:05:00Z', user: { id: 'usr-001', name: 'Admin User' }, action: 'login', target: { type: 'System', name: 'Authentication' }, result: 'success', ip: '192.168.1.10', details: { client: 'WebApp' } },
 ];
 const MOCK_TAG_DEFINITIONS: TagDefinition[] = createTagDefinitions();
+
+const MOCK_TAG_BULK_IMPORT_JOBS: TagBulkImportJob[] = [
+    {
+        id: 'tag-import-001',
+        filename: 'tags-prod.csv',
+        status: 'success',
+        total_records: 24,
+        imported_records: 22,
+        failed_records: 2,
+        error_log: ['第 12 行: scope 欄位為空', '第 18 行: writable_roles 無效值'],
+        uploaded_by: 'usr-admin',
+        created_at: '2025-09-10T02:10:00Z',
+        completed_at: '2025-09-10T02:11:30Z'
+    }
+];
 const MOCK_NOTIFICATIONS: NotificationItem[] = [
     { id: 'notif-1', title: 'Critical: DB CPU > 95%', description: 'The production database is under heavy load.', severity: 'critical', status: 'unread', created_at: new Date(Date.now() - 60000 * 5).toISOString(), link_url: '/incidents/INC-002' },
 ];
@@ -1619,7 +1634,7 @@ const MOCK_LOG_TIME_OPTIONS: { label: string, value: string }[] = [
     { label: '最近 7 天', value: '7d' },
     { label: '最近 30 天', value: '30d' },
 ];
-const MOCK_MAIL_SETTINGS: MailSettings = { smtp_server: 'smtp.example.com', port: 587, username: 'noreply@sre.platform', sender_name: 'SRE Platform', sender_email: 'noreply@sre.platform', encryption: 'tls' };
+const MOCK_MAIL_SETTINGS: MailSettings = { smtp_server: 'smtp.example.com', port: 587, username: 'noreply@sre.platform', sender_name: 'SRE Platform', sender_email: 'noreply@sre.platform', encryption: 'tls', encryption_modes: ['none', 'tls', 'ssl'] };
 const MOCK_GRAFANA_SETTINGS: GrafanaSettings = { enabled: true, url: DEFAULT_GRAFANA_BASE_URL, api_key: 'glsa_xxxxxxxxxxxxxxxxxxxxxxxx', org_id: 1 };
 const MOCK_GRAFANA_OPTIONS: GrafanaOptions = {
     time_options: [{ label: 'Last 6 hours', value: 'from=now-6h&to=now' }, { label: 'Last 24 hours', value: 'from=now-24h&to=now' }],
@@ -1822,7 +1837,27 @@ const MOCK_CONFIG_VERSIONS: ConfigVersion[] = [
         created_at: '2025-09-20T10:00:00Z'
     }
 ];
-const MOCK_USER_PREFERENCES: UserPreferences = { theme: 'dark', language: 'zh-TW', timezone: 'Asia/Taipei', default_page: 'sre-war-room' };
+const MOCK_USER_PREFERENCES: UserPreferences = {
+    theme: 'dark',
+    language: 'zh-TW',
+    timezone: 'Asia/Taipei',
+    default_page: 'sre-war-room',
+    last_exported_at: '2025-09-12T12:00:05Z',
+    last_export_format: 'json'
+};
+
+const MOCK_USER_PREFERENCE_EXPORT_JOBS: UserPreferenceExportJob[] = [
+    {
+        id: 'pref-export-001',
+        user_id: 'usr-admin',
+        format: 'json',
+        status: 'success',
+        download_url: `${DEFAULT_API_BASE_URL}/downloads/preferences/pref-export-001.json`,
+        expires_at: '2025-09-13T00:00:00Z',
+        created_at: '2025-09-12T12:00:00Z',
+        completed_at: '2025-09-12T12:00:05Z'
+    }
+];
 
 // New AI Mock Data
 const MOCK_AI_RISK_PREDICTION = {
@@ -2788,6 +2823,29 @@ const MOCK_DATASOURCES: Datasource[] = [
     }
 ];
 
+const MOCK_DATASOURCE_CONNECTION_TESTS: DatasourceConnectionTestLog[] = [
+    {
+        id: 'ds-test-001',
+        datasource_id: 'ds-001',
+        status: 'ok',
+        result: 'success',
+        latency_ms: 95,
+        message: '成功連線至 Prometheus-A。',
+        tested_by: 'usr-admin',
+        tested_at: '2025-09-12T08:00:00Z'
+    },
+    {
+        id: 'ds-test-002',
+        datasource_id: 'ds-002',
+        status: 'error',
+        result: 'failed',
+        latency_ms: 210,
+        message: '無法連線至 VM-Cluster-1，請確認憑證。',
+        tested_by: 'usr-admin',
+        tested_at: '2025-09-12T09:15:00Z'
+    }
+];
+
 const MOCK_DISCOVERY_JOBS: DiscoveryJob[] = [
     {
         id: 'dj-001',
@@ -2955,8 +3013,11 @@ function createInitialDB() {
         all_options: JSON.parse(JSON.stringify(MOCK_ALL_OPTIONS)),
         // New Datasource/Discovery data
         datasources: JSON.parse(JSON.stringify(MOCK_DATASOURCES)),
+        datasource_connection_tests: JSON.parse(JSON.stringify(MOCK_DATASOURCE_CONNECTION_TESTS)),
         discovery_jobs: JSON.parse(JSON.stringify(MOCK_DISCOVERY_JOBS)),
         discovered_resources: JSON.parse(JSON.stringify(MOCK_DISCOVERED_RESOURCES)),
+        tag_bulk_import_jobs: JSON.parse(JSON.stringify(MOCK_TAG_BULK_IMPORT_JOBS)),
+        user_preference_export_jobs: JSON.parse(JSON.stringify(MOCK_USER_PREFERENCE_EXPORT_JOBS)),
     };
 }
 

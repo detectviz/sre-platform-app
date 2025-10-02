@@ -165,7 +165,39 @@ enum: ['success', 'failed', 'not_tested']
 - `failed`: 測試失敗
 - `not_tested`: 尚未測試
 
-### 6. 身份認證與授權 (IAM)
+### 6. 設定管理 (Settings Management)
+
+#### 郵件加密模式 (MailEncryptionMode)
+```typescript
+enum: ['none', 'tls', 'ssl']
+```
+- `none`: 不使用加密 (Plain SMTP)
+- `tls`: 使用 STARTTLS 進行加密
+- `ssl`: 使用 SMTPS (SSL/TLS) 進行加密
+
+#### 使用者偏好主題 (UserPreferenceTheme)
+```typescript
+enum: ['dark', 'light', 'system']
+```
+- `dark`: 深色主題
+- `light`: 淺色主題
+- `system`: 跟隨系統主題設定
+
+#### 使用者偏好語言 (UserPreferenceLanguage)
+```typescript
+enum: ['en', 'zh-TW']
+```
+- `en`: 英文介面
+- `zh-TW`: 繁體中文介面
+
+#### 登入紀錄狀態 (LoginStatus)
+```typescript
+enum: ['success', 'failed']
+```
+- `success`: 登入成功
+- `failed`: 登入失敗
+
+### 7. 身份認證與授權 (IAM)
 
 #### 用戶角色 (UserRole)
 ```typescript
@@ -184,7 +216,7 @@ enum: ['active', 'invited', 'inactive']
 - `invited`: 已邀請但未激活的用戶
 - `inactive`: 已停用的用戶
 
-### 7. 儀表板 (Dashboards)
+### 8. 儀表板 (Dashboards)
 
 #### 儀表板類型 (DashboardType)
 ```typescript
@@ -194,7 +226,7 @@ enum: ['built-in', 'custom', 'grafana']
 - `custom`: 自定義儀表板
 - `grafana`: Grafana 外部儀表板
 
-### 8. 資料來源 (Datasources)
+### 9. 資料來源 (Datasources)
 
 #### 資料來源類型 (DatasourceType)
 ```typescript
@@ -223,7 +255,7 @@ enum: ['ok', 'error', 'pending']
 - `error`: 連接錯誤
 - `pending`: 連接待驗證
 
-### 9. 審計日誌 (Audit Logs)
+### 10. 審計日誌 (Audit Logs)
 
 #### 審計動作 (AuditAction)
 ```typescript
@@ -245,7 +277,7 @@ enum: ['success', 'failure']
 - `success`: 操作成功
 - `failure`: 操作失敗
 
-### 10. 分析與洞察 (Analysis & Insights)
+### 11. 分析與洞察 (Analysis & Insights)
 
 #### 風險等級 (RiskLevel)
 ```typescript
@@ -268,7 +300,7 @@ enum: ['cost', 'performance', 'security']
 enum: ['trend', 'anomaly', 'forecast']
 ```
 
-### 11. 配置版本控制 (Config Versioning)
+### 12. 配置版本控制 (Config Versioning)
 
 #### 實體類型 (EntityType)
 ```typescript
@@ -314,3 +346,4 @@ enum: ['alertrule', 'automationplaybook', 'dashboard', 'notificationstrategy', '
 - v1.0.0 (2025-01-15): 初始版本，定義所有現有枚舉值
 - v1.1.0 (2025-01-16): 統一所有枚舉值為小寫格式
 - v1.2.0 (2025-10-02): 清理中英文混雜枚舉，補充 incident priority/category、automation retry policy、audit login/logout、analysis insight type
+- v1.3.0 (2025-10-03): 新增設定管理與登入紀錄相關枚舉 (MailEncryption、UserPreferenceTheme/Language、LoginStatus)

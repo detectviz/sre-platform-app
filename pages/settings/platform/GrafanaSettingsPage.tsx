@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { GrafanaSettings } from '../../../types';
+import { GrafanaSettings, GrafanaTestResponse } from '../../../types';
 import Icon from '../../../components/Icon';
 import FormRow from '../../../components/FormRow';
 import api from '../../../services/api';
@@ -12,7 +12,7 @@ const GrafanaSettingsPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isTesting, setIsTesting] = useState(false);
-    const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+    const [testResult, setTestResult] = useState<GrafanaTestResponse | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     const fetchSettings = useCallback(async () => {
@@ -48,10 +48,10 @@ const GrafanaSettingsPage: React.FC = () => {
         setTestResult(null);
         try {
             const payload = { ...settings, api_key: api_key === '**********' ? settings.api_key : api_key };
-            const { data } = await api.post<{ success: boolean; message: string }>('/settings/grafana/test', payload);
+            const { data } = await api.post<GrafanaTestResponse>('/settings/grafana/test', payload);
             setTestResult(data);
         } catch (err) {
-            setTestResult({ success: false, message: '無法啟動測試。' });
+            setTestResult({ success: false, result: 'failed', message: '無法啟動測試。' });
         } finally {
             setIsTesting(false);
         }
@@ -115,7 +115,13 @@ const GrafanaSettingsPage: React.FC = () => {
                 </div>
                 {testResult && (
                     <div className={`mt-4 p-3 rounded-md text-sm border ${testResult.success ? 'bg-green-900/30 border-green-700/50 text-green-300' : 'bg-red-900/30 border-red-700/50 text-red-300'}`}>
-                        {testResult.message}
+                        <div>{testResult.message}</div>
+                        {testResult.detected_version && (
+                            <div className="text-xs text-slate-400 mt-1">偵測版本：{testResult.detected_version}</div>
+                        )}
+                        {testResult.tested_at && (
+                            <div className="text-xs text-slate-500 mt-1">測試時間：{new Date(testResult.tested_at).toLocaleString()}</div>
+                        )}
                     </div>
                 )}
                 <div className="mt-6 pt-6 border-t border-slate-700/50 flex justify-between items-center">
