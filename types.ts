@@ -1,6 +1,6 @@
 import React from 'react';
 
-// ----- Shared Enumerations (align with docs/enums-ssot.md) -----
+// ----- Shared Enumerations (aligned with docs/enums-ssot.md) -----
 export type IncidentStatus = 'new' | 'acknowledged' | 'resolved' | 'silenced';
 export type IncidentSeverity = 'critical' | 'warning' | 'info';
 export type IncidentImpact = 'high' | 'medium' | 'low';
@@ -34,6 +34,9 @@ export type DatasourceType = 'victoriametrics' | 'grafana' | 'elasticsearch' | '
 export type AuthMethod = 'token' | 'basic_auth' | 'keycloak_integration' | 'none';
 export type ConnectionStatus = 'ok' | 'error' | 'pending';
 export type MailEncryptionMode = 'none' | 'tls' | 'ssl';
+export type UserPreferenceTheme = 'dark' | 'light' | 'system';
+export type UserPreferenceLanguage = 'en' | 'zh-TW';
+export type LoginStatus = 'success' | 'failed';
 
 export type AuditAction =
   | 'create'
@@ -66,8 +69,6 @@ export interface NavItem {
   icon: string;
   children?: NavItem[];
 }
-
-export type DashboardType = 'built-in' | 'custom' | 'grafana';
 
 export interface DashboardLayoutItem {
   i: string; // widget id
@@ -310,8 +311,8 @@ export interface AutomationPlaybook {
 
 export interface AutomationExecution {
   id: string;
-  script_id: string;
-  script_name: string;
+  playbook_id: string;
+  playbook_name: string;
   /** Identifier of the incident that triggered the automation. */
   incident_id?: string;
   /** Identifier of the alert rule responsible for the automation trigger. */
@@ -360,7 +361,6 @@ export interface MailSettings {
   sender_name: string;
   sender_email: string;
   encryption: MailEncryptionMode;
-  encryption_modes?: MailEncryptionMode[];
 }
 
 export interface MailTestResponse {
@@ -605,8 +605,6 @@ export interface NotificationChannelTestResponse {
   tested_at: string;
 }
 
-export type LoginStatus = 'success' | 'failed';
-
 export interface LoginHistoryRecord {
   id: string;
   timestamp: string;
@@ -614,9 +612,6 @@ export interface LoginHistoryRecord {
   device: string;
   status: LoginStatus;
 }
-
-export type UserPreferenceTheme = 'dark' | 'light' | 'system';
-export type UserPreferenceLanguage = 'en' | 'zh-TW';
 
 export interface UserPreferences {
   theme: UserPreferenceTheme;
@@ -1266,8 +1261,6 @@ export interface DiscoveryJobFilters {
   kind?: DiscoveryJobKind;
   status?: DiscoveryJobStatus;
 }
-
-export type DiscoveredResourceStatus = 'new' | 'imported' | 'ignored';
 
 export interface DiscoveredResource {
   id: string;

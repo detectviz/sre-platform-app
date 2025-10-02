@@ -4,29 +4,31 @@
 -- Generated from: types.ts
 -- Database: PostgreSQL 14+
 -- Generated: 2025-10-02
--- Version: 1.0.0
+-- Version: 1.1.0
 -- =====================================================
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- =====================================================
--- ENUM TYPES
+-- ENUM TYPES (Aligned with enums-ssot.md)
 -- =====================================================
 
 -- Dashboard Types
 CREATE TYPE dashboard_type AS ENUM ('built-in', 'custom', 'grafana');
 
-
+-- Incident Management
 CREATE TYPE incident_status AS ENUM ('new', 'acknowledged', 'resolved', 'silenced');
 CREATE TYPE incident_severity AS ENUM ('critical', 'warning', 'info');
 CREATE TYPE incident_impact AS ENUM ('high', 'medium', 'low');
 CREATE TYPE incident_priority AS ENUM ('p0', 'p1', 'p2', 'p3');
 CREATE TYPE incident_category AS ENUM ('infrastructure', 'application', 'network', 'security', 'other');
 
+-- Resource Management
 CREATE TYPE resource_status AS ENUM ('healthy', 'warning', 'critical', 'offline', 'unknown');
 
-CREATE TYPE playbook_type AS ENUM ('shell', 'python', 'ansible', 'terraform');
+-- Automation
+CREATE TYPE automation_playbook_type AS ENUM ('shell', 'python', 'ansible', 'terraform');
 CREATE TYPE execution_status AS ENUM ('pending', 'running', 'success', 'failed', 'cancelled');
 CREATE TYPE trigger_source AS ENUM ('manual', 'schedule', 'webhook', 'event', 'custom', 'grafana');
 CREATE TYPE trigger_type AS ENUM ('schedule', 'webhook', 'event');
@@ -37,7 +39,6 @@ CREATE TYPE user_role AS ENUM ('admin', 'sre', 'developer', 'viewer');
 CREATE TYPE user_status AS ENUM ('active', 'invited', 'inactive');
 
 -- Alert Rule Types
-CREATE TYPE alert_severity AS ENUM ('critical', 'warning', 'info');
 CREATE TYPE condition_operator AS ENUM ('>', '<', '>=', '<=', '==', '!=');
 CREATE TYPE condition_logic AS ENUM ('and', 'or');
 CREATE TYPE http_method AS ENUM ('get', 'post', 'put', 'patch', 'delete');
@@ -46,14 +47,17 @@ CREATE TYPE http_method AS ENUM ('get', 'post', 'put', 'patch', 'delete');
 CREATE TYPE notification_channel_type AS ENUM ('email', 'webhook', 'slack', 'line', 'sms');
 CREATE TYPE notification_status AS ENUM ('pending', 'sent', 'failed');
 CREATE TYPE test_result AS ENUM ('success', 'failed', 'not_tested');
-CREATE TYPE mail_encryption AS ENUM ('none', 'tls', 'ssl');
-CREATE TYPE preference_theme AS ENUM ('dark', 'light', 'system');
-CREATE TYPE preference_language AS ENUM ('en', 'zh-TW');
+
+-- Settings Management
+CREATE TYPE mail_encryption_mode AS ENUM ('none', 'tls', 'ssl');
+CREATE TYPE user_preference_theme AS ENUM ('dark', 'light', 'system');
+CREATE TYPE user_preference_language AS ENUM ('en', 'zh-TW');
 CREATE TYPE login_status AS ENUM ('success', 'failed');
 
 -- Audit Types
 CREATE TYPE audit_action AS ENUM ('create', 'read', 'update', 'delete', 'execute', 'login', 'logout', 'permission_change');
 CREATE TYPE audit_result AS ENUM ('success', 'failure');
+CREATE TYPE entity_type AS ENUM ('alertrule', 'automationplaybook', 'dashboard', 'notificationstrategy', 'silencerule', 'resource', 'team', 'user');
 
 -- Datasource Types
 CREATE TYPE datasource_type AS ENUM ('victoriametrics', 'grafana', 'elasticsearch', 'prometheus', 'custom');
@@ -298,7 +302,7 @@ CREATE TABLE alert_rules (
     enabled BOOLEAN NOT NULL DEFAULT true,
     resource_type VARCHAR(255) NOT NULL,
     metric_name VARCHAR(255) NOT NULL,
-    severity alert_severity NOT NULL,
+    severity incident_severity NOT NULL,
     team_id VARCHAR(255) REFERENCES teams(id),
     owner_id VARCHAR(255) REFERENCES users(id),
     target_scope VARCHAR(50) CHECK (target_scope IN ('specific', 'group', 'tag')),
@@ -393,7 +397,7 @@ CREATE TABLE automation_playbooks (
     id VARCHAR(255) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
-    type playbook_type NOT NULL,
+    type automation_playbook_type NOT NULL,
     content TEXT NOT NULL,
     enabled BOOLEAN NOT NULL DEFAULT true,
     timeout_seconds INTEGER DEFAULT 300,
@@ -741,7 +745,7 @@ CREATE TABLE mail_settings (
     username TEXT,
     sender_name TEXT,
     sender_email TEXT,
-    encryption mail_encryption NOT NULL DEFAULT 'tls',
+    encryption mail_encryption_mode NOT NULL DEFAULT 'tls',
     updated_by VARCHAR(255) REFERENCES users(id),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -749,8 +753,8 @@ CREATE TABLE mail_settings (
 -- User Preferences Table
 CREATE TABLE user_preferences (
     user_id VARCHAR(255) PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-    theme preference_theme NOT NULL DEFAULT 'system',
-    language preference_language NOT NULL DEFAULT 'zh-TW',
+    theme user_preference_theme NOT NULL DEFAULT 'system',
+    language user_preference_language NOT NULL DEFAULT 'zh-TW',
     timezone VARCHAR(100) DEFAULT 'Asia/Taipei',
     default_page VARCHAR(255),
     settings JSONB DEFAULT '{}',
@@ -869,7 +873,7 @@ COMMENT ON TABLE login_history IS 'User login history for security auditing';
 
 -- Insert default system admin user (password should be changed on first login)
 INSERT INTO users (id, name, email, role, status, created_at, updated_at) VALUES
-('usr-admin', 'System Admin', 'admin@sre-platform.local', 'Admin', 'active', NOW(), NOW());
+('usr-admin', 'System Admin', 'admin@sre-platform.local', 'admin', 'active', NOW(), NOW());
 
 -- Insert default system settings
 INSERT INTO system_settings (key, value, description, updated_at) VALUES
