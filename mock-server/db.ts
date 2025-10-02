@@ -1544,7 +1544,7 @@ const MOCK_NOTIFICATION_STRATEGIES: NotificationStrategy[] = [
         id: 'strat-1',
         name: 'Critical Database Alerts',
         enabled: true,
-        trigger_condition: 'severity = Critical AND service = api-gateway',
+        trigger_condition: 'severity = critical AND service = api-gateway',
         channel_count: 2,
         severity_levels: ['critical'],
         impact_levels: ['high'],
@@ -1556,7 +1556,7 @@ const MOCK_NOTIFICATION_STRATEGIES: NotificationStrategy[] = [
 const MOCK_NOTIFICATION_STRATEGY_OPTIONS: NotificationStrategyOptions = {
     severity_levels: ['critical', 'warning', 'info'],
     impact_levels: ['high', 'medium', 'low'],
-    default_condition: 'severity = Critical',
+    default_condition: 'severity = critical',
     condition_keys: {
         severity: ['critical', 'warning', 'info'],
         impact: ['high', 'medium', 'low'],
