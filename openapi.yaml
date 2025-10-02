@@ -1644,7 +1644,7 @@ components:
           type: string
         status:
           type: string
-          enum: [active, inactive]
+          enum: [active, invited, inactive]
         avatar:
           type: string
         last_login_at:
@@ -1743,6 +1743,7 @@ components:
           type: object
         last_test_result:
           type: string
+          enum: [success, failed, not_tested]
         last_tested_at:
           type: string
           format: date-time
@@ -1783,10 +1784,12 @@ components:
           type: array
           items:
             type: string
+            enum: [critical, warning, info]
         impact_levels:
           type: array
           items:
             type: string
+            enum: [high, medium, low]
         channel_ids:
           type: array
           items:
@@ -1812,6 +1815,7 @@ components:
           type: array
           items:
             type: string
+            enum: [critical, warning, info]
         channel_ids:
           type: array
           items:
