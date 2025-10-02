@@ -17,8 +17,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Dashboard Types
 CREATE TYPE dashboard_type AS ENUM ('built-in', 'custom', 'grafana');
 
--- Incident Types
-CREATE TYPE incident_status AS ENUM ('New', 'Acknowledged', 'Investigating', 'Resolved', 'Closed');
+CREATE TYPE incident_status AS ENUM ('new', 'acknowledged', 'investigating', 'resolved', 'closed', 'silenced');
 CREATE TYPE incident_severity AS ENUM ('Critical', 'Warning', 'Info');
 CREATE TYPE incident_impact AS ENUM ('High', 'Medium', 'Low');
 

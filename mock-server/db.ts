@@ -1184,9 +1184,9 @@ const MOCK_DASHBOARD_TEMPLATES: DashboardTemplate[] = [
     { id: 'tpl-002', name: '業務 KPI 總覽', description: '追蹤關鍵業務指標，如用戶註冊數、營收、轉換率等。適用於產品經理、業務團隊使用。', icon: 'briefcase', category: '業務' },
 ];
 const MOCK_INCIDENTS: Incident[] = [
-    { id: 'INC-001', summary: 'API 延遲超過閾值', resource: 'api-server-01', resource_id: 'res-001', impact: 'High', rule: 'API 延遲規則', rule_id: 'rule-002', status: 'New', severity: 'Warning', assignee: '張三', team_id: 'team-001', owner_id: 'usr-001', tags: { team: 'SRE Platform', owner: 'Alice Chen', env: 'production', service: 'api-gateway' }, occurred_at: '2024-01-15T10:30:00Z', created_at: '2024-01-15T10:30:00Z', updated_at: '2024-01-15T10:30:00Z', acknowledged_at: undefined, resolved_at: undefined, silenced_by: undefined, notifications_sent: undefined, history: [{ timestamp: '2024-01-15T10:30:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "API 延遲規則".' }] },
-    { id: 'INC-002', summary: '資料庫連接超時', resource: 'db-primary', resource_id: 'res-002', impact: 'High', rule: '資料庫連接規則', rule_id: 'rule-db-conn', status: 'Acknowledged', severity: 'Critical', assignee: '李四', team_id: 'team-002', owner_id: 'usr-002', tags: { team: 'Core Infrastructure', owner: 'Bob Lee', env: 'production', service: 'database' }, occurred_at: '2024-01-15T10:15:00Z', created_at: '2024-01-15T10:15:00Z', updated_at: '2024-01-15T10:15:00Z', acknowledged_at: '2024-01-15T10:20:00Z', resolved_at: undefined, silenced_by: undefined, notifications_sent: undefined, history: [{ timestamp: '2024-01-15T10:15:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "資料庫連接規則".' }] },
-    { id: 'INC-003', summary: 'CPU 使用率異常', resource: 'web-prod-12', resource_id: 'res-004', impact: 'Medium', rule: 'CPU 使用率規則', rule_id: 'rule-cpu', status: 'Resolved', severity: 'Warning', assignee: '王五', team_id: 'team-003', owner_id: 'usr-003', tags: { team: 'API Services', owner: 'Charlie Wu', env: 'production' }, occurred_at: '2024-01-15T09:45:00Z', created_at: '2024-01-15T09:45:00Z', updated_at: '2024-01-15T09:45:00Z', acknowledged_at: '2024-01-15T10:00:00Z', resolved_at: '2024-01-15T10:05:00Z', silenced_by: undefined, notifications_sent: undefined, history: [{ timestamp: '2024-01-15T09:45:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "CPU 使用率規則".' }] },
+    { id: 'INC-001', summary: 'API 延遲超過閾值', resource: 'api-server-01', resource_id: 'res-001', impact: 'High', rule: 'API 延遲規則', rule_id: 'rule-002', status: 'new', severity: 'Warning', assignee: '張三', team_id: 'team-001', owner_id: 'usr-001', tags: { team: 'SRE Platform', owner: 'Alice Chen', env: 'production', service: 'api-gateway' }, occurred_at: '2024-01-15T10:30:00Z', created_at: '2024-01-15T10:30:00Z', updated_at: '2024-01-15T10:30:00Z', acknowledged_at: undefined, resolved_at: undefined, silenced_by: undefined, notifications_sent: undefined, history: [{ timestamp: '2024-01-15T10:30:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "API 延遲規則".' }] },
+    { id: 'INC-002', summary: '資料庫連接超時', resource: 'db-primary', resource_id: 'res-002', impact: 'High', rule: '資料庫連接規則', rule_id: 'rule-db-conn', status: 'acknowledged', severity: 'Critical', assignee: '李四', team_id: 'team-002', owner_id: 'usr-002', tags: { team: 'Core Infrastructure', owner: 'Bob Lee', env: 'production', service: 'database' }, occurred_at: '2024-01-15T10:15:00Z', created_at: '2024-01-15T10:15:00Z', updated_at: '2024-01-15T10:15:00Z', acknowledged_at: '2024-01-15T10:20:00Z', resolved_at: undefined, silenced_by: undefined, notifications_sent: undefined, history: [{ timestamp: '2024-01-15T10:15:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "資料庫連接規則".' }] },
+    { id: 'INC-003', summary: 'CPU 使用率異常', resource: 'web-prod-12', resource_id: 'res-004', impact: 'Medium', rule: 'CPU 使用率規則', rule_id: 'rule-cpu', status: 'resolved', severity: 'Warning', assignee: '王五', team_id: 'team-003', owner_id: 'usr-003', tags: { team: 'API Services', owner: 'Charlie Wu', env: 'production' }, occurred_at: '2024-01-15T09:45:00Z', created_at: '2024-01-15T09:45:00Z', updated_at: '2024-01-15T09:45:00Z', acknowledged_at: '2024-01-15T10:00:00Z', resolved_at: '2024-01-15T10:05:00Z', silenced_by: undefined, notifications_sent: undefined, history: [{ timestamp: '2024-01-15T09:45:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "CPU 使用率規則".' }] },
 ];
 const MOCK_QUICK_SILENCE_DURATIONS = [1, 2, 4, 8, 12, 24]; // hours
 const MOCK_ALERT_RULE_DEFAULT: Partial<AlertRule> = {
@@ -2070,6 +2070,239 @@ const MOCK_ANALYSIS_OVERVIEW_DATA = {
     recent_logs: MOCK_LOGS.slice(0, 10),
 };
 
+const MOCK_INCIDENT_ANALYSIS_REPORT = {
+    summary: '根據目前監控數據，此事件由 `api-service` 的後端佇列堆積導致延遲與逾時。',
+    root_cause: '資料庫連接池耗盡導致 API 服務等待時間暴增。',
+    impact_assessment: '影響約 18% 的登入請求，平均延遲提升 3.2 秒。',
+    recommended_actions: [
+        '立即擴充資料庫連接池並重啟連線池。',
+        '啟用自動化回滾腳本以降低 API 壓力。',
+        '通知資料庫團隊檢查慢查詢並調整索引。',
+    ],
+    related_incidents: ['INC-032', 'INC-045'],
+    confidence_score: 0.87,
+    analysis_time: '2024-01-15T10:35:00Z',
+};
+
+const MOCK_MULTI_INCIDENT_ANALYSIS_REPORT = {
+    incident_ids: ['INC-001', 'INC-004', 'INC-010'],
+    correlation_found: true,
+    correlation_summary: '所有事件皆與 `db-primary` 在流量高峰時的性能下降相關。',
+    common_root_cause: '`db-primary` 寫入延遲在尖峰期間飆升，導致下游服務堆積。',
+    timeline: [
+        { timestamp: '2024-01-15T08:15:00Z', incident_id: 'INC-001', event: 'API latency alert triggered' },
+        { timestamp: '2024-01-15T08:21:00Z', incident_id: 'INC-004', event: 'Database connection timeout detected' },
+        { timestamp: '2024-01-15T08:32:00Z', incident_id: 'INC-010', event: 'Error rate breached 5% threshold' },
+    ],
+    recommended_actions: [
+        '將資料庫流量分散至只讀節點並啟用查詢快取。',
+        '安排離峰維護以優化索引並重新調整連線池設定。',
+    ],
+    confidence_score: 0.79,
+};
+
+const MOCK_RESOURCE_ANALYSIS_REPORT_V2 = {
+    resource_id: 'res-001',
+    resource_name: 'web-server-01',
+    risk_level: 'high',
+    risk_analysis: 'CPU 使用率在過去 72 小時內平均達到 82%，併發請求增加導致排程等待時間拉長。',
+    optimization_suggestions: [
+        {
+            type: 'performance',
+            priority: 'high',
+            suggestion: '增加部署副本數並調整自動擴縮策略以在 CPU 超過 65% 時提前擴容。',
+            estimated_impact: '預計可降低 CPU 使用率 30%，縮短平均回應時間 45%。',
+        },
+        {
+            type: 'reliability',
+            priority: 'medium',
+            suggestion: '為 `api-service` 加入熔斷與重試機制，避免單一節點過載。',
+            estimated_impact: '可減少 20% 的逾時錯誤。',
+        },
+    ],
+    predicted_issues: [
+        {
+            issue_type: 'capacity',
+            probability: 0.72,
+            timeframe: '未來 7 天內',
+            description: 'CPU 使用率可能在高峰期超過 95%，導致服務降速。',
+        },
+        {
+            issue_type: 'cost',
+            probability: 0.41,
+            timeframe: '未來 30 天內',
+            description: '長時間的過度配置可能造成 18% 的資源浪費。',
+        },
+    ],
+    confidence_score: 0.82,
+    analysis_time: '2024-01-15T10:40:00Z',
+};
+
+const MOCK_BATCH_RESOURCE_ANALYSIS_REPORT = {
+    analyses: [
+        { ...MOCK_RESOURCE_ANALYSIS_REPORT_V2 },
+        {
+            resource_id: 'res-005',
+            resource_name: 'payment-service',
+            risk_level: 'medium',
+            risk_analysis: '資料庫連線延遲在流量尖峰時上升 220ms，可能影響交易成功率。',
+            optimization_suggestions: [
+                {
+                    type: 'performance',
+                    priority: 'medium',
+                    suggestion: '對熱點查詢新增索引並啟用查詢結果快取。',
+                    estimated_impact: '預計可降低查詢延遲 35%。',
+                },
+            ],
+            predicted_issues: [
+                {
+                    issue_type: 'capacity',
+                    probability: 0.58,
+                    timeframe: '未來 14 天內',
+                    description: '尖峰流量可能導致交易失敗率超過 4%。',
+                },
+            ],
+            confidence_score: 0.76,
+            analysis_time: '2024-01-15T10:42:00Z',
+        },
+        {
+            resource_id: 'res-010',
+            resource_name: 'cache-cluster',
+            risk_level: 'low',
+            risk_analysis: '快取命中率維持在 93%，無重大風險。',
+            optimization_suggestions: [
+                {
+                    type: 'cost',
+                    priority: 'low',
+                    suggestion: '考慮調整節點大小以降低 10% 運算成本。',
+                    estimated_impact: '每月可節省約 USD 320。',
+                },
+            ],
+            predicted_issues: [],
+            confidence_score: 0.69,
+            analysis_time: '2024-01-15T10:45:00Z',
+        },
+    ],
+    summary: {
+        total_resources: 3,
+        high_risk_count: 1,
+        recommendations_count: 7,
+    },
+};
+
+const MOCK_LOG_ANALYSIS_REPORT_V2 = {
+    query: 'error AND service:api',
+    time_range: {
+        start: '2024-01-15T00:00:00Z',
+        end: '2024-01-15T23:59:59Z',
+    },
+    total_logs: 15420,
+    error_count: 234,
+    warning_count: 1567,
+    patterns_found: [
+        { pattern: 'Connection timeout', count: 89, severity: 'error' },
+        { pattern: 'Slow query detected', count: 145, severity: 'warning' },
+        { pattern: 'Authentication failure', count: 42, severity: 'error' },
+    ],
+    anomalies: [
+        { timestamp: '2024-01-15T09:30:00Z', description: '支付服務逾時錯誤在 5 分鐘內暴增 3 倍。', severity: 'high' },
+        { timestamp: '2024-01-15T11:05:00Z', description: 'API 閘道出現間歇性 5xx 錯誤。', severity: 'medium' },
+    ],
+    insights: '檢測到支付服務與 API 閘道同時出現錯誤尖峰，建議檢視兩者間的相依性與佇列設定。',
+};
+
+const MOCK_CAPACITY_PREDICTION_REPORT = {
+    resource_id: 'res-001',
+    resource_name: 'web-server-01',
+    predictions: [
+        {
+            metric: 'cpu_usage',
+            current_value: 68.5,
+            predicted_values: [
+                { date: '2024-02-15', value: 78.2, confidence: 0.85 },
+                { date: '2024-03-01', value: 83.4, confidence: 0.78 },
+                { date: '2024-03-15', value: 87.9, confidence: 0.72 },
+            ],
+            threshold_breach_date: '2024-03-10',
+            recommendation: '建議在 2024-03-01 前增加 CPU 資源或重新分配工作負載。',
+        },
+        {
+            metric: 'memory_usage',
+            current_value: 58.1,
+            predicted_values: [
+                { date: '2024-02-15', value: 64.3, confidence: 0.81 },
+                { date: '2024-03-01', value: 69.5, confidence: 0.75 },
+                { date: '2024-03-15', value: 73.2, confidence: 0.7 },
+            ],
+            threshold_breach_date: null,
+            recommendation: '持續監控記憶體使用率，暫無需立即調整。',
+        },
+    ],
+};
+
+const MOCK_INCIDENT_PREDICTION_REPORT = {
+    predictions: [
+        {
+            resource_id: 'res-001',
+            resource_name: 'web-server-01',
+            predicted_issue: 'CPU 使用率可能超過 90%',
+            probability: 0.82,
+            estimated_time: '2024-01-16T14:30:00Z',
+            severity: 'Warning',
+            preventive_actions: ['考慮增加 CPU 資源', '檢查是否有異常進程'],
+        },
+        {
+            resource_id: 'res-003',
+            resource_name: 'payment-service',
+            predicted_issue: '支付錯誤率可能上升至 5%',
+            probability: 0.74,
+            estimated_time: '2024-01-16T16:00:00Z',
+            severity: 'Critical',
+            preventive_actions: ['提前擴大資料庫連線池', '預先啟用備援節點'],
+        },
+    ],
+    analysis_timestamp: '2024-01-15T10:00:00Z',
+};
+
+const MOCK_ANOMALY_DETECTION_REPORT = {
+    anomalies: [
+        {
+            resource_id: 'res-001',
+            resource_name: 'web-server-01',
+            metric: 'cpu_usage',
+            timestamp: '2024-01-15T15:23:00Z',
+            actual_value: 95.3,
+            expected_range: { min: 30, max: 70 },
+            severity: 'high',
+            description: 'CPU 使用率異常飆升，超出預期範圍。',
+        },
+        {
+            resource_id: 'res-002',
+            resource_name: 'db-primary',
+            metric: 'latency_ms',
+            timestamp: '2024-01-15T15:28:00Z',
+            actual_value: 420,
+            expected_range: { min: 80, max: 180 },
+            severity: 'high',
+            description: '資料庫查詢延遲提升，可能與磁碟 IO 飽和有關。',
+        },
+        {
+            resource_id: 'res-005',
+            resource_name: 'payment-service',
+            metric: 'error_rate',
+            timestamp: '2024-01-15T15:34:00Z',
+            actual_value: 4.8,
+            expected_range: { min: 0, max: 1.5 },
+            severity: 'medium',
+            description: '支付 API 錯誤率上升，建議檢查與資料庫的連線品質。',
+        },
+    ],
+    summary: {
+        total_anomalies: 3,
+        high_severity_count: 2,
+    },
+};
+
 const MOCK_PLATFORM_SETTINGS: PlatformSettings = {
     help_url: 'https://docs.sre-platform.dev/help-center'
 };
@@ -2139,11 +2372,13 @@ const MOCK_TAB_CONFIGS: TabConfigMap = {
     ]
 };
 
-const INCIDENT_STATUS_STYLES: Record<string, { label: string; class_name: string }> = {
-    New: { label: '新事件', class_name: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border border-amber-400/30 shadow-sm' },
-    Acknowledged: { label: '已認領', class_name: 'bg-gradient-to-r from-sky-500 to-blue-500 text-white border border-sky-400/30 shadow-sm' },
-    Resolved: { label: '已解決', class_name: 'bg-gradient-to-r from-emerald-500 to-green-500 text-white border border-emerald-400/30 shadow-sm' },
-    Silenced: { label: '已靜音', class_name: 'bg-gradient-to-r from-slate-600 to-slate-500 text-slate-200 border border-slate-500/30 shadow-sm' },
+const INCIDENT_STATUS_STYLES: Record<Incident['status'], { label: string; class_name: string }> = {
+    new: { label: '新事件', class_name: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border border-amber-400/30 shadow-sm' },
+    acknowledged: { label: '已認領', class_name: 'bg-gradient-to-r from-sky-500 to-blue-500 text-white border border-sky-400/30 shadow-sm' },
+    investigating: { label: '調查中', class_name: 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white border border-indigo-400/30 shadow-sm' },
+    resolved: { label: '已解決', class_name: 'bg-gradient-to-r from-emerald-500 to-green-500 text-white border border-emerald-400/30 shadow-sm' },
+    closed: { label: '已關閉', class_name: 'bg-gradient-to-r from-slate-500 to-gray-500 text-white border border-slate-400/30 shadow-sm' },
+    silenced: { label: '已靜音', class_name: 'bg-gradient-to-r from-slate-600 to-slate-500 text-slate-200 border border-slate-500/30 shadow-sm' },
 };
 
 const INCIDENT_SEVERITY_STYLES: Record<string, { label: string; class_name: string }> = {
@@ -2578,6 +2813,14 @@ function createInitialDB() {
         service_health_data: JSON.parse(JSON.stringify(MOCK_SERVICE_HEALTH_DATA)),
         resource_group_status_data: JSON.parse(JSON.stringify(MOCK_RESOURCE_GROUP_STATUS_DATA)),
         analysis_overview_data: JSON.parse(JSON.stringify(MOCK_ANALYSIS_OVERVIEW_DATA)),
+        analysis_incident_report: JSON.parse(JSON.stringify(MOCK_INCIDENT_ANALYSIS_REPORT)),
+        analysis_multi_incident_report: JSON.parse(JSON.stringify(MOCK_MULTI_INCIDENT_ANALYSIS_REPORT)),
+        analysis_resource_report: JSON.parse(JSON.stringify(MOCK_RESOURCE_ANALYSIS_REPORT_V2)),
+        analysis_batch_resource_report: JSON.parse(JSON.stringify(MOCK_BATCH_RESOURCE_ANALYSIS_REPORT)),
+        analysis_log_report: JSON.parse(JSON.stringify(MOCK_LOG_ANALYSIS_REPORT_V2)),
+        analysis_capacity_prediction: JSON.parse(JSON.stringify(MOCK_CAPACITY_PREDICTION_REPORT)),
+        analysis_incident_prediction: JSON.parse(JSON.stringify(MOCK_INCIDENT_PREDICTION_REPORT)),
+        analysis_anomaly_detection: JSON.parse(JSON.stringify(MOCK_ANOMALY_DETECTION_REPORT)),
         // Consolidated UI Options
         all_options: JSON.parse(JSON.stringify(MOCK_ALL_OPTIONS)),
         // New Datasource/Discovery data

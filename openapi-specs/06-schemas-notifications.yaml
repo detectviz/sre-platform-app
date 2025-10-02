@@ -29,8 +29,8 @@ components:
             sender: noreply@example.com
         last_test_result:
           type: string
-          enum: [success, failed, not_tested]
-          example: success
+          enum: [pending, success, failed, not_tested]
+          example: pending
         last_tested_at:
           type: string
           format: date-time

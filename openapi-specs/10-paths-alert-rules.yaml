@@ -22,8 +22,8 @@ paths:
           description: Filter by severity level
           schema:
             type: string
-            enum: [Critical, Warning, Info]
-          example: Critical
+            enum: [critical, warning, info]
+          example: critical
         - name: resource_type
           in: query
           description: Filter by resource type
@@ -69,7 +69,7 @@ paths:
               description: "Alert when CPU usage exceeds 90%"
               resource_type: "Server"
               metric_name: "cpu_usage"
-              severity: "Critical"
+              severity: "critical"
               enabled: true
               condition_groups:
                 - operator: "AND"

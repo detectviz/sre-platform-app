@@ -84,10 +84,12 @@ const createTagDefinition = (entry: TagRegistryEntry): TagDefinition => {
       { id: 'service-notification-service', value: 'notification-service', usage_count: 0 },
     ],
     'status': [
-      { id: 'status-New', value: 'New', usage_count: 0 },
-      { id: 'status-Acknowledged', value: 'Acknowledged', usage_count: 0 },
-      { id: 'status-Resolved', value: 'Resolved', usage_count: 0 },
-      { id: 'status-Silenced', value: 'Silenced', usage_count: 0 },
+      { id: 'status-new', value: 'new', usage_count: 0 },
+      { id: 'status-acknowledged', value: 'acknowledged', usage_count: 0 },
+      { id: 'status-investigating', value: 'investigating', usage_count: 0 },
+      { id: 'status-resolved', value: 'resolved', usage_count: 0 },
+      { id: 'status-closed', value: 'closed', usage_count: 0 },
+      { id: 'status-silenced', value: 'silenced', usage_count: 0 },
     ],
     'severity': [
       { id: 'severity-Info', value: 'Info', usage_count: 0 },
@@ -134,7 +136,7 @@ export const getTagRegistryEntry = (key: string): TagRegistryEntry | undefined =
 export const getEnumValuesForTag = (key: string): string[] => {
   // 為系統標籤提供預設值
   const defaultValues: Record<string, string[]> = {
-    'status': ['New', 'Acknowledged', 'Resolved', 'Silenced'],
+    'status': ['new', 'acknowledged', 'investigating', 'resolved', 'closed', 'silenced'],
     'severity': ['Info', 'Warning', 'Critical'],
     'impact': ['High', 'Medium', 'Low'],
     'env': ['production', 'staging', 'development'],

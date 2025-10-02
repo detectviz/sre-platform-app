@@ -1,8 +1,44 @@
 import { DB, uuidv4 } from './db';
-import type { ConnectionStatus, DiscoveryJob, Incident, NotificationStrategy, ResourceLink, ConfigVersion, TabConfigMap, TagDefinition, NotificationChannelType } from '../types';
+import type { ConnectionStatus, DiscoveryJob, Incident, NotificationStrategy, Resource, ResourceLink, ConfigVersion, TabConfigMap, TagDefinition, NotificationChannelType } from '../types';
 import { auditLogMiddleware } from './auditLog';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
+const INCIDENT_STATUS_LABELS: Record<Incident['status'], string> = {
+    new: 'New',
+    acknowledged: 'Acknowledged',
+    investigating: 'Investigating',
+    resolved: 'Resolved',
+    closed: 'Closed',
+    silenced: 'Silenced',
+};
+
+const INCIDENT_STATUS_VALUES = Object.keys(INCIDENT_STATUS_LABELS) as Incident['status'][];
+
+const normalizeIncidentStatus = (status: unknown): Incident['status'] => {
+    if (typeof status !== 'string') {
+        throw {
+            status: 400,
+            message: 'Incident status must be provided as a string.',
+        };
+    }
+    const normalized = status.toLowerCase() as Incident['status'];
+    if (!INCIDENT_STATUS_VALUES.includes(normalized)) {
+        throw {
+            status: 400,
+            message: `Invalid incident status. Allowed values: ${INCIDENT_STATUS_VALUES.join(', ')}`,
+        };
+    }
+    return normalized;
+};
+
+const formatIncidentStatus = (status: string | undefined): string => {
+    if (!status) {
+        return 'unknown';
+    }
+    const normalized = status.toLowerCase() as Incident['status'];
+    return INCIDENT_STATUS_LABELS[normalized] ?? status;
+};
 
 const getActive = (collection: any[] | undefined) => {
     if (!collection) {
@@ -565,20 +601,21 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                             return;
                         }
 
-                        if (incident.status === 'Resolved') {
+                        const currentStatus = normalizeIncidentStatus(incident.status);
+                        if (currentStatus === 'resolved') {
                             skipped_ids.push(incidentId);
                             return;
                         }
 
-                        const previousStatus = incident.status;
-                        incident.status = 'Resolved';
+                        const previousStatus = currentStatus;
+                        incident.status = 'resolved';
                         incident.resolved_at = timestamp;
                         incident.updated_at = timestamp;
                         incident.history.push({
                             timestamp,
                             user: currentUser.name,
                             action: 'Resolved',
-                            details: `Status changed from '${previousStatus}' to 'Resolved'.`
+                            details: `Status changed from '${formatIncidentStatus(previousStatus)}' to '${formatIncidentStatus('resolved')}'.`
                         });
 
                         if (resolution_note) {
@@ -715,7 +752,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         impact: normalizedImpact as Incident['impact'],
                         rule: rule.name,
                         rule_id,
-                        status: 'New',
+                        status: 'new',
                         severity: normalizedSeverity as Incident['severity'],
                         assignee: assignee || undefined,
                         team_id: body.team_id,
@@ -804,15 +841,25 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const timestamp = new Date().toISOString();
 
                     if (incidentAction === 'acknowledge') {
-                        const oldStatus = DB.incidents[index].status;
-                        DB.incidents[index].status = 'Acknowledged';
+                        const oldStatus = normalizeIncidentStatus(DB.incidents[index].status);
+                        DB.incidents[index].status = 'acknowledged';
                         DB.incidents[index].assignee = currentUser.name;
-                        DB.incidents[index].history.push({ timestamp, user: currentUser.name, action: 'Acknowledged', details: `Status changed from '${oldStatus}' to 'Acknowledged'.` });
+                        DB.incidents[index].history.push({
+                            timestamp,
+                            user: currentUser.name,
+                            action: 'Acknowledged',
+                            details: `Status changed from '${formatIncidentStatus(oldStatus)}' to '${formatIncidentStatus('acknowledged')}'.`
+                        });
                     }
                     if (incidentAction === 'resolve') {
-                        const oldStatus = DB.incidents[index].status;
-                        DB.incidents[index].status = 'Resolved';
-                        DB.incidents[index].history.push({ timestamp, user: currentUser.name, action: 'Resolved', details: `Status changed from '${oldStatus}' to 'Resolved'.` });
+                        const oldStatus = normalizeIncidentStatus(DB.incidents[index].status);
+                        DB.incidents[index].status = 'resolved';
+                        DB.incidents[index].history.push({
+                            timestamp,
+                            user: currentUser.name,
+                            action: 'Resolved',
+                            details: `Status changed from '${formatIncidentStatus(oldStatus)}' to '${formatIncidentStatus('resolved')}'.`
+                        });
                     }
                     if (incidentAction === 'assign') {
                         const oldAssignee = DB.incidents[index].assignee || 'Unassigned';
@@ -820,9 +867,15 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         DB.incidents[index].history.push({ timestamp, user: currentUser.name, action: 'Re-assigned', details: `Assignee changed from ${oldAssignee} to ${assigneeName}.` });
                     }
                     if (incidentAction === 'silence') {
-                        const oldStatus = DB.incidents[index].status;
-                        DB.incidents[index].status = 'Silenced';
-                        DB.incidents[index].history.push({ timestamp, user: currentUser.name, action: 'Silenced', details: `Incident silenced for ${durationHours} hour(s). Status changed from '${oldStatus}' to 'Silenced'.` });
+                        const oldStatus = normalizeIncidentStatus(DB.incidents[index].status);
+                        DB.incidents[index].status = 'silenced';
+                        DB.incidents[index].silenced_by = currentUser.name;
+                        DB.incidents[index].history.push({
+                            timestamp,
+                            user: currentUser.name,
+                            action: 'Silenced',
+                            details: `Incident silenced for ${durationHours} hour(s). Status changed from '${formatIncidentStatus(oldStatus)}' to '${formatIncidentStatus('silenced')}'.`
+                        });
                     }
                     if (incidentAction === 'add_note') {
                         DB.incidents[index].history.push({ timestamp, user: currentUser.name, action: 'Note Added', details });
@@ -845,23 +898,31 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 const existingIncident = DB.incidents[incidentIndex];
                 const currentUser = getCurrentUser();
                 const timestamp = new Date().toISOString();
+                const normalizedExistingStatus = normalizeIncidentStatus(existingIncident.status);
+                const updates: Partial<Incident> = { ...body };
+
+                if (Object.prototype.hasOwnProperty.call(updates, 'status')) {
+                    updates.status = normalizeIncidentStatus(updates.status);
+                }
+
                 const updatedIncident = {
                     ...existingIncident,
-                    ...body,
+                    ...updates,
+                    status: updates.status ?? normalizedExistingStatus,
                     updated_at: timestamp
                 } as Incident;
 
-                if (body?.status && body.status !== existingIncident.status) {
+                if (Object.prototype.hasOwnProperty.call(updates, 'status') && updates.status !== normalizedExistingStatus) {
                     updatedIncident.history = [
                         ...existingIncident.history,
                         {
                             timestamp,
                             user: currentUser.name,
                             action: 'Status Updated',
-                            details: `Status changed from '${existingIncident.status}' to '${body.status}'.`
+                            details: `Status changed from '${formatIncidentStatus(normalizedExistingStatus)}' to '${formatIncidentStatus(updates.status)}'.`
                         }
                     ];
-                } else if (body && Object.keys(body).length) {
+                } else if (updates && Object.keys(updates).length) {
                     updatedIncident.history = existingIncident.history;
                 }
 
@@ -871,17 +932,17 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     summary: updatedIncident.summary,
                     resource: updatedIncident.resource
                 };
-                if (body?.status && body.status !== existingIncident.status) {
-                    auditDetails.old_status = existingIncident.status;
-                    auditDetails.new_status = body.status;
+                if (Object.prototype.hasOwnProperty.call(updates, 'status') && updates.status !== normalizedExistingStatus) {
+                    auditDetails.old_status = normalizedExistingStatus;
+                    auditDetails.new_status = updates.status;
                 }
-                if (Object.prototype.hasOwnProperty.call(body ?? {}, 'assignee') && body.assignee !== existingIncident.assignee) {
+                if (Object.prototype.hasOwnProperty.call(updates ?? {}, 'assignee') && updates.assignee !== existingIncident.assignee) {
                     auditDetails.old_assignee = existingIncident.assignee;
-                    auditDetails.new_assignee = body.assignee;
+                    auditDetails.new_assignee = updates.assignee;
                 }
-                if (Object.prototype.hasOwnProperty.call(body ?? {}, 'severity') && body.severity !== existingIncident.severity) {
+                if (Object.prototype.hasOwnProperty.call(updates ?? {}, 'severity') && updates.severity !== existingIncident.severity) {
                     auditDetails.old_severity = existingIncident.severity;
-                    auditDetails.new_severity = body.severity;
+                    auditDetails.new_severity = updates.severity;
                 }
 
                 auditLogMiddleware(
@@ -1022,7 +1083,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         impact: 'Low',
                         rule: rule.name,
                         rule_id: rule.id,
-                        status: 'New',
+                        status: 'new',
                         severity: rule.severity as Incident['severity'],
                         assignee: undefined,
                         tags: {},
@@ -2660,6 +2721,206 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     };
                 }
                 break;
+            }
+            case 'POST /analysis': {
+                if (id === 'incidents') {
+                    if (subId === 'multi') {
+                        const incidentIds = Array.isArray(body?.incident_ids) ? body.incident_ids.filter(Boolean) : [];
+                        if (incidentIds.length < 2) {
+                            throw { status: 400, message: '請至少提供兩個 incident_ids 進行關聯分析。' };
+                        }
+                        const missing = incidentIds.filter((incidentId: string) => !DB.incidents.some((incident: Incident) => incident.id === incidentId));
+                        if (missing.length > 0) {
+                            throw { status: 404, message: `找不到以下事件：${missing.join(', ')}` };
+                        }
+                        const analysis = JSON.parse(JSON.stringify(DB.analysis_multi_incident_report));
+                        analysis.incident_ids = incidentIds;
+                        analysis.timeline = Array.isArray(analysis.timeline)
+                            ? analysis.timeline.map((entry: any, index: number) => ({
+                                  ...entry,
+                                  incident_id: incidentIds[index % incidentIds.length],
+                              }))
+                            : [];
+                        return analysis;
+                    }
+
+                    if (!subId) {
+                        throw { status: 404, message: '找不到指定的事件。' };
+                    }
+
+                    const incident = DB.incidents.find((item: Incident) => item.id === subId);
+                    if (!incident) {
+                        throw { status: 404, message: '找不到指定的事件。' };
+                    }
+
+                    const analysis = JSON.parse(JSON.stringify(DB.analysis_incident_report));
+                    if (body?.include_related === false) {
+                        analysis.related_incidents = [];
+                    } else if (Array.isArray(analysis.related_incidents) && !analysis.related_incidents.includes(subId)) {
+                        analysis.related_incidents.unshift(subId);
+                    }
+                    analysis.analysis_time = new Date().toISOString();
+                    return analysis;
+                }
+
+                if (id === 'resources') {
+                    if (subId === 'batch') {
+                        const resourceIds = Array.isArray(body?.resource_ids) ? body.resource_ids.filter(Boolean) : [];
+                        if (resourceIds.length === 0) {
+                            throw { status: 400, message: 'resource_ids 欄位為必填。' };
+                        }
+                        const missingResources = resourceIds.filter((resourceId: string) => !DB.resources.some((resource: Resource) => resource.id === resourceId));
+                        if (missingResources.length > 0) {
+                            throw { status: 404, message: `找不到以下資源：${missingResources.join(', ')}` };
+                        }
+
+                        const batchAnalysis = JSON.parse(JSON.stringify(DB.analysis_batch_resource_report));
+                        batchAnalysis.analyses = Array.isArray(batchAnalysis.analyses)
+                            ? batchAnalysis.analyses.map((item: any, index: number) => {
+                                  const resourceId = resourceIds[index] ?? resourceIds[index % resourceIds.length];
+                                  const resource = DB.resources.find((res: Resource) => res.id === resourceId);
+                                  return {
+                                      ...item,
+                                      resource_id: resourceId,
+                                      resource_name: resource?.name ?? item.resource_name,
+                                      analysis_time: new Date().toISOString(),
+                                  };
+                              })
+                            : [];
+                        batchAnalysis.summary = {
+                            total_resources: resourceIds.length,
+                            high_risk_count: batchAnalysis.analyses.filter((item: any) => ['high', 'critical'].includes((item.risk_level || '').toString().toLowerCase())).length,
+                            recommendations_count: batchAnalysis.analyses.reduce(
+                                (total: number, item: any) => total + (Array.isArray(item.optimization_suggestions) ? item.optimization_suggestions.length : 0),
+                                0
+                            ),
+                        };
+                        return batchAnalysis;
+                    }
+
+                    if (!subId) {
+                        throw { status: 404, message: '找不到指定的資源。' };
+                    }
+
+                    const resource = DB.resources.find((item: Resource) => item.id === subId);
+                    if (!resource) {
+                        throw { status: 404, message: '找不到指定的資源。' };
+                    }
+
+                    const resourceAnalysis = JSON.parse(JSON.stringify(DB.analysis_resource_report));
+                    resourceAnalysis.resource_id = subId;
+                    resourceAnalysis.resource_name = resource.name ?? resourceAnalysis.resource_name;
+                    resourceAnalysis.analysis_time = new Date().toISOString();
+                    return resourceAnalysis;
+                }
+
+                if (id === 'logs') {
+                    const { query, time_range } = body || {};
+                    if (!query || !time_range?.start || !time_range?.end) {
+                        throw { status: 400, message: '請提供 query、time_range.start 與 time_range.end 欄位。' };
+                    }
+                    const logAnalysis = JSON.parse(JSON.stringify(DB.analysis_log_report));
+                    logAnalysis.query = query;
+                    logAnalysis.time_range = time_range;
+                    return logAnalysis;
+                }
+
+                if (id === 'predict') {
+                    if (subId === 'capacity') {
+                        const { resource_id, metrics } = body || {};
+                        if (!resource_id) {
+                            throw { status: 400, message: 'resource_id 欄位為必填。' };
+                        }
+                        const resource = DB.resources.find((item: Resource) => item.id === resource_id);
+                        if (!resource) {
+                            throw { status: 404, message: '找不到指定的資源。' };
+                        }
+                        const capacityPrediction = JSON.parse(JSON.stringify(DB.analysis_capacity_prediction));
+                        capacityPrediction.resource_id = resource_id;
+                        capacityPrediction.resource_name = resource.name ?? capacityPrediction.resource_name;
+                        if (Array.isArray(metrics) && metrics.length > 0) {
+                            capacityPrediction.predictions = capacityPrediction.predictions.filter((prediction: any) => metrics.includes(prediction.metric));
+                            if (capacityPrediction.predictions.length === 0) {
+                                capacityPrediction.predictions = metrics.map((metric: string) => ({
+                                    metric,
+                                    current_value: 0,
+                                    predicted_values: [],
+                                    threshold_breach_date: null,
+                                    recommendation: '沒有足夠的歷史資料可供預測。',
+                                }));
+                            }
+                        }
+                        return capacityPrediction;
+                    }
+
+                    if (subId === 'incidents') {
+                        const { resource_ids, min_probability } = body || {};
+                        if (min_probability !== undefined && (typeof min_probability !== 'number' || min_probability < 0 || min_probability > 1)) {
+                            throw { status: 400, message: 'min_probability 必須介於 0 與 1 之間。' };
+                        }
+
+                        const incidentPrediction = JSON.parse(JSON.stringify(DB.analysis_incident_prediction));
+                        if (Array.isArray(resource_ids) && resource_ids.length > 0) {
+                            const filtered = incidentPrediction.predictions.filter((prediction: any) => resource_ids.includes(prediction.resource_id));
+                            if (filtered.length > 0) {
+                                incidentPrediction.predictions = filtered;
+                            } else {
+                                incidentPrediction.predictions = resource_ids.map((resourceId: string) => {
+                                    const resource = DB.resources.find((item: Resource) => item.id === resourceId);
+                                    return {
+                                        resource_id: resourceId,
+                                        resource_name: resource?.name ?? '未知資源',
+                                        predicted_issue: '系統負載可能異常升高',
+                                        probability: 0.58,
+                                        estimated_time: new Date(Date.now() + 6 * 3600 * 1000).toISOString(),
+                                        severity: 'Warning',
+                                        preventive_actions: ['檢查監控閾值設定', '安排預防性維護'],
+                                    };
+                                });
+                            }
+                        }
+                        if (typeof min_probability === 'number') {
+                            incidentPrediction.predictions = incidentPrediction.predictions.filter((prediction: any) => prediction.probability >= min_probability);
+                        }
+                        incidentPrediction.analysis_timestamp = new Date().toISOString();
+                        return incidentPrediction;
+                    }
+                }
+
+                if (id === 'anomalies') {
+                    const resourceIds = Array.isArray(body?.resource_ids) ? body.resource_ids.filter(Boolean) : [];
+                    const timeRange = body?.time_range || {};
+                    if (resourceIds.length === 0) {
+                        throw { status: 400, message: 'resource_ids 欄位為必填。' };
+                    }
+                    if (!timeRange.start || !timeRange.end) {
+                        throw { status: 400, message: 'time_range.start 與 time_range.end 欄位為必填。' };
+                    }
+                    const missingResources = resourceIds.filter((resourceId: string) => !DB.resources.some((resource: Resource) => resource.id === resourceId));
+                    if (missingResources.length > 0) {
+                        throw { status: 404, message: `找不到以下資源：${missingResources.join(', ')}` };
+                    }
+
+                    const anomalyDetection = JSON.parse(JSON.stringify(DB.analysis_anomaly_detection));
+                    anomalyDetection.anomalies = Array.isArray(anomalyDetection.anomalies)
+                        ? anomalyDetection.anomalies.map((item: any, index: number) => {
+                              const resourceId = resourceIds[index % resourceIds.length];
+                              const resource = DB.resources.find((res: Resource) => res.id === resourceId);
+                              return {
+                                  ...item,
+                                  resource_id: resourceId,
+                                  resource_name: resource?.name ?? item.resource_name,
+                              };
+                          })
+                        : [];
+                    anomalyDetection.summary = {
+                        total_anomalies: anomalyDetection.anomalies.length,
+                        high_severity_count: anomalyDetection.anomalies.filter((item: any) => (item.severity || '').toLowerCase() === 'high').length,
+                    };
+                    return anomalyDetection;
+                }
+
+                throw { status: 404, message: '找不到對應的分析端點。' };
             }
             case 'GET /logs': {
                 let logs = DB.logs;
