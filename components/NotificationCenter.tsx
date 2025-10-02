@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { NotificationItem, NotificationOptions, StyleDescriptor } from '../types';
 import Icon from './Icon';
 import api from '../services/api';
@@ -12,7 +12,9 @@ const NotificationCenter: React.FC = () => {
     const [options, setOptions] = useState<NotificationOptions | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const [isLoading, setIsLoading] = useState(false); // Only for dropdown content
+    const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
     const content = useContentSection('NOTIFICATION_CENTER');
+    const navigate = useNavigate();
 
     const timeSince = useCallback((dateString: string) => {
         if (!content) return '';
@@ -102,8 +104,56 @@ const NotificationCenter: React.FC = () => {
             .catch(() => showToast(content.TOAST.MARK_ALL_ERROR, 'error'));
     };
 
+    const handleClearAllRead = () => {
+        if (!content) return;
+        const readIds = notifications.filter(n => n.status === 'read').map(n => n.id);
+        if (readIds.length === 0) return;
+
+        api.post('/notifications/clear-read', { ids: readIds })
+            .then(() => {
+                setNotifications(prev => prev.filter(n => n.status !== 'read'));
+                showToast('已清除所有已讀通知', 'success');
+            })
+            .catch(() => showToast('清除失敗', 'error'));
+    };
+
+    const handleNotificationClick = (notification: NotificationItem) => {
+        // Mark as read if unread
+        if (notification.status === 'unread') {
+            handleMarkAsRead(notification.id);
+        }
+
+        // Navigate if has link
+        if (notification.link_url) {
+            setIsOpen(false);
+            navigate(notification.link_url);
+        }
+    };
+
+    const toggleExpand = (id: string) => {
+        setExpandedIds(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(id)) {
+                newSet.delete(id);
+            } else {
+                newSet.add(id);
+            }
+            return newSet;
+        });
+    };
+
     const getSeverityStyle = (severity: NotificationItem['severity']): StyleDescriptor | undefined => {
         return options?.severities?.find(s => s.value === severity);
+    };
+
+    const getSeverityIcon = (severity: NotificationItem['severity']): string => {
+        switch (severity) {
+            case 'critical': return 'alert-circle';
+            case 'warning': return 'alert-triangle';
+            case 'info': return 'info';
+            case 'success': return 'check-circle';
+            default: return 'bell';
+        }
     };
 
     if (!content) {
@@ -130,7 +180,18 @@ const NotificationCenter: React.FC = () => {
                 <div className="absolute right-0 mt-2 w-96 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 z-50 flex flex-col max-h-[70vh] animate-fade-in-down">
                     <div className="flex justify-between items-center p-4 border-b border-slate-700/50 shrink-0">
                         <h3 className="font-semibold text-white">{content.TITLE}</h3>
-                        {unreadCount > 0 && <button onClick={handleMarkAllAsRead} className="text-xs text-sky-400 hover:text-sky-300">{content.MARK_ALL_AS_READ}</button>}
+                        <div className="flex items-center gap-2">
+                            {notifications.filter(n => n.status === 'read').length > 0 && (
+                                <button onClick={handleClearAllRead} className="text-xs text-slate-400 hover:text-slate-300">
+                                    清除已讀
+                                </button>
+                            )}
+                            {unreadCount > 0 && (
+                                <button onClick={handleMarkAllAsRead} className="text-xs text-sky-400 hover:text-sky-300">
+                                    {content.MARK_ALL_AS_READ}
+                                </button>
+                            )}
+                        </div>
                     </div>
                     <div className="flex-grow overflow-y-auto">
                         {isLoading ? (
@@ -138,25 +199,79 @@ const NotificationCenter: React.FC = () => {
                         ) : notifications.length === 0 ? (
                             <div className="text-center p-8 text-slate-400">{content.NO_NOTIFICATIONS}</div>
                         ) : (
-                            <div>
+                            <div className="divide-y divide-slate-700/30">
                                 {notifications.map(n => {
                                     const style = getSeverityStyle(n.severity);
+                                    const isExpanded = expandedIds.has(n.id);
+                                    const isCritical = n.severity === 'critical';
+                                    const descriptionTooLong = n.description.length > 100;
+                                    const displayDescription = !isExpanded && descriptionTooLong
+                                        ? n.description.substring(0, 100) + '...'
+                                        : n.description;
+
                                     return (
-                                        <div key={n.id} className={`p-4 border-l-4 ${style?.class_name || 'border-slate-600'} ${n.status === 'unread' ? 'bg-slate-700/30' : ''}`}>
-                                            <div className="flex justify-between items-start">
-                                                <div className="flex-grow">
-                                                    <p className={`font-semibold ${style?.class_name?.replace(/bg-\w+-\d+\/\d+/, '').replace(/border-\w+-\d+/, '')}`}>{n.title}</p>
-                                                    <p className="text-sm text-slate-300 mt-1">{n.description}</p>
-                                                    <div className="text-xs text-slate-500 mt-2 flex items-center">
-                                                        <span>{timeSince(n.created_at)}</span>
-                                                        {n.link_url && <Link to={n.link_url} className="ml-2 text-sky-400 hover:underline">{content.VIEW_DETAILS}</Link>}
+                                        <div
+                                            key={n.id}
+                                            className={`relative p-4 border-l-4 transition-all cursor-pointer hover:bg-slate-700/20 ${style?.class_name || 'border-slate-600'
+                                                } ${n.status === 'unread' ? 'bg-slate-700/30' : ''
+                                                } ${isCritical ? 'border-l-[6px]' : ''
+                                                }`}
+                                            onClick={() => handleNotificationClick(n)}
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                {/* Severity Icon */}
+                                                <div className={`shrink-0 mt-0.5 ${isCritical ? 'animate-pulse' : ''}`}>
+                                                    <Icon
+                                                        name={getSeverityIcon(n.severity)}
+                                                        className={`w-5 h-5 ${isCritical ? 'text-red-400' :
+                                                            n.severity === 'warning' ? 'text-orange-400' :
+                                                                n.severity === 'info' ? 'text-yellow-400' :
+                                                                    'text-slate-400'
+                                                            }`}
+                                                    />
+                                                </div>
+
+                                                {/* Content */}
+                                                <div className="flex-grow min-w-0">
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <p className={`font-semibold leading-tight ${isCritical ? 'text-red-400 text-base' :
+                                                            n.severity === 'warning' ? 'text-orange-400' :
+                                                                n.severity === 'info' ? 'text-yellow-400' :
+                                                                    'text-slate-200'
+                                                            }`}>
+                                                            {n.title}
+                                                        </p>
+                                                        {n.status === 'unread' && (
+                                                            <div className="shrink-0 w-2 h-2 rounded-full bg-sky-400 mt-1.5"></div>
+                                                        )}
+                                                    </div>
+
+                                                    <p className="text-sm text-slate-300 mt-1.5 leading-relaxed">
+                                                        {displayDescription}
+                                                    </p>
+
+                                                    {descriptionTooLong && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                toggleExpand(n.id);
+                                                            }}
+                                                            className="text-xs text-sky-400 hover:text-sky-300 mt-1"
+                                                        >
+                                                            {isExpanded ? '收起' : '展開'}
+                                                        </button>
+                                                    )}
+
+                                                    <div className="flex items-center justify-between mt-2.5">
+                                                        <span className="text-xs text-slate-500">{timeSince(n.created_at)}</span>
+                                                        {n.link_url && (
+                                                            <span className="text-xs text-sky-400 hover:text-sky-300 flex items-center gap-1">
+                                                                {content.VIEW_DETAILS}
+                                                                <Icon name="arrow-right" className="w-3 h-3" />
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
-                                                {n.status === 'unread' && (
-                                                    <button onClick={() => handleMarkAsRead(n.id)} className="p-1.5 rounded-full hover:bg-slate-600 shrink-0 ml-2" title={content.MARK_AS_READ_TOOLTIP}>
-                                                        <Icon name="check" className="w-4 h-4 text-slate-400" />
-                                                    </button>
-                                                )}
                                             </div>
                                         </div>
                                     );

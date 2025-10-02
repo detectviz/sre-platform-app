@@ -16,10 +16,7 @@ const AnalysisOverviewPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const { theme: chartTheme } = useChartTheme();
-    const { timeRangeOptions } = useLogOptions();
 
-    const [logQuery, setLogQuery] = useState('');
-    const [timeRange, setTimeRange] = useState('1h');
     const navigate = useNavigate();
 
     const fetchOverviewData = useCallback(async () => {
@@ -176,16 +173,6 @@ const AnalysisOverviewPage: React.FC = () => {
         });
     };
 
-    const handleLogSearch = () => {
-        const queryParams = new URLSearchParams();
-        if (logQuery.trim()) {
-            queryParams.set('q', logQuery.trim());
-        }
-        queryParams.set('timeRange', timeRange);
-
-        const queryString = queryParams.toString();
-        navigate(`/analyzing/logs${queryString ? `?${queryString}` : ''}`);
-    };
 
     const eventCorrelationEvents = { 'click': handleEventCorrelationClick };
 
@@ -232,9 +219,9 @@ const AnalysisOverviewPage: React.FC = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-1 glass-card rounded-xl p-6 flex flex-col text-center">
-                    <h2 className="text-xl font-bold mb-2">系統總體健康評分</h2>
+                    <h2 className="text-xl font-bold mb-12">系統總體健康評分</h2>
                     <div className="flex-grow"><EChartsReact option={healthScoreGaugeOption} style={{ height: '200px' }} /></div>
-                    <p className="text-sm text-slate-400 max-w-xs mx-auto">{overviewData.health_score.summary}</p>
+                    <p className="text-sm text-slate-400 max-w-xs mx-auto mt-4">{overviewData.health_score.summary}</p>
                 </div>
                 <div className="lg:col-span-2 glass-card rounded-xl p-6">
                     <h2 className="text-xl font-bold mb-4">事件關聯分析</h2>
@@ -279,48 +266,6 @@ const AnalysisOverviewPage: React.FC = () => {
                 </div>
             </div>
 
-            <div className="glass-card rounded-xl p-6">
-                <h2 className="text-xl font-bold mb-4">日誌探索</h2>
-
-                {/* 時間範圍快速選擇 */}
-                <div className="mb-4">
-                    <label className="block text-sm font-medium text-slate-300 mb-2">時間範圍</label>
-                    <div className="flex flex-wrap gap-2">
-                        {timeRangeOptions.map((option) => (
-                            <button
-                                key={option.value}
-                                onClick={() => setTimeRange(option.value)}
-                                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${timeRange === option.value
-                                    ? 'bg-sky-600 text-white'
-                                    : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
-                                    }`}
-                            >
-                                {option.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* 搜尋輸入區域 */}
-                <div className="flex space-x-2">
-                    <input
-                        type="text"
-                        value={logQuery}
-                        onChange={e => setLogQuery(e.target.value)}
-                        placeholder="搜尋日誌... (e.g., error status:500)"
-                        className="flex-grow bg-slate-800/80 border border-slate-700 rounded-md px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                    />
-                    <button onClick={handleLogSearch} className="flex items-center text-sm text-white bg-sky-600 hover:bg-sky-700 px-4 py-2 rounded-md">
-                        搜尋
-                    </button>
-                </div>
-                <div className="mt-4 h-64 bg-slate-900/70 rounded-md p-4 font-mono text-xs text-slate-300 overflow-y-auto">
-                    {overviewData.recent_logs.map((log: LogEntry) => {
-                        const levelColor = log.level === 'error' ? 'text-red-400' : log.level === 'warning' ? 'text-yellow-400' : 'text-green-400';
-                        return <p key={log.id}><span className="text-cyan-400">[{log.timestamp}]</span> <span className={levelColor}>[{log.level.toUpperCase()}]</span> {log.message}</p>
-                    })}
-                </div>
-            </div>
         </div>
     );
 };

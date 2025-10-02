@@ -223,7 +223,7 @@ const DashboardListPage: React.FC = () => {
                             <div title={dashboard.type === 'built-in' ? pageContent.BUILT_IN_TOOLTIP : pageContent.GRAFANA_TOOLTIP}>
                                 <Icon name={dashboard.type === 'built-in' ? "layout-dashboard" : "area-chart"} className={`w-5 h-5 ${dashboard.type === 'built-in' ? 'text-sky-400' : 'text-green-400'}`} />
                             </div>
-                            <span>{dashboard.name}</span>
+                            <span className="truncate" title={dashboard.name}>{dashboard.name}</span>
                             {defaultDashboard === dashboard.id && <span className="text-xs bg-sky-500 text-white px-2 py-0.5 rounded-full">{pageContent.HOME_BADGE}</span>}
                         </div>
                         <div className="text-xs text-slate-400 pl-8">{dashboard.description}</div>
@@ -286,10 +286,25 @@ const DashboardListPage: React.FC = () => {
                                     <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
                                         checked={isAllSelected} ref={el => { if (el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
-                                {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
-                                ))}
-                                <th scope="col" className="px-6 py-3 text-center">{globalContent.OPERATIONS}</th>
+                                {visibleColumns.map(key => {
+                                    const column = allColumns.find(c => c.key === key);
+                                    const getColumnWidth = (key: string) => {
+                                        switch (key) {
+                                            case 'name': return 'w-72'; // 儀表板名稱欄位較寬（增加空間）
+                                            case 'type': return 'w-24'; // 類型欄位稍寬
+                                            case 'category': return 'w-36'; // 分類欄位中等寬度（增加空間）
+                                            case 'owner': return 'w-32'; // 擁有者欄位中等寬度（增加空間）
+                                            case 'updated_at': return 'w-36'; // 最後更新欄位中等寬度（增加空間）
+                                            default: return 'w-24'; // 其他欄位預設寬度
+                                        }
+                                    };
+                                    return (
+                                        <th key={key} scope="col" className={`px-6 py-3 ${getColumnWidth(key)}`}>
+                                            {column?.label || key}
+                                        </th>
+                                    );
+                                })}
+                                <th scope="col" className="px-6 py-3 text-center w-32">{globalContent.OPERATIONS}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -303,12 +318,24 @@ const DashboardListPage: React.FC = () => {
                                         <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
                                             checked={selectedIds.includes(d.id)} onChange={(e) => handleSelectOne(e, d.id)} />
                                     </td>
-                                    {visibleColumns.map(key => (
-                                        <td key={key} className="px-6 py-4" onClick={() => key === 'name' && handleRowClick(d)}>
-                                            {renderCellContent(d, key)}
-                                        </td>
-                                    ))}
-                                    <td className="px-6 py-4 text-center space-x-1" onClick={e => e.stopPropagation()}>
+                                    {visibleColumns.map(key => {
+                                        const getColumnWidth = (key: string) => {
+                                            switch (key) {
+                                                case 'name': return 'w-72'; // 儀表板名稱欄位較寬（增加空間）
+                                                case 'type': return 'w-24'; // 類型欄位稍寬
+                                                case 'category': return 'w-36'; // 分類欄位中等寬度（增加空間）
+                                                case 'owner': return 'w-32'; // 擁有者欄位中等寬度（增加空間）
+                                                case 'updated_at': return 'w-36'; // 最後更新欄位中等寬度（增加空間）
+                                                default: return 'w-24'; // 其他欄位預設寬度
+                                            }
+                                        };
+                                        return (
+                                            <td key={key} className={`px-6 py-4 ${getColumnWidth(key)}`} onClick={() => key === 'name' && handleRowClick(d)}>
+                                                {renderCellContent(d, key)}
+                                            </td>
+                                        );
+                                    })}
+                                    <td className="px-6 py-4 text-center space-x-1 w-32" onClick={e => e.stopPropagation()}>
                                         <button onClick={() => handleSetDefault(d.id)} className={`p-1.5 rounded-md ${defaultDashboard === d.id ? 'text-yellow-400 hover:bg-yellow-500/20' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`} title={pageContent.ACTIONS.SET_AS_HOME}>
                                             <Icon name="star" className={`w-4 h-4 ${defaultDashboard === d.id ? 'fill-current' : ''}`} />
                                         </button>

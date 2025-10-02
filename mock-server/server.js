@@ -171,12 +171,15 @@ const server = createServer(async (req, res) => {
   const requestUrl = new URL(req.url, `http://${process.env.MOCK_SERVER_HOST ?? 'localhost'}`);
   const pathname = requestUrl.pathname;
 
-  if (!pathname.startsWith('/api/v1')) {
+  let apiPath;
+  if (pathname.startsWith('/api/v1')) {
+    apiPath = pathname.substring('/api/v1'.length) || '/';
+  } else if (pathname.startsWith('/ui/')) {
+    apiPath = pathname;
+  } else {
     sendJson(res, 404, { message: `Endpoint [${method}] ${pathname} not found on mock server.` });
     return;
   }
-
-  const apiPath = pathname.substring('/api/v1'.length) || '/';
   const queryParams = Object.fromEntries(requestUrl.searchParams.entries());
 
   const chunks = [];

@@ -247,8 +247,8 @@ const ResourceListPage: React.FC = () => {
         switch (columnKey) {
             case 'status':
                 return (
-                    <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusPill(res.status)}`}>
-                        <span className={`w-2 h-2 mr-2 rounded-full ${res.status === 'healthy' ? 'bg-green-400' : res.status === 'warning' ? 'bg-yellow-400' : res.status === 'critical' ? 'bg-red-400' : 'bg-slate-400'}`}></span>
+                    <span className={`inline-flex items-center px-1.5 py-0.5 text-xs font-semibold rounded-full ${getStatusPill(res.status)}`}>
+                        <span className={`w-1.5 h-1.5 mr-1.5 rounded-full ${res.status === 'healthy' ? 'bg-green-400' : res.status === 'warning' ? 'bg-yellow-400' : res.status === 'critical' ? 'bg-red-400' : 'bg-slate-400'}`}></span>
                         {getStatusLabel(res.status)}
                     </span>
                 );
@@ -308,10 +308,27 @@ const ResourceListPage: React.FC = () => {
                                         className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded"
                                         checked={isAllSelected} ref={el => { if (el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
-                                {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
-                                ))}
-                                <th scope="col" className="px-6 py-3 text-center">操作</th>
+                                {visibleColumns.map(key => {
+                                    const column = allColumns.find(c => c.key === key);
+                                    const getColumnWidth = (key: string) => {
+                                        switch (key) {
+                                            case 'status': return 'w-20'; // 狀態欄位較窄
+                                            case 'name': return 'w-48'; // 名稱欄位較寬
+                                            case 'type': return 'w-32'; // 類型欄位中等寬度
+                                            case 'provider': return 'w-24'; // 供應商欄位較窄
+                                            case 'region': return 'w-24'; // 地區欄位較窄
+                                            case 'owner': return 'w-28'; // 擁有者欄位中等寬度
+                                            case 'last_check_in_at': return 'w-32'; // 最後簽入欄位中等寬度
+                                            default: return 'w-24'; // 其他欄位預設寬度
+                                        }
+                                    };
+                                    return (
+                                        <th key={key} scope="col" className={`px-6 py-3 ${getColumnWidth(key)}`}>
+                                            {column?.label || key}
+                                        </th>
+                                    );
+                                })}
+                                <th scope="col" className="px-6 py-3 text-center w-32">操作</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -326,10 +343,26 @@ const ResourceListPage: React.FC = () => {
                                             className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded"
                                             checked={selectedIds.includes(res.id)} onChange={(e) => handleSelectOne(e, res.id)} />
                                     </td>
-                                    {visibleColumns.map(key => (
-                                        <td key={key} className="px-6 py-4">{renderCellContent(res, key)}</td>
-                                    ))}
-                                    <td className="px-6 py-4 text-center space-x-1">
+                                    {visibleColumns.map(key => {
+                                        const getColumnWidth = (key: string) => {
+                                            switch (key) {
+                                                case 'status': return 'w-20'; // 狀態欄位較窄
+                                                case 'name': return 'w-48'; // 名稱欄位較寬
+                                                case 'type': return 'w-32'; // 類型欄位中等寬度
+                                                case 'provider': return 'w-24'; // 供應商欄位較窄
+                                                case 'region': return 'w-24'; // 地區欄位較窄
+                                                case 'owner': return 'w-28'; // 擁有者欄位中等寬度
+                                                case 'last_check_in_at': return 'w-32'; // 最後簽入欄位中等寬度
+                                                default: return 'w-24'; // 其他欄位預設寬度
+                                            }
+                                        };
+                                        return (
+                                            <td key={key} className={`px-6 py-4 ${getColumnWidth(key)}`}>
+                                                {renderCellContent(res, key)}
+                                            </td>
+                                        );
+                                    })}
+                                    <td className="px-6 py-4 text-center space-x-1 w-32">
                                         <button onClick={() => handleViewDetails(res.id)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="查看詳情">
                                             <Icon name="eye" className="w-4 h-4" />
                                         </button>

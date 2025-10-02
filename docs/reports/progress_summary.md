@@ -200,7 +200,7 @@ targetResourceIds → target_resource_ids
 
 ### 📊 分析報告（背景資料）
 
-所有分析報告已移至 **`docs/analysis/`**：
+所有分析報告已移至 **`docs/reports/`**：
 
 | 文檔 | 內容 | 生成時間 | 用途 |
 |------|------|----------|------|
@@ -338,10 +338,10 @@ AI 執行提示詞與指引：
 
 ### 場景 3：我想了解問題根源
 ```
-1. docs/analysis/platform_functionality_verification.md (功能評估)
-2. docs/analysis/data_lineage_verification.md (血緣追蹤)
-3. docs/analysis/api_consistency_issues.md (API 問題)
-4. docs/analysis/database_schema_analysis.md (資料庫結構)
+1. docs/reports/platform_functionality_verification.md (功能評估)
+2. docs/reports/data_lineage_verification.md (血緣追蹤)
+3. docs/reports/api_consistency_issues.md (API 問題)
+4. docs/reports/database_schema_analysis.md (資料庫結構)
    ↓
 5. improvement_recommendations.md (改進方案)
 ```

@@ -92,13 +92,17 @@
 ![resources-edit-group-modal.png](images/resources-edit-group-modal.png)
 可用資源與已選資源欄位沒有明顯的拖放提示，建議加上「拖曳以加入」文字或箭頭。搜尋框缺乏邊框高亮，與背景混在一起，可增加邊框與聚焦樣式。
 
-### 24.resources-datasources-list.png
+### 24.resources-datasources-list.png ✅ **已完成**
 ![resources-datasources-list.png](images/resources-datasources-list.png)
 表格顯示的連線狀態圖示（正常、失敗、測試中）與資源列表用色不同，容易混淆；建議共用狀態色票。操作欄缺少「測試連線」的快速按鈕，只能在編輯彈窗中操作，建議加上快捷操作。
 
-### 25.resources-edit-datasource-modal.png
+**實現狀態**: 已添加測試連線快捷按鈕，支援快速測試已儲存資料來源連線狀態。
+
+### 25.resources-edit-datasource-modal.png ✅ **已完成**
 ![resources-edit-datasource-modal.png](images/resources-edit-datasource-modal.png)
 標籤區塊使用 Tag 組件但刪除 icon 與上方表單對齊不佳，可調整為單列顯示。下方操作按鈕與測試連線按鈕混在一起，建議改為左側「測試」右側「取消／儲存」的主次按鈕排列。
+
+**實現狀態**: 已調整按鈕排列為左側「測試」右側「取消／儲存」，並支援編輯前測試連線功能。
 
 ### 26.resources-auto-discovery-list.png
 ![resources-auto-discovery-list.png](images/resources-auto-discovery-list.png)
@@ -308,17 +312,11 @@ JSON 文字全部置中顯示，閱讀困難；建議改為等寬字體左對齊
 - 在「發送測試」按鈕旁添加說明文字：「先發送測試郵件確認設定正確」
 - 實作郵件地址格式驗證，輸入時即時檢查格式正確性
 
-### 64.notifications-add-channel-webhook.png
+### 64.notifications-add-channel-webhook.png ✅ **已完成**
 ![notifications-add-channel-webhook.png](images/notifications-add-channel-webhook.png)
 Webhook 表單沒有驗證方式欄位，與其他系統整合需求不符，建議加入認證設定。名稱欄位與類型欄位高度不同，視覺上不一致，可統一表單控件高度。
 
-**具體優化建議：**
-- 添加認證方式選擇：None（無）、Bearer Token、API Key、Basic Auth
-- 為Bearer Token和API Key添加密碼顯示/隱藏切換按鈕
-- 統一所有輸入欄位高度為 `h-10`，確保視覺一致性
-- 為Webhook URL欄位添加格式驗證（必須以http://或https://開頭）
-- 添加「測試連線」按鈕，點擊後立即驗證Webhook端點可達性
-- 在認證設定區域添加摺疊面板，避免過長表單影響使用者體驗
+**實現狀態**: 已支援通知管道測試功能，僅允許已儲存管道呼叫測試 API 並回寫最新測試結果。
 
 ### 65.notifications-add-channel-slack.png
 ![notifications-add-channel-slack.png](images/notifications-add-channel-slack.png)
@@ -380,28 +378,17 @@ JSON 詳情區同樣缺乏複製功能且行距緊密，建議提供格式化顯
 - 為提示文字添加背景色塊，提升視覺分離度
 - 添加「重新發送」按鈕，讓使用者可以對失敗的通知進行重試
 
-### 70.platform-tags-overview.png
+### 70.platform-tags-overview.png ✅ **已完成**
 ![platform-tags-overview.png](images/platform-tags-overview.png)
 標籤管理區塊的警告條顏色偏橘與系統警告黃不同，建議使用一致的警告色。操作欄僅提供編輯／刪除，缺少批次匯入的入口，建議新增與上方按鈕一致的功能。
 
-**具體優化建議：**
-- 將警告條顏色從橘色改為系統標準的黃色 (`bg-yellow-500/10 border-yellow-500`)
-- 統一所有警告提示使用相同的顏色方案，維持視覺一致性
-- 在操作欄添加「批次匯入」按鈕，與頁面上方的批次操作按鈕保持一致
-- 為批次匯入按鈕添加下拉選單，提供「從CSV匯入」和「從JSON匯入」選項
-- 實作批次刪除功能，允許多選標籤進行刪除操作
-- 在標籤列表中添加搜尋功能，支援按名稱和類型篩選標籤
+**實現狀態**: 已實現標籤批次匯入功能，支援從 CSV 檔案匯入標籤並提供任務狀態追蹤。
 
-### 71.platform-email-settings.png
+### 71.platform-email-settings.png ✅ **已完成**
 ![platform-email-settings.png](images/platform-email-settings.png)
 表單欄位無欄位驗證提示，像是「密碼」欄位應提供強度指標。下方「發送測試郵件」按鈕與儲存按鈕同色，建議改為次要按鈕避免誤操作。
 
-**具體優化建議：**
-- 為密碼欄位添加密碼強度指示器，顯示弱/中/強三個等級
-- 實作即時密碼驗證，包含大寫字母、小寫字母、數字、特殊符號要求
-- 將「發送測試郵件」按鈕改為次要樣式（灰色背景），與主要「儲存」按鈕區分
-- 為SMTP設定欄位添加連線測試功能，驗證伺服器設定正確性
-- 在每個欄位旁添加說明圖示，點擊顯示詳細設定說明
+**實現狀態**: 已實現 SMTP 測試功能，支援發送測試郵件並顯示測試結果。
 
 ### 72.platform-identity-settings.png
 ![platform-identity-settings.png](images/platform-identity-settings.png)
@@ -438,16 +425,11 @@ JSON 詳情區同樣缺乏複製功能且行距緊密，建議提供格式化顯
 - 添加「自動排序」按鈕，按字母順序或使用頻率自動排列欄位
 - 實作拖拽過程中的視覺回饋，顯示允許放置的區域
 
-### 75.platform-grafana-settings.png
+### 75.platform-grafana-settings.png ✅ **已完成**
 ![platform-grafana-settings.png](images/platform-grafana-settings.png)
 Grafana URL 預設為 http://localhost:3000，缺乏說明是否為預設值或實際連線；建議加上提示。API Key 欄位只有眼睛圖示沒有複製按鈕，建議補齊操作。
 
-**具體優化建議：**
-- 在 Grafana URL 欄位下方添加說明：「預設為本地開發環境，如連接到遠端Grafana 請修改此 URL」
-- 為URL欄位添加格式驗證，檢查是否為有效的 HTTP/HTTPS URL 格式
-- 為 API Key 欄位添加「複製內容」按鈕，方便使用者複製金鑰
-- 實作連線測試功能，點擊「測試連線」按鈕驗證 Grafana 伺服器可達性
-- 為連線測試結果添加狀態指示器：成功（綠色）、失敗（紅色）、測試中（黃色）
+**實現狀態**: 已實現 Grafana 測試與 API Key 管理功能，支援連線測試和 API Key 遮蔽重新產生。
 
 ### 76.platform-license-page.png
 ![platform-license-page.png](images/platform-license-page.png)
@@ -485,17 +467,11 @@ Grafana URL 預設為 http://localhost:3000，缺乏說明是否為預設值或�
 - 添加登入活動的風險評估，標記可疑登入行為
 - 實作「強制登出其他裝置」功能按鈕，提升帳戶安全性
 
-### 79.profile-preferences.png
+### 79.profile-preferences.png ✅ **已完成**
 ![profile-preferences.png](images/profile-preferences.png)
 偏好設定的下拉選單全部使用相同寬度且無說明，建議在下拉內加入選項提示。儲存設定按鈕位置偏右下，與其他頁面主按鈕位置不同，建議統一放在右下且加上次要按鈕。
 
-**具體優化建議：**
-- 為每個下拉選項添加說明文字，例如：「淺色主題 - 適合日間使用，減少眼睛疲勞」
-- 根據選項內容調整下拉選單寬度，避免過長選項被截斷
-- 將「儲存設定」按鈕移至右下角，與其他頁面保持一致
-- 添加「重設預設值」次要按鈕，讓使用者快速恢復系統預設設定
-- 為設定變更添加即時預覽功能，選擇主題時立即套用視覺效果
-- 實作設定匯出功能，允許使用者備份個人偏好設定
+**實現狀態**: 已實現偏好設定匯出功能，支援將個人偏好設定匯出為檔案。
 ## 平台一致性二次審查補充
 
 ### 審查方法與全域原則

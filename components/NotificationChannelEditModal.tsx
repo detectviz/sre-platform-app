@@ -8,9 +8,9 @@ import { showToast } from '../services/toast';
 import api from '../services/api';
 
 interface MultiEmailInputProps {
-  value: string; // Comma-separated string
-  onChange: (value: string) => void;
-  label: string;
+    value: string; // Comma-separated string
+    onChange: (value: string) => void;
+    label: string;
 }
 
 const MultiEmailInput: React.FC<MultiEmailInputProps> = ({ value, onChange, label }) => {
@@ -42,13 +42,13 @@ const MultiEmailInput: React.FC<MultiEmailInputProps> = ({ value, onChange, labe
     };
 
     const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-      e.preventDefault();
-      const paste = e.clipboardData.getData('text');
-      const pastedEmails = paste.split(/[\s,;]+/).filter(str => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str.trim()));
-      if (pastedEmails.length > 0) {
-        const newEmails = [...new Set([...emails, ...pastedEmails])];
-        onChange(newEmails.join(','));
-      }
+        e.preventDefault();
+        const paste = e.clipboardData.getData('text');
+        const pastedEmails = paste.split(/[\s,;]+/).filter(str => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str.trim()));
+        if (pastedEmails.length > 0) {
+            const newEmails = [...new Set([...emails, ...pastedEmails])];
+            onChange(newEmails.join(','));
+        }
     };
 
 
@@ -80,10 +80,10 @@ const MultiEmailInput: React.FC<MultiEmailInputProps> = ({ value, onChange, labe
 
 
 interface NotificationChannelEditModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (channel: NotificationChannel) => void;
-  channel: NotificationChannel | null;
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (channel: NotificationChannel) => void;
+    channel: NotificationChannel | null;
 }
 
 const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> = ({ isOpen, onClose, onSave, channel }) => {
@@ -127,7 +127,7 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
 
     const handleTest = async () => {
         if (!formData?.id) {
-            showToast('請先儲存管道後再發送測試通知。', 'warning');
+            showToast('請先儲存管道後再發送測試通知。', 'error');
             return;
         }
 
@@ -175,17 +175,17 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
             case 'Email':
                 return (
                     <>
-                        <MultiEmailInput 
+                        <MultiEmailInput
                             label="收件人 (To) *"
                             value={formData.config?.to || ''}
                             onChange={value => handleConfigChange('to', value)}
                         />
-                         <MultiEmailInput 
+                        <MultiEmailInput
                             label="副本 (CC)"
                             value={formData.config?.cc || ''}
                             onChange={value => handleConfigChange('cc', value)}
                         />
-                         <MultiEmailInput 
+                        <MultiEmailInput
                             label="密件副本 (BCC)"
                             value={formData.config?.bcc || ''}
                             onChange={value => handleConfigChange('bcc', value)}
@@ -245,7 +245,7 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
                     </FormRow>
                 );
             case 'SMS':
-                 return (
+                return (
                     <FormRow label="收件人手機號碼 *">
                         <input type="tel" value={formData.config?.phone_number || ''} onChange={e => handleConfigChange('phone_number', e.target.value)} placeholder="例如: +886912345678" className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
                     </FormRow>
@@ -278,7 +278,7 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
         >
             <div className="space-y-4">
                 <FormRow label="名稱 *">
-                    <input type="text" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" required />
+                    <input type="text" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" required />
                 </FormRow>
                 <FormRow label="管道類型 *">
                     <select

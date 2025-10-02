@@ -26,3 +26,5 @@ tmp/
 .vite
 .claude
 .env
+.specify
+.gemini

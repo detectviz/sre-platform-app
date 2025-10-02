@@ -663,7 +663,7 @@ const MOCK_CAPACITY_TIME_OPTIONS = [
 - `mock-server/db.ts` - 新增 7d 和 30d 選項到 MOCK_LOG_TIME_OPTIONS
 - `pages/analysis/AnalysisOverviewPage.tsx` - 移除硬編碼，使用 useLogOptions hook
 - `pages/analysis/LogExplorerPage.tsx` - 移除硬編碼，使用 useLogOptions hook
-- `docs/analysis/time_range_options_api_analysis.md` - 本報告（更新實施狀態）
+
 
 ---
 

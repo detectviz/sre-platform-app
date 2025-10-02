@@ -1359,7 +1359,7 @@ const MOCK_RESOURCES: Resource[] = [
     { id: 'res-002', name: 'rds-prod-main', status: 'critical', type: 'RDS Database', provider: 'AWS', region: 'us-east-1', owner: 'DBA Team', last_check_in_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(), created_at: '2024-01-10T10:00:00Z', updated_at: '2024-01-15T11:00:00Z' },
     { id: 'res-003', name: 'k8s-prod-cluster', status: 'healthy', type: 'EKS Cluster', provider: 'AWS', region: 'us-west-2', owner: 'SRE Team', last_check_in_at: new Date(Date.now() - 60 * 1000).toISOString(), created_at: '2024-01-10T10:00:00Z', updated_at: '2024-01-15T11:00:00Z' },
     { id: 'res-004', name: 'web-prod-12', status: 'healthy', type: 'EC2 Instance', provider: 'AWS', region: 'us-west-2', owner: 'Web Team', last_check_in_at: new Date(Date.now() - 45 * 1000).toISOString(), created_at: '2024-01-10T10:00:00Z', updated_at: '2024-01-15T11:00:00Z' },
-    { id: 'res-007', name: 'api-service', status: 'warning', type: 'Kubernetes Service', provider: 'AWS', region: 'us-east-1', owner: 'API Services', last_check_in_at: new Date(Date.now() - 60 * 1000).toISOString(), created_at: '2024-01-10T10:00:00Z', updated_at: '2024-01-15T11:00:00Z' },
+    { id: 'res-007', name: 'api-service', status: 'warning', type: 'Kubernetes', provider: 'AWS', region: 'us-east-1', owner: 'API Services', last_check_in_at: new Date(Date.now() - 60 * 1000).toISOString(), created_at: '2024-01-10T10:00:00Z', updated_at: '2024-01-15T11:00:00Z' },
 ];
 const MOCK_RESOURCE_GROUPS: ResourceGroup[] = [
     { id: 'rg-001', name: '正式環境 Web 伺服器', description: '所有面向正式環境的 Web 伺服器', owner_team: 'Web Team', member_ids: ['res-004'], status_summary: { healthy: 12, warning: 1, critical: 0 }, created_at: '2024-01-12T10:00:00Z', updated_at: '2024-01-12T10:00:00Z' },
@@ -1396,8 +1396,8 @@ const MOCK_PLAYBOOKS: AutomationPlaybook[] = [
 const MOCK_AUTOMATION_EXECUTIONS: AutomationExecution[] = [
     {
         id: 'exec-001',
-        script_id: 'play-001',
-        script_name: '重啟故障 Pod',
+        playbook_id: 'play-001',
+        playbook_name: '重啟故障 Pod',
         status: 'success',
         trigger_source: 'event',
         triggered_by: 'Alert Rule: K8s 告警',
@@ -1412,8 +1412,8 @@ const MOCK_AUTOMATION_EXECUTIONS: AutomationExecution[] = [
     },
     {
         id: 'exec-002',
-        script_id: 'play-002',
-        script_name: '擴展 Web 層',
+        playbook_id: 'play-002',
+        playbook_name: '擴展 Web 層',
         status: 'cancelled',
         trigger_source: 'manual',
         triggered_by: 'User: Admin User',
@@ -1428,8 +1428,8 @@ const MOCK_AUTOMATION_EXECUTIONS: AutomationExecution[] = [
     },
     {
         id: 'exec-003',
-        script_id: 'play-002',
-        script_name: '擴展 Web 層',
+        playbook_id: 'play-002',
+        playbook_name: '擴展 Web 層',
         status: 'running',
         trigger_source: 'schedule',
         triggered_by: 'Automation Trigger: 每日日誌歸檔',
@@ -1442,8 +1442,8 @@ const MOCK_AUTOMATION_EXECUTIONS: AutomationExecution[] = [
     },
     {
         id: 'exec-004',
-        script_id: 'play-001',
-        script_name: '重啟故障 Pod',
+        playbook_id: 'play-001',
+        playbook_name: '重啟故障 Pod',
         status: 'pending',
         trigger_source: 'webhook',
         triggered_by: 'Webhook: GitOps pipeline',
@@ -1456,8 +1456,8 @@ const MOCK_AUTOMATION_EXECUTIONS: AutomationExecution[] = [
     },
     {
         id: 'exec-005',
-        script_id: 'play-002',
-        script_name: '擴展 Web 層',
+        playbook_id: 'play-002',
+        playbook_name: '擴展 Web 層',
         status: 'failed',
         trigger_source: 'custom',
         triggered_by: 'Custom Dashboard Action',
@@ -1472,8 +1472,8 @@ const MOCK_AUTOMATION_EXECUTIONS: AutomationExecution[] = [
     },
     {
         id: 'exec-006',
-        script_id: 'play-001',
-        script_name: '重啟故障 Pod',
+        playbook_id: 'play-001',
+        playbook_name: '重啟故障 Pod',
         status: 'success',
         trigger_source: 'grafana',
         triggered_by: 'Grafana Runbook Panel',
@@ -1634,7 +1634,7 @@ const MOCK_LOG_TIME_OPTIONS: { label: string, value: string }[] = [
     { label: '最近 7 天', value: '7d' },
     { label: '最近 30 天', value: '30d' },
 ];
-const MOCK_MAIL_SETTINGS: MailSettings = { smtp_server: 'smtp.example.com', port: 587, username: 'noreply@sre.platform', sender_name: 'SRE Platform', sender_email: 'noreply@sre.platform', encryption: 'tls', encryption_modes: ['none', 'tls', 'ssl'] };
+const MOCK_MAIL_SETTINGS: MailSettings = { smtp_server: 'smtp.example.com', port: 587, username: 'noreply@sre.platform', sender_name: 'SRE Platform', sender_email: 'noreply@sre.platform', encryption: 'tls' };
 const MOCK_GRAFANA_SETTINGS: GrafanaSettings = { enabled: true, url: DEFAULT_GRAFANA_BASE_URL, api_key: 'glsa_xxxxxxxxxxxxxxxxxxxxxxxx', org_id: 1 };
 const MOCK_GRAFANA_OPTIONS: GrafanaOptions = {
     time_options: [{ label: 'Last 6 hours', value: 'from=now-6h&to=now' }, { label: 'Last 24 hours', value: 'from=now-24h&to=now' }],
@@ -2156,7 +2156,7 @@ const MOCK_SERVICE_HEALTH_DATA = {
         [3, 0, 99], [3, 1, 99], [3, 2, 97], [3, 3, 100],
     ],
     x_axis_labels: ['us-east-1', 'us-west-2', 'eu-central-1', 'ap-northeast-1'],
-    y_axis_labels: ['API Gateway', 'RDS Database', 'EKS Cluster', 'Kubernetes Service'],
+    y_axis_labels: ['API Gateway', 'RDS Database', 'EKS Cluster', 'Kubernetes'],
 };
 
 const MOCK_RESOURCE_GROUP_STATUS_DATA: ResourceGroupStatusData = {
@@ -2587,7 +2587,7 @@ const MOCK_RESOURCE_OPTIONS: ResourceOptions = {
         { value: 'RDS Database', label: 'RDS Database', class_name: 'bg-green-950/40 border border-green-500/40 text-green-300 backdrop-blur-sm shadow-sm' },
         { value: 'EKS Cluster', label: 'EKS Cluster', class_name: 'bg-purple-950/40 border border-purple-500/40 text-purple-300 backdrop-blur-sm shadow-sm' },
         { value: 'EC2 Instance', label: 'EC2 Instance', class_name: 'bg-orange-950/40 border border-orange-500/40 text-orange-300 backdrop-blur-sm shadow-sm' },
-        { value: 'Kubernetes Service', label: 'Kubernetes Service', class_name: 'bg-cyan-950/40 border border-cyan-500/40 text-cyan-300 backdrop-blur-sm shadow-sm' }
+        { value: 'Kubernetes', label: 'Kubernetes', class_name: 'bg-cyan-950/40 border border-cyan-500/40 text-cyan-300 backdrop-blur-sm shadow-sm' }
     ],
     providers: ['AWS', 'GCP', 'Azure', 'On-Premise'],
     regions: ['us-east-1', 'us-west-2', 'eu-central-1', 'ap-northeast-1'],
@@ -2959,7 +2959,7 @@ function createInitialDB() {
         column_configs: {
             dashboards: ['name', 'type', 'category', 'owner', 'updated_at'],
             incidents: ['summary', 'status', 'severity', 'impact', 'resource', 'assignee', 'occurred_at'],
-            resources: ['status', 'name', 'type', 'provider', 'region', 'owner', 'last_check_in_at'],
+            resources: ['status', 'name', 'type', 'region', 'owner', 'last_check_in_at'],
             personnel: ['name', 'role', 'team', 'status', 'last_login_at'],
             alert_rules: ['enabled', 'name', 'target', 'conditions_summary', 'severity', 'automation_enabled', 'creator', 'updated_at'],
             silence_rules: ['enabled', 'name', 'type', 'matchers', 'schedule', 'creator', 'created_at'],

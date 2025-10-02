@@ -120,7 +120,7 @@ const AutomationHistoryPage: React.FC = () => {
 
         exportToCsv({
             filename: `automation-history-${new Date().toISOString().split('T')[0]}.csv`,
-            headers: ['id', 'script_name', 'status', 'trigger_source', 'triggered_by', 'start_time', 'end_time', 'duration_ms'],
+            headers: ['id', 'playbook_name', 'status', 'trigger_source', 'triggered_by', 'start_time', 'end_time', 'duration_ms'],
             data: dataToExport,
         });
     };
@@ -158,8 +158,8 @@ const AutomationHistoryPage: React.FC = () => {
 
     const renderCellContent = (ex: AutomationExecution, columnKey: string) => {
         switch (columnKey) {
-            case 'script_name':
-                return <span className="font-medium text-white">{ex.script_name}</span>;
+            case 'playbook_name':
+                return <span className="font-medium text-white">{ex.playbook_name}</span>;
             case 'status':
                 return (
                     <div className="flex items-center space-x-2">
@@ -259,7 +259,7 @@ const AutomationHistoryPage: React.FC = () => {
             <Drawer
                 isOpen={!!selectedExecution}
                 onClose={() => setSelectedExecution(null)}
-                title={`執行日誌: ${selectedExecution?.script_name}`}
+                title={`執行日誌: ${selectedExecution?.playbook_name}`}
                 width="w-3/5"
             >
                 {selectedExecution && <ExecutionLogDetail execution={selectedExecution} />}

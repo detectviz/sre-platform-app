@@ -10,7 +10,6 @@ components:
             properties:
               error:
                 type: string
-                example: Missing required fields: name, type
           examples:
             missingFields:
               summary: Missing required fields

@@ -135,7 +135,7 @@ npm run preview      # 預覽建置結果
 
 ### 🔍 分析報告
 
-所有初期分析報告已移至 [`docs/analysis/`](docs/analysis/)：
+所有初期分析報告已移至 [`docs/reports/`](docs/reports/)：
 
 - `platform_functionality_verification.md` - 平台功能完整性驗證（65% 完成度）
 - `database_schema_analysis.md` - 資料庫結構分析（23 個實體）

@@ -23,6 +23,14 @@ const client: AxiosInstance = axios.create({
   }
 });
 
+// Add request interceptor to prefix API paths with /api/v1 if not already present
+client.interceptors.request.use((config) => {
+  if (config.url && !config.url.startsWith('/api/v1') && !config.url.startsWith('http')) {
+    config.url = `/api/v1${config.url.startsWith('/') ? '' : '/'}${config.url}`;
+  }
+  return config;
+});
+
 client.interceptors.response.use(
   (response: AxiosResponse) => response,
   (error) => {
