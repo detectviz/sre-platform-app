@@ -11,6 +11,29 @@ const INCIDENT_STATUS_LABELS: Record<Incident['status'], string> = {
     silenced: 'silenced',
 };
 
+/**
+ * 根據儀表板類別返回預設的資源 ID 列表
+ */
+function getDefaultResourcesByCategory(category: string): string[] {
+    switch (category) {
+        case '業務與 SLA':
+            // API 服務和邊緣網關相關資源
+            return ['res-001', 'res-007'];
+        case '基礎設施':
+            // 所有核心基礎設施資源
+            return ['res-001', 'res-002', 'res-003', 'res-004'];
+        case '營運與容量':
+            // Web 服務和前端相關資源
+            return ['res-004'];
+        case '團隊自訂':
+            // 核心資源子集
+            return ['res-001', 'res-002', 'res-003'];
+        default:
+            // 默認包含主要資源
+            return ['res-001', 'res-002'];
+    }
+}
+
 const INCIDENT_STATUS_VALUES = Object.keys(INCIDENT_STATUS_LABELS) as Incident['status'][];
 
 const normalizeIncidentStatus = (status: unknown): Incident['status'] => {
@@ -490,6 +513,11 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 const newDashboardData = { ...body, id: `db-${uuidv4()}` };
                 if (!newDashboardData.path) {
                     newDashboardData.path = `/dashboard/${newDashboardData.id}`;
+                }
+
+                // 根據類別自動填充 resource_ids
+                if (!newDashboardData.resource_ids || newDashboardData.resource_ids.length === 0) {
+                    newDashboardData.resource_ids = getDefaultResourcesByCategory(category);
                 }
 
                 // 驗證外鍵

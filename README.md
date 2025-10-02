@@ -19,7 +19,7 @@
 
 ### 環境需求
 
-- Node.js 16+ (建議使用 LTS 版本)
+- Node.js 18+ (建議使用 LTS 版本)
 - npm 或 yarn 套件管理器
 
 ### 本地開發
@@ -87,8 +87,7 @@ sre-platform-app/
 │   ├── reports/        # 完成報告
 │   └── guides/         # 執行指引
 ├── types.ts            # TypeScript 型別定義
-├── constants.ts        # 應用常數與模擬資料
-└── openapi.yaml        # API 規範文件
+├── openapi.yaml        # API 規範文件
 ```
 
 ## 🔧 開發指南
@@ -129,25 +128,6 @@ npm run preview      # 預覽建置結果
 |------|------|--------|
 | [README.md](README.md) | 專案說明與快速開始 | ⭐⭐⭐ |
 | [TASKS.md](TASKS.md) | 📋 **集中改進任務清單**（逐項執行） | ⭐⭐⭐ |
-| [progress_summary.md](progress_summary.md) | 📊 骨架完善進度總覽 | ⭐⭐⭐ |
-| [implementation_progress.md](implementation_progress.md) | 📈 詳細實施進度追蹤 | ⭐⭐ |
-| [improvement_recommendations.md](improvement_recommendations.md) | 📝 改進建議原文 | ⭐ |
-
-### 🔍 分析報告
-
-所有初期分析報告已移至 [`docs/reports/`](docs/reports/)：
-
-- `platform_functionality_verification.md` - 平台功能完整性驗證（65% 完成度）
-- `database_schema_analysis.md` - 資料庫結構分析（23 個實體）
-- `data_lineage_verification.md` - 數據血緣追蹤驗證（3.7/10 → 7.5/10）
-- `api_consistency_issues.md` - API 一致性問題（15+ 欄位命名不一致）
-
-### ✅ 完成報告
-
-完成報告已移至 [`docs/reports/`](docs/reports/)：
-
-- `code_review_report.md` - 程式碼審查報告（品質 4.0 → 6.4/10）
-- `naming_unification_report.md` - 命名統一報告（250+ 欄位轉 snake_case）
 
 ### 🔧 執行指引
 
@@ -160,16 +140,6 @@ npm run preview      # 預覽建置結果
 - [specs.md](specs.md) - 功能規格說明
 - [pages.md](pages.md) - 頁面結構與路由
 - [ai_agent_plan.md](ai_agent_plan.md) - AI Agent 整合計畫
-
----
-
-## 📊 當前狀態
-
-- **整體進度**: 58% ✅（P0-P3 四階段）
-- **P0 緊急修復**: 85% ✅ 接近完成
-- **預估剩餘工時**: 15.5 天
-
-詳見 [progress_summary.md](progress_summary.md)
 
 ---
 
