@@ -7,7 +7,7 @@ export interface NavItem {
   children?: NavItem[];
 }
 
-export type DashboardType = 'built-in' | 'grafana';
+export type DashboardType = 'built-in' | 'custom' | 'grafana';
 
 export interface DashboardLayoutItem {
   i: string; // widget id
@@ -62,7 +62,7 @@ export interface NotificationRecord {
   /** Identifier of the notification strategy that generated the notification. */
   strategy_id?: string;
   /** Delivery status for the notification attempt. */
-  status: 'success' | 'failed';
+  status: 'pending' | 'sent' | 'failed';
   /** ISO 8601 timestamp describing when the notification was sent. */
   sent_at: string;
   /** Optional metadata that provides additional delivery details. */
@@ -129,7 +129,8 @@ export interface RuleAnalysisReport {
   recommendations: RuleAnalysisRecommendation[];
 }
 
-export type IncidentStatus = 'new' | 'acknowledged' | 'investigating' | 'resolved' | 'closed' | 'silenced';
+
+export type IncidentStatus = 'new' | 'acknowledged' | 'resolved' | 'silenced';
 export type IncidentSeverity = 'Critical' | 'Warning' | 'Info';
 export type IncidentImpact = 'High' | 'Medium' | 'Low';
 
@@ -182,7 +183,7 @@ export interface LayoutWidget {
 export interface Resource {
   id: string;
   name: string;
-  status: 'healthy' | 'warning' | 'critical' | 'offline';
+  status: 'healthy' | 'warning' | 'critical' | 'offline' | 'unknown';
   type: string;
   provider: string;
   region: string;
@@ -274,7 +275,7 @@ export interface AutomationExecution {
   deleted_at?: string;
 }
 
-export type TriggerType = 'Schedule' | 'Webhook' | 'Event';
+export type TriggerType = 'schedule' | 'webhook' | 'event';
 
 export interface AutomationTrigger {
   id: string;
@@ -492,7 +493,7 @@ export interface NotificationChannel {
     access_token?: string;
     phone_number?: string;
   };
-  last_test_result: 'success' | 'failed' | 'pending';
+  last_test_result: 'success' | 'failed' | 'not_tested';
   last_tested_at: string;
   created_at: string;
   updated_at: string;
@@ -522,7 +523,7 @@ export interface NotificationHistoryRecord {
   channel: string;
   channel_type: NotificationChannelType;
   recipient: string;
-  status: 'success' | 'failed';
+  status: 'pending' | 'sent' | 'failed';
   content: string;
   /** Identifier of the incident associated with the notification event. */
   incident_id?: string;
