@@ -7,8 +7,8 @@ components:
       required: true
       schema:
         type: string
-      description: Resource ID
-      example: res-001
+      description: Unique identifier of the target entity
+      example: ent-001
 
     PageParam:
       name: page

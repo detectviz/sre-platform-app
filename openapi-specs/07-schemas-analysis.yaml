@@ -40,6 +40,70 @@ components:
           format: date-time
           example: "2024-01-15T10:35:00Z"
 
+    ServiceHealthData:
+      type: object
+      required: [heatmap_data, x_axis_labels, y_axis_labels]
+      properties:
+        heatmap_data:
+          type: array
+          description: Heatmap matrix represented as [rowIndex, columnIndex, value]
+          items:
+            type: array
+            minItems: 3
+            maxItems: 3
+            items:
+              - type: integer
+              - type: integer
+              - type: number
+          example:
+            - [0, 0, 98]
+            - [1, 2, 92]
+        x_axis_labels:
+          type: array
+          items:
+            type: string
+          example: [us-east-1, us-west-2, eu-central-1, ap-northeast-1]
+        y_axis_labels:
+          type: array
+          items:
+            type: string
+          example: [API Gateway, RDS Database, EKS Cluster, Kubernetes]
+
+    ResourceGroupStatusSeries:
+      type: object
+      required: [key, label, data]
+      properties:
+        key:
+          type: string
+          enum: [healthy, warning, critical]
+        label:
+          type: string
+          example: 健康
+        data:
+          type: array
+          items:
+            type: integer
+          example: [12, 8, 5, 10, 22]
+
+    ResourceGroupStatusData:
+      type: object
+      required: [group_names, series]
+      properties:
+        group_names:
+          type: array
+          items:
+            type: string
+          example:
+            - Production Web Servers
+            - Core Databases
+            - Cache Cluster
+            - Logging Stack
+            - API Services
+        series:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceGroupStatusSeries'
+
     # ===================
     # Resource Analysis
     # ===================

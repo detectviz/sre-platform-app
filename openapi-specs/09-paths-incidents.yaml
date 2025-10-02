@@ -11,26 +11,11 @@ paths:
         - $ref: "#/components/parameters/PageSizeParam"
         - $ref: "#/components/parameters/SortByParam"
         - $ref: "#/components/parameters/SortOrderParam"
-        - name: status
+        - name: resource_name
           in: query
-          description: Filter by incident status
+          description: Filter by the display name of the impacted resource
           schema:
             type: string
-            enum: [new, acknowledged, resolved, silenced]
-          example: acknowledged
-        - name: severity
-          in: query
-          description: Filter by severity level
-          schema:
-            type: string
-            enum: [critical, warning, info]
-          example: critical
-        - name: assignee
-          in: query
-          description: Filter by assignee name
-          schema:
-            type: string
-          example: 張三
       responses:
         "200":
           description: Successful response with paginated incidents
@@ -104,6 +89,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Incident"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /incidents/{id}/executions:
+    parameters:
+      - $ref: "#/components/parameters/IdParam"
+
+    get:
+      tags: [Incidents]
+      summary: List automation executions for an incident
+      description: Retrieve automation execution records linked to a specific incident
+      operationId: listIncidentExecutions
+      responses:
+        "200":
+          description: Automation executions triggered for the incident
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AutomationExecution"
         "404":
           $ref: "#/components/responses/NotFound"
         "401":

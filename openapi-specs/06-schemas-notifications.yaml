@@ -216,3 +216,30 @@ components:
         created_at:
           type: string
           format: date-time
+
+    NotificationRecord:
+      type: object
+      required: [id, channel_id, status, sent_at]
+      properties:
+        id:
+          type: string
+          example: notif-attempt-001
+        channel_id:
+          type: string
+          example: channel-email-ops
+        strategy_id:
+          type: string
+          example: strategy-critical-alerts
+        status:
+          type: string
+          enum: [pending, sent, failed]
+          example: sent
+        sent_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:32:00Z"
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+          description: Additional delivery information such as provider identifiers
