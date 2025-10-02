@@ -638,6 +638,193 @@ paths:
               schema:
                 $ref: '#/components/schemas/BatchResult'
 
+  /resources/datasources:
+    get:
+      tags: [Resources]
+      summary: List datasources
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [victoriametrics, grafana, elasticsearch, prometheus, custom]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [ok, error, pending]
+        - name: keyword
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Datasource list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                    example: 1
+                  page_size:
+                    type: integer
+                    example: 10
+                  total:
+                    type: integer
+                    example: 3
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Datasource'
+
+    post:
+      tags: [Resources]
+      summary: Create datasource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatasourceCreate'
+      responses:
+        '201':
+          description: Datasource created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Datasource'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /resources/datasources/test:
+    post:
+      tags: [Resources]
+      summary: Test datasource connectivity before save
+      description: Validate datasource credentials and endpoint prior to persisting the configuration.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatasourceConnectionTestRequest'
+      responses:
+        '200':
+          description: Connection test result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatasourceConnectionTestResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /resources/datasources/{datasource_id}:
+    parameters:
+      - name: datasource_id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Datasource identifier
+
+    get:
+      tags: [Resources]
+      summary: Get datasource by ID
+      responses:
+        '200':
+          description: Datasource detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Datasource'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags: [Resources]
+      summary: Update datasource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatasourceUpdate'
+      responses:
+        '200':
+          description: Datasource updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Datasource'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Resources]
+      summary: Delete datasource (soft delete)
+      responses:
+        '204':
+          description: Datasource deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /resources/datasources/{datasource_id}/test:
+    post:
+      tags: [Resources]
+      summary: Test datasource connectivity
+      requestBody:
+        description: Optional override configuration for the test run
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: Override datasource URL for the test
+      responses:
+        '200':
+          description: Connection test result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatasourceConnectionTestResult'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /resources/datasources/{datasource_id}/connection-tests:
+    get:
+      tags: [Resources]
+      summary: List datasource connection test logs
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: Connection test history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DatasourceConnectionTestLog'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   # ===================
   # Automation
   # ===================
@@ -908,6 +1095,33 @@ paths:
               schema:
                 $ref: '#/components/schemas/NotificationChannel'
 
+  /settings/notification-channels/{channel_id}/test:
+    post:
+      tags: [Notifications]
+      summary: Send test notification for a channel
+      parameters:
+        - name: channel_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Notification channel identifier
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationChannelTestRequest'
+      responses:
+        '200':
+          description: Test notification result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationChannelTestResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /settings/notification-strategies:
     get:
       tags: [Notifications]
@@ -938,6 +1152,144 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotificationStrategy'
+
+  # ===================
+  # Platform Settings
+  # ===================
+  /settings/mail:
+    get:
+      tags: [Settings]
+      summary: Get SMTP mail settings
+      responses:
+        '200':
+          description: Current mail settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailSettings'
+
+    put:
+      tags: [Settings]
+      summary: Update SMTP mail settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MailSettings'
+      responses:
+        '200':
+          description: Updated mail settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailSettings'
+
+  /settings/mail/test:
+    post:
+      tags: [Settings]
+      summary: Trigger SMTP connectivity test
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MailTestRequest'
+      responses:
+        '200':
+          description: Mail test initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailTestResponse'
+
+  /settings/grafana:
+    get:
+      tags: [Settings]
+      summary: Get Grafana integration settings
+      responses:
+        '200':
+          description: Grafana settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrafanaSettings'
+
+    put:
+      tags: [Settings]
+      summary: Update Grafana integration settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GrafanaSettings'
+      responses:
+        '200':
+          description: Updated Grafana settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrafanaSettings'
+
+  /settings/grafana/test:
+    post:
+      tags: [Settings]
+      summary: Validate Grafana connection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GrafanaTestRequest'
+      responses:
+        '200':
+          description: Grafana connectivity test result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrafanaTestResponse'
+
+  /settings/tags/import:
+    post:
+      tags: [Settings]
+      summary: Import tag definitions from CSV
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagBulkImportRequest'
+      responses:
+        '202':
+          description: Tag import job accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagBulkImportResponse'
+
+  /me/preferences/export:
+    post:
+      tags: [Settings]
+      summary: Export current user preferences
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                format:
+                  type: string
+                  description: Desired export format
+                  example: json
+      responses:
+        '200':
+          description: User preference export link
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreferenceExportResponse'
 
   # ===================
   # Analysis & AI
@@ -1874,3 +2226,355 @@ components:
           type: array
           items:
             type: string
+
+    Datasource:
+      type: object
+      required: [id, name, type, url, auth_method, status, created_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [victoriametrics, grafana, elasticsearch, prometheus, custom]
+        url:
+          type: string
+          format: uri
+        auth_method:
+          type: string
+          enum: [token, basic_auth, keycloak_integration, none]
+        status:
+          type: string
+          enum: [ok, error, pending]
+        tags:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              key:
+                type: string
+              value:
+                type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    DatasourceCreate:
+      type: object
+      required: [name, type, url, auth_method]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [victoriametrics, grafana, elasticsearch, prometheus, custom]
+        url:
+          type: string
+          format: uri
+        auth_method:
+          type: string
+          enum: [token, basic_auth, keycloak_integration, none]
+        tags:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+
+    DatasourceConnectionTestRequest:
+      allOf:
+        - $ref: '#/components/schemas/DatasourceCreate'
+      properties:
+        id:
+          type: string
+          description: Optional existing datasource identifier to associate the test result with.
+
+    DatasourceUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
+        auth_method:
+          type: string
+          enum: [token, basic_auth, keycloak_integration, none]
+        status:
+          type: string
+          enum: [ok, error, pending]
+        tags:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+
+    DatasourceConnectionTestLog:
+      type: object
+      required: [id, datasource_id, status, result, message, tested_at, tested_by]
+      properties:
+        id:
+          type: string
+        datasource_id:
+          type: string
+        status:
+          type: string
+          enum: [ok, error, pending]
+        result:
+          type: string
+          enum: [success, failed, not_tested]
+        latency_ms:
+          type: integer
+          example: 120
+        message:
+          type: string
+        tested_at:
+          type: string
+          format: date-time
+        tested_by:
+          type: string
+
+    DatasourceConnectionTestResult:
+      type: object
+      required: [success, status, result, message, tested_at, tested_by]
+      properties:
+        success:
+          type: boolean
+        status:
+          type: string
+          enum: [ok, error, pending]
+        result:
+          type: string
+          enum: [success, failed, not_tested]
+        latency_ms:
+          type: integer
+        message:
+          type: string
+        tested_at:
+          type: string
+          format: date-time
+        tested_by:
+          type: string
+
+    NotificationChannelTestRequest:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Optional custom message used for the test notification
+        recipients:
+          type: array
+          items:
+            type: string
+          description: Override recipients for email-like channels
+
+    NotificationChannelTestResponse:
+      type: object
+      required: [success, result, message, tested_at]
+      properties:
+        success:
+          type: boolean
+        result:
+          type: string
+          enum: [success, failed, not_tested]
+        message:
+          type: string
+        tested_at:
+          type: string
+          format: date-time
+
+    MailSettings:
+      type: object
+      required: [smtp_server, port, username, sender_name, sender_email, encryption]
+      properties:
+        smtp_server:
+          type: string
+        port:
+          type: integer
+          example: 587
+        username:
+          type: string
+        sender_name:
+          type: string
+        sender_email:
+          type: string
+          format: email
+        encryption:
+          type: string
+          enum: [none, tls, ssl]
+        encryption_modes:
+          type: array
+          items:
+            type: string
+            enum: [none, tls, ssl]
+
+    MailTestRequest:
+      type: object
+      properties:
+        recipient_email:
+          type: string
+          format: email
+          description: Override recipient for the test email
+
+    MailTestResponse:
+      type: object
+      required: [success, result, message, tested_at]
+      properties:
+        success:
+          type: boolean
+        result:
+          type: string
+          enum: [success, failed, not_tested]
+        message:
+          type: string
+        tested_at:
+          type: string
+          format: date-time
+
+    GrafanaSettings:
+      type: object
+      required: [enabled, url, api_key, org_id]
+      properties:
+        enabled:
+          type: boolean
+        url:
+          type: string
+          format: uri
+        api_key:
+          type: string
+        org_id:
+          type: integer
+
+    GrafanaTestRequest:
+      type: object
+      required: [url, api_key]
+      properties:
+        url:
+          type: string
+          format: uri
+        api_key:
+          type: string
+        org_id:
+          type: integer
+          description: Optional Grafana organization identifier used for validation
+
+    GrafanaTestResponse:
+      type: object
+      required: [success, result, message]
+      properties:
+        success:
+          type: boolean
+        result:
+          type: string
+          enum: [success, failed, not_tested]
+        message:
+          type: string
+        detected_version:
+          type: string
+          description: Detected Grafana version when available
+        tested_at:
+          type: string
+          format: date-time
+
+    TagBulkImportRequest:
+      type: object
+      required: [filename]
+      properties:
+        filename:
+          type: string
+          example: tags.csv
+        dry_run:
+          type: boolean
+          default: false
+
+    TagBulkImportJob:
+      type: object
+      required: [id, filename, status, total_records, imported_records, failed_records, uploaded_by, created_at]
+      properties:
+        id:
+          type: string
+        filename:
+          type: string
+        status:
+          type: string
+          enum: [pending, running, success, failed, cancelled]
+        total_records:
+          type: integer
+        imported_records:
+          type: integer
+        failed_records:
+          type: integer
+        error_log:
+          type: array
+          items:
+            type: string
+        uploaded_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    TagBulkImportResponse:
+      type: object
+      required: [job]
+      properties:
+        job:
+          $ref: '#/components/schemas/TagBulkImportJob'
+        summary:
+          type: object
+          properties:
+            imported:
+              type: integer
+            failed:
+              type: integer
+            skipped:
+              type: integer
+
+    UserPreferenceExportResponse:
+      type: object
+      required: [download_url, expires_at, format]
+      properties:
+        download_url:
+          type: string
+          format: uri
+        expires_at:
+          type: string
+          format: date-time
+        format:
+          type: string
+        job:
+          type: object
+          properties:
+            id:
+              type: string
+            status:
+              type: string
+              enum: [pending, running, success, failed, cancelled]
+            created_at:
+              type: string
+              format: date-time
+            completed_at:
+              type: string
+              format: date-time
+              nullable: true

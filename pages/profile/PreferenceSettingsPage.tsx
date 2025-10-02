@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import FormRow from '../../components/FormRow';
-import { UserPreferences, Dashboard, PreferenceOptions } from '../../types';
+import { UserPreferences, Dashboard, PreferenceOptions, UserPreferenceExportResponse } from '../../types';
 import api from '../../services/api';
 import Icon from '../../components/Icon';
 import { showToast } from '../../services/toast';
@@ -13,6 +13,7 @@ const PreferenceSettingsPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [dashboards, setDashboards] = useState<Dashboard[]>([]);
+    const [isExporting, setIsExporting] = useState(false);
 
     const fetchPageData = useCallback(async () => {
         setIsLoading(true);
@@ -63,6 +64,21 @@ const PreferenceSettingsPage: React.FC = () => {
         }
     };
 
+    const handleExport = async () => {
+        setIsExporting(true);
+        try {
+            const { data } = await api.post<UserPreferenceExportResponse>('/me/preferences/export', { format: 'json' });
+            showToast('偏好設定匯出連結已生成。', 'success');
+            if (data.download_url) {
+                window.open(data.download_url, '_blank', 'noopener');
+            }
+        } catch (err) {
+            showToast('偏好設定匯出失敗。', 'error');
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     if (isLoading) {
         return <div className="text-center"><Icon name="loader-circle" className="w-6 h-6 animate-spin inline-block" /></div>;
     }
@@ -96,9 +112,14 @@ const PreferenceSettingsPage: React.FC = () => {
                         </select>
                     </FormRow>
                 </div>
-                <div className="mt-6 pt-6 border-t border-slate-700/50 flex justify-end space-x-2">
-                    <button onClick={handleReset} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">重置為預設</button>
-                    <button onClick={handleSave} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md">儲存設定</button>
+                <div className="mt-6 pt-6 border-t border-slate-700/50 flex justify-between items-center">
+                    <button onClick={handleExport} disabled={isExporting} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md disabled:opacity-50 flex items-center">
+                        {isExporting ? <Icon name="loader-circle" className="w-4 h-4 mr-2 animate-spin" /> : <Icon name="download" className="w-4 h-4 mr-2" />}匯出偏好設定
+                    </button>
+                    <div className="space-x-2">
+                        <button onClick={handleReset} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">重置為預設</button>
+                        <button onClick={handleSave} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md">儲存設定</button>
+                    </div>
                 </div>
             </div>
         </div>

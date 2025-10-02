@@ -84,8 +84,15 @@ const ImportFromCsvModal: React.FC<ImportFromCsvModalProps> = ({
     if (!file) return;
     setIsLoading(true);
     try {
-      const { data } = await api.post<{message: string}>(importEndpoint, { filename: file.name });
-      const successMessage = data.message || modalContent?.IMPORT_SUCCESS_TEMPLATE?.replace('{itemName}', itemName) || `${itemName} imported successfully.`;
+      const { data } = await api.post<any>(importEndpoint, { filename: file.name });
+      let successMessage = modalContent?.IMPORT_SUCCESS_TEMPLATE?.replace('{itemName}', itemName) || `${itemName} imported successfully.`;
+      if (data?.summary) {
+        const imported = data.summary.imported ?? 0;
+        const failed = data.summary.failed ?? 0;
+        successMessage = `${itemName} 匯入完成：${imported} 筆成功、${failed} 筆失敗。`;
+      } else if (typeof data?.message === 'string') {
+        successMessage = data.message;
+      }
       showToast(successMessage, 'success');
       onImportSuccess();
       handleClose();

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Datasource, DatasourceFilters } from '../../types';
+import { Datasource, DatasourceFilters, DatasourceTestResponse } from '../../types';
 import Icon from '../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
@@ -92,7 +92,7 @@ const DatasourceManagementPage: React.FC = () => {
     const handleTestConnection = async (ds: Datasource) => {
         showToast(`正在測試對 "${ds.name}" 的連線...`, 'success');
         try {
-            const { data } = await api.post<{ success: boolean; message: string }>(`/resources/datasources/${ds.id}/test`);
+            const { data } = await api.post<DatasourceTestResponse>(`/resources/datasources/${ds.id}/test`);
             showToast(data.message, data.success ? 'success' : 'error');
             fetchDatasources(); // Refetch to update status
         } catch (err) {

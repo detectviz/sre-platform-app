@@ -1,5 +1,5 @@
 import { DB, uuidv4 } from './db';
-import type { ConnectionStatus, DiscoveryJob, Incident, NotificationStrategy, Resource, ResourceLink, ConfigVersion, TabConfigMap, TagDefinition, NotificationChannelType, RetryPolicy } from '../types';
+import type { ConnectionStatus, DiscoveryJob, Incident, NotificationStrategy, Resource, ResourceLink, ConfigVersion, TabConfigMap, TagDefinition, NotificationChannelType, RetryPolicy, DatasourceConnectionTestLog, TagBulkImportJob, UserPreferenceExportJob } from '../types';
 import { auditLogMiddleware } from './auditLog';
 
 type HttpMethod = 'get' | 'post' | 'put' | 'patch' | 'delete';
@@ -297,6 +297,40 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     }
                     // Success, return empty object which will result in a 204 No Content.
                     return {};
+                }
+                if (id === 'preferences' && subId === 'export') {
+                    const format = typeof body?.format === 'string' && body.format.trim() ? body.format : 'json';
+                    const currentUser = getCurrentUser();
+                    const timestamp = new Date().toISOString();
+                    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+                    const baseUrl = process.env.MOCK_API_BASE_URL ?? 'http://localhost:4000/api/v1';
+                    const job: UserPreferenceExportJob = {
+                        id: `pref-export-${uuidv4()}`,
+                        user_id: currentUser.id,
+                        format,
+                        status: 'success',
+                        download_url: `${baseUrl}/downloads/preferences/${currentUser.id}-preferences.${format}`,
+                        expires_at: expiresAt,
+                        created_at: timestamp,
+                        completed_at: timestamp
+                    };
+                    DB.user_preference_export_jobs.unshift(job);
+                    DB.user_preferences = {
+                        ...DB.user_preferences,
+                        last_exported_at: job.completed_at,
+                        last_export_format: format
+                    };
+                    return {
+                        download_url: job.download_url,
+                        expires_at: job.expires_at,
+                        format,
+                        job: {
+                            id: job.id,
+                            status: job.status,
+                            created_at: job.created_at,
+                            completed_at: job.completed_at
+                        }
+                    };
                 }
                 break;
             }
@@ -1384,6 +1418,14 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
 
             // Resources
             case 'GET /resources': {
+                if (id === 'datasources' && subId && action === 'connection-tests') {
+                    const datasource = DB.datasources.find((d: any) => d.id === subId && !d.deleted_at);
+                    if (!datasource) {
+                        throw { status: 404, message: 'Datasource not found.' };
+                    }
+                    const logs = DB.datasource_connection_tests.filter((log: DatasourceConnectionTestLog) => log.datasource_id === subId);
+                    return paginate(logs, params?.page, params?.page_size);
+                }
                 if (id === 'datasources') {
                     let datasources = getActive(DB.datasources);
                     if (params?.sort_by && params?.sort_order) {
@@ -1545,22 +1587,69 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 }
                 if (id === 'datasources') {
                     if (subId === 'test' && !action) {
-                        const { url, id: payloadId } = body || {};
-                        if (!url) throw { status: 400, message: '缺少測試連線所需的 URL。' };
+                        const {
+                            id: payloadId,
+                            name,
+                            type,
+                            url,
+                            auth_method,
+                            tags
+                        } = body || {};
+                        if (!url || typeof url !== 'string' || !url.trim()) {
+                            throw { status: 400, message: '缺少測試連線所需的 URL。' };
+                        }
+                        if (!type || typeof type !== 'string') {
+                            throw { status: 400, message: '缺少測試連線所需的類型。' };
+                        }
+                        if (!auth_method || typeof auth_method !== 'string') {
+                            throw { status: 400, message: '缺少測試連線所需的驗證方式。' };
+                        }
+
+                        const datasourceOptions = DB.all_options?.datasources;
+                        const allowedTypes = Array.isArray(datasourceOptions?.types)
+                            ? datasourceOptions.types.map((option: any) => option.value)
+                            : ['victoriametrics', 'grafana', 'elasticsearch', 'prometheus', 'custom'];
+                        const allowedAuthMethods = Array.isArray(datasourceOptions?.auth_methods)
+                            ? datasourceOptions.auth_methods.map((option: any) => option.value)
+                            : ['token', 'basic_auth', 'keycloak_integration', 'none'];
+
+                        validateEnum(type, allowedTypes, 'datasource type');
+                        validateEnum(auth_method, allowedAuthMethods, 'auth_method');
+
+                        if (tags && !Array.isArray(tags)) {
+                            throw { status: 400, message: 'tags 必須為陣列。' };
+                        }
+
                         const latency_ms = Math.floor(50 + Math.random() * 200);
                         const success = Math.random() > 0.2;
                         const status: ConnectionStatus = success ? 'ok' : 'error';
+                        const currentUser = getCurrentUser();
+                        const tested_at = new Date().toISOString();
+                        const result = success ? 'success' : 'failed';
                         if (payloadId) {
                             const idx = DB.datasources.findIndex((d: any) => d.id === payloadId);
                             if (idx > -1) {
                                 DB.datasources[idx].status = status;
+                                const logEntry: DatasourceConnectionTestLog = {
+                                    id: `ds-test-${uuidv4()}`,
+                                    datasource_id: payloadId,
+                                    status,
+                                    result,
+                                    latency_ms,
+                                    message: success
+                                        ? `成功連線至 ${DB.datasources[idx].name || payloadId}。`
+                                        : `無法連線至 ${DB.datasources[idx].name || payloadId}，請檢查設定。`,
+                                    tested_by: currentUser.id,
+                                    tested_at
+                                };
+                                DB.datasource_connection_tests.unshift(logEntry);
                             }
                         }
+                        const displayName = name || url;
                         const message = success
-                            ? `成功連線至 ${url}。`
-                            : `無法連線至 ${url}，請檢查設定。`;
-
-                        return { success, status, latency_ms, message };
+                            ? `成功連線至 ${displayName}。`
+                            : `無法連線至 ${displayName}，請檢查設定。`;
+                        return { success, status, result, latency_ms, message, tested_at, tested_by: currentUser.id };
                     }
                     if (subId && action === 'test') {
                         const dsId = subId;
@@ -1574,7 +1663,20 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         const message = success
                             ? `成功連線至 ${dsName}。`
                             : `無法連線至 ${dsName}，請檢查設定。`;
-                        return { success, status, latency_ms, message };
+                        const currentUser = getCurrentUser();
+                        const tested_at = new Date().toISOString();
+                        const logEntry: DatasourceConnectionTestLog = {
+                            id: `ds-test-${uuidv4()}`,
+                            datasource_id: dsId,
+                            status,
+                            result: success ? 'success' : 'failed',
+                            latency_ms,
+                            message,
+                            tested_by: currentUser.id,
+                            tested_at
+                        };
+                        DB.datasource_connection_tests.unshift(logEntry);
+                        return { success, status, result: logEntry.result, latency_ms, message, tested_at, tested_by: currentUser.id };
                     }
 
                     // 驗證必填欄位
@@ -2999,8 +3101,8 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     return paginate(history, params?.page, params?.page_size);
                 }
                 if (id === 'mail') {
-                    if (!DB.mail_settings.encryptionModes) {
-                        DB.mail_settings.encryptionModes = ['none', 'tls', 'ssl'];
+                    if (!DB.mail_settings.encryption_modes) {
+                        DB.mail_settings.encryption_modes = ['none', 'tls', 'ssl'];
                     }
                     return DB.mail_settings;
                 }
@@ -3243,9 +3345,15 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     if (!channel) {
                         throw { status: 404, message: 'Notification channel not found.' };
                     }
-                    channel.last_test_result = 'success';
-                    channel.last_tested_at = new Date().toISOString();
-                    return { success: true, message: `測試通知已送出至「${channel.name}」。` };
+                    const tested_at = new Date().toISOString();
+                    const shouldFail = channel?.config?.webhook_url?.includes('fail');
+                    const result: 'success' | 'failed' = shouldFail ? 'failed' : 'success';
+                    channel.last_test_result = result;
+                    channel.last_tested_at = tested_at;
+                    const message = result === 'success'
+                        ? `測試通知已送出至「${channel.name}」。`
+                        : `無法將測試通知送至「${channel.name}」，請檢查設定。`;
+                    return { success: result === 'success', result, message, tested_at };
                 }
                 if (urlParts[1] === 'notification-history' && action === 'resend') {
                     const recordId = subId;
@@ -3258,17 +3366,30 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     return { success: true, message: '通知已重新發送。' };
                 }
                 if (id === 'mail' && subId === 'test') {
-                    return { success: true, message: 'Test email sent successfully.' };
+                    const settings = DB.mail_settings;
+                    const tested_at = new Date().toISOString();
+                    const recipientEmail = body?.recipient_email as string | undefined;
+                    const shouldFail = settings.smtp_server?.includes('invalid') || recipientEmail?.includes('fail');
+                    const result = shouldFail ? 'failed' : 'success';
+                    const message = result === 'success'
+                        ? '測試郵件已成功送出。'
+                        : '連線失敗：請確認 SMTP 設定或收件人。';
+                    return { success: result === 'success', result, message, tested_at };
                 }
                 if (id === 'grafana' && subId === 'test') {
                     const { url, apiKey } = body;
+                    const tested_at = new Date().toISOString();
+                    if (typeof url !== 'string' || !url.trim()) {
+                        throw { status: 400, message: 'Grafana URL 為必填欄位。' };
+                    }
                     if (url.includes('fail')) {
-                        return { success: false, message: '連線失敗：無效的 URL 或網路問題。' };
+                        return { success: false, result: 'failed', message: '連線失敗：無效的 URL 或網路問題。', tested_at };
                     }
                     if (apiKey === 'invalid-key') {
-                        return { success: false, message: '連線失敗：API Key 無效或權限不足。' };
+                        return { success: false, result: 'failed', message: '連線失敗：API Key 無效或權限不足。', tested_at };
                     }
-                    return { success: true, message: '連線成功！偵測到 Grafana v10.1.2。' };
+                    const detectedVersion = 'Grafana v10.1.2';
+                    return { success: true, result: 'success', message: `連線成功！偵測到 ${detectedVersion}。`, detected_version: detectedVersion, tested_at };
                 }
                 if (id === 'notification-strategies') {
                     const fallbackOptions = DB.notification_strategy_options || { severity_levels: [], impact_levels: [] };
@@ -3346,6 +3467,40 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         { name: newChannel.name, type: newChannel.type, enabled: newChannel.enabled }
                     );
                     return newChannel;
+                }
+                if (id === 'tags' && subId === 'import') {
+                    const filename = body?.filename;
+                    if (!filename) {
+                        throw { status: 400, message: '匯入檔案名稱為必填欄位。' };
+                    }
+                    const dryRun = Boolean(body?.dry_run);
+                    const currentUser = getCurrentUser();
+                    const timestamp = new Date().toISOString();
+                    const total_records = 20 + Math.floor(Math.random() * 6);
+                    const failed_records = dryRun ? 0 : Math.floor(Math.random() * 3);
+                    const imported_records = Math.max(0, total_records - failed_records);
+                    const job: TagBulkImportJob = {
+                        id: `tag-import-${uuidv4()}`,
+                        filename,
+                        status: 'success',
+                        total_records,
+                        imported_records,
+                        failed_records,
+                        error_log: failed_records > 0 ? ['標籤 key 不可為空值', 'writable_roles 需為有效角色 ID'] : [],
+                        uploaded_by: currentUser.id,
+                        created_at: timestamp,
+                        completed_at: timestamp
+                    };
+                    DB.tag_bulk_import_jobs.unshift(job);
+                    const summary = {
+                        imported: job.imported_records,
+                        failed: job.failed_records,
+                        skipped: Math.max(0, job.total_records - job.imported_records - job.failed_records)
+                    };
+                    const message = dryRun
+                        ? `匯入試跑完成，預計可匯入 ${job.imported_records} 筆標籤。`
+                        : `已匯入 ${job.imported_records} 筆標籤，${job.failed_records} 筆資料需要修正。`;
+                    return { job, summary, message };
                 }
                 if (id === 'tags') {
                     const fallbackRoles = DB.all_options?.tagManagement?.writable_roles || ['platform_admin'];

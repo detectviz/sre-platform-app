@@ -45,6 +45,10 @@ CREATE TYPE condition_logic AS ENUM ('and', 'or');
 CREATE TYPE notification_channel_type AS ENUM ('email', 'webhook', 'slack', 'line', 'sms');
 CREATE TYPE notification_status AS ENUM ('pending', 'sent', 'failed');
 CREATE TYPE test_result AS ENUM ('success', 'failed', 'not_tested');
+CREATE TYPE mail_encryption AS ENUM ('none', 'tls', 'ssl');
+CREATE TYPE preference_theme AS ENUM ('dark', 'light', 'system');
+CREATE TYPE preference_language AS ENUM ('en', 'zh-TW');
+CREATE TYPE login_status AS ENUM ('success', 'failed');
 
 -- Audit Types
 CREATE TYPE audit_action AS ENUM ('create', 'read', 'update', 'delete', 'execute', 'login', 'logout', 'permission_change');
@@ -154,6 +158,21 @@ CREATE TABLE datasources (
 CREATE INDEX idx_datasources_type ON datasources(type);
 CREATE INDEX idx_datasources_status ON datasources(status);
 CREATE INDEX idx_datasources_deleted_at ON datasources(deleted_at);
+
+-- Datasource Connection Test Logs
+CREATE TABLE datasource_connection_tests (
+    id VARCHAR(255) PRIMARY KEY,
+    datasource_id VARCHAR(255) NOT NULL REFERENCES datasources(id) ON DELETE CASCADE,
+    status connection_status NOT NULL,
+    result test_result NOT NULL,
+    latency_ms INTEGER,
+    message TEXT,
+    tested_by VARCHAR(255) REFERENCES users(id),
+    tested_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_datasource_connection_tests_datasource_id ON datasource_connection_tests(datasource_id);
+CREATE INDEX idx_datasource_connection_tests_tested_at ON datasource_connection_tests(tested_at);
 
 -- Resources Table
 CREATE TABLE resources (
@@ -652,6 +671,22 @@ CREATE INDEX idx_config_versions_version ON config_versions(entity_type, entity_
 CREATE INDEX idx_config_versions_created_at ON config_versions(created_at);
 
 -- Tag Definitions Table (Tag Management)
+CREATE TABLE tag_bulk_import_jobs (
+    id VARCHAR(255) PRIMARY KEY,
+    filename VARCHAR(255) NOT NULL,
+    status execution_status NOT NULL DEFAULT 'pending',
+    total_records INTEGER NOT NULL DEFAULT 0,
+    imported_records INTEGER NOT NULL DEFAULT 0,
+    failed_records INTEGER NOT NULL DEFAULT 0,
+    error_log JSONB DEFAULT '[]',
+    uploaded_by VARCHAR(255) REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMPTZ
+);
+
+CREATE INDEX idx_tag_bulk_import_jobs_status ON tag_bulk_import_jobs(status);
+CREATE INDEX idx_tag_bulk_import_jobs_created_at ON tag_bulk_import_jobs(created_at);
+
 CREATE TABLE tag_definitions (
     id VARCHAR(255) PRIMARY KEY,
     key VARCHAR(255) NOT NULL UNIQUE,
@@ -696,16 +731,48 @@ CREATE TABLE system_settings (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Mail Settings Table
+CREATE TABLE mail_settings (
+    id VARCHAR(36) PRIMARY KEY DEFAULT 'default',
+    smtp_server TEXT NOT NULL,
+    port INTEGER NOT NULL DEFAULT 587,
+    username TEXT,
+    sender_name TEXT,
+    sender_email TEXT,
+    encryption mail_encryption NOT NULL DEFAULT 'tls',
+    updated_by VARCHAR(255) REFERENCES users(id),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- User Preferences Table
 CREATE TABLE user_preferences (
     user_id VARCHAR(255) PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-    theme VARCHAR(50) DEFAULT 'system' CHECK (theme IN ('dark', 'light', 'system')),
-    language VARCHAR(10) DEFAULT 'zh-TW' CHECK (language IN ('en', 'zh-TW')),
+    theme preference_theme NOT NULL DEFAULT 'system',
+    language preference_language NOT NULL DEFAULT 'zh-TW',
     timezone VARCHAR(100) DEFAULT 'Asia/Taipei',
     default_page VARCHAR(255),
     settings JSONB DEFAULT '{}',
+    last_exported_at TIMESTAMPTZ,
+    last_export_format VARCHAR(50),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- User Preference Export Jobs Table
+CREATE TABLE user_preference_export_jobs (
+    id VARCHAR(255) PRIMARY KEY,
+    user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    format VARCHAR(50) NOT NULL DEFAULT 'json',
+    status execution_status NOT NULL DEFAULT 'pending',
+    download_url TEXT,
+    expires_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMPTZ
+);
+
+CREATE INDEX idx_user_preference_export_jobs_user_id ON user_preference_export_jobs(user_id);
+CREATE INDEX idx_user_preference_export_jobs_status ON user_preference_export_jobs(status);
+CREATE INDEX idx_user_preference_export_jobs_created_at ON user_preference_export_jobs(created_at);
 
 -- Login History Table
 CREATE TABLE login_history (
@@ -714,7 +781,7 @@ CREATE TABLE login_history (
     ip_address VARCHAR(45) NOT NULL,
     device VARCHAR(255),
     user_agent TEXT,
-    status VARCHAR(50) NOT NULL CHECK (status IN ('success', 'failed')),
+    status login_status NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -756,6 +823,8 @@ CREATE TRIGGER update_notification_strategies_updated_at BEFORE UPDATE ON notifi
 CREATE TRIGGER update_dashboards_updated_at BEFORE UPDATE ON dashboards FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_tag_definitions_updated_at BEFORE UPDATE ON tag_definitions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_user_preferences_updated_at BEFORE UPDATE ON user_preferences FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_user_preference_export_jobs_updated_at BEFORE UPDATE ON user_preference_export_jobs FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_mail_settings_updated_at BEFORE UPDATE ON mail_settings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- =====================================================
 -- COMMENTS ON TABLES
@@ -787,7 +856,9 @@ COMMENT ON TABLE audit_logs IS 'Audit trail for all system operations';
 COMMENT ON TABLE config_versions IS 'Version control for entity configurations';
 COMMENT ON TABLE tag_definitions IS 'Tag registry for standardized tagging';
 COMMENT ON TABLE system_settings IS 'System-wide configuration settings';
+COMMENT ON TABLE mail_settings IS 'SMTP configuration for platform notifications';
 COMMENT ON TABLE user_preferences IS 'User-specific preferences and settings';
+COMMENT ON TABLE user_preference_export_jobs IS 'Asynchronous export jobs for user preference downloads';
 COMMENT ON TABLE login_history IS 'User login history for security auditing';
 
 -- =====================================================
