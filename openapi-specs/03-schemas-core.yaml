@@ -137,7 +137,7 @@ components:
           example: rule-002
         status:
           type: string
-          enum: [new, acknowledged, investigating, resolved, closed, silenced]
+          enum: [new, acknowledged, resolved, silenced]
           description: 事件目前的生命週期狀態；`silenced` 代表事件已被靜音且暫停通知。
           example: new
         severity:
@@ -244,7 +244,7 @@ components:
       properties:
         status:
           type: string
-          enum: [new, acknowledged, investigating, resolved, closed, silenced]
+          enum: [new, acknowledged, resolved, silenced]
           description: 更新事件狀態；`silenced` 可用於暫時停用通知。
         assignee:
           type: string

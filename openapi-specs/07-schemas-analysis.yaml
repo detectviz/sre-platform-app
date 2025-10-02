@@ -54,7 +54,7 @@ components:
           example: web-server-01
         risk_level:
           type: string
-          enum: [low, medium, high, critical]
+          enum: [high, medium, low]
           example: medium
         risk_analysis:
           type: string
@@ -67,20 +67,15 @@ components:
               type:
                 type: string
                 enum: [cost, performance, security]
-              priority:
-                type: string
-                enum: [low, medium, high, critical]
               suggestion:
                 type: string
               estimated_impact:
                 type: string
           example:
             - type: performance
-              priority: high
               suggestion: "建議增加 CPU 核心數從 2 核升級到 4 核"
               estimated_impact: "預計可降低 CPU 使用率 40%"
             - type: cost
-              priority: medium
               suggestion: "考慮使用保留實例降低成本"
               estimated_impact: "預計可節省 30% 運算成本"
         predicted_issues:

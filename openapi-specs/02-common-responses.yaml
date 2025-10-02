@@ -19,7 +19,7 @@ components:
             invalidEnum:
               summary: Invalid enum value
               value:
-                error: "Invalid status. Allowed values: new, acknowledged, investigating, resolved, closed, silenced"
+                error: "Invalid status. Allowed values: new, acknowledged, resolved, silenced"
 
     NotFound:
       description: Resource Not Found

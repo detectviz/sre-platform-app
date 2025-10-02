@@ -16,7 +16,7 @@ paths:
           description: Filter by incident status
           schema:
             type: string
-            enum: [new, acknowledged, investigating, resolved, closed, silenced]
+            enum: [new, acknowledged, resolved, silenced]
           example: acknowledged
         - name: severity
           in: query
