@@ -497,3 +497,248 @@ Grafana URL 預設為 http://localhost:3000，缺乏說明是否為預設值或�
 - 添加「重設預設值」次要按鈕，讓使用者快速恢復系統預設設定
 - 為設定變更添加即時預覽功能，選擇主題時立即套用視覺效果
 - 實作設定匯出功能，允許使用者備份個人偏好設定
+## 平台一致性二次審查補充
+
+### 審查方法與全域原則
+- 依照設計系統 `SRE DS v0.8` 的核心原則重新比對每張截圖，著重於語系一致、間距網格（4px 倍數）、元件狀態樣式以及互動層級。
+- 建議中若提及 Token，沿用現有命名：顏色（如 `color.intent.warning`）、文字（如 `font.body.sm`）、按鈕尺寸（如 `button.md`）、間距（如 `spacing.16`）。
+- 所有彈窗、列表與卡片建議統一使用 `Card/Base` 框架（內距 `spacing.24`、標題字重 `font.heading.sm`、分隔線 `divider.subtle`）。
+
+### 各頁面一致性調整建議
+- **dashboard-overview-ai-summary.png**
+  - 問題：AI 摘要卡片未沿用指標卡資訊層級，建議與總覽卡同步呈現主指標＋差異值。
+  - 調整：採用 `MetricCard` 模板（標題 `font.heading.xs`、副標 `font.body.sm`、差異值 `badge.delta`），並將右側 `建議操作` 按鈕改用 `button.md` 與 `spacing.16` 邊距。
+- **incidents-list-overview.png**
+  - 問題：狀態卡與表格行距不一致造成閱讀節奏中斷。
+  - 調整：卡片改用同一 `StatusSummary` 資料骨架，表格行高統一為 `table.rowHeight.lg` 並讓膠囊使用 `Chip/Status` 樣式。
+- **incidents-detail-ai-analysis.png**
+  - 問題：語系混用與分隔不足導致語意跳躍。
+  - 調整：狀態標籤使用 `Chip/Status` 並套用繁體中文 label，AI 區塊加上 `Card/Subsection` 背景與 `spacing.20` 分隔線。
+- **incidents-detail-timeline.png**
+  - 問題：AI 建議與時間軸寬度不一、文字語系不一致。
+  - 調整：統一卡片寬度採 `layout.column.6`，時間軸文字改用雙語欄位並標示觸發者 `Avatar/with-label`。
+- **incidents-assign-modal.png**
+  - 問題：按鈕排列與模態窗標題字階與其他模組不同。
+  - 調整：套用 `Modal/L` 模板（標題 `font.heading.sm`、主次按鈕右對齊 `button.primary` / `button.tertiary`），指派清單加上 `Tag/Role` 標籤。
+- **incidents-silence-modal.png**
+  - 問題：靜音時長 pill 與提醒文字色彩未遵循規格。
+  - 調整：pill 改用 `SegmentedControl` 元件（高度 40px，間距 `spacing.12`），提醒文字採 `text.secondary` 並附 `Icon/info`。
+- **incidents-alert-rules-list.png**
+  - 問題：分頁底線與自動化欄位 icon 表達不一致。
+  - 調整：分頁採 `Tab/underline` 並使用 `color.intent.primary`，自動化欄位改為 `Chip/Toggle` 搭配 Tooltip。
+- **incidents-alert-rules-column-settings.png**
+  - 問題：拖曳指示不足且按鈕間距過緊。
+  - 調整：可選／已選區域使用 `Card/Subtle` 背景，項目左側加入 `Icon/DragHandle`，上下箭頭採 `button.icon.sm` 與 `spacing.12`。
+- **incidents-alert-rule-wizard-step1.png**
+  - 問題：步驟顯示狀態不明與卡片行距偏緊。
+  - 調整：導覽改用 `Stepper` 元件（完成態顯示勾勾），範本卡採 `Card/Selectable` 並補繁中描述。
+- **incidents-alert-rule-wizard-step2-basic.png**
+  - 問題：表單缺乏輔助說明與區塊層級。
+  - 調整：各欄位加入 `Field/Description`，監控範圍區塊採 `Card/Subsection` 背景與 `spacing.16` 內距。
+- **incidents-alert-rule-wizard-step2-scope.png**
+  - 問題：說明文字過長與數字缺少視覺重點。
+  - 調整：使用 `RichText/list` 拆分段落，匹配資源數改用 `Badge/count` 顯示品牌色。
+- **incidents-alert-rule-wizard-step3.png**
+  - 問題：OR/AND 敘述混淆與事件等級樣式不符。
+  - 調整：標題文案改為「條件群組 #1｜串接方式：OR」，事件等級改用 `Pill/Filter` 與 `button.toggle` 樣式。
+- **incidents-alert-rule-wizard-step4.png**
+  - 問題：模板變數與 Tag 操作未依設計系統呈現。
+  - 調整：變數說明改為 `CodeBlock/inline` 列表，新增 Tag 改用 `Button/icon`（含「＋」圖示）。
+- **incidents-alert-rule-wizard-step5.png**
+  - 問題：勾選框與腳本欄位內距不齊。
+  - 調整：表單使用 `Form/TwoColumn` 模板，勾選框左邊保留 `spacing.24`，腳本參數加上 `Field/HelpText`。
+- **incidents-silence-rules-list.png**
+  - 問題：欄位間距與操作項目不足。
+  - 調整：表格欄距使用 `table.gap.md`，操作欄加入與事件列表一致的 `ActionMenu`（延長靜音、停用）。
+- **incidents-silence-rule-wizard-step1.png**
+  - 問題：快速套用樣式不符與欄位語系混用。
+  - 調整：按鈕套用 `Button/secondary` 並提供 hover，欄位加上繁中標籤與 `Field/Placeholder` 指引。
+- **incidents-silence-rule-wizard-step2-once.png**
+  - 問題：日期格式未標示時區且分頁選態不明。
+  - 調整：時間欄位加入 `Suffix` 顯示 UTC+8，分頁使用 `Tab/Segmented` 並加粗選中狀態。
+- **incidents-silence-rule-wizard-step2-recurring.png**
+  - 問題：Cron 選項缺少輔助敘述與時間選擇不一致。
+  - 調整：新增 `HelperPanel` 提供 Cron 範例，執行時間改用 `TimePicker` 元件。
+- **incidents-silence-rule-wizard-step3.png**
+  - 問題：條件區塊擁擠與預覽資訊不足。
+  - 調整：靜音條件套用 `Card/Subsection` 與 `spacing.20` 內距，預覽改為可展開的 `Disclosure` 列表。
+- **resources-inventory-list.png**
+  - 問題：語系混搭與操作圖示缺乏說明。
+  - 調整：指標/狀態統一繁中標籤並附英文 Tooltip，操作欄使用 `IconButton` 搭配 Tooltip。
+- **resources-edit-modal.png**
+  - 問題：雙欄間距過大與下拉不可搜尋。
+  - 調整：採 `Form/Responsive` 單欄模式（間距 `spacing.24`），下拉改用 `Combobox/searchable`。
+- **resources-groups-list.png**
+  - 問題：卡片色票與列表狀態不一致、缺少查看入口。
+  - 調整：狀態燈號沿用 `StatusLegend` 三色，操作欄加入 `View` 行為與共用圖示排序。
+- **resources-edit-group-modal.png**
+  - 問題：拖放提示不足與搜尋框缺乏聚焦樣式。
+  - 調整：可用/已選區域加入 `IllustrationArrow` 及「拖曳加入」文案，搜尋框使用 `Input/focus` 邊框色。
+- **resources-datasources-list.png**
+  - 問題：狀態顏色未與資源列表對齊、缺少快捷操作。
+  - 調整：狀態 icon 採用共用 `StatusDot` 色票，操作欄新增 `Button/link`「測試連線」。
+- **resources-edit-datasource-modal.png**
+  - 問題：Tag 與按鈕對齊不佳。
+  - 調整：標籤區塊採單列 `TagGroup`，操作區採 `ButtonGroup` 左測試右主次按鈕。
+- **resources-auto-discovery-list.png**
+  - 問題：Cron 資訊不易理解與狀態缺少圖示。
+  - 調整：排程欄位提供 `InfoTooltip` 說明，狀態改用 `StatusChip`。
+- **resources-discovery-results-modal.png**
+  - 問題：標題資訊與可選行為不匹配，狀態顏色對比不足。
+  - 調整：標題顯示「已勾選 X 項 / 全部 Y 項」，狀態使用 `color.intent.info` 提升對比。
+- **resources-edit-discovery-task-modal.png**
+  - 問題：表單過長與 kubeconfig 缺乏格式提示。
+  - 調整：拆為 `Stepper` 子流程或加右側錨點，kubeconfig 欄位附 `CodeEditor` 範例與驗證。
+- **resources-discovery-task-step3.png**
+  - 問題：模板與 YAML 欄位未分隔、說明色彩過淡。
+  - 調整：兩區使用 `Card/Duo` 分欄，邊緣掃描說明採 `text.secondary` 並加 `Icon/info`。
+- **resources-discovery-task-step5.png**
+  - 問題：標籤輸入缺少提示與底部留白不足。
+  - 調整：改用 `TagInput`（placeholder「cluster = A」），底部內距增加至 `spacing.32`。
+- **resources-topology-view.png**
+  - 問題：節點色票不一致與篩選器缺乏標籤。
+  - 調整：拓撲節點沿用 `StatusPalette`，左上篩選採 `FilterGroup` 並加「視圖模式」標籤。
+- **dashboards-list.png**
+  - 問題：分類標籤語系混用與收藏 icon 沒有狀態提示。
+  - 調整：標籤採繁中主語系搭配 Tooltip，收藏圖示使用 `Icon/star-filled` 與 hover 說明。
+- **dashboards-template-gallery.png**
+  - 問題：卡片高度不齊與主按鈕色彩不一致。
+  - 調整：套用 `Card/Template` 固定高度並將主按鈕使用品牌 `button.primary`。
+- **dashboards-builder-empty.png**
+  - 問題：標題階層不足與空狀態指引不明。
+  - 調整：插入 `Description` 副標與 `EmptyState` 插畫（尺寸 200px）。
+- **dashboards-add-widget-modal.png**
+  - 問題：小工具重複與缺乏辨識輔助。
+  - 調整：清單支援 `Search` 與 `Category` 過濾，每項加上 `Thumbnail`。
+- **dashboards-builder-with-widgets.png**
+  - 問題：已新增小工具無排序提示且間距過大。
+  - 調整：每張卡加入 `DragHandle`，縱向間距降至 `spacing.16` 並支援雙欄。
+- **insights-overview.png**
+  - 問題：語系與時間戳缺失。
+  - 調整：統一指標單位語言，AI 模組標題旁加入 `Timestamp/badge`。
+- **automation-scripts-list.png**
+  - 問題：英文描述與缺乏篩選欄位。
+  - 調整：文案提供繁中主體，表格新增 `Script Language` 欄並使用 `Tag` 呈現。
+- **automation-edit-script-modal.png**
+  - 問題：程式區無行號與操作按鈕位置不一。
+  - 調整：嵌入 `CodeEditor`（行號＋高亮），工具按鈕放於右上 `Toolbar`。
+- **automation-ai-generate-script-modal.png**
+  - 問題：生成結果缺少滾動指示與型別預設。
+  - 調整：輸出區高度限制 280px 並顯示 `ScrollShadow`，型別欄位預設來源腳本類型。
+- **automation-triggers-list.png**
+  - 問題：類型標籤顏色不一致與缺少執行狀態。
+  - 調整：標籤採 `Chip/Type` 共用色票，表格新增「上次執行」欄與 `StatusDot`。
+- **automation-edit-trigger-schedule.png**
+  - 問題：Cron 字串缺少預覽且模態寬度過大。
+  - 調整：加上 `NextRunPreview` 元件，模態採 `Modal/M` 寬度。
+- **automation-edit-trigger-webhook.png**
+  - 問題：缺少 webhook 專屬設定。
+  - 調整：提供 `AuthSection`（Bearer/API Key/Basic），欄位統一高度 40px 並加格式驗證。
+- **automation-edit-trigger-event.png**
+  - 問題：僅支援 AND 條件與下拉排序混亂。
+  - 調整：改用 `ConditionBuilder` 支援群組，選單依模組排序並支援搜尋。
+- **automation-run-logs-list.png**
+  - 問題：缺乏狀態篩選與操作提示。
+  - 調整：表頭加入 `FilterBar`（狀態、管道），操作欄新增「查看輸出」icon。
+- **automation-run-log-detail.png**
+  - 問題：標題資訊不足與 stdout 顏色不夠突出。
+  - 調整：標題改為「腳本名稱｜執行編號｜時間」，stdout 使用深色 `CodeBlock`。
+- **identity-users-list.png**
+  - 問題：統計卡英文文案、操作圖示順序不一。
+  - 調整：文案提供繁中主語系並保留英文 Tooltip，操作按鈕依平台順序排列。
+- **identity-invite-member-modal.png**
+  - 問題：角色/團隊無權限摘要、主按鈕色彩不同。
+  - 調整：下拉選項附 `Caption` 描述權限，送出按鈕改用 `button.primary`。
+- **identity-edit-member-modal.png**
+  - 問題：唯讀欄位樣式與可編輯欄位相同，狀態缺少顏色。
+  - 調整：電子郵件改用 `Input/readonly` 樣式，狀態下拉搭配 `StatusDot`。
+- **identity-teams-list.png**
+  - 問題：缺乏關鍵統計與快速操作。
+  - 調整：表格新增成員總數、使用中專案欄位，操作欄加入「設定擁有者」選項。
+- **identity-edit-team-modal.png**
+  - 問題：可用成員缺搜尋、描述欄位無字數提示。
+  - 調整：加入 `SearchInput` 與描述 `CharacterCounter`。
+- **identity-roles-list.png**
+  - 問題：開關與行距不齊、描述為英文。
+  - 調整：使用 `Switch` 標準寬度，描述提供繁中正文並保留英文 Tooltip。
+- **identity-edit-role-modal.png**
+  - 問題：折疊指示與核取對齊不佳。
+  - 調整：展開箭頭放大至 16px 並使用 `Accordion`，權限勾選改為 `Table/PermissionMatrix`。
+- **identity-audit-log-list.png**
+  - 問題：缺乏空狀態指引與語系一致性。
+  - 調整：表格加入 `EmptyState` 指示與繁中欄位標題。
+- **identity-audit-log-detail.png**
+  - 問題：JSON 置中且無複製功能。
+  - 調整：採 `CodeViewer`（等寬字體、左對齊、Copy 按鈕）。
+- **insights-log-explorer.png**
+  - 問題：圖表缺圖例、表格英文欄位。
+  - 調整：使用 `ChartLegend` 標示顏色，欄位名稱翻譯為繁中並統一字體。
+- **insights-capacity-planning.png**
+  - 問題：預測線辨識度低與 AI 卡片文字過長。
+  - 調整：預測線採 `color.intent.warning` 並更新圖例，卡片提供折疊 `ReadMore` 與 200px 高度限制。
+- **notifications-strategies-list.png**
+  - 問題：條件膠囊英文與缺少最後觸發欄位。
+  - 調整：膠囊改為繁中標籤並附 Tooltip，新增「最後觸發」欄位與排序功能。
+- **notifications-strategy-step1.png**
+  - 問題：欄位缺字數限制提示、Tag 表現不一致。
+  - 調整：加入 `CharacterCounter` 與 `TagInput`（含「全部清除」）。
+- **notifications-strategy-step2.png**
+  - 問題：通知管道缺狀態資訊與說明。
+  - 調整：勾選項目顯示成功率徽章，標題下加副標說明與 Hover 詳情。
+- **notifications-strategy-step3.png**
+  - 問題：附加條件無分隔與預設。
+  - 調整：區塊套 `Card/Subtle`，提供常用條件快捷與即時預覽。
+- **notifications-channels-list.png**
+  - 問題：空狀態與發送結果缺視覺提示。
+  - 調整：新增空狀態插畫與 CTA，發送結果使用 `StatusIcon`。
+- **notifications-add-channel-email.png**
+  - 問題：欄位缺格式提示、測試/儲存按鈕過近。
+  - 調整：提供 placeholder 與格式說明，按鈕採主次樣式分離並加入格式驗證。
+- **notifications-add-channel-webhook.png**
+  - 問題：無認證設定且欄位高度不一。
+  - 調整：新增認證區（含顯示/隱藏切換與測試按鈕），所有輸入統一高度 40px。
+- **notifications-add-channel-slack.png**
+  - 問題：placeholder 為英文且缺測試功能。
+  - 調整：改為繁中提示、提供 `測試訊息` 按鈕與 URL 格式驗證。
+- **notifications-add-channel-line.png**
+  - 問題：Access Token 提示不足、欄距過大。
+  - 調整：眼睛圖示加 Tooltip，欄位間距調整為 `spacing.16` 並加取得教學連結。
+- **notifications-add-channel-sms.png**
+  - 問題：國碼支援不明與佈局鬆散。
+  - 調整：加入國碼下拉、雙欄響應式佈局與測試簡訊功能。
+- **notifications-send-history.png**
+  - 問題：缺篩選與內容預覽。
+  - 調整：表頭提供狀態/管道篩選，內容欄加展開/Tooltip。
+- **notifications-history-detail.png**
+  - 問題：JSON 區缺複製、提示不明顯。
+  - 調整：採 `CodeViewer` 與 Copy 按鈕，提示文字使用 `text.emphasis` 背景。
+- **platform-tags-overview.png**
+  - 問題：警告色票不一致與缺批次功能。
+  - 調整：警示沿用 `color.intent.warning`，操作欄加入「批次匯入/刪除」與搜尋。
+- **platform-email-settings.png**
+  - 問題：欄位缺驗證與按鈕樣式不分。
+  - 調整：密碼欄顯示強度條與即時驗證，測試按鈕使用次要樣式。
+- **platform-identity-settings.png**
+  - 問題：警示色票與欄位語系不一致。
+  - 調整：套用標準警示樣式並提供雙語標籤與遮罩顯示。
+- **platform-layout-manager.png**
+  - 問題：折疊箭頭位置與資訊密度不足。
+  - 調整：模組使用 `Card/List` 背景，左側顯示 `DragHandle` 與統計指標。
+- **platform-layout-edit-kpi-modal.png**
+  - 問題：對齊不齊與排序狀態不明。
+  - 調整：項目使用 `ListItem/draggable` 模式，禁用箭頭顯示灰階並加入自動排序。
+- **platform-grafana-settings.png**
+  - 問題：URL 說明不足與 API Key 缺複製。
+  - 調整：新增預設值說明與格式驗證，提供 `Copy` 與「測試連線」按鈕。
+- **platform-license-page.png**
+  - 問題：功能清單視覺弱與 CTA 分層不明。
+  - 調整：使用核取圖示展示功能差異，升級按鈕改為次要樣式並提供比較表。
+- **profile-personal-info.png**
+  - 問題：卡片缺分隔與編輯入口不明。
+  - 調整：欄位加 `Label`、分隔線，提供主要按鈕連結至 Keycloak。
+- **profile-security-settings.png**
+  - 問題：缺密碼強度與登入活動資訊不足。
+  - 調整：新增強度條、即時驗證，登入紀錄加裝置圖示與地理位置。
+- **profile-preferences.png**
+  - 問題：下拉缺說明與主按鈕位置不一致。
+  - 調整：為選項加入描述文字與即時預覽，按鈕改用右下主/次按鈕並提供「重設預設值」。
