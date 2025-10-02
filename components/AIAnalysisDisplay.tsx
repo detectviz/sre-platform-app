@@ -9,12 +9,12 @@ interface AIAnalysisDisplayProps {
 }
 
 const Section: React.FC<{ title: string; icon: string; children: React.ReactNode }> = ({ title, icon, children }) => (
-    <div>
-        <h3 className="font-bold text-lg text-purple-400 mb-2 flex items-center">
+    <div className="rounded-xl border border-purple-500/20 bg-slate-900/40 p-4 shadow-inner shadow-purple-500/5">
+        <h3 className="font-bold text-base text-purple-300 mb-3 flex items-center">
             <Icon name={icon} className="w-5 h-5 mr-2" />
             {title}
         </h3>
-        <div className="pl-7 text-sm">
+        <div className="pl-7 text-sm leading-relaxed text-slate-200">
             {children}
         </div>
     </div>
