@@ -1299,6 +1299,72 @@ export interface ResourceAnalysis {
   risk_analysis: ResourceRisk[];
   optimization_suggestions: OptimizationSuggestion[];
 }
+
+export interface PredictedIncident {
+  resource_id: string;
+  resource_name: string;
+  predicted_issue: string;
+  probability: number;
+  estimated_time: string;
+  severity: IncidentSeverity;
+  preventive_actions: string[];
+}
+
+export interface IncidentPrediction {
+  predictions: PredictedIncident[];
+  analysis_timestamp: string;
+}
+
+export type AnomalySeverity = 'high' | 'medium' | 'low';
+
+export interface ExpectedRange {
+  min: number;
+  max: number;
+  [key: string]: number;
+}
+
+export interface DetectedAnomaly {
+  resource_id: string;
+  resource_name: string;
+  metric: string;
+  timestamp: string;
+  actual_value: number;
+  expected_range: ExpectedRange;
+  severity: AnomalySeverity;
+  description: string;
+}
+
+export interface AnomalySummary {
+  total_anomalies: number;
+  high_severity_count: number;
+  [key: string]: number;
+}
+
+export interface AnomalyDetection {
+  anomalies: DetectedAnomaly[];
+  summary: AnomalySummary;
+}
+
+export interface MetricPredictionPoint {
+  date: string;
+  value: number;
+  confidence: number;
+}
+
+export interface MetricPrediction {
+  metric: string;
+  current_value: number;
+  predicted_values: MetricPredictionPoint[];
+  threshold_breach_date: string | null;
+  recommendation: string;
+}
+
+export interface CapacityPrediction {
+  resource_id: string;
+  resource_name: string;
+  predictions: MetricPrediction[];
+  analysis_timestamp: string;
+}
 // ------------------------------------
 
 export interface LicenseInfo {

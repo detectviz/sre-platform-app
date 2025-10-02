@@ -130,6 +130,36 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /iam/users/import:
+    post:
+      tags: [IAM]
+      summary: Import users
+      description: Bulk import users from a provided payload.
+      operationId: importIamUsers
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source:
+                  type: string
+                  description: Optional label describing the import source.
+      responses:
+        '200':
+          description: Import summary message.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleMessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /iam/teams:
     get:
       tags: [IAM]
@@ -446,6 +476,10 @@ components:
             $ref: '#/components/schemas/User'
         total:
           type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
     PaginatedTeams:
       type: object
       properties:
@@ -454,6 +488,10 @@ components:
           items:
             $ref: '#/components/schemas/Team'
         total:
+          type: integer
+        page:
+          type: integer
+        page_size:
           type: integer
     PaginatedRoles:
       type: object
@@ -464,6 +502,10 @@ components:
             $ref: '#/components/schemas/Role'
         total:
           type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
     PaginatedAuditLogs:
       type: object
       properties:
@@ -472,4 +514,8 @@ components:
           items:
             $ref: '#/components/schemas/AuditLog'
         total:
+          type: integer
+        page:
+          type: integer
+        page_size:
           type: integer

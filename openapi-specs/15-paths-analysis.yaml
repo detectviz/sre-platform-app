@@ -334,21 +334,74 @@ paths:
         "503":
           $ref: "#/components/responses/AIServiceUnavailable"
 
-components:
-  schemas:
-    BatchResourceAnalysisReport:
-      type: object
-      properties:
-        analyses:
-          type: array
-          items:
-            $ref: '#/components/schemas/ResourceAnalysisReport'
-        summary:
-          type: object
-          properties:
-            total_resources:
-              type: integer
-            high_risk_count:
-              type: integer
-            recommendations_count:
-              type: integer
+  /ai/alert-rules/analyze:
+    post:
+      tags: [AI]
+      summary: Analyze alert rules
+      description: Generate an AI-driven analysis summary for the selected alert rules.
+      operationId: analyzeAlertRules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rule_ids]
+              properties:
+                rule_ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Alert rule analysis report.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleAnalysisReport'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/AIServiceUnavailable"
+
+  /ai/silence-rules/analyze:
+    post:
+      tags: [AI]
+      summary: Analyze silence rules
+      description: Generate an AI-driven review of the selected silence rules.
+      operationId: analyzeSilenceRules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rule_ids]
+              properties:
+                rule_ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Silence rule analysis report.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleAnalysisReport'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/AIServiceUnavailable"

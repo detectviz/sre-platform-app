@@ -9,6 +9,7 @@ components:
       required:
         - id
         - name
+        - trigger
         - type
         - content
         - last_run_at
@@ -24,6 +25,10 @@ components:
         name:
           type: string
           example: 重啟故障 Pod
+        trigger:
+          type: string
+          description: Identifier of the trigger associated with the playbook.
+          example: incident.created
         type:
           type: string
           enum: [shell, python, ansible, terraform]

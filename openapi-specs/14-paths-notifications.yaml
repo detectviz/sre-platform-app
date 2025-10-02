@@ -344,6 +344,46 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: List notifications
+      description: Retrieve a paginated list of in-app notifications.
+      operationId: listNotifications
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
+      responses:
+        "200":
+          description: Paginated notifications.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNotifications'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /notifications/read-all:
+    post:
+      tags: [Notifications]
+      summary: Mark all notifications as read
+      operationId: readAllNotifications
+      responses:
+        "200":
+          description: All notifications marked as read.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleMessageResponse'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
 components:
   schemas:
     PaginatedNotificationChannels:
@@ -355,6 +395,10 @@ components:
             $ref: '#/components/schemas/NotificationChannel'
         total:
           type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
     PaginatedNotificationStrategies:
       type: object
       properties:
@@ -364,6 +408,10 @@ components:
             $ref: '#/components/schemas/NotificationStrategy'
         total:
           type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
     PaginatedNotificationHistoryRecords:
       type: object
       properties:
@@ -372,4 +420,21 @@ components:
           items:
             $ref: '#/components/schemas/NotificationHistoryRecord'
         total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+    PaginatedNotifications:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationItem'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
           type: integer

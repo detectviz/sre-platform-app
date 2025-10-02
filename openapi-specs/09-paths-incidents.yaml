@@ -76,6 +76,36 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /incidents/import:
+    post:
+      tags: [Incidents]
+      summary: Import incidents
+      description: Bulk import incident records from an external source.
+      operationId: importIncidents
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source:
+                  type: string
+                  description: Optional label describing the import source.
+      responses:
+        "200":
+          description: Import summary message.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleMessageResponse'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /incidents/{id}:
     parameters:
       - $ref: "#/components/parameters/IdParam"

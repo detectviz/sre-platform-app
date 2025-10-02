@@ -318,3 +318,27 @@ components:
           additionalProperties:
             type: any
           description: Additional delivery information such as provider identifiers
+
+    NotificationItem:
+      type: object
+      description: Compact notification used in the notification center list.
+      required: [id, title, description, severity, status, created_at]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        severity:
+          type: string
+          enum: [critical, warning, info, success]
+        status:
+          type: string
+          enum: [unread, read]
+        created_at:
+          type: string
+          format: date-time
+        link_url:
+          type: string
+          format: uri

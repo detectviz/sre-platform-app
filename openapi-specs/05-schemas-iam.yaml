@@ -40,11 +40,6 @@ components:
           enum: [active, invited, inactive]
           readOnly: true
           example: active
-        avatar:
-          type: string
-          format: uri
-          readOnly: true
-          example: https://api.example.com/avatars/usr-001.png
         last_login_at:
           type: string
           format: date-time
@@ -198,10 +193,27 @@ components:
         enabled:
           type: boolean
           example: true
+        user_count:
+          type: integer
+          readOnly: true
+          example: 12
         permissions:
           type: array
           items:
             $ref: '#/components/schemas/RolePermission'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
 
     # ===================
     # Audit Log
@@ -245,23 +257,6 @@ components:
         details:
           type: object
           additionalProperties: true
-        user_count:
-          type: integer
-          readOnly: true
-          example: 15
-        created_at:
-          type: string
-          format: date-time
-          readOnly: true
-        updated_at:
-          type: string
-          format: date-time
-          readOnly: true
-        deleted_at:
-          type: string
-          format: date-time
-          readOnly: true
-          nullable: true
 
     RolePermission:
       type: object
