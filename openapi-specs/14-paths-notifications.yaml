@@ -1,35 +1,24 @@
 # Notifications API Paths
 paths:
-  # ===================
-  # Notification Channels
-  # ===================
-  /notifications/channels:
+  /settings/notification-channels:
     get:
       tags: [Notifications]
       summary: List notification channels
-      description: Retrieve a paginated list of notification channels
+      description: 取得通知管道列表，支援分頁、排序與關鍵字搜尋。
       operationId: listNotificationChannels
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PageSizeParam'
         - $ref: '#/components/parameters/SortByParam'
         - $ref: '#/components/parameters/SortOrderParam'
-        - name: type
+        - name: keyword
           in: query
-          description: Filter by channel type
+          description: 依名稱模糊搜尋。
           schema:
             type: string
-            enum: [Email, Webhook (通用), Slack, LINE Notify, SMS]
-          example: Email
-        - name: enabled
-          in: query
-          description: Filter by enabled status
-          schema:
-            type: boolean
-          example: true
       responses:
         '200':
-          description: Successful response with paginated channels
+          description: 成功取得通知管道列表。
           content:
             application/json:
               schema:
@@ -45,15 +34,12 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/NotificationChannel'
-        '400':
-          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-
     post:
       tags: [Notifications]
       summary: Create notification channel
-      description: Create a new notification channel
+      description: 建立新的通知管道。
       operationId: createNotificationChannel
       requestBody:
         required: true
@@ -61,28 +47,16 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/NotificationChannelCreate'
-            examples:
-              emailChannel:
-                summary: Email channel
-                value:
-                  name: "Ops Team Email"
-                  type: "Email"
-                  enabled: true
-                  config:
-                    recipients: ["ops@example.com", "oncall@example.com"]
-                    sender: "noreply@example.com"
-              slackChannel:
-                summary: Slack channel
-                value:
-                  name: "Slack Alerts"
-                  type: "Slack"
-                  enabled: true
-                  config:
-                    webhook_url: "https://hooks.slack.com/services/xxx/yyy/zzz"
-                    channel: "#alerts"
+            example:
+              name: SRE On-call Email
+              type: Email
+              enabled: true
+              config:
+                to: sre-oncall@example.com
+                cc: sre-manager@example.com
       responses:
         '201':
-          description: Channel created successfully
+          description: 通知管道建立成功。
           content:
             application/json:
               schema:
@@ -92,50 +66,64 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /notifications/channels/{id}:
-    parameters:
-      - $ref: '#/components/parameters/IdParam'
-
-    get:
+  /settings/notification-channels/batch-actions:
+    post:
       tags: [Notifications]
-      summary: Get channel by ID
-      description: Retrieve a specific notification channel by its ID
-      operationId: getNotificationChannelById
+      summary: Batch update notification channels
+      description: 批次啟用、停用或刪除通知管道。
+      operationId: batchUpdateNotificationChannels
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, ids]
+              properties:
+                action:
+                  type: string
+                  enum: [enable, disable, delete]
+                ids:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+            example:
+              action: enable
+              ids: [chan-1, chan-2]
       responses:
         '200':
-          description: Successful response
+          description: 批次操作完成。
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NotificationChannel'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: '#/components/schemas/BatchResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /settings/notification-channels/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
     patch:
       tags: [Notifications]
-      summary: Update channel
-      description: Update an existing notification channel
+      summary: Update notification channel
+      description: 更新通知管道設定。
       operationId: updateNotificationChannel
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/NotificationChannelUpdate'
-            examples:
-              updateConfig:
-                summary: Update channel configuration
-                value:
-                  config:
-                    recipients: ["ops@example.com", "oncall@example.com", "manager@example.com"]
-              disableChannel:
-                summary: Disable channel
-                value:
-                  enabled: false
+            example:
+              enabled: false
+              config:
+                to: sre-oncall@example.com
       responses:
         '200':
-          description: Channel updated successfully
+          description: 通知管道更新成功。
           content:
             application/json:
               schema:
@@ -146,28 +134,31 @@ paths:
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
-
     delete:
       tags: [Notifications]
-      summary: Delete channel
-      description: Delete a notification channel
+      summary: Soft delete notification channel
+      description: 將通知管道標記為刪除。
       operationId: deleteNotificationChannel
       responses:
-        '204':
-          description: Channel deleted successfully
+        '200':
+          description: 刪除成功，回傳空物件。
+          content:
+            application/json:
+              schema:
+                type: object
+              example: {}
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /notifications/channels/{id}/test:
+  /settings/notification-channels/{id}/test:
     parameters:
       - $ref: '#/components/parameters/IdParam'
-
     post:
       tags: [Notifications]
       summary: Test notification channel
-      description: Send a test notification through the channel
+      description: 送出測試通知並更新最新測試結果。
       operationId: testNotificationChannel
       requestBody:
         content:
@@ -177,13 +168,10 @@ paths:
               properties:
                 message:
                   type: string
-                  description: Custom test message
-                  default: "This is a test notification"
-            example:
-              message: "Testing notification channel configuration"
+                  default: 測試通知
       responses:
         '200':
-          description: Test notification sent successfully
+          description: 測試通知已送出。
           content:
             application/json:
               schema:
@@ -193,55 +181,35 @@ paths:
                     type: boolean
                   message:
                     type: string
-                  details:
-                    type: object
-                example:
-                  success: true
-                  message: "Test notification sent successfully"
-                  details:
-                    sent_at: "2024-01-15T10:30:00Z"
-                    recipients: ["ops@example.com"]
+              example:
+                success: true
+                message: 測試通知已送出至「SRE On-call Email」。
         '400':
-          description: Channel configuration error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  error:
-                    type: string
+          $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  # ===================
-  # Notification Strategies
-  # ===================
-  /notifications/strategies:
+  /settings/notification-strategies:
     get:
       tags: [Notifications]
       summary: List notification strategies
-      description: Retrieve a paginated list of notification strategies
+      description: 取得通知策略列表，支援分頁、排序與關鍵字搜尋。
       operationId: listNotificationStrategies
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PageSizeParam'
         - $ref: '#/components/parameters/SortByParam'
         - $ref: '#/components/parameters/SortOrderParam'
-        - name: enabled
+        - name: keyword
           in: query
-          description: Filter by enabled status
+          description: 依策略名稱模糊搜尋。
           schema:
-            type: boolean
-          example: true
+            type: string
       responses:
         '200':
-          description: Successful response with paginated strategies
+          description: 成功取得通知策略列表。
           content:
             application/json:
               schema:
@@ -257,15 +225,12 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/NotificationStrategy'
-        '400':
-          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-
     post:
       tags: [Notifications]
       summary: Create notification strategy
-      description: Create a new notification strategy
+      description: 建立新的通知策略。
       operationId: createNotificationStrategy
       requestBody:
         required: true
@@ -274,70 +239,81 @@ paths:
             schema:
               $ref: '#/components/schemas/NotificationStrategyCreate'
             example:
-              name: "嚴重告警通知策略"
+              name: Critical Database Alerts
               enabled: true
-              trigger_condition: "severity == 'Critical' OR impact == 'High'"
-              severity_levels: ["Critical"]
-              impact_levels: ["High", "Medium"]
-              channel_ids: ["channel-email-ops", "channel-slack-oncall"]
+              trigger_condition: severity == 'Critical'
+              severity_levels: [Critical]
+              impact_levels: [High]
+              channel_ids: [chan-1]
       responses:
         '201':
-          description: Strategy created successfully
+          description: 通知策略建立成功。
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotificationStrategy'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '404':
-          description: One or more channels not found
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /notifications/strategies/{id}:
-    parameters:
-      - $ref: '#/components/parameters/IdParam'
-
-    get:
+  /settings/notification-strategies/batch-actions:
+    post:
       tags: [Notifications]
-      summary: Get strategy by ID
-      description: Retrieve a specific notification strategy by its ID
-      operationId: getNotificationStrategyById
+      summary: Batch update notification strategies
+      description: 批次啟用、停用或刪除通知策略。
+      operationId: batchUpdateNotificationStrategies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, ids]
+              properties:
+                action:
+                  type: string
+                  enum: [enable, disable, delete]
+                ids:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+            example:
+              action: disable
+              ids: [strat-001, strat-002]
       responses:
         '200':
-          description: Successful response
+          description: 批次操作完成。
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NotificationStrategy'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: '#/components/schemas/BatchResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /settings/notification-strategies/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
     patch:
       tags: [Notifications]
-      summary: Update strategy
-      description: Update an existing notification strategy
+      summary: Update notification strategy
+      description: 更新通知策略設定。
       operationId: updateNotificationStrategy
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/NotificationStrategyUpdate'
-            examples:
-              updateCondition:
-                summary: Update trigger condition
-                value:
-                  trigger_condition: "severity == 'Critical'"
-                  severity_levels: ["Critical"]
-              updateChannels:
-                summary: Update notification channels
-                value:
-                  channel_ids: ["channel-email-ops", "channel-slack-oncall", "channel-sms"]
+            example:
+              enabled: false
+              channel_ids: [chan-1, chan-2]
       responses:
         '200':
-          description: Strategy updated successfully
+          description: 通知策略更新成功。
           content:
             application/json:
               schema:
@@ -348,71 +324,38 @@ paths:
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
-
     delete:
       tags: [Notifications]
-      summary: Delete strategy
-      description: Delete a notification strategy
+      summary: Soft delete notification strategy
+      description: 將通知策略標記為刪除。
       operationId: deleteNotificationStrategy
       responses:
-        '204':
-          description: Strategy deleted successfully
+        '200':
+          description: 刪除成功，回傳空物件。
+          content:
+            application/json:
+              schema:
+                type: object
+              example: {}
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  # ===================
-  # Notification History
-  # ===================
-  /notifications/history:
+  /settings/notification-history:
     get:
       tags: [Notifications]
       summary: List notification history
-      description: Retrieve a paginated list of notification history records
+      description: 取得通知發送紀錄，支援分頁與排序。
       operationId: listNotificationHistory
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PageSizeParam'
         - $ref: '#/components/parameters/SortByParam'
         - $ref: '#/components/parameters/SortOrderParam'
-        - name: channel_type
-          in: query
-          description: Filter by channel type
-          schema:
-            type: string
-            enum: [Email, Webhook (通用), Slack, LINE Notify, SMS]
-          example: Email
-        - name: status
-          in: query
-          description: Filter by notification status
-          schema:
-            type: string
-            enum: [sent, failed, pending]
-          example: sent
-        - name: incident_id
-          in: query
-          description: Filter by incident ID
-          schema:
-            type: string
-          example: INC-001
-        - name: start_date
-          in: query
-          description: Filter by start date (ISO 8601 format)
-          schema:
-            type: string
-            format: date-time
-          example: "2024-01-01T00:00:00Z"
-        - name: end_date
-          in: query
-          description: Filter by end date (ISO 8601 format)
-          schema:
-            type: string
-            format: date-time
-          example: "2024-01-31T23:59:59Z"
       responses:
         '200':
-          description: Successful response with paginated history
+          description: 成功取得通知紀錄。
           content:
             application/json:
               schema:
@@ -428,163 +371,33 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/NotificationHistoryRecord'
-        '400':
-          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /notifications/history/{id}:
+  /settings/notification-history/{id}/resend:
     parameters:
       - $ref: '#/components/parameters/IdParam'
-
-    get:
+    post:
       tags: [Notifications]
-      summary: Get notification history by ID
-      description: Retrieve a specific notification history record by its ID
-      operationId: getNotificationHistoryById
+      summary: Resend notification history record
+      description: 重新發送指定的通知紀錄。
+      operationId: resendNotificationHistory
       responses:
         '200':
-          description: Successful response
+          description: 通知已重新發送。
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NotificationHistoryRecord'
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+              example:
+                success: true
+                message: 通知已重新發送。
         '404':
           $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  # ===================
-  # Batch Operations
-  # ===================
-  /notifications/channels/batch-enable:
-    post:
-      tags: [Notifications]
-      summary: Batch enable channels
-      description: Enable multiple notification channels at once
-      operationId: batchEnableChannels
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [channel_ids]
-              properties:
-                channel_ids:
-                  type: array
-                  items:
-                    type: string
-                  minItems: 1
-            example:
-              channel_ids: ["channel-001", "channel-002"]
-      responses:
-        '200':
-          description: Batch enable completed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BatchResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /notifications/channels/batch-disable:
-    post:
-      tags: [Notifications]
-      summary: Batch disable channels
-      description: Disable multiple notification channels at once
-      operationId: batchDisableChannels
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [channel_ids]
-              properties:
-                channel_ids:
-                  type: array
-                  items:
-                    type: string
-                  minItems: 1
-            example:
-              channel_ids: ["channel-003", "channel-004"]
-      responses:
-        '200':
-          description: Batch disable completed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BatchResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /notifications/strategies/batch-enable:
-    post:
-      tags: [Notifications]
-      summary: Batch enable strategies
-      description: Enable multiple notification strategies at once
-      operationId: batchEnableStrategies
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [strategy_ids]
-              properties:
-                strategy_ids:
-                  type: array
-                  items:
-                    type: string
-                  minItems: 1
-            example:
-              strategy_ids: ["strategy-001", "strategy-002"]
-      responses:
-        '200':
-          description: Batch enable completed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BatchResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /notifications/strategies/batch-disable:
-    post:
-      tags: [Notifications]
-      summary: Batch disable strategies
-      description: Disable multiple notification strategies at once
-      operationId: batchDisableStrategies
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [strategy_ids]
-              properties:
-                strategy_ids:
-                  type: array
-                  items:
-                    type: string
-                  minItems: 1
-            example:
-              strategy_ids: ["strategy-003", "strategy-004"]
-      responses:
-        '200':
-          description: Batch disable completed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BatchResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'

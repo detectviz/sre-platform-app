@@ -1,35 +1,24 @@
 # IAM API Paths
 paths:
-  # ===================
-  # Users
-  # ===================
   /iam/users:
     get:
       tags: [IAM]
       summary: List users
-      description: Retrieve a paginated list of users
-      operationId: listUsers
+      description: 取得使用者列表，支援分頁、排序與關鍵字搜尋。
+      operationId: listIamUsers
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PageSizeParam'
         - $ref: '#/components/parameters/SortByParam'
         - $ref: '#/components/parameters/SortOrderParam'
-        - name: role
+        - name: keyword
           in: query
-          description: Filter by user role
+          description: 依名稱或 Email 模糊搜尋。
           schema:
             type: string
-            enum: [Admin, SRE, Developer, Viewer]
-          example: SRE
-        - name: team_id
-          in: query
-          description: Filter by team membership
-          schema:
-            type: string
-          example: team-sre
       responses:
         '200':
-          description: Successful response with paginated users
+          description: 成功取得使用者列表。
           content:
             application/json:
               schema:
@@ -45,16 +34,13 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/User'
-        '400':
-          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-
     post:
       tags: [IAM]
       summary: Create user
-      description: Create a new user
-      operationId: createUser
+      description: 建立新使用者。
+      operationId: createIamUser
       requestBody:
         required: true
         content:
@@ -62,13 +48,13 @@ paths:
             schema:
               $ref: '#/components/schemas/UserCreate'
             example:
-              name: "張三"
-              email: "zhang.san@example.com"
-              role: "SRE"
-              team_ids: ["team-sre"]
+              name: 張三
+              email: zhang.san@example.com
+              role: SRE
+              team: SRE 平台團隊
       responses:
         '201':
-          description: User created successfully
+          description: 使用者建立成功。
           content:
             application/json:
               schema:
@@ -77,52 +63,96 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+
+  /iam/users/batch-actions:
+    post:
+      tags: [IAM]
+      summary: Batch update users
+      description: 批次刪除或停用使用者。
+      operationId: batchUpdateIamUsers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, ids]
+              properties:
+                action:
+                  type: string
+                  enum: [delete, disable]
+                ids:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+            examples:
+              deleteUsers:
+                value:
+                  action: delete
+                  ids: [usr-001, usr-002]
+              disableUsers:
+                value:
+                  action: disable
+                  ids: [usr-003]
+      responses:
+        '200':
+          description: 批次操作完成。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+              example:
+                success: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /iam/users/import:
+    post:
+      tags: [IAM]
+      summary: Import users
+      description: 從外部來源批次匯入使用者。
+      operationId: importIamUsers
+      responses:
+        '200':
+          description: 匯入已執行。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              example:
+                message: 成功匯入 25 位人員。
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
   /iam/users/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
-
-    get:
-      tags: [IAM]
-      summary: Get user by ID
-      description: Retrieve a specific user by their ID
-      operationId: getUserById
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
     patch:
       tags: [IAM]
       summary: Update user
-      description: Update an existing user
-      operationId: updateUser
+      description: 更新使用者資訊。
+      operationId: updateIamUser
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/UserUpdate'
-            examples:
-              updateRole:
-                summary: Update user role
-                value:
-                  role: "Developer"
-              updateTeams:
-                summary: Update team membership
-                value:
-                  team_ids: ["team-sre", "team-dev"]
+            example:
+              role: Developer
+              status: inactive
       responses:
         '200':
-          description: User updated successfully
+          description: 使用者更新成功。
           content:
             application/json:
               schema:
@@ -133,41 +163,43 @@ paths:
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
     delete:
       tags: [IAM]
-      summary: Delete user
-      description: Delete a user
-      operationId: deleteUser
+      summary: Soft delete user
+      description: 將使用者標記為刪除。
+      operationId: deleteIamUser
       responses:
-        '204':
-          description: User deleted successfully
+        '200':
+          description: 刪除成功，回傳空物件。
+          content:
+            application/json:
+              schema:
+                type: object
+              example: {}
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
 
-  # ===================
-  # Teams
-  # ===================
   /iam/teams:
     get:
       tags: [IAM]
       summary: List teams
-      description: Retrieve a paginated list of teams
-      operationId: listTeams
+      description: 取得團隊列表，支援分頁與關鍵字搜尋。
+      operationId: listIamTeams
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PageSizeParam'
         - $ref: '#/components/parameters/SortByParam'
         - $ref: '#/components/parameters/SortOrderParam'
+        - name: keyword
+          in: query
+          description: 依團隊名稱模糊搜尋。
+          schema:
+            type: string
       responses:
         '200':
-          description: Successful response with paginated teams
+          description: 成功取得團隊列表。
           content:
             application/json:
               schema:
@@ -183,16 +215,13 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Team'
-        '400':
-          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-
     post:
       tags: [IAM]
       summary: Create team
-      description: Create a new team
-      operationId: createTeam
+      description: 建立新團隊並指派擁有者。
+      operationId: createIamTeam
       requestBody:
         required: true
         content:
@@ -200,69 +229,82 @@ paths:
             schema:
               $ref: '#/components/schemas/TeamCreate'
             example:
-              name: "SRE Team"
-              description: "Site Reliability Engineering team"
-              owner_id: "usr-001"
-              member_ids: ["usr-001", "usr-002", "usr-003"]
+              name: SRE 平台團隊
+              description: 管理平台可靠性
+              owner_id: usr-001
       responses:
         '201':
-          description: Team created successfully
+          description: 團隊建立成功。
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Team'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '404':
-          description: Owner or member not found
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+
+  /iam/teams/batch-actions:
+    post:
+      tags: [IAM]
+      summary: Batch update teams
+      description: 批次刪除多個團隊。
+      operationId: batchUpdateIamTeams
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, ids]
+              properties:
+                action:
+                  type: string
+                  enum: [delete]
+                ids:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+            example:
+              action: delete
+              ids: [team-001, team-002]
+      responses:
+        '200':
+          description: 批次操作完成。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+              example:
+                success: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
   /iam/teams/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
-
-    get:
-      tags: [IAM]
-      summary: Get team by ID
-      description: Retrieve a specific team by its ID
-      operationId: getTeamById
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Team'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
     patch:
       tags: [IAM]
       summary: Update team
-      description: Update an existing team
-      operationId: updateTeam
+      description: 更新團隊資訊或成員。
+      operationId: updateIamTeam
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/TeamUpdate'
-            examples:
-              updateDescription:
-                summary: Update team description
-                value:
-                  description: "Updated team description"
-              addMembers:
-                summary: Add team members
-                value:
-                  member_ids: ["usr-001", "usr-002", "usr-003", "usr-004"]
+            example:
+              member_ids: [usr-001, usr-002]
       responses:
         '200':
-          description: Team updated successfully
+          description: 團隊更新成功。
           content:
             application/json:
               schema:
@@ -273,117 +315,43 @@ paths:
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
     delete:
       tags: [IAM]
-      summary: Delete team
-      description: Delete a team
-      operationId: deleteTeam
-      responses:
-        '204':
-          description: Team deleted successfully
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
-  /iam/teams/{id}/members:
-    parameters:
-      - $ref: '#/components/parameters/IdParam'
-
-    post:
-      tags: [IAM]
-      summary: Add team members
-      description: Add members to a team
-      operationId: addTeamMembers
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [member_ids]
-              properties:
-                member_ids:
-                  type: array
-                  items:
-                    type: string
-                  minItems: 1
-            example:
-              member_ids: ["usr-005", "usr-006"]
+      summary: Soft delete team
+      description: 將團隊標記為刪除。
+      operationId: deleteIamTeam
       responses:
         '200':
-          description: Members added successfully
+          description: 刪除成功，回傳空物件。
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Team'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+                type: object
+              example: {}
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
 
-    delete:
-      tags: [IAM]
-      summary: Remove team members
-      description: Remove members from a team
-      operationId: removeTeamMembers
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [member_ids]
-              properties:
-                member_ids:
-                  type: array
-                  items:
-                    type: string
-                  minItems: 1
-            example:
-              member_ids: ["usr-005"]
-      responses:
-        '200':
-          description: Members removed successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Team'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
-  # ===================
-  # Roles
-  # ===================
   /iam/roles:
     get:
       tags: [IAM]
       summary: List roles
-      description: Retrieve a paginated list of roles
-      operationId: listRoles
+      description: 取得角色列表，支援分頁與關鍵字搜尋。
+      operationId: listIamRoles
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PageSizeParam'
         - $ref: '#/components/parameters/SortByParam'
         - $ref: '#/components/parameters/SortOrderParam'
+        - name: keyword
+          in: query
+          description: 依角色名稱模糊搜尋。
+          schema:
+            type: string
       responses:
         '200':
-          description: Successful response with paginated roles
+          description: 成功取得角色列表。
           content:
             application/json:
               schema:
@@ -399,16 +367,13 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Role'
-        '400':
-          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-
     post:
       tags: [IAM]
       summary: Create role
-      description: Create a new role with specific permissions
-      operationId: createRole
+      description: 建立新角色並設定權限。
+      operationId: createIamRole
       requestBody:
         required: true
         content:
@@ -416,16 +381,14 @@ paths:
             schema:
               $ref: '#/components/schemas/RoleCreate'
             example:
-              name: "Incident Manager"
-              description: "Can manage incidents and view resources"
+              name: Automation Operator
+              description: 負責執行與管理自動化腳本
               permissions:
-                - "incidents:read"
-                - "incidents:write"
-                - "incidents:delete"
-                - "resources:read"
+                - automation.read
+                - automation.execute
       responses:
         '201':
-          description: Role created successfully
+          description: 角色建立成功。
           content:
             application/json:
               schema:
@@ -434,50 +397,70 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+
+  /iam/roles/batch-actions:
+    post:
+      tags: [IAM]
+      summary: Batch update roles
+      description: 批次刪除多個角色。
+      operationId: batchUpdateIamRoles
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, ids]
+              properties:
+                action:
+                  type: string
+                  enum: [delete]
+                ids:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+            example:
+              action: delete
+              ids: [role-001, role-002]
+      responses:
+        '200':
+          description: 批次操作完成。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+              example:
+                success: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
   /iam/roles/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
-
-    get:
-      tags: [IAM]
-      summary: Get role by ID
-      description: Retrieve a specific role by its ID
-      operationId: getRoleById
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Role'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
     patch:
       tags: [IAM]
       summary: Update role
-      description: Update an existing role
-      operationId: updateRole
+      description: 更新角色資訊或權限。
+      operationId: updateIamRole
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/RoleUpdate'
             example:
               permissions:
-                - "incidents:read"
-                - "incidents:write"
-                - "incidents:delete"
-                - "resources:read"
-                - "resources:write"
+                - incidents.read
+                - resources.read
       responses:
         '200':
-          description: Role updated successfully
+          description: 角色更新成功。
           content:
             application/json:
               schema:
@@ -488,97 +471,110 @@ paths:
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
     delete:
       tags: [IAM]
-      summary: Delete role
-      description: Delete a role
-      operationId: deleteRole
+      summary: Soft delete role
+      description: 將角色標記為刪除。
+      operationId: deleteIamRole
       responses:
-        '204':
-          description: Role deleted successfully
+        '200':
+          description: 刪除成功，回傳空物件。
+          content:
+            application/json:
+              schema:
+                type: object
+              example: {}
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
 
-  # ===================
-  # Batch Operations
-  # ===================
-  /iam/users/batch-update-role:
-    post:
+  /iam/permissions:
+    get:
       tags: [IAM]
-      summary: Batch update user roles
-      description: Update roles for multiple users at once
-      operationId: batchUpdateUserRole
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [user_ids, role]
-              properties:
-                user_ids:
-                  type: array
-                  items:
-                    type: string
-                  minItems: 1
-                role:
-                  type: string
-                  enum: [Admin, SRE, Developer, Viewer]
-            example:
-              user_ids: ["usr-003", "usr-004"]
-              role: "Developer"
+      summary: List available permissions
+      description: 取得系統可用權限清單，用於角色設定。
+      operationId: listIamPermissions
       responses:
         '200':
-          description: Batch update completed
+          description: 成功取得權限列表。
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BatchResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+                type: array
+                items:
+                  type: object
+                  properties:
+                    module:
+                      type: string
+                    description:
+                      type: string
+                    actions:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          key:
+                            type: string
+                          label:
+                            type: string
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
 
-  /iam/users/batch-delete:
-    post:
+  /iam/audit-logs:
+    get:
       tags: [IAM]
-      summary: Batch delete users
-      description: Delete multiple users at once
-      operationId: batchDeleteUsers
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [user_ids]
-              properties:
-                user_ids:
-                  type: array
-                  items:
-                    type: string
-                  minItems: 1
-            example:
-              user_ids: ["usr-old-001", "usr-old-002"]
+      summary: List IAM audit logs
+      description: 取得 IAM 相關的稽核紀錄。
+      operationId: listIamAuditLogs
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
       responses:
         '200':
-          description: Batch delete completed
+          description: 成功取得稽核紀錄。
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BatchResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        timestamp:
+                          type: string
+                          format: date-time
+                        user:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            name:
+                              type: string
+                        action:
+                          type: string
+                        target:
+                          type: object
+                          properties:
+                            type:
+                              type: string
+                            name:
+                              type: string
+                        result:
+                          type: string
+                        ip:
+                          type: string
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'

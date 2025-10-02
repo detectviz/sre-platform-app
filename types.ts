@@ -129,6 +129,7 @@ export interface RuleAnalysisReport {
   recommendations: RuleAnalysisRecommendation[];
 }
 
+
 export type IncidentStatus = 'new' | 'acknowledged' | 'resolved' | 'silenced';
 export type IncidentSeverity = 'Critical' | 'Warning' | 'Info';
 export type IncidentImpact = 'High' | 'Medium' | 'Low';

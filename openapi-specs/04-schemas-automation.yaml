@@ -6,65 +6,64 @@ components:
     # ===================
     AutomationPlaybook:
       type: object
-      required: [id, name, type, content, enabled, created_at]
+      required: [id, name, type, content, created_at]
       properties:
         id:
           type: string
-          example: script-restart-service
+          example: play-001
         name:
           type: string
-          example: 重啟服務腳本
+          example: 重啟故障 Pod
         type:
           type: string
-          enum: ['Shell Script', 'Python', 'Ansible', 'Terraform']
-          example: Shell Script
+          enum: [shell, python, ansible, terraform]
+          example: shell
+        description:
+          type: string
+          example: 自動重啟 CrashLoopBackOff 狀態的 Pod。
         content:
           type: string
           example: |
             #!/bin/bash
-            systemctl restart nginx
-        description:
-          type: string
-          example: 自動重啟 Nginx 服務
+            kubectl rollout restart deployment "$DEPLOYMENT"
         enabled:
           type: boolean
           example: true
-        timeout_seconds:
+        trigger:
+          type: string
+          example: K8s 告警
+        last_run_at:
+          type: string
+          format: date-time
+          example: "2025-09-23T14:05:10Z"
+        last_run_status:
+          type: string
+          enum: [pending, running, success, failed, cancelled]
+          example: success
+        run_count:
           type: integer
-          default: 300
-          example: 120
+          example: 12
         parameters:
           type: array
           items:
             type: object
+            required: [name, label, type]
             properties:
               name:
                 type: string
+                example: namespace
+              label:
+                type: string
+                example: 命名空間
               type:
                 type: string
+                example: string
               required:
                 type: boolean
-              default:
+                example: true
+              default_value:
                 type: string
-          example:
-            - name: service_name
-              type: string
-              required: true
-              default: nginx
-        execution_count:
-          type: integer
-          example: 42
-        last_run_at:
-          type: string
-          format: date-time
-          example: "2024-01-15T09:30:00Z"
-        last_run_status:
-          type: string
-          enum: [success, failed, pending]
-          example: success
-        run_count:
-          type: integer
-          example: 42
+                example: production
         created_at:
           type: string
           format: date-time
@@ -86,7 +85,7 @@ components:
           maxLength: 200
         type:
           type: string
-          enum: ['Shell Script', 'Python', 'Ansible', 'Terraform']
+          enum: [shell, python, ansible, terraform]
         content:
           type: string
           minLength: 1
@@ -95,92 +94,104 @@ components:
         enabled:
           type: boolean
           default: true
-        timeout_seconds:
-          type: integer
-          default: 300
+        trigger:
+          type: string
         parameters:
           type: array
           items:
             type: object
+            required: [name, label, type]
+            properties:
+              name:
+                type: string
+              label:
+                type: string
+              type:
+                type: string
+              required:
+                type: boolean
+              default_value:
+                type: string
 
     AutomationPlaybookUpdate:
       type: object
       properties:
         name:
           type: string
+        type:
+          type: string
+          enum: [shell, python, ansible, terraform]
         content:
           type: string
         description:
           type: string
         enabled:
           type: boolean
-        timeout_seconds:
-          type: integer
-        execution_count:
-          type: integer
+        trigger:
+          type: string
         parameters:
           type: array
           items:
             type: object
+            required: [name]
+            properties:
+              name:
+                type: string
+              label:
+                type: string
+              type:
+                type: string
+              required:
+                type: boolean
+              default_value:
+                type: string
 
     # ===================
     # Automation Execution
     # ===================
     AutomationExecution:
       type: object
-      required: [id, playbook_id, playbook_name, trigger_type, triggered_by, status, started_at]
+      required: [id, script_id, script_name, status, trigger_source, triggered_by, start_time]
       properties:
         id:
           type: string
           example: exec-001
-        playbook_id:
+        script_id:
           type: string
           example: play-001
-        playbook_name:
+        script_name:
           type: string
-          example: 重啟服務腳本
-        incident_id:
-          type: string
-          nullable: true
-          example: INC-001
-        alert_rule_id:
-          type: string
-          nullable: true
-          example: rule-cpu-high
-        target_resource_id:
-          type: string
-          nullable: true
-          example: res-web-001
-        trigger_type:
-          type: string
-          enum: [Manual, Scheduled, Webhook, Incident, Alert]
-          example: Incident
-        triggered_by:
-          type: string
-          example: usr-001
+          example: 重啟故障 Pod
         status:
           type: string
-          enum: [Pending, Running, Success, Failed, Cancelled]
-          example: Success
-        started_at:
+          enum: [pending, running, success, failed, cancelled]
+          example: running
+        trigger_source:
+          type: string
+          enum: [manual, event, incident, alert, scheduled, webhook]
+          example: manual
+        triggered_by:
+          type: string
+          example: Admin User
+        start_time:
           type: string
           format: date-time
-          example: "2024-01-15T10:00:00Z"
-        completed_at:
+          example: "2025-09-23T14:05:10Z"
+        end_time:
           type: string
           format: date-time
           nullable: true
-          example: "2024-01-15T10:02:30Z"
+          example: "2025-09-23T14:05:15Z"
         duration_ms:
           type: integer
-          example: 150000
+          example: 5000
         parameters:
           type: object
           additionalProperties:
             type: string
           example:
             namespace: production
-        output:
+        logs:
           type: object
           properties:
             stdout:
@@ -188,46 +199,34 @@ components:
             stderr:
               type: string
           example:
-            stdout: Service nginx restarted successfully
+            stdout: Execution started...
             stderr: ''
-        logs:
-          type: object
-          readOnly: true
-          properties:
-            stdout:
-              type: string
-            stderr:
-              type: string
+        incident_id:
+          type: string
+          nullable: true
+          example: INC-002
+        alert_rule_id:
+          type: string
+          nullable: true
+          example: rule-002
+        target_resource_id:
+          type: string
+          nullable: true
+          example: res-002
         error_message:
           type: string
           nullable: true
-          example: null
-        resolved_incident:
-          type: boolean
-          example: true
 
-    AutomationExecutionCreate:
+    AutomationExecutionRequest:
       type: object
-      required: [playbook_id, trigger_type]
       properties:
-        playbook_id:
-          type: string
-        trigger_type:
-          type: string
-          enum: [Manual, Scheduled, Webhook, Incident, Alert]
-        triggered_by:
-          type: string
-          description: Identifier of the user initiating the execution
         parameters:
           type: object
           additionalProperties:
             type: string
-        incident_id:
-          type: string
-        alert_rule_id:
-          type: string
-        target_resource_id:
-          type: string
+          example:
+            namespace: production
+      description: 執行腳本時可傳入的參數
 
     # ===================
     # Automation Trigger

@@ -208,7 +208,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [New, Acknowledged, Investigating, Resolved, Closed]
+            enum: [new, acknowledged, investigating, resolved, closed, silenced]
         - name: severity
           in: query
           schema:
@@ -1110,6 +1110,22 @@ components:
                 type: string
                 example: Authentication required
 
+    AIServiceUnavailable:
+      description: AI Service Unavailable
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              retry_after_seconds:
+                type: integer
+                minimum: 0
+          example:
+            error: AI analysis service is temporarily unavailable
+            retry_after_seconds: 60
+
   schemas:
     # ===================
     # Core Entities
@@ -1215,8 +1231,9 @@ components:
           type: string
         status:
           type: string
-          enum: [New, Acknowledged, Investigating, Resolved, Closed]
-          example: New
+          enum: [new, acknowledged, investigating, resolved, closed, silenced]
+          description: Incident lifecycle status; `silenced` indicates notifications are temporarily suppressed.
+          example: new
         severity:
           type: string
           enum: [Critical, Warning, Info]
@@ -1297,7 +1314,8 @@ components:
       properties:
         status:
           type: string
-          enum: [New, Acknowledged, Investigating, Resolved, Closed]
+          enum: [new, acknowledged, investigating, resolved, closed, silenced]
+          description: Update the incident lifecycle state; use `silenced` to pause notifications.
         assignee:
           type: string
         tags:
