@@ -2,6 +2,28 @@
 components:
   schemas:
     # ===================
+    # Common Value Objects
+    # ===================
+    KeyValueTag:
+      type: object
+      required: [key, value]
+      properties:
+        id:
+          type: string
+          readOnly: true
+        key:
+          type: string
+        value:
+          type: string
+
+    SimpleMessageResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+
+    # ===================
     # Dashboard
     # ===================
     Dashboard:

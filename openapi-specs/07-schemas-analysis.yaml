@@ -132,6 +132,110 @@ components:
           items:
             $ref: '#/components/schemas/OptimizationSuggestion'
 
+    BatchResourceAnalysisReport:
+      type: object
+      description: Aggregated analysis results for multiple resources.
+      readOnly: true
+      required: [summary, analyzed_resources]
+      properties:
+        summary:
+          type: string
+          example: "Analyzed 12 resources. 3 require immediate attention."
+        analyzed_resources:
+          type: array
+          items:
+            type: object
+            required: [resource_id, resource_name, risk_level]
+            properties:
+              resource_id:
+                type: string
+              resource_name:
+                type: string
+              risk_level:
+                type: string
+                enum: [high, medium, low]
+              report:
+                $ref: '#/components/schemas/ResourceAnalysisReport'
+
+    RuleAnalysisEvaluatedRule:
+      type: object
+      required: [id, name, status]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        severity:
+          type: string
+          enum: [low, medium, high]
+        type:
+          type: string
+
+    RuleAnalysisMetric:
+      type: object
+      required: [label, value]
+      properties:
+        label:
+          type: string
+        value:
+          type: string
+        description:
+          type: string
+
+    RuleAnalysisInsight:
+      type: object
+      required: [title, detail, severity]
+      properties:
+        title:
+          type: string
+        detail:
+          type: string
+        severity:
+          type: string
+          enum: [low, medium, high]
+
+    RuleAnalysisRecommendation:
+      type: object
+      required: [action, description, priority]
+      properties:
+        action:
+          type: string
+        description:
+          type: string
+        priority:
+          type: string
+          enum: [low, medium, high]
+
+    RuleAnalysisReport:
+      type: object
+      description: AI-generated evaluation report for alert or silence rules.
+      readOnly: true
+      required: [report_type, summary, evaluated_rules, metrics, insights, recommendations]
+      properties:
+        report_type:
+          type: string
+          enum: [alert, silence]
+        summary:
+          type: string
+        evaluated_rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleAnalysisEvaluatedRule'
+        metrics:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleAnalysisMetric'
+        insights:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleAnalysisInsight'
+        recommendations:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleAnalysisRecommendation'
+
     # ===================
     # Log Analysis
     # ===================

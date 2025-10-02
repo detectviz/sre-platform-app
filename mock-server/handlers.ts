@@ -3904,7 +3904,11 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 if (id === 'options') {
                     return DB.notification_options;
                 }
-                return DB.notifications;
+                let notifications = DB.notifications;
+                if (params?.sort_by && params?.sort_order) {
+                    notifications = sortData(notifications, params.sort_by, params.sort_order);
+                }
+                return paginate(notifications, params?.page, params?.page_size);
             }
             case 'POST /config-versions': {
                 const { entity_type, entity_id, changed_by } = body || {};

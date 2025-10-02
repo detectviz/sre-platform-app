@@ -30,14 +30,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/AlertRule'
-                  total:
-                    type: integer
+                $ref: '#/components/schemas/PaginatedAlertRules'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -68,6 +61,36 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /alert-rules/import:
+    post:
+      tags: [Alert Rules]
+      summary: Import alert rules
+      description: Import alert rules from an uploaded definition file.
+      operationId: importAlertRules
+      requestBody:
+        description: Optional metadata describing the import source.
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source:
+                  type: string
+                  description: Identifier of the import source.
+      responses:
+        '200':
+          description: Import completed summary.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleMessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -132,6 +155,36 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /alert-rules/{id}/test:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags: [Alert Rules]
+      summary: Test alert rule payload
+      description: Evaluate sample payload data against an alert rule's conditions.
+      operationId: testAlertRule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertRuleTestRequest'
+      responses:
+        '200':
+          description: Test evaluation result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertRuleTestResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /alert-rules/templates:
     get:
       tags: [Alert Rules]
@@ -146,6 +199,64 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/AlertRuleTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /alert-rules/templates/default:
+    get:
+      tags: [Alert Rules]
+      summary: Get default alert rule template
+      description: Retrieve the platform default alert rule template configuration.
+      operationId: getDefaultAlertRuleTemplate
+      responses:
+        '200':
+          description: Default alert rule template.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertRule'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /alert-rules/resource-types:
+    get:
+      tags: [Alert Rules]
+      summary: List alert rule resource types
+      description: Retrieve supported resource types for alert rule targeting.
+      operationId: listAlertRuleResourceTypes
+      responses:
+        '200':
+          description: Supported resource types.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ResourceType'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /alert-rules/exporter-types:
+    get:
+      tags: [Alert Rules]
+      summary: List exporter types
+      description: Retrieve supported exporter/agent integrations for alert rules.
+      operationId: listAlertRuleExporterTypes
+      responses:
+        '200':
+          description: Supported exporter types.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExporterType'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -283,3 +394,69 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    PaginatedAlertRules:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlertRule'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+
+    AlertRuleTestRequest:
+      type: object
+      required: [payload]
+      properties:
+        payload:
+          $ref: '#/components/schemas/AlertRuleTestPayload'
+
+    AlertRuleTestPayload:
+      type: object
+      required: [metric, value, resource]
+      properties:
+        metric:
+          type: string
+        value:
+          type: number
+        resource:
+          type: string
+
+    AlertRuleTestResult:
+      type: object
+      required: [matches, preview]
+      properties:
+        matches:
+          type: boolean
+        preview:
+          type: string
+
+    ResourceType:
+      type: object
+      required: [id, name, icon]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        icon:
+          type: string
+
+    ExporterType:
+      type: object
+      required: [id, name, description]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
