@@ -40,6 +40,7 @@ CREATE TYPE user_status AS ENUM ('active', 'invited', 'inactive');
 CREATE TYPE alert_severity AS ENUM ('critical', 'warning', 'info');
 CREATE TYPE condition_operator AS ENUM ('>', '<', '>=', '<=', '==', '!=');
 CREATE TYPE condition_logic AS ENUM ('and', 'or');
+CREATE TYPE http_method AS ENUM ('get', 'post', 'put', 'patch', 'delete');
 
 -- Notification Types
 CREATE TYPE notification_channel_type AS ENUM ('email', 'webhook', 'slack', 'line', 'sms');
@@ -66,6 +67,7 @@ CREATE TYPE discovered_resource_status AS ENUM ('new', 'imported', 'ignored');
 -- Analysis Types
 CREATE TYPE risk_level AS ENUM ('high', 'medium', 'low');
 CREATE TYPE optimization_type AS ENUM ('cost', 'performance', 'security');
+CREATE TYPE insight_type AS ENUM ('trend', 'anomaly', 'forecast');
 
 -- =====================================================
 -- CORE TABLES
@@ -637,7 +639,7 @@ CREATE TABLE audit_logs (
     user_id VARCHAR(255) NOT NULL REFERENCES users(id),
     user_name VARCHAR(255) NOT NULL,
     action audit_action NOT NULL,
-    entity_type VARCHAR(100) NOT NULL,
+    entity_type entity_type NOT NULL,
     entity_id VARCHAR(255) NOT NULL,
     entity_name VARCHAR(255),
     changes JSONB,
@@ -657,7 +659,7 @@ CREATE INDEX idx_audit_logs_result ON audit_logs(result);
 -- Config Versions Table (Version Control for Entities)
 CREATE TABLE config_versions (
     id VARCHAR(255) PRIMARY KEY,
-    entity_type VARCHAR(100) NOT NULL CHECK (entity_type IN ('AlertRule', 'AutomationPlaybook', 'Dashboard', 'NotificationStrategy', 'SilenceRule', 'Resource', 'Team', 'User')),
+    entity_type entity_type NOT NULL,
     entity_id VARCHAR(255) NOT NULL,
     version INTEGER NOT NULL,
     config_snapshot JSONB NOT NULL,

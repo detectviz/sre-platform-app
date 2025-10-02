@@ -2990,7 +2990,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                                         predicted_issue: '系統負載可能異常升高',
                                         probability: 0.58,
                                         estimated_time: new Date(Date.now() + 6 * 3600 * 1000).toISOString(),
-                                        severity: 'Warning',
+                                        severity: 'warning',
                                         preventive_actions: ['檢查監控閾值設定', '安排預防性維護'],
                                     };
                                 });
