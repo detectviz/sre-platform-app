@@ -4,177 +4,55 @@ paths:
     get:
       tags: [Analysis]
       summary: Get analysis overview
-      description: 取得分析總覽資料，包括系統健康度、異常事件與建議行動。
+      description: Retrieve an overview of system health, anomalies, and suggestions.
       operationId: getAnalysisOverview
+      parameters:
+        - name: time_range
+          in: query
+          schema:
+            type: string
+            example: "24h"
       responses:
         "200":
-          description: 成功取得分析總覽。
+          description: Analysis overview data.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  health_score:
-                    type: object
-                    properties:
-                      score:
-                        type: number
-                      summary:
-                        type: string
-                  anomalies:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        severity:
-                          type: string
-                        description:
-                          type: string
-                        timestamp:
-                          type: string
-                  suggestions:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        title:
-                          type: string
-                        impact:
-                          type: string
-                        effort:
-                          type: string
-                        details:
-                          type: string
-                        action_link:
-                          type: string
-                  event_correlation_data:
-                    type: object
-                  recent_logs:
-                    type: array
-                    items:
-                      type: object
-              example:
-                health_score:
-                  score: 75
-                  summary: 系統因 API 延遲與錯誤率上升而處於警告狀態，但關鍵基礎設施尚屬穩定。
-                anomalies:
-                  - severity: critical
-                    description: API Latency p99 has spiked to 1200ms.
-                    timestamp: 5 minutes ago
-                suggestions:
-                  - title: 擴展 Kubernetes API 服務
-                    impact: 高
-                    effort: 中
-                    details: "`api-service` 的 CPU 使用率持續偏高，建議增加副本數以應對流量。"
-                    action_link: /resources/res-007
-                event_correlation_data:
-                  nodes: []
-                  edges: []
-                recent_logs:
-                  - id: log-1
-                    level: error
-                    message: Failed to process payment
+                $ref: "#/components/schemas/AnalysisOverviewData"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/AIServiceUnavailable"
 
   /analysis/capacity-planning:
     get:
       tags: [Analysis]
       summary: Get capacity planning insights
-      description: 取得容量規劃趨勢、預測與建議。
+      description: Retrieve capacity planning trends, forecasts, and suggestions.
       operationId: getCapacityPlanningAnalysis
       responses:
         "200":
-          description: 成功取得容量規劃資料。
+          description: Capacity planning data.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  trends:
-                    type: object
-                    additionalProperties:
-                      type: object
-                  forecast_model:
-                    type: object
-                    properties:
-                      prediction:
-                        type: array
-                        items:
-                          type: array
-                          items:
-                            - type: string
-                            - type: number
-                      confidence_band:
-                        type: array
-                        items:
-                          type: array
-                          items:
-                            type: array
-                            items:
-                              - type: string
-                              - type: number
-                  suggestions:
-                    type: array
-                    items:
-                      type: object
-                  resource_analysis:
-                    type: array
-                    items:
-                      type: object
-                  options:
-                    type: object
-                    properties:
-                      time_range_options:
-                        type: array
-                        items:
-                          type: string
-              example:
-                trends:
-                  cpu:
-                    historical:
-                      - ["2024-09-01T00:00:00Z", 45]
-                    forecast:
-                      - ["2024-10-01T00:00:00Z", 52]
-                  memory:
-                    historical:
-                      - ["2024-09-01T00:00:00Z", 60]
-                    forecast:
-                      - ["2024-10-01T00:00:00Z", 63]
-                forecast_model:
-                  prediction:
-                    - ["2024-10-01T00:00:00Z", 52]
-                  confidence_band:
-                    - - ["2024-10-01T00:00:00Z", 47]
-                    - - ["2024-10-01T00:00:00Z", 57]
-                suggestions:
-                  - id: cap-1
-                    title: 擴充資料庫節點
-                    impact: 高
-                    summary: 資料庫 CPU 使用率持續偏高，建議擴充節點。
-                resource_analysis:
-                  - resource_id: res-001
-                    risk_level: high
-                    optimization_suggestions: []
-                options:
-                  time_range_options: ["7d", "14d", "30d"]
+                $ref: "#/components/schemas/CapacityPlanningData"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
-  # ===================
-  # Incident Analysis
-  # ===================
   /analysis/incidents/{id}:
     parameters:
       - $ref: "#/components/parameters/IdParam"
-
     post:
       tags: [Analysis]
       summary: Analyze incident
-      description: 使用 AI 生成單一事件的深入分析與建議，包括根本原因與影響評估。
+      description: Generate an in-depth analysis for a single incident.
       operationId: analyzeIncident
       requestBody:
-        required: false
         content:
           application/json:
             schema:
@@ -182,26 +60,20 @@ paths:
               properties:
                 include_related:
                   type: boolean
-                  default: true
-                  description: 是否一併分析相關事件脈絡。
-                time_window_hours:
-                  type: integer
-                  default: 24
-                  description: 相關事件分析的時間範圍（小時）。
-            example:
-              include_related: true
-              time_window_hours: 48
+                  default: false
       responses:
         "200":
-          description: 成功生成事件分析報告。
+          description: Incident analysis report.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/IncidentAnalysis"
-        "404":
-          $ref: "#/components/responses/NotFound"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/AIServiceUnavailable"
 
@@ -209,7 +81,7 @@ paths:
     post:
       tags: [Analysis]
       summary: Analyze multiple incidents
-      description: 分析多個事件間的關聯性與共同根本原因。
+      description: Analyze correlations and common root causes across multiple incidents.
       operationId: analyzeMultipleIncidents
       requestBody:
         required: true
@@ -221,70 +93,47 @@ paths:
               properties:
                 incident_ids:
                   type: array
-                  minItems: 2
                   items:
                     type: string
-                  description: 要進行關聯分析的事件 ID 清單。
-            example:
-              incident_ids: [INC-001, INC-004, INC-010]
       responses:
         "200":
-          description: 成功生成多事件關聯分析報告。
+          description: Multi-incident analysis report.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/MultiIncidentAnalysis"
         "400":
           $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/AIServiceUnavailable"
 
-  # ===================
-  # Resource Analysis
-  # ===================
   /analysis/resources/{id}:
     parameters:
       - $ref: "#/components/parameters/IdParam"
-
     post:
       tags: [Analysis]
       summary: Analyze resource
-      description: 使用 AI 對特定資源進行風險評估與優化建議。
+      description: Perform a risk and optimization analysis for a specific resource.
       operationId: analyzeResource
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                analysis_depth:
-                  type: string
-                  enum: [basic, detailed, comprehensive]
-                  default: detailed
-                  description: 分析深度設定。
-                time_window_days:
-                  type: integer
-                  default: 7
-                  description: 歷史資料時間範圍（天）。
-            example:
-              analysis_depth: comprehensive
-              time_window_days: 14
       responses:
         "200":
-          description: 成功生成資源分析報告。
+          description: Resource analysis report.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ResourceAnalysis"
-        "404":
-          $ref: "#/components/responses/NotFound"
+                $ref: "#/components/schemas/ResourceAnalysisReport"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/AIServiceUnavailable"
 
@@ -292,7 +141,7 @@ paths:
     post:
       tags: [Analysis]
       summary: Batch analyze resources
-      description: 對多個資源進行批次分析並產出整體摘要。
+      description: Perform analysis on multiple resources and get a summary report.
       operationId: batchAnalyzeResources
       requestBody:
         required: true
@@ -304,61 +153,31 @@ paths:
               properties:
                 resource_ids:
                   type: array
-                  minItems: 1
                   items:
                     type: string
-                  description: 要分析的資源 ID 清單。
-                analysis_depth:
-                  type: string
-                  enum: [basic, detailed, comprehensive]
-                  default: basic
-            example:
-              resource_ids: [res-001, res-005, res-010]
-              analysis_depth: detailed
       responses:
         "200":
-          description: 成功完成批次資源分析。
+          description: Batch resource analysis report.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  analyses:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/ResourceAnalysis"
-                  summary:
-                    type: object
-                    properties:
-                      total_resources:
-                        type: integer
-                      high_risk_count:
-                        type: integer
-                      recommendations_count:
-                        type: integer
-                example:
-                  analyses: []
-                  summary:
-                    total_resources: 3
-                    high_risk_count: 1
-                    recommendations_count: 7
+                $ref: "#/components/schemas/BatchResourceAnalysisReport"
         "400":
           $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/AIServiceUnavailable"
 
-  # ===================
-  # Log Analysis
-  # ===================
   /analysis/logs:
     post:
       tags: [Analysis]
       summary: Analyze logs
-      description: 透過 AI 分析指定時間範圍的日誌，偵測異常與關鍵洞察。
+      description: Analyze logs for a given query and time range to detect patterns and anomalies.
       operationId: analyzeLogs
       requestBody:
         required: true
@@ -370,7 +189,6 @@ paths:
               properties:
                 query:
                   type: string
-                  description: 日誌查詢語句。
                 time_range:
                   type: object
                   required: [start, end]
@@ -381,27 +199,9 @@ paths:
                     end:
                       type: string
                       format: date-time
-                resource_ids:
-                  type: array
-                  items:
-                    type: string
-                  description: 指定資源範圍。
-                severity_filter:
-                  type: array
-                  items:
-                    type: string
-                    enum: [error, warning, info, debug]
-                  description: 過濾特定嚴重程度。
-            example:
-              query: error AND service:api
-              time_range:
-                start: 2024-01-15T00:00:00Z
-                end: 2024-01-15T23:59:59Z
-              resource_ids: [res-001, res-002]
-              severity_filter: [error, warning]
       responses:
         "200":
-          description: 成功完成日誌分析。
+          description: Log analysis report.
           content:
             application/json:
               schema:
@@ -410,17 +210,16 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/AIServiceUnavailable"
 
-  # ===================
-  # Predictive Analysis
-  # ===================
   /analysis/predict/capacity:
     post:
       tags: [Analysis]
       summary: Predict capacity needs
-      description: 預測指定資源的容量需求與可能的閾值突破時間。
+      description: Forecast capacity requirements for a specific resource.
       operationId: predictCapacity
       requestBody:
         required: true
@@ -432,79 +231,25 @@ paths:
               properties:
                 resource_id:
                   type: string
-                prediction_days:
-                  type: integer
-                  default: 30
-                  description: 預測的時間範圍（天）。
                 metrics:
                   type: array
                   items:
                     type: string
-                  description: 要預測的指標（如 cpu_usage、memory_usage 等）。
-            example:
-              resource_id: res-001
-              prediction_days: 45
-              metrics: [cpu_usage, memory_usage]
       responses:
         "200":
-          description: 成功生成容量預測結果。
+          description: Capacity prediction report.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  resource_id:
-                    type: string
-                  resource_name:
-                    type: string
-                  predictions:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        metric:
-                          type: string
-                        current_value:
-                          type: number
-                        predicted_values:
-                          type: array
-                          items:
-                            type: object
-                            properties:
-                              date:
-                                type: string
-                                format: date
-                              value:
-                                type: number
-                              confidence:
-                                type: number
-                        threshold_breach_date:
-                          type: string
-                          format: date
-                          nullable: true
-                        recommendation:
-                          type: string
-                example:
-                  resource_id: res-001
-                  resource_name: web-server-01
-                  predictions:
-                    - metric: cpu_usage
-                      current_value: 68.5
-                      predicted_values:
-                        - date: 2024-02-15
-                          value: 78.2
-                          confidence: 0.85
-                        - date: 2024-03-15
-                          value: 87.9
-                          confidence: 0.72
-                      threshold_breach_date: 2024-03-10
-                      recommendation: 建議在 2024-03-01 前增加 CPU 資源
-        "404":
-          $ref: "#/components/responses/NotFound"
+                $ref: "#/components/schemas/CapacityPrediction"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/AIServiceUnavailable"
 
@@ -512,10 +257,9 @@ paths:
     post:
       tags: [Analysis]
       summary: Predict potential incidents
-      description: 根據歷史趨勢預測可能發生的事件與嚴重程度。
+      description: Forecast potential incidents based on historical trends.
       operationId: predictIncidents
       requestBody:
-        required: false
         content:
           application/json:
             schema:
@@ -525,84 +269,30 @@ paths:
                   type: array
                   items:
                     type: string
-                  description: 指定要分析的資源清單。
-                time_horizon_hours:
-                  type: integer
-                  default: 24
-                  description: 預測時間範圍（小時）。
                 min_probability:
                   type: number
                   format: float
-                  minimum: 0
-                  maximum: 1
-                  default: 0.5
-                  description: 最低預測機率門檻。
-            example:
-              resource_ids: [res-001, res-002]
-              time_horizon_hours: 48
-              min_probability: 0.7
       responses:
         "200":
-          description: 成功生成事件預測結果。
+          description: Incident prediction report.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  predictions:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        resource_id:
-                          type: string
-                        resource_name:
-                          type: string
-                        predicted_issue:
-                          type: string
-                        probability:
-                          type: number
-                          format: float
-                        estimated_time:
-                          type: string
-                          format: date-time
-                        severity:
-                          type: string
-                          enum: [critical, warning, info]
-                        preventive_actions:
-                          type: array
-                          items:
-                            type: string
-                  analysis_timestamp:
-                    type: string
-                    format: date-time
-                example:
-                  predictions:
-                    - resource_id: res-001
-                      resource_name: web-server-01
-                      predicted_issue: CPU 使用率可能超過 90%
-                      probability: 0.82
-                      estimated_time: 2024-01-16T14:30:00Z
-                      severity: warning
-                      preventive_actions:
-                        - 考慮增加 CPU 資源
-                        - 檢查是否有異常進程
-                  analysis_timestamp: 2024-01-15T10:00:00Z
-        "401":
-          $ref: "#/components/responses/Unauthorized"
+                $ref: "#/components/schemas/IncidentPrediction"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/AIServiceUnavailable"
 
-  # ===================
-  # Anomaly Detection
-  # ===================
   /analysis/anomalies:
     post:
       tags: [Analysis]
       summary: Detect anomalies
-      description: 偵測指定資源在時間範圍內的異常行為與嚴重程度。
+      description: Detect anomalies for a given set of resources and time range.
       operationId: detectAnomalies
       requestBody:
         required: true
@@ -614,7 +304,6 @@ paths:
               properties:
                 resource_ids:
                   type: array
-                  minItems: 1
                   items:
                     type: string
                 time_range:
@@ -627,78 +316,39 @@ paths:
                     end:
                       type: string
                       format: date-time
-                sensitivity:
-                  type: string
-                  enum: [low, medium, high]
-                  default: medium
-                  description: 異常偵測靈敏度設定。
-            example:
-              resource_ids: [res-001, res-002, res-003]
-              time_range:
-                start: 2024-01-14T00:00:00Z
-                end: 2024-01-15T23:59:59Z
-              sensitivity: high
       responses:
         "200":
-          description: 成功完成異常偵測。
+          description: Anomaly detection report.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  anomalies:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        resource_id:
-                          type: string
-                        resource_name:
-                          type: string
-                        metric:
-                          type: string
-                        timestamp:
-                          type: string
-                          format: date-time
-                        actual_value:
-                          type: number
-                        expected_range:
-                          type: object
-                          properties:
-                            min:
-                              type: number
-                            max:
-                              type: number
-                        severity:
-                          type: string
-                          enum: [low, medium, high]
-                        description:
-                          type: string
-                  summary:
-                    type: object
-                    properties:
-                      total_anomalies:
-                        type: integer
-                      high_severity_count:
-                        type: integer
-                example:
-                  anomalies:
-                    - resource_id: res-001
-                      resource_name: web-server-01
-                      metric: cpu_usage
-                      timestamp: 2024-01-15T15:23:00Z
-                      actual_value: 95.3
-                      expected_range:
-                        min: 30
-                        max: 70
-                      severity: high
-                      description: CPU 使用率異常飆升，超出預期範圍
-                  summary:
-                    total_anomalies: 5
-                    high_severity_count: 2
+                $ref: "#/components/schemas/AnomalyDetection"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/AIServiceUnavailable"
+
+components:
+  schemas:
+    BatchResourceAnalysisReport:
+      type: object
+      properties:
+        analyses:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceAnalysisReport'
+        summary:
+          type: object
+          properties:
+            total_resources:
+              type: integer
+            high_risk_count:
+              type: integer
+            recommendations_count:
+              type: integer

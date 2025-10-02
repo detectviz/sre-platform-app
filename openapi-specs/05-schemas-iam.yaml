@@ -6,10 +6,19 @@ components:
     # ===================
     User:
       type: object
-      required: [id, name, email, role, team, status, created_at]
+      required:
+        - id
+        - name
+        - email
+        - role
+        - team
+        - status
+        - created_at
+        - updated_at
       properties:
         id:
           type: string
+          readOnly: true
           example: usr-001
         name:
           type: string
@@ -24,28 +33,36 @@ components:
           example: sre
         team:
           type: string
+          description: The name of the team the user belongs to.
           example: SRE 平台團隊
         status:
           type: string
           enum: [active, invited, inactive]
+          readOnly: true
           example: active
         avatar:
           type: string
           format: uri
+          readOnly: true
           example: https://api.example.com/avatars/usr-001.png
         last_login_at:
           type: string
           format: date-time
+          readOnly: true
+          nullable: true
           example: "2024-01-15T09:00:00Z"
         created_at:
           type: string
           format: date-time
+          readOnly: true
         updated_at:
           type: string
           format: date-time
+          readOnly: true
         deleted_at:
           type: string
           format: date-time
+          readOnly: true
           nullable: true
 
     UserCreate:
@@ -64,6 +81,7 @@ components:
           enum: [admin, sre, developer, viewer]
         team:
           type: string
+          description: "Note: The mock server uses a team name string. In a real system, this would likely be a team_id."
 
     UserUpdate:
       type: object
@@ -80,17 +98,19 @@ components:
           type: string
         status:
           type: string
-          enum: [active, invited, inactive]
+          enum: [active, inactive]
+          description: User status can be changed by an admin. 'invited' is a system-set status.
 
     # ===================
     # Team
     # ===================
     Team:
       type: object
-      required: [id, name, created_at]
+      required: [id, name, owner_id, member_ids, created_at, updated_at]
       properties:
         id:
           type: string
+          readOnly: true
           example: team-sre
         name:
           type: string
@@ -109,12 +129,15 @@ components:
         created_at:
           type: string
           format: date-time
+          readOnly: true
         updated_at:
           type: string
           format: date-time
+          readOnly: true
         deleted_at:
           type: string
           format: date-time
+          readOnly: true
           nullable: true
 
     TeamCreate:
@@ -129,6 +152,10 @@ components:
           type: string
         owner_id:
           type: string
+        member_ids:
+          type: array
+          items:
+            type: string
 
     TeamUpdate:
       type: object
@@ -149,10 +176,18 @@ components:
     # ===================
     Role:
       type: object
-      required: [id, name, permissions, created_at]
+      required:
+        - id
+        - name
+        - enabled
+        - user_count
+        - permissions
+        - created_at
+        - updated_at
       properties:
         id:
           type: string
+          readOnly: true
           example: role-sre-engineer
         name:
           type: string
@@ -160,28 +195,88 @@ components:
         description:
           type: string
           example: 具備系統監控、事件處理和自動化執行權限
+        enabled:
+          type: boolean
+          example: true
         permissions:
           type: array
           items:
-            type: string
-          example:
-            - incidents.read
-            - incidents.write
-            - resources.read
-            - automation.execute
+            $ref: '#/components/schemas/RolePermission'
+
+    # ===================
+    # Audit Log
+    # ===================
+    AuditLog:
+      type: object
+      description: "A record of an action taken within the system."
+      readOnly: true
+      required: [id, timestamp, user, action, target, result, ip]
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        user:
+          type: object
+          required: [id, name]
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+        action:
+          type: string
+          enum: [create, read, update, delete, execute, login, logout, permission_change]
+        target:
+          type: object
+          required: [type, name]
+          properties:
+            type:
+              type: string
+            name:
+              type: string
+        result:
+          type: string
+          enum: [success, failure]
+        ip:
+          type: string
+          format: ipv4
+        details:
+          type: object
+          additionalProperties: true
         user_count:
           type: integer
+          readOnly: true
           example: 15
         created_at:
           type: string
           format: date-time
+          readOnly: true
         updated_at:
           type: string
           format: date-time
+          readOnly: true
         deleted_at:
           type: string
           format: date-time
+          readOnly: true
           nullable: true
+
+    RolePermission:
+      type: object
+      required: [module, actions]
+      properties:
+        module:
+          type: string
+          description: The system module this permission applies to.
+          example: "incidents"
+        actions:
+          type: array
+          items:
+            type: string
+            enum: [read, create, update, delete, execute]
+          example: ["read", "update"]
 
     RoleCreate:
       type: object
@@ -193,10 +288,13 @@ components:
           maxLength: 100
         description:
           type: string
+        enabled:
+          type: boolean
+          default: true
         permissions:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/RolePermission'
           minItems: 1
 
     RoleUpdate:
@@ -206,7 +304,9 @@ components:
           type: string
         description:
           type: string
+        enabled:
+          type: boolean
         permissions:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/RolePermission'

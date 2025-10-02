@@ -2,44 +2,173 @@
 components:
   schemas:
     # ===================
+    # Common Analysis Types
+    # ===================
+    Recommendation:
+      type: object
+      description: A recommended action to take.
+      required: [description]
+      properties:
+        description:
+          type: string
+          example: "Increase database connection pool size."
+        action_text:
+          type: string
+          example: "Run Playbook"
+        action_link:
+          type: string
+          format: uri
+          example: "/automation/playbooks/play-db-restart"
+        playbook_id:
+          type: string
+          example: "play-db-restart"
+
+    GroupActionRecommendation:
+      allOf:
+        - $ref: '#/components/schemas/Recommendation'
+        - type: object
+          properties:
+            target_incident_ids:
+              type: array
+              items:
+                type: string
+              example: ["INC-001", "INC-005"]
+
+    # ===================
     # Incident Analysis
     # ===================
     IncidentAnalysis:
       type: object
+      description: AI-driven analysis for a single incident.
+      readOnly: true
+      required: [summary, root_causes, recommendations]
       properties:
         summary:
           type: string
-          example: "根據當前資料分析，此事件由 API 服務延遲引起"
-        root_cause:
-          type: string
-          example: "後端資料庫連接池耗盡，導致新請求排隊等待"
-        impact_assessment:
-          type: string
-          example: "影響約 15% 的用戶請求，平均延遲增加 3.5 秒"
-        recommended_actions:
+          example: "The incident appears to be caused by a database connection issue."
+        root_causes:
           type: array
           items:
             type: string
-          example:
-            - "立即增加資料庫連接池大小"
-            - "重啟受影響的 API 服務實例"
-            - "啟用流量限制保護機制"
-        related_incidents:
+          example: ["Database connection pool exhausted", "High query latency on the users table"]
+        recommendations:
           type: array
           items:
-            type: string
-          example: [INC-045, INC-032]
-        confidence_score:
-          type: number
-          format: float
-          minimum: 0
-          maximum: 1
-          example: 0.87
-        analysis_time:
-          type: string
-          format: date-time
-          example: "2024-01-15T10:35:00Z"
+            $ref: '#/components/schemas/Recommendation'
 
+    MultiIncidentAnalysis:
+      type: object
+      description: AI-driven analysis for multiple related incidents.
+      readOnly: true
+      required: [summary, common_patterns, group_actions]
+      properties:
+        summary:
+          type: string
+          example: "All selected incidents are related to the 'api-gateway' resource and show similar high latency patterns."
+        common_patterns:
+          type: array
+          items:
+            type: string
+          example: ["All incidents occurred during peak traffic hours.", "All incidents point to a bottleneck in the authentication service."]
+        group_actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupActionRecommendation'
+
+    # ===================
+    # Resource Analysis
+    # ===================
+    ResourceRisk:
+      type: object
+      description: Describes a specific risk identified for a resource.
+      required: [resource_id, resource_name, risk_level, reason, recommendation]
+      properties:
+        resource_id:
+          type: string
+        resource_name:
+          type: string
+        risk_level:
+          type: string
+          enum: [high, medium, low]
+        reason:
+          type: string
+          example: "Sustained high CPU usage may lead to performance degradation during peak hours."
+        recommendation:
+          type: string
+          example: "Consider upgrading the instance type or implementing auto-scaling."
+
+    OptimizationSuggestion:
+      type: object
+      description: A suggestion for optimizing a resource.
+      required: [resource_id, resource_name, suggestion, type]
+      properties:
+        resource_id:
+          type: string
+        resource_name:
+          type: string
+        suggestion:
+          type: string
+          example: "The instance is over-provisioned. Consider changing from m5.xlarge to m5.large."
+        type:
+          type: string
+          enum: [cost, performance, security]
+          example: cost
+
+    ResourceAnalysisReport:
+      type: object
+      description: A comprehensive analysis report for a resource.
+      readOnly: true
+      required: [summary, risk_analysis, optimization_suggestions]
+      properties:
+        summary:
+          type: string
+          example: "The resource is stable but has opportunities for cost optimization."
+        risk_analysis:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceRisk'
+        optimization_suggestions:
+          type: array
+          items:
+            $ref: '#/components/schemas/OptimizationSuggestion'
+
+    # ===================
+    # Log Analysis
+    # ===================
+    LogAnalysis:
+      type: object
+      description: An analysis of log entries over a given time range.
+      readOnly: true
+      required: [summary, patterns, recommendations]
+      properties:
+        summary:
+          type: string
+          example: "Log analysis reveals a spike in 'connection timeout' errors, suggesting a network or downstream service issue."
+        patterns:
+          type: array
+          items:
+            type: object
+            required: [description, count, level]
+            properties:
+              description:
+                type: string
+                example: "Database connection timeout"
+              count:
+                type: integer
+                example: 152
+              level:
+                type: string
+                enum: [info, warning, error, debug]
+                example: error
+        recommendations:
+          type: array
+          items:
+            type: string
+          example: ["Investigate network connectivity to the main database.", "Check the health of the authentication service."]
+
+    # ===================
+    # Dashboard-related Analysis Data
+    # ===================
     ServiceHealthData:
       type: object
       required: [heatmap_data, x_axis_labels, y_axis_labels]
@@ -105,164 +234,239 @@ components:
             $ref: '#/components/schemas/ResourceGroupStatusSeries'
 
     # ===================
-    # Resource Analysis
+    # Top-level Analysis Schemas
     # ===================
-    ResourceAnalysis:
+    AnalysisOverviewData:
+      type: object
+      required: [health_score, anomalies, suggestions, event_correlation_data, recent_logs]
+      properties:
+        health_score:
+          $ref: '#/components/schemas/HealthScore'
+        anomalies:
+          type: array
+          items:
+            $ref: '#/components/schemas/Anomaly'
+        suggestions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Suggestion'
+        event_correlation_data:
+          type: object
+        recent_logs:
+          type: array
+          items:
+            $ref: '#/components/schemas/LogEntry'
+
+    HealthScore:
+      type: object
+      properties:
+        score:
+          type: integer
+        summary:
+          type: string
+
+    Anomaly:
+      type: object
+      properties:
+        severity:
+          type: string
+          enum: [critical, warning, info]
+        description:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    Suggestion:
+      type: object
+      properties:
+        title:
+          type: string
+        impact:
+          type: string
+          enum: [高, 中, 低]
+        effort:
+          type: string
+          enum: [高, 中, 低]
+        details:
+          type: string
+        action_button_text:
+          type: string
+        action_link:
+          type: string
+          format: uri
+
+    CapacityPlanningData:
+      type: object
+      properties:
+        trends:
+          type: object
+        forecast_model:
+          type: object
+        suggestions:
+          type: array
+          items:
+            $ref: '#/components/schemas/CapacityPlanningSuggestion'
+        resource_analysis:
+          type: array
+          items:
+            $ref: '#/components/schemas/CapacityPlanningResourceInsight'
+        options:
+          type: object
+
+    CapacityPlanningSuggestion:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        impact:
+          type: string
+        effort:
+          type: string
+        details:
+          type: string
+        detected_at:
+          type: string
+          format: date-time
+        resource_id:
+          type: string
+
+    CapacityPlanningResourceInsight:
+      type: object
+      properties:
+        id:
+          type: string
+        resource_id:
+          type: string
+        resource_name:
+          type: string
+        current_utilization:
+          type: number
+        forecast_utilization:
+          type: number
+        recommendation:
+          type: object
+        cost_impact:
+          type: object
+        lastEvaluated_at:
+          type: string
+          format: date-time
+
+    IncidentPrediction:
+      type: object
+      properties:
+        predictions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PredictedIncident'
+        analysis_timestamp:
+          type: string
+          format: date-time
+
+    PredictedIncident:
       type: object
       properties:
         resource_id:
           type: string
-          example: res-web-001
         resource_name:
           type: string
-          example: web-server-01
-        risk_level:
+        predicted_issue:
           type: string
-          enum: [high, medium, low]
-          example: medium
-        risk_analysis:
-          type: string
-          example: "CPU 使用率持續偏高，可能在高峰期出現性能問題"
-        optimization_suggestions:
-          type: array
-          items:
-            type: object
-            properties:
-              type:
-                type: string
-                enum: [cost, performance, security]
-              suggestion:
-                type: string
-              estimated_impact:
-                type: string
-          example:
-            - type: performance
-              suggestion: "建議增加 CPU 核心數從 2 核升級到 4 核"
-              estimated_impact: "預計可降低 CPU 使用率 40%"
-            - type: cost
-              suggestion: "考慮使用保留實例降低成本"
-              estimated_impact: "預計可節省 30% 運算成本"
-        predicted_issues:
-          type: array
-          items:
-            type: object
-            properties:
-              issue_type:
-                type: string
-              probability:
-                type: number
-                format: float
-              timeframe:
-                type: string
-              description:
-                type: string
-          example:
-            - issue_type: capacity
-              probability: 0.75
-              timeframe: "未來 7 天內"
-              description: "磁碟空間可能在未來一週內達到 90%"
-        confidence_score:
+        probability:
           type: number
           format: float
-          minimum: 0
-          maximum: 1
-          example: 0.82
-        analysis_time:
+        estimated_time:
           type: string
           format: date-time
-          example: "2024-01-15T10:40:00Z"
-
-    # ===================
-    # Multi-Incident Analysis
-    # ===================
-    MultiIncidentAnalysis:
-      type: object
-      properties:
-        incident_ids:
+        severity:
+          type: string
+          enum: [critical, warning, info]
+        preventive_actions:
           type: array
           items:
             type: string
-          example: [INC-001, INC-002, INC-003]
-        correlation_found:
-          type: boolean
-          example: true
-        correlation_summary:
-          type: string
-          example: "這些事件都與同一個資料庫服務器相關"
-        common_root_cause:
-          type: string
-          example: "資料庫主節點性能下降"
-        timeline:
-          type: array
-          items:
-            type: object
-            properties:
-              timestamp:
-                type: string
-                format: date-time
-              incident_id:
-                type: string
-              event:
-                type: string
-        recommended_actions:
-          type: array
-          items:
-            type: string
-        confidence_score:
-          type: number
-          format: float
-          minimum: 0
-          maximum: 1
 
-    # ===================
-    # Log Analysis
-    # ===================
-    LogAnalysis:
+    AnomalyDetection:
       type: object
       properties:
-        query:
-          type: string
-          example: "error AND service:api"
-        time_range:
-          type: object
-          properties:
-            start:
-              type: string
-              format: date-time
-            end:
-              type: string
-              format: date-time
-        total_logs:
-          type: integer
-          example: 15420
-        error_count:
-          type: integer
-          example: 234
-        warning_count:
-          type: integer
-          example: 1567
-        patterns_found:
-          type: array
-          items:
-            type: object
-            properties:
-              pattern:
-                type: string
-              count:
-                type: integer
-              severity:
-                type: string
-          example:
-            - pattern: "Connection timeout"
-              count: 89
-              severity: error
-            - pattern: "Slow query detected"
-              count: 145
-              severity: warning
         anomalies:
           type: array
           items:
-            type: object
-        insights:
+            $ref: '#/components/schemas/DetectedAnomaly'
+        summary:
+          type: object
+
+    DetectedAnomaly:
+      type: object
+      properties:
+        resource_id:
           type: string
-          example: "檢測到異常的連接超時錯誤激增，建議檢查網絡連接"
+        resource_name:
+          type: string
+        metric:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        actual_value:
+          type: number
+        expected_range:
+          type: object
+        severity:
+          type: string
+        description:
+          type: string
+
+    CapacityPrediction:
+      type: object
+      properties:
+        resource_id:
+          type: string
+        resource_name:
+          type: string
+        predictions:
+          type: array
+          items:
+            $ref: '#/components/schemas/MetricPrediction'
+        analysis_timestamp:
+          type: string
+          format: date-time
+
+    MetricPrediction:
+      type: object
+      properties:
+        metric:
+          type: string
+        current_value:
+          type: number
+        predicted_values:
+          type: array
+          items:
+            type: object
+        threshold_breach_date:
+          type: string
+          format: date
+          nullable: true
+        recommendation:
+          type: string
+
+    LogEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        level:
+          type: string
+          enum: [info, warning, error, debug]
+        service:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true

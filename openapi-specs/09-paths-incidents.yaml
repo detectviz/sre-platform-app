@@ -4,7 +4,7 @@ paths:
     get:
       tags: [Incidents]
       summary: List incidents
-      description: Retrieve a paginated list of incidents with optional filtering
+      description: Retrieve a paginated list of incidents with optional filtering.
       operationId: listIncidents
       parameters:
         - $ref: "#/components/parameters/PageParam"
@@ -13,12 +13,12 @@ paths:
         - $ref: "#/components/parameters/SortOrderParam"
         - name: resource_name
           in: query
-          description: Filter by the display name of the impacted resource
+          description: Filter by the display name of the impacted resource.
           schema:
             type: string
       responses:
         "200":
-          description: Successful response with paginated incidents
+          description: Successful response with paginated incidents.
           content:
             application/json:
               schema:
@@ -38,11 +38,12 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
-
+        "500":
+          $ref: "#/components/responses/InternalServerError"
     post:
       tags: [Incidents]
       summary: Create incident
-      description: Create a new incident
+      description: Create a new incident.
       operationId: createIncident
       requestBody:
         required: true
@@ -61,134 +62,45 @@ paths:
                 service: web
       responses:
         "201":
-          description: Incident created successfully
+          description: Incident created successfully.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Incident"
         "400":
           $ref: "#/components/responses/BadRequest"
-        "404":
-          description: Referenced resource or rule not found
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /incidents/{id}:
     parameters:
       - $ref: "#/components/parameters/IdParam"
-
     get:
       tags: [Incidents]
       summary: Get incident by ID
-      description: Retrieve a specific incident by its ID
+      description: Retrieve a specific incident by its ID.
       operationId: getIncidentById
       responses:
         "200":
-          description: Successful response
+          description: Successful response.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Incident"
-        "404":
-          $ref: "#/components/responses/NotFound"
         "401":
           $ref: "#/components/responses/Unauthorized"
-
-  /incidents/{id}/executions:
-    parameters:
-      - $ref: "#/components/parameters/IdParam"
-
-    get:
-      tags: [Incidents]
-      summary: List automation executions for an incident
-      description: Retrieve automation execution records linked to a specific incident
-      operationId: listIncidentExecutions
-      responses:
-        "200":
-          description: Automation executions triggered for the incident
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/AutomationExecution"
         "404":
           $ref: "#/components/responses/NotFound"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-
-  /incidents/{id}/actions:
-    parameters:
-      - $ref: "#/components/parameters/IdParam"
-
-    post:
-      tags: [Incidents]
-      summary: Perform incident action
-      description: Trigger a state-changing action such as acknowledge, resolve, assign, or silence an incident
-      operationId: performIncidentAction
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [action]
-              properties:
-                action:
-                  type: string
-                  enum:
-                    [
-                      acknowledge,
-                      resolve,
-                      assign,
-                      silence,
-                      add_note,
-                      delete_note,
-                    ]
-                  description: Action to perform on the incident
-                assignee_name:
-                  type: string
-                  description: Required when action is assign
-                duration_hours:
-                  type: integer
-                  minimum: 1
-                  description: Required when action is silence
-                details:
-                  type: string
-                  description: Additional details for notes or deletions
-            examples:
-              acknowledge:
-                summary: Acknowledge an incident
-                value:
-                  action: acknowledge
-              assign:
-                summary: Assign to a named engineer
-                value:
-                  action: assign
-                  assignee_name: 王小明
-              silence:
-                summary: Silence the incident for 2 hours
-                value:
-                  action: silence
-                  duration_hours: 2
-      responses:
-        "200":
-          description: Incident updated after performing the action
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Incident"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-
+        "500":
+          $ref: "#/components/responses/InternalServerError"
     patch:
       tags: [Incidents]
       summary: Update incident
-      description: Update an existing incident
+      description: Update an existing incident with new values.
       operationId: updateIncident
       requestBody:
         content:
@@ -207,36 +119,129 @@ paths:
                   status: "acknowledged"
       responses:
         "200":
-          description: Incident updated successfully
+          description: Incident updated successfully.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Incident"
         "400":
           $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
         "401":
           $ref: "#/components/responses/Unauthorized"
-
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
     delete:
       tags: [Incidents]
       summary: Delete incident
-      description: Delete an incident
+      description: Soft delete an incident by setting its `deleted_at` timestamp.
       operationId: deleteIncident
       responses:
         "204":
-          description: Incident deleted successfully
-        "404":
-          $ref: "#/components/responses/NotFound"
+          description: Incident deleted successfully.
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /incidents/{id}/executions:
+    parameters:
+      - $ref: "#/components/parameters/IdParam"
+    get:
+      tags: [Incidents]
+      summary: List automation executions for an incident
+      description: Retrieve automation execution records linked to a specific incident.
+      operationId: listIncidentExecutions
+      responses:
+        "200":
+          description: Automation executions triggered for the incident.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AutomationExecution"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /incidents/{id}/actions:
+    parameters:
+      - $ref: "#/components/parameters/IdParam"
+    post:
+      tags: [Incidents]
+      summary: Perform incident action
+      description: Trigger a state-changing action such as acknowledge, resolve, assign, or silence an incident.
+      operationId: performIncidentAction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action:
+                  type: string
+                  enum:
+                    - acknowledge
+                    - resolve
+                    - assign
+                    - silence
+                    - add_note
+                    - delete_note
+                assignee_name:
+                  type: string
+                  description: Required when action is 'assign'.
+                duration_hours:
+                  type: integer
+                  minimum: 1
+                  description: Required when action is 'silence'.
+                details:
+                  type: string
+                  description: Additional details for notes or deletions.
+            examples:
+              acknowledge:
+                summary: Acknowledge an incident
+                value:
+                  action: acknowledge
+              assign:
+                summary: Assign to a named engineer
+                value:
+                  action: assign
+                  assignee_name: 王小明
+              silence:
+                summary: Silence the incident for 2 hours
+                value:
+                  action: silence
+                  duration_hours: 2
+      responses:
+        "200":
+          description: Incident updated after performing the action.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Incident"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /incidents/batch-close:
     post:
       tags: [Incidents]
       summary: Batch close incidents
-      description: Close multiple incidents at once with optional resolution note
+      description: Close multiple incidents at once with an optional resolution note.
       operationId: batchCloseIncidents
       requestBody:
         required: true
@@ -251,16 +256,16 @@ paths:
                   items:
                     type: string
                   minItems: 1
-                  description: List of incident IDs to close
+                  description: List of incident IDs to close.
                 resolution_note:
                   type: string
-                  description: Optional resolution note
+                  description: Optional resolution note.
             example:
               incident_ids: ["INC-001", "INC-002", "INC-003"]
               resolution_note: "問題已通過重啟服務解決"
       responses:
         "200":
-          description: Batch close completed
+          description: Batch close completed.
           content:
             application/json:
               schema:
@@ -274,12 +279,14 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /incidents/batch-assign:
     post:
       tags: [Incidents]
       summary: Batch assign incidents
-      description: Assign multiple incidents to a specific user
+      description: Assign multiple incidents to a specific user.
       operationId: batchAssignIncidents
       requestBody:
         required: true
@@ -294,13 +301,13 @@ paths:
                   items:
                     type: string
                   minItems: 1
-                  description: List of incident IDs to assign
+                  description: List of incident IDs to assign.
                 assignee_id:
                   type: string
-                  description: User ID to assign incidents to
+                  description: User ID to assign incidents to.
                 assignee_name:
                   type: string
-                  description: User name to assign incidents to (alternative to assignee_id)
+                  description: User name to assign incidents to (alternative to assignee_id).
             examples:
               assignById:
                 summary: Assign by user ID
@@ -314,7 +321,7 @@ paths:
                   assignee_name: "張三"
       responses:
         "200":
-          description: Batch assign completed
+          description: Batch assign completed.
           content:
             application/json:
               schema:
@@ -334,40 +341,9 @@ paths:
                 assignee_id: "usr-003"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "404":
-          description: Assignee not found
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-
-  /incidents/batch-ignore:
-    post:
-      tags: [Incidents]
-      summary: Batch ignore incidents
-      description: Mark multiple incidents as ignored
-      operationId: batchIgnoreIncidents
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [incident_ids]
-              properties:
-                incident_ids:
-                  type: array
-                  items:
-                    type: string
-                  minItems: 1
-            example:
-              incident_ids: ["INC-004", "INC-005"]
-      responses:
-        "200":
-          description: Batch ignore completed
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BatchResult"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"

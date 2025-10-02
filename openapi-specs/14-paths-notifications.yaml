@@ -2,9 +2,9 @@
 paths:
   /settings/notification-channels:
     get:
-      tags: [Notifications]
+      tags: [Settings, Notifications]
       summary: List notification channels
-      description: 取得通知管道列表，支援分頁、排序與關鍵字搜尋。
+      description: Retrieve a paginated list of notification channels.
       operationId: listNotificationChannels
       parameters:
         - $ref: "#/components/parameters/PageParam"
@@ -13,33 +13,23 @@ paths:
         - $ref: "#/components/parameters/SortOrderParam"
         - name: keyword
           in: query
-          description: 依名稱模糊搜尋。
           schema:
             type: string
       responses:
         "200":
-          description: 成功取得通知管道列表。
+          description: A paginated list of notification channels.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  page:
-                    type: integer
-                  page_size:
-                    type: integer
-                  total:
-                    type: integer
-                  items:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/NotificationChannel"
+                $ref: "#/components/schemas/PaginatedNotificationChannels"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
     post:
-      tags: [Notifications]
+      tags: [Settings, Notifications]
       summary: Create notification channel
-      description: 建立新的通知管道。
+      description: Create a new notification channel.
       operationId: createNotificationChannel
       requestBody:
         required: true
@@ -47,16 +37,9 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/NotificationChannelCreate"
-            example:
-              name: SRE On-call Email
-              type: email
-              enabled: true
-              config:
-                to: sre-oncall@example.com
-                cc: sre-manager@example.com
       responses:
         "201":
-          description: 通知管道建立成功。
+          description: Channel created successfully.
           content:
             application/json:
               schema:
@@ -65,12 +48,58 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /settings/notification-channels/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdParam"
+    patch:
+      tags: [Settings, Notifications]
+      summary: Update notification channel
+      description: Update an existing notification channel.
+      operationId: updateNotificationChannel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationChannelUpdate"
+      responses:
+        "200":
+          description: Channel updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationChannel"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      tags: [Settings, Notifications]
+      summary: Delete notification channel
+      description: Soft delete a notification channel.
+      operationId: deleteNotificationChannel
+      responses:
+        "204":
+          description: Channel deleted successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /settings/notification-channels/batch-actions:
     post:
-      tags: [Notifications]
+      tags: [Settings, Notifications]
       summary: Batch update notification channels
-      description: 批次啟用、停用或刪除通知管道。
+      description: Batch enable, disable, or delete notification channels.
       operationId: batchUpdateNotificationChannels
       requestBody:
         required: true
@@ -87,13 +116,9 @@ paths:
                   type: array
                   items:
                     type: string
-                  minItems: 1
-            example:
-              action: enable
-              ids: [chan-1, chan-2]
       responses:
         "200":
-          description: 批次操作完成。
+          description: Batch operation completed.
           content:
             application/json:
               schema:
@@ -102,76 +127,20 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
-
-  /settings/notification-channels/{id}:
-    parameters:
-      - $ref: "#/components/parameters/IdParam"
-    patch:
-      tags: [Notifications]
-      summary: Update notification channel
-      description: 更新通知管道設定。
-      operationId: updateNotificationChannel
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/NotificationChannelUpdate"
-            example:
-              enabled: false
-              config:
-                to: sre-oncall@example.com
-      responses:
-        "200":
-          description: 通知管道更新成功。
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NotificationChannel"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-    delete:
-      tags: [Notifications]
-      summary: Soft delete notification channel
-      description: 將通知管道標記為刪除。
-      operationId: deleteNotificationChannel
-      responses:
-        "200":
-          description: 刪除成功，回傳空物件。
-          content:
-            application/json:
-              schema:
-                type: object
-              example: {}
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /settings/notification-channels/{id}/test:
     parameters:
       - $ref: "#/components/parameters/IdParam"
     post:
-      tags: [Notifications]
+      tags: [Settings, Notifications]
       summary: Test notification channel
-      description: 送出測試通知並更新最新測試結果。
+      description: Send a test notification and update the last test result.
       operationId: testNotificationChannel
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                message:
-                  type: string
-                  default: 測試通知
       responses:
         "200":
-          description: 測試通知已送出。
+          description: Test notification sent.
           content:
             application/json:
               schema:
@@ -179,23 +148,25 @@ paths:
                 properties:
                   success:
                     type: boolean
+                  result:
+                    type: string
                   message:
                     type: string
-              example:
-                success: true
-                message: 測試通知已送出至「SRE On-call Email」。
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
+                  tested_at:
+                    type: string
+                    format: date-time
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /settings/notification-strategies:
     get:
-      tags: [Notifications]
+      tags: [Settings, Notifications]
       summary: List notification strategies
-      description: 取得通知策略列表，支援分頁、排序與關鍵字搜尋。
+      description: Retrieve a paginated list of notification strategies.
       operationId: listNotificationStrategies
       parameters:
         - $ref: "#/components/parameters/PageParam"
@@ -204,33 +175,23 @@ paths:
         - $ref: "#/components/parameters/SortOrderParam"
         - name: keyword
           in: query
-          description: 依策略名稱模糊搜尋。
           schema:
             type: string
       responses:
         "200":
-          description: 成功取得通知策略列表。
+          description: A paginated list of notification strategies.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  page:
-                    type: integer
-                  page_size:
-                    type: integer
-                  total:
-                    type: integer
-                  items:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/NotificationStrategy"
+                $ref: "#/components/schemas/PaginatedNotificationStrategies"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
     post:
-      tags: [Notifications]
+      tags: [Settings, Notifications]
       summary: Create notification strategy
-      description: 建立新的通知策略。
+      description: Create a new notification strategy.
       operationId: createNotificationStrategy
       requestBody:
         required: true
@@ -238,16 +199,9 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/NotificationStrategyCreate"
-            example:
-              name: Critical Database Alerts
-              enabled: true
-              trigger_condition: severity == 'critical'
-              severity_levels: [critical]
-              impact_levels: [high]
-              channel_ids: [chan-1]
       responses:
         "201":
-          description: 通知策略建立成功。
+          description: Strategy created successfully.
           content:
             application/json:
               schema:
@@ -256,12 +210,60 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /settings/notification-strategies/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdParam"
+    patch:
+      tags: [Settings, Notifications]
+      summary: Update notification strategy
+      description: Update an existing notification strategy.
+      operationId: updateNotificationStrategy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationStrategyUpdate"
+      responses:
+        "200":
+          description: Strategy updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationStrategy"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      tags: [Settings, Notifications]
+      summary: Delete notification strategy
+      description: Soft delete a notification strategy.
+      operationId: deleteNotificationStrategy
+      responses:
+        "204":
+          description: Strategy deleted successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /settings/notification-strategies/batch-actions:
     post:
-      tags: [Notifications]
+      tags: [Settings, Notifications]
       summary: Batch update notification strategies
-      description: 批次啟用、停用或刪除通知策略。
+      description: Batch enable, disable, or delete notification strategies.
       operationId: batchUpdateNotificationStrategies
       requestBody:
         required: true
@@ -278,13 +280,9 @@ paths:
                   type: array
                   items:
                     type: string
-                  minItems: 1
-            example:
-              action: disable
-              ids: [strat-001, strat-002]
       responses:
         "200":
-          description: 批次操作完成。
+          description: Batch operation completed.
           content:
             application/json:
               schema:
@@ -293,60 +291,14 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
-
-  /settings/notification-strategies/{id}:
-    parameters:
-      - $ref: "#/components/parameters/IdParam"
-    patch:
-      tags: [Notifications]
-      summary: Update notification strategy
-      description: 更新通知策略設定。
-      operationId: updateNotificationStrategy
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/NotificationStrategyUpdate"
-            example:
-              enabled: false
-              channel_ids: [chan-1, chan-2]
-      responses:
-        "200":
-          description: 通知策略更新成功。
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NotificationStrategy"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-    delete:
-      tags: [Notifications]
-      summary: Soft delete notification strategy
-      description: 將通知策略標記為刪除。
-      operationId: deleteNotificationStrategy
-      responses:
-        "200":
-          description: 刪除成功，回傳空物件。
-          content:
-            application/json:
-              schema:
-                type: object
-              example: {}
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /settings/notification-history:
     get:
-      tags: [Notifications]
+      tags: [Settings, Notifications]
       summary: List notification history
-      description: 取得通知發送紀錄，支援分頁與排序。
+      description: Retrieve a paginated list of notification history records.
       operationId: listNotificationHistory
       parameters:
         - $ref: "#/components/parameters/PageParam"
@@ -355,36 +307,27 @@ paths:
         - $ref: "#/components/parameters/SortOrderParam"
       responses:
         "200":
-          description: 成功取得通知紀錄。
+          description: A paginated list of notification history records.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  page:
-                    type: integer
-                  page_size:
-                    type: integer
-                  total:
-                    type: integer
-                  items:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/NotificationHistoryRecord"
+                $ref: "#/components/schemas/PaginatedNotificationHistoryRecords"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /settings/notification-history/{id}/resend:
     parameters:
       - $ref: "#/components/parameters/IdParam"
     post:
-      tags: [Notifications]
-      summary: Resend notification history record
-      description: 重新發送指定的通知紀錄。
+      tags: [Settings, Notifications]
+      summary: Resend notification
+      description: Resend a specific notification from the history.
       operationId: resendNotificationHistory
       responses:
         "200":
-          description: 通知已重新發送。
+          description: Notification has been re-sent.
           content:
             application/json:
               schema:
@@ -394,10 +337,39 @@ paths:
                     type: boolean
                   message:
                     type: string
-              example:
-                success: true
-                message: 通知已重新發送。
-        "404":
-          $ref: "#/components/responses/NotFound"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  schemas:
+    PaginatedNotificationChannels:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationChannel'
+        total:
+          type: integer
+    PaginatedNotificationStrategies:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationStrategy'
+        total:
+          type: integer
+    PaginatedNotificationHistoryRecords:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationHistoryRecord'
+        total:
+          type: integer

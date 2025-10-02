@@ -6,10 +6,20 @@ components:
     # ===================
     AutomationPlaybook:
       type: object
-      required: [id, name, type, content, created_at]
+      required:
+        - id
+        - name
+        - type
+        - content
+        - last_run_at
+        - last_run_status
+        - run_count
+        - created_at
+        - updated_at
       properties:
         id:
           type: string
+          readOnly: true
           example: play-001
         name:
           type: string
@@ -26,54 +36,75 @@ components:
           example: |
             #!/bin/bash
             kubectl rollout restart deployment "$DEPLOYMENT"
-        enabled:
-          type: boolean
-          example: true
-        trigger:
-          type: string
-          example: K8s 告警
         last_run_at:
           type: string
           format: date-time
+          readOnly: true
           example: "2025-09-23T14:05:10Z"
         last_run_status:
           type: string
           enum: [pending, running, success, failed, cancelled]
+          readOnly: true
           example: success
         run_count:
           type: integer
+          readOnly: true
           example: 12
         parameters:
           type: array
           items:
-            type: object
-            required: [name, label, type]
-            properties:
-              name:
-                type: string
-                example: namespace
-              label:
-                type: string
-                example: 命名空間
-              type:
-                type: string
-                example: string
-              required:
-                type: boolean
-                example: true
-              default_value:
-                type: string
-                example: production
+            $ref: '#/components/schemas/ParameterDefinition'
         created_at:
           type: string
           format: date-time
+          readOnly: true
         updated_at:
           type: string
           format: date-time
+          readOnly: true
         deleted_at:
           type: string
           format: date-time
+          readOnly: true
           nullable: true
+
+    ParameterDefinition:
+      type: object
+      required: [name, label, type, required]
+      properties:
+        name:
+          type: string
+          description: The parameter name used in the script.
+          example: namespace
+        label:
+          type: string
+          description: The human-readable label for the UI.
+          example: 命名空間
+        type:
+          type: string
+          enum: [string, number, enum, boolean]
+          example: string
+        required:
+          type: boolean
+        default_value:
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+          example: production
+        options:
+          type: array
+          description: "A list of options, required if type is 'enum'."
+          items:
+            type: object
+            properties:
+              value:
+                type: string
+              label:
+                type: string
+        placeholder:
+          type: string
+          example: "Enter the target namespace"
 
     AutomationPlaybookCreate:
       type: object
@@ -91,27 +122,10 @@ components:
           minLength: 1
         description:
           type: string
-        enabled:
-          type: boolean
-          default: true
-        trigger:
-          type: string
         parameters:
           type: array
           items:
-            type: object
-            required: [name, label, type]
-            properties:
-              name:
-                type: string
-              label:
-                type: string
-              type:
-                type: string
-              required:
-                type: boolean
-              default_value:
-                type: string
+            $ref: '#/components/schemas/ParameterDefinition'
 
     AutomationPlaybookUpdate:
       type: object
@@ -125,50 +139,35 @@ components:
           type: string
         description:
           type: string
-        enabled:
-          type: boolean
-        trigger:
-          type: string
         parameters:
           type: array
           items:
-            type: object
-            required: [name]
-            properties:
-              name:
-                type: string
-              label:
-                type: string
-              type:
-                type: string
-              required:
-                type: boolean
-              default_value:
-                type: string
+            $ref: '#/components/schemas/ParameterDefinition'
 
     # ===================
     # Automation Execution
     # ===================
     AutomationExecution:
       type: object
+      description: Represents a single run of an automation playbook.
+      readOnly: true
       required:
-        [
-          id,
-          script_id,
-          script_name,
-          status,
-          trigger_source,
-          triggered_by,
-          start_time,
-        ]
+        - id
+        - playbook_id
+        - playbook_name
+        - status
+        - trigger_source
+        - triggered_by
+        - start_time
+        - logs
       properties:
         id:
           type: string
           example: exec-001
-        script_id:
+        playbook_id:
           type: string
           example: play-001
-        script_name:
+        playbook_name:
           type: string
           example: 重啟故障 Pod
         status:
@@ -222,8 +221,9 @@ components:
           type: string
           nullable: true
           example: res-002
-        error_message:
+        deleted_at:
           type: string
+          format: date-time
           nullable: true
 
     AutomationExecutionRequest:
@@ -232,9 +232,10 @@ components:
         parameters:
           type: object
           additionalProperties:
-            type: string
+            type: any
           example:
             namespace: production
+            force_restart: true
       description: 執行腳本時可傳入的參數
 
     # ===================
@@ -242,14 +243,26 @@ components:
     # ===================
     AutomationTrigger:
       type: object
-      required: [id, name, type, enabled, target_playbook_id, created_at]
+      required:
+        - id
+        - name
+        - type
+        - enabled
+        - target_playbook_id
+        - config
+        - creator
+        - created_at
+        - updated_at
       properties:
         id:
           type: string
+          readOnly: true
           example: trigger-daily-backup
         name:
           type: string
           example: 每日備份觸發器
+        description:
+          type: string
         type:
           type: string
           enum: [schedule, webhook, event]
@@ -260,99 +273,93 @@ components:
         target_playbook_id:
           type: string
           example: script-backup
+        retry_policy:
+          type: string
+          enum: [none, fixed, exponential]
+          default: none
         config:
           type: object
-          description: Configuration details specific to the trigger type
+          description: Configuration details specific to the trigger type.
           properties:
-            schedule:
-              type: object
-              properties:
-                cron:
-                  type: string
-                timezone:
-                  type: string
-                cron_description:
-                  type: string
-            webhook:
-              type: object
-              properties:
-                url:
-                  type: string
-                  format: uri
-                secret:
-                  type: string
-            event:
-              type: object
-              properties:
-                source:
-                  type: string
-                severity:
-                  type: string
-        cron:
-          type: string
-          example: "0 2 * * *"
-          description: Cron expression for schedule triggers
-        cron_description:
-          type: string
-          example: "每天凌晨 2 點執行"
-        webhook_url:
-          type: string
-          format: uri
-          example: "https://api.example.com/webhook/trigger/backup"
-        event_conditions:
-          type: object
-          example:
-            event_type: incident.critical
-            severity: critical
+            cron:
+              type: string
+              description: "Cron expression (for schedule type)."
+              example: "0 2 * * *"
+            cron_description:
+              type: string
+              description: "Human-readable cron description (for schedule type)."
+              example: "每天凌晨 2 點執行"
+            webhook_url:
+              type: string
+              format: uri
+              description: "The webhook URL to call (for webhook type)."
+              example: "https://api.example.com/webhook/trigger/backup"
+            event_conditions:
+              type: string
+              description: "Conditions for the event to trigger the playbook (for event type)."
+              example: "severity == 'critical' && resource.type == 'database'"
         last_triggered_at:
           type: string
           format: date-time
+          readOnly: true
           example: "2024-01-15T02:00:00Z"
+        creator:
+          type: string
+          readOnly: true
         created_at:
           type: string
           format: date-time
+          readOnly: true
         updated_at:
           type: string
           format: date-time
+          readOnly: true
         deleted_at:
           type: string
           format: date-time
+          readOnly: true
           nullable: true
 
     AutomationTriggerCreate:
       type: object
-      required: [name, type, enabled, target_playbook_id]
+      required: [name, type, enabled, target_playbook_id, config]
       properties:
         name:
           type: string
           minLength: 1
           maxLength: 200
+        description:
+          type: string
         type:
           type: string
           enum: [schedule, webhook, event]
         enabled:
           type: boolean
+          default: true
         target_playbook_id:
           type: string
+        retry_policy:
+          type: string
+          enum: [none, fixed, exponential]
+          default: none
         config:
           type: object
-        cron:
-          type: string
-          description: Required for Schedule type
-        event_conditions:
-          type: object
-          description: Required for Event type
+          description: "Required configuration based on trigger type."
 
     AutomationTriggerUpdate:
       type: object
       properties:
         name:
           type: string
+        description:
+          type: string
         enabled:
           type: boolean
+        target_playbook_id:
+          type: string
+        retry_policy:
+          type: string
+          enum: [none, fixed, exponential]
         config:
           type: object
-        cron:
-          type: string
-        event_conditions:
-          type: object
+          description: "Configuration based on trigger type."

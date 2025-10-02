@@ -4,220 +4,212 @@ paths:
     get:
       tags: [Resources]
       summary: List resources
-      description: Retrieve a paginated list of resources with optional filtering
+      description: Retrieve a paginated list of resources.
       operationId: listResources
       parameters:
-        - $ref: "#/components/parameters/PageParam"
-        - $ref: "#/components/parameters/PageSizeParam"
-        - $ref: "#/components/parameters/SortByParam"
-        - $ref: "#/components/parameters/SortOrderParam"
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
         - name: bookmarked
           in: query
-          description: Limit results to bookmarked resources when set to true
           schema:
             type: boolean
       responses:
-        "200":
-          description: Successful response with paginated resources
+        '200':
+          description: A paginated list of resources.
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  page:
-                    type: integer
-                  page_size:
-                    type: integer
-                  total:
-                    type: integer
                   items:
                     type: array
                     items:
-                      $ref: "#/components/schemas/Resource"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-
+                      $ref: '#/components/schemas/Resource'
+                  total:
+                    type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [Resources]
       summary: Create resource
-      description: Create a new resource
       operationId: createResource
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ResourceCreate"
-            example:
-              name: "api-gateway-prod-01"
-              type: "API Gateway"
-              status: "healthy"
-              provider: "aws"
-              region: "us-west-2"
-              owner: "SRE Team"
-              tags:
-                env: production
-                service: api-gateway
-              team_id: "team-sre"
+              $ref: '#/components/schemas/ResourceCreate'
       responses:
-        "201":
-          description: Resource created successfully
+        '201':
+          description: Resource created.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Resource"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
+                $ref: '#/components/schemas/Resource'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /resources/{id}:
     parameters:
-      - $ref: "#/components/parameters/IdParam"
-
+      - $ref: '#/components/parameters/IdParam'
     get:
       tags: [Resources]
       summary: Get resource by ID
-      description: Retrieve a specific resource by its ID
       operationId: getResourceById
       responses:
-        "200":
-          description: Successful response
+        '200':
+          description: A single resource.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Resource"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-
+                $ref: '#/components/schemas/Resource'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
     patch:
       tags: [Resources]
       summary: Update resource
-      description: Update an existing resource
       operationId: updateResource
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ResourceUpdate"
-            examples:
-              updateStatus:
-                summary: Update status
-                value:
-                  status: "warning"
-              updateTags:
-                summary: Update tags
-                value:
-                  tags:
-                    env: production
-                    service: web
-                    tier: frontend
-                    version: v2.0
+              $ref: '#/components/schemas/ResourceUpdate'
       responses:
-        "200":
-          description: Resource updated successfully
+        '200':
+          description: Resource updated.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Resource"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-
+                $ref: '#/components/schemas/Resource'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
     delete:
       tags: [Resources]
       summary: Delete resource
-      description: Delete a resource
       operationId: deleteResource
       responses:
-        "204":
-          description: Resource deleted successfully
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
+        '204':
+          description: Resource deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
-  /resources/{id}/metrics:
-    parameters:
-      - $ref: "#/components/parameters/IdParam"
-
+  /resources/overview:
     get:
       tags: [Resources]
-      summary: Get resource metrics
-      description: Retrieve current metrics for a specific resource
-      operationId: getResourceMetrics
-      parameters:
-        - name: time_range
-          in: query
-          description: Time range for metrics (in minutes)
-          schema:
-            type: integer
-            default: 60
-          example: 120
+      summary: Get resource overview
+      operationId: getResourceOverview
       responses:
-        "200":
-          description: Successful response with resource metrics
+        '200':
+          description: Resource overview data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceOverviewData'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /resources/topology:
+    get:
+      tags: [Resources]
+      summary: Get resource topology
+      operationId: getResourceTopology
+      responses:
+        '200':
+          description: Resource topology data.
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  resource_id:
-                    type: string
-                  resource_name:
-                    type: string
-                  metrics:
-                    type: object
-                    additionalProperties:
-                      type: object
-                      properties:
-                        current:
-                          type: number
-                        average:
-                          type: number
-                        max:
-                          type: number
-                        min:
-                          type: number
-                        unit:
-                          type: string
-                  timestamp:
-                    type: string
-                    format: date-time
-                example:
-                  resource_id: "res-001"
-                  resource_name: "web-server-01"
-                  metrics:
-                    cpu_usage:
-                      current: 45.2
-                      average: 42.8
-                      max: 67.3
-                      min: 28.1
-                      unit: "%"
-                    memory_usage:
-                      current: 62.5
-                      average: 58.3
-                      max: 78.9
-                      min: 45.2
-                      unit: "%"
-                  timestamp: "2024-01-15T10:30:00Z"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
+                  nodes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Resource'
+                  links:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ResourceLink'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
-  /resources/batch-tag:
+  /resources/{id}/metrics:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    get:
+      tags: [Resources]
+      summary: Get resource metrics
+      operationId: getResourceMetrics
+      responses:
+        '200':
+          description: Time series metrics for the resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricsData'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /resources/{id}/alert-rules:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    get:
+      tags: [Resources]
+      summary: List alert rules for a resource
+      operationId: listAlertRulesForResource
+      responses:
+        '200':
+          description: A list of alert rules associated with the resource.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AlertRule'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /resources/batch-tags:
     post:
       tags: [Resources]
       summary: Batch tag resources
-      description: Add or update tags for multiple resources
       operationId: batchTagResources
       requestBody:
         required: true
@@ -231,54 +223,28 @@ paths:
                   type: array
                   items:
                     type: string
-                  minItems: 1
-                  description: List of resource IDs to tag
                 tags:
                   type: array
-                  minItems: 1
                   items:
-                    type: object
-                    required: [key, value]
-                    properties:
-                      key:
-                        type: string
-                      value:
-                        type: string
-                  description: Tags to add/update (will merge with existing tags)
-                replace:
-                  type: boolean
-                  default: false
-                  description: If true, replace all existing tags; if false, merge with existing
-            example:
-              resource_ids: ["res-001", "res-002", "res-003"]
-              tags:
-                - key: env
-                  value: production
-                - key: managed_by
-                  value: terraform
-              replace: false
+                    $ref: '#/components/schemas/KeyValueTag'
       responses:
-        "200":
-          description: Batch tag completed
+        '200':
+          description: Batch tagging completed.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BatchResult"
-              example:
-                success: true
-                updated: 3
-                skipped_ids: []
-                message: "Successfully tagged 3 resources"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
+                $ref: '#/components/schemas/BatchResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /resources/batch-actions:
     post:
       tags: [Resources]
       summary: Batch resource actions
-      description: Perform batch actions such as delete on multiple resources
       operationId: batchResourceActions
       requestBody:
         required: true
@@ -291,29 +257,139 @@ paths:
                 action:
                   type: string
                   enum: [delete]
-                  description: Batch action to apply
                 ids:
                   type: array
                   items:
                     type: string
-                  minItems: 1
-                  description: Identifiers of the resources to process
-            example:
-              action: delete
-              ids: ["res-old-001", "res-old-002"]
       responses:
-        "200":
-          description: Batch action completed
+        '200':
+          description: Batch action completed.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BatchResult"
-              example:
-                success: true
-                updated: 2
-                skipped_ids: []
-                message: Successfully deleted 2 resources
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
+                $ref: '#/components/schemas/BatchResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    ResourceLink:
+      type: object
+      required: [id, source_resource_id, target_resource_id, link_type, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          readOnly: true
+        source_resource_id:
+          type: string
+        target_resource_id:
+          type: string
+        link_type:
+          type: string
+          enum: [depends_on, connects_to, includes, manages, monitors]
+        metadata:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+
+    TimeSeriesData:
+      type: array
+      items:
+        type: array
+        minItems: 2
+        maxItems: 2
+        items:
+          - type: string
+            format: date-time
+          - type: number
+      example:
+        - ["2024-10-01T10:00:00Z", 45.2]
+        - ["2024-10-01T10:01:00Z", 46.1]
+
+    MetricsData:
+      type: object
+      required: [cpu, memory]
+      properties:
+        cpu:
+          $ref: '#/components/schemas/TimeSeriesData'
+        memory:
+          $ref: '#/components/schemas/TimeSeriesData'
+
+    KeyValueTag:
+      type: object
+      required: [key, value]
+      properties:
+        id:
+          type: string
+          readOnly: true
+        key:
+          type: string
+        value:
+          type: string
+
+    ResourceOverviewData:
+      type: object
+      properties:
+        distribution_by_type:
+          type: array
+          items:
+            type: object
+            properties:
+              value:
+                type: integer
+              name:
+                type: string
+        distribution_by_provider:
+          type: array
+          items:
+            type: object
+            properties:
+              provider:
+                type: string
+              count:
+                type: integer
+        recently_discovered:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              type:
+                type: string
+              discovered_at:
+                type: string
+                format: date-time
+              job_id:
+                type: string
+        groups_with_most_alerts:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              criticals:
+                type: integer
+              warnings:
+                type: integer

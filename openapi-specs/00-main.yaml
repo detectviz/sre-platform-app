@@ -22,38 +22,32 @@ info:
     name: MIT
 
 servers:
-  - url: http://localhost:4000/api/v1
-    description: Development server
-  - url: https://api.sre-platform.example.com/api/v1
-    description: Production server
+  - url: /api/v1
+    description: SRE Platform API Server
 
 security:
   - bearerAuth: []
 
 tags:
   - name: Dashboards
-    description: Dashboard management and visualization
+    description: 儀表板管理 (Dashboard management and visualization)
   - name: Incidents
-    description: Incident tracking and lifecycle actions
+    description: 事件管理 (Incident tracking and lifecycle actions)
   - name: Alert Rules
-    description: Alert rule configuration and automation
+    description: 告警規則 (Alert rule configuration and automation)
+  - name: Silence Rules
+    description: 靜音規則 (Silence rule management)
   - name: Resources
-    description: Resource inventory, metrics, and topology
+    description: 資源管理 (Resource inventory, metrics, and topology)
   - name: Automation
-    description: Automation playbooks, executions, and triggers
+    description: 自動化 (Automation playbooks, executions, and triggers)
   - name: IAM
-    description: Identity and access management for users and teams
+    description: 身份與存取管理 (Identity and access management for users, teams, and roles)
   - name: Notifications
-    description: Notification channels, strategies, and delivery history
+    description: 通知管理 (Notification channels, strategies, and delivery history)
   - name: Analysis
-    description: AI-powered analysis and predictive insights
-  - name: Users
-    description: User directory and access profiles
-  - name: Teams
-    description: Team structures and membership management
-  - name: Roles
-    description: Role definitions and permission policies
-  - name: Health
-    description: Platform health and readiness monitoring
-  - name: Metrics
-    description: Observability metrics and reporting endpoints
+    description: 分析中心 (AI-powered analysis and predictive insights)
+  - name: Settings
+    description: 平台設定 (Platform-wide settings and configurations)
+  - name: Logs
+    description: 日誌查詢 (Log querying endpoints)

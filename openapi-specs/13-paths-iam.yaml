@@ -4,7 +4,7 @@ paths:
     get:
       tags: [IAM]
       summary: List users
-      description: 取得使用者列表，支援分頁、排序與關鍵字搜尋。
+      description: Retrieve a paginated list of users.
       operationId: listIamUsers
       parameters:
         - $ref: '#/components/parameters/PageParam'
@@ -13,33 +13,23 @@ paths:
         - $ref: '#/components/parameters/SortOrderParam'
         - name: keyword
           in: query
-          description: 依名稱或 Email 模糊搜尋。
           schema:
             type: string
       responses:
         '200':
-          description: 成功取得使用者列表。
+          description: A paginated list of users.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  page:
-                    type: integer
-                  page_size:
-                    type: integer
-                  total:
-                    type: integer
-                  items:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/PaginatedUsers'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [IAM]
       summary: Create user
-      description: 建立新使用者。
+      description: Create a new user.
       operationId: createIamUser
       requestBody:
         required: true
@@ -47,14 +37,9 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UserCreate'
-            example:
-              name: 張三
-              email: zhang.san@example.com
-              role: SRE
-              team: SRE 平台團隊
       responses:
         '201':
-          description: 使用者建立成功。
+          description: User created successfully.
           content:
             application/json:
               schema:
@@ -63,12 +48,58 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /iam/users/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    patch:
+      tags: [IAM]
+      summary: Update user
+      description: Update an existing user.
+      operationId: updateIamUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: User updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [IAM]
+      summary: Delete user
+      description: Soft delete a user.
+      operationId: deleteIamUser
+      responses:
+        '204':
+          description: User deleted successfully.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /iam/users/batch-actions:
     post:
       tags: [IAM]
-      summary: Batch update users
-      description: 批次刪除或停用使用者。
+      summary: Batch user operations
+      description: Perform batch operations on multiple users.
       operationId: batchUpdateIamUsers
       requestBody:
         required: true
@@ -85,107 +116,25 @@ paths:
                   type: array
                   items:
                     type: string
-                  minItems: 1
-            examples:
-              deleteUsers:
-                value:
-                  action: delete
-                  ids: [usr-001, usr-002]
-              disableUsers:
-                value:
-                  action: disable
-                  ids: [usr-003]
       responses:
         '200':
-          description: 批次操作完成。
+          description: Batch operation completed.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-              example:
-                success: true
+                $ref: '#/components/schemas/BatchResult'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-
-  /iam/users/import:
-    post:
-      tags: [IAM]
-      summary: Import users
-      description: 從外部來源批次匯入使用者。
-      operationId: importIamUsers
-      responses:
-        '200':
-          description: 匯入已執行。
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-              example:
-                message: 成功匯入 25 位人員。
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /iam/users/{id}:
-    parameters:
-      - $ref: '#/components/parameters/IdParam'
-    patch:
-      tags: [IAM]
-      summary: Update user
-      description: 更新使用者資訊。
-      operationId: updateIamUser
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserUpdate'
-            example:
-              role: Developer
-              status: inactive
-      responses:
-        '200':
-          description: 使用者更新成功。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-    delete:
-      tags: [IAM]
-      summary: Soft delete user
-      description: 將使用者標記為刪除。
-      operationId: deleteIamUser
-      responses:
-        '200':
-          description: 刪除成功，回傳空物件。
-          content:
-            application/json:
-              schema:
-                type: object
-              example: {}
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /iam/teams:
     get:
       tags: [IAM]
       summary: List teams
-      description: 取得團隊列表，支援分頁與關鍵字搜尋。
+      description: Retrieve a paginated list of teams.
       operationId: listIamTeams
       parameters:
         - $ref: '#/components/parameters/PageParam'
@@ -194,33 +143,23 @@ paths:
         - $ref: '#/components/parameters/SortOrderParam'
         - name: keyword
           in: query
-          description: 依團隊名稱模糊搜尋。
           schema:
             type: string
       responses:
         '200':
-          description: 成功取得團隊列表。
+          description: A paginated list of teams.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  page:
-                    type: integer
-                  page_size:
-                    type: integer
-                  total:
-                    type: integer
-                  items:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Team'
+                $ref: '#/components/schemas/PaginatedTeams'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [IAM]
       summary: Create team
-      description: 建立新團隊並指派擁有者。
+      description: Create a new team.
       operationId: createIamTeam
       requestBody:
         required: true
@@ -228,13 +167,9 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TeamCreate'
-            example:
-              name: SRE 平台團隊
-              description: 管理平台可靠性
-              owner_id: usr-001
       responses:
         '201':
-          description: 團隊建立成功。
+          description: Team created successfully.
           content:
             application/json:
               schema:
@@ -243,12 +178,60 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /iam/teams/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    patch:
+      tags: [IAM]
+      summary: Update team
+      description: Update an existing team.
+      operationId: updateIamTeam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamUpdate'
+      responses:
+        '200':
+          description: Team updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [IAM]
+      summary: Delete team
+      description: Soft delete a team.
+      operationId: deleteIamTeam
+      responses:
+        '204':
+          description: Team deleted successfully.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /iam/teams/batch-actions:
     post:
       tags: [IAM]
-      summary: Batch update teams
-      description: 批次刪除多個團隊。
+      summary: Batch team operations
+      description: Perform batch operations on multiple teams.
       operationId: batchUpdateIamTeams
       requestBody:
         required: true
@@ -265,79 +248,25 @@ paths:
                   type: array
                   items:
                     type: string
-                  minItems: 1
-            example:
-              action: delete
-              ids: [team-001, team-002]
       responses:
         '200':
-          description: 批次操作完成。
+          description: Batch operation completed.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-              example:
-                success: true
+                $ref: '#/components/schemas/BatchResult'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-
-  /iam/teams/{id}:
-    parameters:
-      - $ref: '#/components/parameters/IdParam'
-    patch:
-      tags: [IAM]
-      summary: Update team
-      description: 更新團隊資訊或成員。
-      operationId: updateIamTeam
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TeamUpdate'
-            example:
-              member_ids: [usr-001, usr-002]
-      responses:
-        '200':
-          description: 團隊更新成功。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Team'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-    delete:
-      tags: [IAM]
-      summary: Soft delete team
-      description: 將團隊標記為刪除。
-      operationId: deleteIamTeam
-      responses:
-        '200':
-          description: 刪除成功，回傳空物件。
-          content:
-            application/json:
-              schema:
-                type: object
-              example: {}
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /iam/roles:
     get:
       tags: [IAM]
       summary: List roles
-      description: 取得角色列表，支援分頁與關鍵字搜尋。
+      description: Retrieve a paginated list of roles.
       operationId: listIamRoles
       parameters:
         - $ref: '#/components/parameters/PageParam'
@@ -346,33 +275,23 @@ paths:
         - $ref: '#/components/parameters/SortOrderParam'
         - name: keyword
           in: query
-          description: 依角色名稱模糊搜尋。
           schema:
             type: string
       responses:
         '200':
-          description: 成功取得角色列表。
+          description: A paginated list of roles.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  page:
-                    type: integer
-                  page_size:
-                    type: integer
-                  total:
-                    type: integer
-                  items:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Role'
+                $ref: '#/components/schemas/PaginatedRoles'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [IAM]
       summary: Create role
-      description: 建立新角色並設定權限。
+      description: Create a new role.
       operationId: createIamRole
       requestBody:
         required: true
@@ -380,15 +299,9 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/RoleCreate'
-            example:
-              name: Automation Operator
-              description: 負責執行與管理自動化腳本
-              permissions:
-                - automation.read
-                - automation.execute
       responses:
         '201':
-          description: 角色建立成功。
+          description: Role created successfully.
           content:
             application/json:
               schema:
@@ -397,12 +310,58 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /iam/roles/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    patch:
+      tags: [IAM]
+      summary: Update role
+      description: Update an existing role.
+      operationId: updateIamRole
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleUpdate'
+      responses:
+        '200':
+          description: Role updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [IAM]
+      summary: Delete role
+      description: Soft delete a role.
+      operationId: deleteIamRole
+      responses:
+        '204':
+          description: Role deleted successfully.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /iam/roles/batch-actions:
     post:
       tags: [IAM]
-      summary: Batch update roles
-      description: 批次刪除多個角色。
+      summary: Batch role operations
+      description: Perform batch operations on multiple roles.
       operationId: batchUpdateIamRoles
       requestBody:
         required: true
@@ -419,113 +378,45 @@ paths:
                   type: array
                   items:
                     type: string
-                  minItems: 1
-            example:
-              action: delete
-              ids: [role-001, role-002]
       responses:
         '200':
-          description: 批次操作完成。
+          description: Batch operation completed.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-              example:
-                success: true
+                $ref: '#/components/schemas/BatchResult'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-
-  /iam/roles/{id}:
-    parameters:
-      - $ref: '#/components/parameters/IdParam'
-    patch:
-      tags: [IAM]
-      summary: Update role
-      description: 更新角色資訊或權限。
-      operationId: updateIamRole
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RoleUpdate'
-            example:
-              permissions:
-                - incidents.read
-                - resources.read
-      responses:
-        '200':
-          description: 角色更新成功。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Role'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-    delete:
-      tags: [IAM]
-      summary: Soft delete role
-      description: 將角色標記為刪除。
-      operationId: deleteIamRole
-      responses:
-        '200':
-          description: 刪除成功，回傳空物件。
-          content:
-            application/json:
-              schema:
-                type: object
-              example: {}
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /iam/permissions:
     get:
       tags: [IAM]
       summary: List available permissions
-      description: 取得系統可用權限清單，用於角色設定。
+      description: Retrieve the list of all available permissions in the system.
       operationId: listIamPermissions
       responses:
         '200':
-          description: 成功取得權限列表。
+          description: A list of available permissions.
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    module:
-                      type: string
-                    description:
-                      type: string
-                    actions:
-                      type: array
-                      items:
-                        type: object
-                        properties:
-                          key:
-                            type: string
-                          label:
-                            type: string
+                  $ref: '#/components/schemas/RolePermission'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /iam/audit-logs:
     get:
       tags: [IAM]
-      summary: List IAM audit logs
-      description: 取得 IAM 相關的稽核紀錄。
+      summary: List audit logs
+      description: Retrieve a paginated list of audit log records.
       operationId: listIamAuditLogs
       parameters:
         - $ref: '#/components/parameters/PageParam'
@@ -534,47 +425,51 @@ paths:
         - $ref: '#/components/parameters/SortOrderParam'
       responses:
         '200':
-          description: 成功取得稽核紀錄。
+          description: A paginated list of audit logs.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  page:
-                    type: integer
-                  page_size:
-                    type: integer
-                  total:
-                    type: integer
-                  items:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                        timestamp:
-                          type: string
-                          format: date-time
-                        user:
-                          type: object
-                          properties:
-                            id:
-                              type: string
-                            name:
-                              type: string
-                        action:
-                          type: string
-                        target:
-                          type: object
-                          properties:
-                            type:
-                              type: string
-                            name:
-                              type: string
-                        result:
-                          type: string
-                        ip:
-                          type: string
+                $ref: '#/components/schemas/PaginatedAuditLogs'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    PaginatedUsers:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        total:
+          type: integer
+    PaginatedTeams:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Team'
+        total:
+          type: integer
+    PaginatedRoles:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Role'
+        total:
+          type: integer
+    PaginatedAuditLogs:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLog'
+        total:
+          type: integer

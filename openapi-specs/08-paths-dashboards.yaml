@@ -4,34 +4,27 @@ paths:
     get:
       tags: [Dashboards]
       summary: List dashboards
-      description: Retrieve a paginated list of dashboards with optional filtering and sorting
+      description: Retrieve a paginated list of dashboards with optional filtering and sorting.
       operationId: listDashboards
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PageSizeParam'
         - $ref: '#/components/parameters/SortByParam'
         - $ref: '#/components/parameters/SortOrderParam'
-        - name: type
-          in: query
-          description: Filter by dashboard type
-          schema:
-            type: string
-            enum: [built-in, custom, grafana]
-          example: grafana
         - name: category
           in: query
-          description: Filter by category
+          description: Filter by category.
           schema:
             type: string
           example: 基礎設施
         - name: keyword
           in: query
-          description: Case-insensitive keyword for fuzzy name matching
+          description: Case-insensitive keyword for fuzzy name matching.
           schema:
             type: string
       responses:
         '200':
-          description: Successful response with paginated dashboards
+          description: Successful response with paginated dashboards.
           content:
             application/json:
               schema:
@@ -54,11 +47,13 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
     post:
       tags: [Dashboards]
       summary: Create dashboard
-      description: Create a new dashboard
+      description: Create a new dashboard.
       operationId: createDashboard
       requestBody:
         required: true
@@ -75,6 +70,7 @@ paths:
                   category: "基礎設施"
                   description: "生產環境關鍵指標監控"
                   team_id: "team-sre"
+                  owner_id: "usr-001"
                   grafana_dashboard_uid: "prod-metrics-uid"
               customDashboard:
                 summary: Custom Dashboard
@@ -85,7 +81,7 @@ paths:
                   resource_ids: ["res-001", "res-002"]
       responses:
         '201':
-          description: Dashboard created successfully
+          description: Dashboard created successfully.
           content:
             application/json:
               schema:
@@ -94,32 +90,36 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /dashboards/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
-
     get:
       tags: [Dashboards]
       summary: Get dashboard by ID
-      description: Retrieve a specific dashboard by its ID
+      description: Retrieve a specific dashboard by its ID.
       operationId: getDashboardById
       responses:
         '200':
-          description: Successful response
+          description: Successful response.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Dashboard'
-        '404':
-          $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
-
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
     patch:
       tags: [Dashboards]
       summary: Update dashboard
-      description: Update an existing dashboard
+      description: Update an existing dashboard.
       operationId: updateDashboard
       requestBody:
         required: true
@@ -132,40 +132,43 @@ paths:
               description: "Updated description"
       responses:
         '200':
-          description: Dashboard updated successfully
+          description: Dashboard updated successfully.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Dashboard'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
-
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
     delete:
       tags: [Dashboards]
       summary: Delete dashboard
-      description: Soft delete a dashboard (sets deleted_at timestamp)
+      description: Soft delete a dashboard (sets deleted_at timestamp).
       operationId: deleteDashboard
       responses:
         '204':
-          description: Dashboard deleted successfully
-        '404':
-          $ref: '#/components/responses/NotFound'
+          description: Dashboard deleted successfully.
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /dashboards/available-grafana:
     get:
       tags: [Dashboards]
       summary: List available Grafana dashboards
-      description: Retrieve Grafana dashboards that are not yet linked to the platform
+      description: Retrieve Grafana dashboards that are not yet linked to the platform.
       operationId: listAvailableGrafanaDashboards
       responses:
         '200':
-          description: List of available Grafana dashboards
+          description: List of available Grafana dashboards.
           content:
             application/json:
               schema:
@@ -184,24 +187,20 @@ paths:
                       type: string
                       format: uri
                       example: https://grafana.example.com/d/grafana-uid-1
-                    folder_title:
-                      type: string
-                      example: Production
-                    folder_uid:
-                      type: string
-                      example: prod-folder
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /dashboards/templates:
     get:
       tags: [Dashboards]
       summary: List dashboard templates
-      description: Retrieve reusable templates that can be applied when creating dashboards
+      description: Retrieve reusable templates that can be applied when creating dashboards.
       operationId: listDashboardTemplates
       responses:
         '200':
-          description: Template catalog
+          description: Template catalog.
           content:
             application/json:
               schema:
@@ -210,75 +209,68 @@ paths:
                   $ref: '#/components/schemas/DashboardTemplate'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
-  /dashboards/{id}/service-health:
-    parameters:
-      - $ref: '#/components/parameters/IdParam'
-
+  /dashboards/sre-war-room/service-health:
     get:
       tags: [Dashboards]
-      summary: Get dashboard service health heatmap
-      description: Retrieve the service health visualization data for supported dashboards (e.g. sre-war-room)
+      summary: Get SRE War Room service health
+      description: Retrieve the service health visualization data for the SRE War Room dashboard.
       operationId: getDashboardServiceHealth
       responses:
         '200':
-          description: Heatmap data used to render the service health panel
+          description: Heatmap data used to render the service health panel.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServiceHealthData'
-        '404':
-          $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
-  /dashboards/{id}/resource-group-status:
-    parameters:
-      - $ref: '#/components/parameters/IdParam'
-
+  /dashboards/sre-war-room/resource-group-status:
     get:
       tags: [Dashboards]
-      summary: Get dashboard resource group status summary
-      description: Retrieve stacked bar data that summarises resource health per group for dashboards that expose it
+      summary: Get SRE War Room resource group status
+      description: Retrieve stacked bar data that summarises resource health per group for the SRE War Room.
       operationId: getDashboardResourceGroupStatus
       responses:
         '200':
-          description: Resource group status series data
+          description: Resource group status series data.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResourceGroupStatusData'
-        '404':
-          $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
-  /dashboards/{id}/options:
-    parameters:
-      - $ref: '#/components/parameters/IdParam'
-
+  /dashboards/infrastructure-insights/options:
     get:
       tags: [Dashboards]
-      summary: Get dashboard-specific option sets
-      description: Retrieve option metadata for dashboards that expose configuration menus (e.g. infrastructure insights)
-      operationId: getDashboardOptions
+      summary: Get Infrastructure Insights options
+      description: Retrieve option metadata for the Infrastructure Insights dashboard page.
+      operationId: getInfraInsightsOptions
       responses:
         '200':
-          description: Dashboard option metadata
+          description: Dashboard option metadata.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/InfraInsightsOptions'
-        '404':
-          $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /dashboards/batch-actions:
     post:
       tags: [Dashboards]
       summary: Batch dashboard operations
-      description: Perform batch operations on multiple dashboards
+      description: Perform batch operations on multiple dashboards.
       operationId: batchDashboardActions
       requestBody:
         required: true
@@ -291,19 +283,19 @@ paths:
                 action:
                   type: string
                   enum: [delete]
-                  description: Action to perform
+                  description: Action to perform.
                 ids:
                   type: array
                   items:
                     type: string
                   minItems: 1
-                  description: List of dashboard IDs
+                  description: List of dashboard IDs.
             example:
               action: delete
               ids: ["dash-001", "dash-002", "dash-003"]
       responses:
         '200':
-          description: Batch operation completed
+          description: Batch operation completed.
           content:
             application/json:
               schema:
@@ -316,3 +308,5 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'

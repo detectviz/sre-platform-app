@@ -2,106 +2,120 @@
 components:
   responses:
     BadRequest:
-      description: Bad Request - Invalid input parameters
+      description: Bad Request - Client-side error, such as invalid input, missing fields, or invalid enum values.
       content:
         application/json:
           schema:
             type: object
             properties:
-              error:
+              message:
                 type: string
+            required:
+              - message
           examples:
             missingFields:
               summary: Missing required fields
               value:
-                error: "Missing required fields: name, type"
+                message: "Missing required fields: name, type"
             invalidEnum:
               summary: Invalid enum value
               value:
-                error: "Invalid status. Allowed values: new, acknowledged, resolved, silenced"
+                message: "Invalid status. Allowed values: new, acknowledged, resolved, silenced"
 
     NotFound:
-      description: Resource Not Found
+      description: Resource Not Found - The requested resource could not be found.
       content:
         application/json:
           schema:
             type: object
             properties:
-              error:
+              message:
                 type: string
-                example: Resource not found
+            required:
+              - message
           examples:
             resourceNotFound:
+              summary: A generic resource was not found
               value:
-                error: "Resource with ID 'res-001' not found"
+                message: "Resource with ID 'res-001' not found"
             incidentNotFound:
+              summary: A specific incident was not found
               value:
-                error: "Incident with ID 'INC-001' not found"
+                message: "Incident with ID 'INC-001' not found"
 
     Unauthorized:
-      description: Unauthorized - Authentication required
+      description: Unauthorized - Authentication is required and has failed or has not yet been provided.
       content:
         application/json:
           schema:
             type: object
             properties:
-              error:
+              message:
                 type: string
-                example: Authentication required
+            required:
+              - message
           examples:
             noToken:
+              summary: Auth token was not provided
               value:
-                error: "Authentication token not provided"
+                message: "Authentication token not provided"
             invalidToken:
+              summary: Auth token is invalid or expired
               value:
-                error: "Invalid or expired authentication token"
+                message: "Invalid or expired authentication token"
 
     Forbidden:
-      description: Forbidden - Insufficient permissions
+      description: Forbidden - The server understood the request but refuses to authorize it.
       content:
         application/json:
           schema:
             type: object
             properties:
-              error:
+              message:
                 type: string
-                example: Insufficient permissions
+            required:
+              - message
           examples:
             noPermission:
+              summary: User lacks permissions for the action
               value:
-                error: "You don't have permission to perform this action"
+                message: "You don't have permission to perform this action"
 
     InternalServerError:
-      description: Internal Server Error
+      description: Internal Server Error - An unexpected condition was encountered on the server.
       content:
         application/json:
           schema:
             type: object
             properties:
-              error:
+              message:
                 type: string
-                example: Internal server error
+            required:
+              - message
           examples:
             serverError:
+              summary: A generic server error occurred
               value:
-                error: "An unexpected error occurred. Please try again later."
+                message: "An unexpected error occurred. Please try again later."
 
     AIServiceUnavailable:
-      description: AI Service Unavailable
+      description: AI Service Unavailable - The AI analysis service is temporarily down or unreachable.
       content:
         application/json:
           schema:
             type: object
             properties:
-              error:
+              message:
                 type: string
                 description: 說明 AI 服務暫時無法處理請求的原因。
               retry_after_seconds:
                 type: integer
                 minimum: 0
                 description: 建議客戶端再次重試前等待的秒數。
+            required:
+              - message
           example:
-            error: AI analysis service is temporarily unavailable
+            message: AI analysis service is temporarily unavailable
             retry_after_seconds: 60
 
   securitySchemes:

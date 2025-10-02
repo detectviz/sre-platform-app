@@ -6,10 +6,20 @@ components:
     # ===================
     Dashboard:
       type: object
-      required: [id, name, type, created_at]
+      description: Represents a dashboard for visualizing data.
+      required:
+        - id
+        - name
+        - type
+        - category
+        - owner
+        - created_at
+        - updated_at
+        - path
       properties:
         id:
           type: string
+          readOnly: true
           example: dash-prod-overview
         name:
           type: string
@@ -26,10 +36,18 @@ components:
           example: 生產環境全局監控儀表板
         owner:
           type: string
+          readOnly: true
+          description: Name of the owner user or team, derived from owner_id or team_id.
           example: SRE 平台團隊
         path:
           type: string
+          readOnly: true
           example: /dashboard/production-overview
+        layout:
+          type: array
+          description: Describes the layout of widgets on the dashboard.
+          items:
+            $ref: '#/components/schemas/DashboardLayoutItem'
         grafana_url:
           type: string
           format: uri
@@ -54,16 +72,41 @@ components:
         created_at:
           type: string
           format: date-time
+          readOnly: true
           example: "2024-01-01T00:00:00Z"
         updated_at:
           type: string
           format: date-time
+          readOnly: true
           example: "2024-01-15T10:30:00Z"
         deleted_at:
           type: string
           format: date-time
+          readOnly: true
           nullable: true
           example: null
+
+    DashboardLayoutItem:
+      type: object
+      description: Defines the position and size of a widget on a dashboard grid.
+      required: [i, x, y, w, h]
+      properties:
+        i:
+          type: string
+          description: The ID of the widget.
+          example: widget-cpu-usage
+        x:
+          type: integer
+          description: The horizontal position of the widget on the grid.
+        y:
+          type: integer
+          description: The vertical position of the widget on the grid.
+        w:
+          type: integer
+          description: The width of the widget.
+        h:
+          type: integer
+          description: The height of the widget.
 
     DashboardCreate:
       type: object
@@ -81,10 +124,12 @@ components:
           description: Logical grouping for dashboards used to populate defaults
         description:
           type: string
-        owner:
-          type: string
         team_id:
           type: string
+          description: ID of the team that will own the dashboard.
+        owner_id:
+          type: string
+          description: ID of the user that will own the dashboard.
         grafana_dashboard_uid:
           type: string
         grafana_folder_uid:
@@ -102,6 +147,10 @@ components:
         description:
           type: string
         category:
+          type: string
+        team_id:
+          type: string
+        owner_id:
           type: string
         resource_ids:
           type: array
@@ -184,22 +233,36 @@ components:
     Incident:
       type: object
       required:
-        [id, summary, resource, resource_id, rule_id, status, severity, impact, created_at]
+        - id
+        - summary
+        - resource
+        - resource_id
+        - rule_id
+        - status
+        - severity
+        - impact
+        - created_at
+        - updated_at
+        - occurred_at
+        - history
       properties:
         id:
           type: string
+          readOnly: true
           example: INC-001
         summary:
           type: string
           example: API 延遲超過閾值
         resource:
           type: string
+          readOnly: true
           example: api-server-01
         resource_id:
           type: string
           example: res-001
         rule:
           type: string
+          readOnly: true
           example: API 延遲規則
         rule_id:
           type: string
@@ -223,7 +286,7 @@ components:
           example: p1
         category:
           type: string
-          enum: [application, infrastructure, other]
+          enum: [infrastructure, application, network, security, other]
           example: application
         assignee:
           type: string
@@ -245,38 +308,47 @@ components:
         occurred_at:
           type: string
           format: date-time
+          readOnly: true
           example: "2024-01-15T10:30:00Z"
         created_at:
           type: string
           format: date-time
+          readOnly: true
           example: "2024-01-15T10:30:00Z"
         updated_at:
           type: string
           format: date-time
+          readOnly: true
           example: "2024-01-15T10:35:00Z"
         acknowledged_at:
           type: string
           format: date-time
+          readOnly: true
           nullable: true
           example: null
         resolved_at:
           type: string
           format: date-time
+          readOnly: true
           nullable: true
           example: null
         silenced_by:
           type: string
+          readOnly: true
           nullable: true
           example: null
         notifications_sent:
           type: array
+          readOnly: true
           description: Records of notification attempts for this incident
           items:
             $ref: '#/components/schemas/NotificationRecord'
         ai_analysis:
           $ref: '#/components/schemas/IncidentAnalysis'
+          readOnly: true
         history:
           type: array
+          readOnly: true
           items:
             type: object
             properties:
@@ -297,6 +369,7 @@ components:
         deleted_at:
           type: string
           format: date-time
+          readOnly: true
           nullable: true
           example: null
 
@@ -318,6 +391,12 @@ components:
         impact:
           type: string
           enum: [high, medium, low]
+        assignee:
+          type: string
+        team_id:
+          type: string
+        owner_id:
+          type: string
         tags:
           type: object
           additionalProperties:
@@ -326,11 +405,29 @@ components:
     IncidentUpdate:
       type: object
       properties:
+        summary:
+          type: string
         status:
           type: string
           enum: [new, acknowledged, resolved, silenced]
           description: 更新事件狀態；`silenced` 可用於暫時停用通知。
+        severity:
+          type: string
+          enum: [critical, warning, info]
+        impact:
+          type: string
+          enum: [high, medium, low]
+        priority:
+          type: string
+          enum: [p0, p1, p2, p3]
+        category:
+          type: string
+          enum: [infrastructure, application, network, security, other]
         assignee:
+          type: string
+        team_id:
+          type: string
+        owner_id:
           type: string
         tags:
           type: object
@@ -342,167 +439,293 @@ components:
     # ===================
     AlertRule:
       type: object
+      description: Represents an alert rule that defines conditions for triggering an incident.
       required:
-        [id, name, resource_type, metric_name, enabled, severity, created_at]
+        - id
+        - name
+        - enabled
+        - target
+        - conditions_summary
+        - severity
+        - automation_enabled
+        - creator
+        - created_at
+        - updated_at
       properties:
         id:
           type: string
-          example: rule-cpu-high
+          description: Unique identifier for the alert rule.
+          readOnly: true
+          example: rule-cpu-high-95
         name:
           type: string
-          example: CPU 使用率過高規則
-        resource_type:
+          description: A human-readable name for the alert rule.
+          example: "High CPU Usage on Core Services"
+        description:
           type: string
-          example: host
-        metric_name:
-          type: string
-          example: cpu_usage_percent
+          description: A detailed description of the alert rule's purpose.
+          example: "Triggers a critical alert if CPU usage on any core service exceeds 95% for 5 minutes."
         enabled:
           type: boolean
+          description: Indicates if the alert rule is currently active.
           example: true
+        target:
+          type: string
+          description: A description of the target resources or metrics this rule applies to.
+          example: "service:api-gateway, service:auth-service"
+        conditions_summary:
+          type: string
+          description: A human-readable summary of the rule's conditions.
+          readOnly: true
+          example: "avg(cpu.usage) > 95 for 5m"
         severity:
           type: string
           enum: [critical, warning, info]
           example: critical
-        conditions_summary:
-          type: string
-          example: "CPU usage > 80% for 5 minutes"
         automation_enabled:
           type: boolean
-          example: true
-        target_resource_ids:
-          type: array
-          items:
-            type: string
-          example: [res-001, res-002]
-        target_scope:
+          description: Indicates if an automated action is linked to this rule.
+          readOnly: true
+          example: false
+        creator:
           type: string
-          enum: [specific, group, tag]
-          example: specific
-        notification_strategy_ids:
+          description: The name of the user who created the rule.
+          readOnly: true
+          example: "sre-admin"
+        team_id:
+          type: string
+          description: The ID of the team that owns this rule.
+          example: "team-sre-core"
+        owner_id:
+          type: string
+          description: The ID of the user who owns this rule.
+          example: "usr-jane-doe"
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            priority: "high"
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        labels:
           type: array
           items:
             type: string
-          example: [ns-critical, ns-warning]
-        triggered_count:
-          type: integer
-          example: 15
-        version:
-          type: integer
-          example: 2
+          example: ["cpu", "critical-path"]
         condition_groups:
           type: array
           items:
             $ref: '#/components/schemas/AlertRuleConditionGroup'
-        created_at:
+        title_template:
           type: string
-          format: date-time
-        updated_at:
+          description: "Template for the generated incident's title."
+          example: "Critical CPU Alert on {{resource.name}}"
+        content_template:
           type: string
-          format: date-time
-        deleted_at:
-          type: string
-          format: date-time
-          nullable: true
-
-    AlertRuleCreate:
-      type: object
-      required: [name, resource_type, metric_name, severity]
-      properties:
-        name:
-          type: string
-          minLength: 1
-          maxLength: 200
-        resource_type:
-          type: string
-        metric_name:
-          type: string
-        enabled:
-          type: boolean
-          default: true
-        severity:
-          type: string
-          enum: [critical, warning, info]
-        conditions_summary:
-          type: string
-        automation_enabled:
-          type: boolean
-          default: false
+          description: "Template for the generated incident's content."
+          example: "CPU usage for {{resource.name}} is at {{metric.value}}%, exceeding the threshold of 95%."
+        automation:
+          $ref: '#/components/schemas/AlertRuleAutomationSetting'
         target_resource_ids:
           type: array
           items:
             type: string
-        notification_strategy_ids:
-          type: array
-          items:
-            type: string
-        condition_groups:
-          type: array
-          items:
-            $ref: "#/components/schemas/AlertRuleConditionGroup"
+          example: ["res-api-gw-1", "res-auth-svc-1"]
+        target_scope:
+          type: string
+          enum: [specific, group, tag]
+          example: specific
+        triggered_count:
+          type: integer
+          readOnly: true
+          example: 42
+        version:
+          type: integer
+          readOnly: true
+          example: 3
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
 
-    AlertRuleUpdate:
+    AlertRuleCreate:
       type: object
+      description: Payload for creating a new alert rule.
+      required: [name, severity, condition_groups]
       properties:
         name:
           type: string
-        resource_type:
-          type: string
-        metric_name:
+        description:
           type: string
         enabled:
           type: boolean
+          default: true
+        target:
+          type: string
         severity:
           type: string
           enum: [critical, warning, info]
-        automation_enabled:
-          type: boolean
-        notification_strategy_ids:
+        team_id:
+          type: string
+        owner_id:
+          type: string
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+        labels:
           type: array
           items:
             type: string
         condition_groups:
           type: array
+          minItems: 1
           items:
-            $ref: "#/components/schemas/AlertRuleConditionGroup"
+            $ref: '#/components/schemas/AlertRuleConditionGroup'
+        title_template:
+          type: string
+        content_template:
+          type: string
+        automation:
+          $ref: '#/components/schemas/AlertRuleAutomationSetting'
+        target_resource_ids:
+          type: array
+          items:
+            type: string
+        target_scope:
+          type: string
+          enum: [specific, group, tag]
+          default: specific
+
+    AlertRuleUpdate:
+      type: object
+      description: Payload for updating an existing alert rule. All fields are optional.
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        enabled:
+          type: boolean
+        target:
+          type: string
+        severity:
+          type: string
+          enum: [critical, warning, info]
+        team_id:
+          type: string
+        owner_id:
+          type: string
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+        labels:
+          type: array
+          items:
+            type: string
+        condition_groups:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/AlertRuleConditionGroup'
+        title_template:
+          type: string
+        content_template:
+          type: string
+        automation:
+          $ref: '#/components/schemas/AlertRuleAutomationSetting'
+        target_resource_ids:
+          type: array
+          items:
+            type: string
+        target_scope:
+          type: string
+          enum: [specific, group, tag]
 
     AlertRuleConditionGroup:
       type: object
-      required: [logic, severity, conditions]
+      required: [logic, conditions]
       properties:
         logic:
           type: string
           enum: [and, or]
-        severity:
-          type: string
-          enum: [critical, warning, info]
+          default: and
         conditions:
           type: array
           minItems: 1
           items:
-            type: object
-            required: [metric, operator, threshold, duration_minutes]
-            properties:
-              metric:
-                type: string
-              operator:
-                type: string
-                enum: ['>', '>=', '<', '<=']
-              threshold:
-                type: number
-              duration_minutes:
-                type: integer
-                minimum: 0
+            $ref: '#/components/schemas/AlertRuleCondition'
+        severity:
+          type: string
+          enum: [critical, warning, info]
+          description: Overrides the main rule severity if this group's conditions are met.
+
+    AlertRuleCondition:
+      type: object
+      required: [metric, operator, threshold, duration_minutes]
+      properties:
+        metric:
+          type: string
+          example: "cpu.usage.percent"
+        operator:
+          type: string
+          enum: ['>', '<', '>=', '<=']
+          example: '>'
+        threshold:
+          type: number
+          example: 95
+        duration_minutes:
+          type: integer
+          minimum: 0
+          example: 5
+
+    AlertRuleAutomationSetting:
+      type: object
+      required: [enabled]
+      properties:
+        enabled:
+          type: boolean
+        script_id:
+          type: string
+          description: "ID of the automation playbook to run."
+          example: "playbook-auto-restart-pod"
+        parameters:
+          type: object
+          additionalProperties:
+            type: any
+          description: "Parameters to pass to the automation playbook."
+          example:
+            namespace: "production"
 
     # ===================
     # Resource
     # ===================
     Resource:
       type: object
-      required: [id, name, status, type, provider, region, owner, created_at, updated_at]
+      required:
+        - id
+        - name
+        - status
+        - type
+        - provider
+        - region
+        - owner
+        - created_at
+        - updated_at
+        - last_check_in_at
       properties:
         id:
           type: string
+          readOnly: true
           example: res-001
         name:
           type: string
@@ -522,6 +745,8 @@ components:
           example: us-east-1
         owner:
           type: string
+          readOnly: true
+          description: The name of the owning user or team.
           example: SRE Team
         team_id:
           type: string
@@ -545,25 +770,30 @@ components:
           example: ds-001
         discovered_by_job_id:
           type: string
+          readOnly: true
           example: dj-003
         last_check_in_at:
           type: string
           format: date-time
+          readOnly: true
           example: "2024-01-15T10:45:00Z"
         created_at:
           type: string
           format: date-time
+          readOnly: true
         updated_at:
           type: string
           format: date-time
+          readOnly: true
         deleted_at:
           type: string
           format: date-time
+          readOnly: true
           nullable: true
 
     ResourceCreate:
       type: object
-      required: [name, type, status, provider, region, owner]
+      required: [name, type, status, provider, region]
       properties:
         name:
           type: string
@@ -578,8 +808,6 @@ components:
           type: string
         region:
           type: string
-        owner:
-          type: string
         team_id:
           type: string
         owner_id:
@@ -592,8 +820,6 @@ components:
           type: string
         datasource_id:
           type: string
-        discovered_by_job_id:
-          type: string
 
     ResourceUpdate:
       type: object
@@ -603,8 +829,6 @@ components:
         status:
           type: string
           enum: [healthy, warning, critical, offline, unknown]
-        owner:
-          type: string
         team_id:
           type: string
         owner_id:

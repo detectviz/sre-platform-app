@@ -6,10 +6,20 @@ components:
     # ===================
     NotificationChannel:
       type: object
-      required: [id, name, type, enabled, created_at]
+      required:
+        - id
+        - name
+        - type
+        - enabled
+        - config
+        - last_test_result
+        - last_tested_at
+        - created_at
+        - updated_at
       properties:
         id:
           type: string
+          readOnly: true
           example: channel-email-ops
         name:
           type: string
@@ -23,32 +33,60 @@ components:
           example: true
         config:
           type: object
-          description: Channel-specific configuration
-          example:
-            recipients: [ops@example.com, oncall@example.com]
-            sender: noreply@example.com
+          description: Channel-specific configuration.
+          properties:
+            to:
+              type: string
+              description: "Email recipients (for email type)."
+              example: "ops@example.com, oncall@example.com"
+            cc:
+              type: string
+            bcc:
+              type: string
+            webhook_url:
+              type: string
+              format: uri
+              description: "Webhook URL (for webhook/slack type)."
+            http_method:
+              type: string
+              enum: [get, post, put, patch, delete]
+              description: "HTTP method for webhook."
+            mention:
+              type: string
+              description: "User or group to mention (for slack type)."
+            access_token:
+              type: string
+              description: "Access token (for LINE Notify type)."
+            phone_number:
+              type: string
+              description: "Recipient phone number (for SMS type)."
         last_test_result:
           type: string
           enum: [success, failed, not_tested]
-          example: not_tested
+          readOnly: true
+          example: success
         last_tested_at:
           type: string
           format: date-time
+          readOnly: true
           example: "2024-01-15T08:00:00Z"
         created_at:
           type: string
           format: date-time
+          readOnly: true
         updated_at:
           type: string
           format: date-time
+          readOnly: true
         deleted_at:
           type: string
           format: date-time
+          readOnly: true
           nullable: true
 
     NotificationChannelCreate:
       type: object
-      required: [name, type, enabled, config]
+      required: [name, type, config]
       properties:
         name:
           type: string
@@ -59,15 +97,16 @@ components:
           enum: [email, webhook, slack, line, sms]
         enabled:
           type: boolean
+          default: true
         config:
           type: object
           description: |
-            Channel configuration varies by type:
-            - Email: { recipients: string[], sender?: string }
-            - Webhook: { url: string, method?: string, headers?: object }
-            - Slack: { webhook_url: string, channel?: string }
-            - LINE Notify: { access_token: string }
-            - SMS: { phone_numbers: string[], provider?: string }
+            Channel configuration varies by type.
+            - Email: { "to": "user@example.com", "cc"?: "user2@example.com" }
+            - Webhook: { "webhook_url": "https://...", "http_method"?: "post" }
+            - Slack: { "webhook_url": "https://hooks.slack.com/..." }
+            - LINE: { "access_token": "..." }
+            - SMS: { "phone_number": "+1234567890" }
 
     NotificationChannelUpdate:
       type: object
@@ -84,10 +123,21 @@ components:
     # ===================
     NotificationStrategy:
       type: object
-      required: [id, name, enabled, trigger_condition, created_at]
+      required:
+        - id
+        - name
+        - enabled
+        - trigger_condition
+        - channel_count
+        - severity_levels
+        - impact_levels
+        - creator
+        - created_at
+        - updated_at
       properties:
         id:
           type: string
+          readOnly: true
           example: strategy-critical-alerts
         name:
           type: string
@@ -117,21 +167,29 @@ components:
           example: [channel-email-ops, channel-slack-oncall]
         channel_count:
           type: integer
+          readOnly: true
           example: 2
+        creator:
+          type: string
+          readOnly: true
+          example: "sre-admin"
         created_at:
           type: string
           format: date-time
+          readOnly: true
         updated_at:
           type: string
           format: date-time
+          readOnly: true
         deleted_at:
           type: string
           format: date-time
+          readOnly: true
           nullable: true
 
     NotificationStrategyCreate:
       type: object
-      required: [name, enabled, trigger_condition]
+      required: [name, trigger_condition, channel_ids]
       properties:
         name:
           type: string
@@ -139,6 +197,7 @@ components:
           maxLength: 200
         enabled:
           type: boolean
+          default: true
         trigger_condition:
           type: string
           description: Condition expression for triggering notifications
@@ -156,6 +215,7 @@ components:
           type: array
           items:
             type: string
+          minItems: 1
           description: List of notification channel IDs to use
 
     NotificationStrategyUpdate:
@@ -171,10 +231,12 @@ components:
           type: array
           items:
             type: string
+            enum: [critical, warning, info]
         impact_levels:
           type: array
           items:
             type: string
+            enum: [high, medium, low]
         channel_ids:
           type: array
           items:
@@ -185,40 +247,53 @@ components:
     # ===================
     NotificationHistoryRecord:
       type: object
-      required: [id, channel_type, status, created_at]
+      description: A record of a notification that was sent.
+      readOnly: true
+      required:
+        - id
+        - timestamp
+        - strategy
+        - channel
+        - channel_type
+        - recipient
+        - status
+        - content
       properties:
         id:
           type: string
-          example: notif-001
+          example: notif-hist-001
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:32:05Z"
+        strategy:
+          type: string
+          example: "strategy-critical-alerts"
+        channel:
+          type: string
+          example: "Ops Team Email"
         channel_type:
           type: string
           enum: [email, webhook, slack, line, sms]
           example: email
+        recipient:
+          type: string
+          example: "ops@example.com"
+        status:
+          type: string
+          enum: [pending, sent, failed]
+          example: sent
+        content:
+          type: string
+          example: "Critical incident: API 延遲超過閾值"
         incident_id:
           type: string
           example: INC-001
-        status:
-          type: string
-          enum: [sent, failed, pending]
-          example: sent
-        recipients:
-          type: array
-          items:
-            type: string
-          example: [ops@example.com]
-        message:
-          type: string
-          example: "Critical incident: API 延遲超過閾值"
-        error:
-          type: string
-          nullable: true
-          example: null
-        created_at:
-          type: string
-          format: date-time
 
     NotificationRecord:
       type: object
+      description: A record of a notification attempt, typically embedded within an incident.
+      readOnly: true
       required: [id, channel_id, status, sent_at]
       properties:
         id:
@@ -241,5 +316,5 @@ components:
         metadata:
           type: object
           additionalProperties:
-            type: string
+            type: any
           description: Additional delivery information such as provider identifiers

@@ -4,7 +4,7 @@ paths:
     get:
       tags: [Alert Rules]
       summary: List alert rules
-      description: Retrieve a paginated list of alert rules with optional filtering
+      description: Retrieve a paginated list of alert rules with optional filtering.
       operationId: listAlertRules
       parameters:
         - $ref: '#/components/parameters/PageParam'
@@ -13,50 +13,41 @@ paths:
         - $ref: '#/components/parameters/SortOrderParam'
         - name: enabled
           in: query
-          description: Filter by enabled status
           schema:
             type: boolean
-          example: true
         - name: severity
           in: query
-          description: Filter by severity level
           schema:
             type: string
             enum: [critical, warning, info]
-          example: critical
-        - name: resource_type
+        - name: keyword
           in: query
-          description: Filter by resource type
           schema:
             type: string
-          example: Server
       responses:
         '200':
-          description: Successful response with paginated alert rules
+          description: Successful response with paginated alert rules.
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  page:
-                    type: integer
-                  page_size:
-                    type: integer
-                  total:
-                    type: integer
                   items:
                     type: array
                     items:
                       $ref: '#/components/schemas/AlertRule'
+                  total:
+                    type: integer
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-
+        '500':
+          $ref: '#/components/responses/InternalServerError'
     post:
       tags: [Alert Rules]
       summary: Create alert rule
-      description: Create a new alert rule
+      description: Create a new alert rule.
       operationId: createAlertRule
       requestBody:
         required: true
@@ -64,24 +55,9 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AlertRuleCreate'
-            example:
-              name: "High CPU Usage Alert"
-              description: "Alert when CPU usage exceeds 90%"
-              resource_type: "Server"
-              metric_name: "cpu_usage"
-              severity: "critical"
-              enabled: true
-              condition_groups:
-                - operator: "AND"
-                  conditions:
-                    - field: "cpu_usage"
-                      operator: ">"
-                      value: 90
-                      duration_seconds: 300
-              notification_strategy_ids: ["strategy-critical-alerts"]
       responses:
         '201':
-          description: Alert rule created successfully
+          description: Alert rule created successfully.
           content:
             application/json:
               schema:
@@ -90,56 +66,170 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /alert-rules/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
-
     get:
       tags: [Alert Rules]
       summary: Get alert rule by ID
-      description: Retrieve a specific alert rule by its ID
+      description: Retrieve a specific alert rule by its ID.
       operationId: getAlertRuleById
       responses:
         '200':
-          description: Successful response
+          description: Successful response.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AlertRule'
-        '404':
-          $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      tags: [Alert Rules]
+      summary: Update alert rule
+      description: Update an existing alert rule.
+      operationId: updateAlertRule
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertRuleUpdate'
+      responses:
+        '200':
+          description: Alert rule updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertRule'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [Alert Rules]
+      summary: Delete alert rule
+      description: Soft delete an alert rule.
+      operationId: deleteAlertRule
+      responses:
+        '204':
+          description: Alert rule deleted successfully.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /alert-rules/templates:
+    get:
+      tags: [Alert Rules]
+      summary: List alert rule templates
+      operationId: listAlertRuleTemplates
+      responses:
+        '200':
+          description: A list of alert rule templates.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AlertRuleTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /alert-rules/count:
+    get:
+      tags: [Alert Rules]
+      summary: Get alert rule count
+      operationId: getAlertRuleCount
+      parameters:
+        - name: matchers
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The total count of alert rules.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /alert-rules/metrics:
+    get:
+      tags: [Alert Rules]
+      summary: List available metrics
+      operationId: listAvailableMetricsForRule
+      responses:
+        '200':
+          description: A list of available metrics for rules.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MetricMetadata'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /alert-rules/{id}/incidents:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    get:
+      tags: [Alert Rules]
+      summary: List incidents for a rule
+      description: Retrieve a list of incidents that were triggered by a specific alert rule.
+      operationId: listIncidentsForRule
+      responses:
+        '200':
+          description: A list of incidents.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Incident'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /alert-rules/{id}/trigger:
     parameters:
       - $ref: '#/components/parameters/IdParam'
-
     post:
       tags: [Alert Rules]
       summary: Manually trigger alert rule
-      description: Simulate an alert event and produce an incident for the specified rule
+      description: Simulate an alert event and produce an incident for the specified rule.
       operationId: triggerAlertRule
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                context:
-                  type: object
-                  additionalProperties:
-                    type: string
-                  description: Optional context to include in the simulated trigger
-            example:
-              context:
-                initiated_by: admin
-                reason: Manual smoke test
       responses:
         '200':
-          description: Alert rule triggered successfully
+          description: Alert rule triggered successfully.
           content:
             application/json:
               schema:
@@ -151,72 +241,18 @@ paths:
                     type: string
                   incident_id:
                     type: string
-              example:
-                success: true
-                message: 成功觸發告警規則: CPU 使用率過高
-                incident_id: INC-ABC12345
-        '404':
-          $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
-
-    patch:
-      tags: [Alert Rules]
-      summary: Update alert rule
-      description: Update an existing alert rule
-      operationId: updateAlertRule
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AlertRuleUpdate'
-            examples:
-              updateThreshold:
-                summary: Update threshold value
-                value:
-                  condition_groups:
-                    - operator: "AND"
-                      conditions:
-                        - field: "cpu_usage"
-                          operator: ">"
-                          value: 85
-                          duration_seconds: 300
-              disableRule:
-                summary: Disable rule
-                value:
-                  enabled: false
-      responses:
-        '200':
-          description: Alert rule updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AlertRule'
-        '400':
-          $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-    delete:
-      tags: [Alert Rules]
-      summary: Delete alert rule
-      description: Delete an alert rule
-      operationId: deleteAlertRule
-      responses:
-        '204':
-          description: Alert rule deleted successfully
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /alert-rules/batch-actions:
     post:
       tags: [Alert Rules]
       summary: Batch operations for alert rules
-      description: Perform enable, disable, or delete actions on multiple alert rules
+      description: Perform enable, disable, or delete actions on multiple alert rules.
       operationId: batchAlertRuleActions
       requestBody:
         required: true
@@ -229,42 +265,21 @@ paths:
                 action:
                   type: string
                   enum: [enable, disable, delete]
-                  description: Batch action to apply
                 ids:
                   type: array
                   items:
                     type: string
                   minItems: 1
-                  description: Identifiers of the target alert rules
-            examples:
-              enable:
-                summary: Enable rules
-                value:
-                  action: enable
-                  ids: ["rule-001", "rule-002", "rule-003"]
-              disable:
-                summary: Disable rules
-                value:
-                  action: disable
-                  ids: ["rule-004", "rule-005"]
-              delete:
-                summary: Delete rules
-                value:
-                  action: delete
-                  ids: ["rule-006", "rule-007"]
       responses:
         '200':
-          description: Batch action completed
+          description: Batch action completed.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BatchResult'
-              example:
-                success: true
-                updated: 3
-                skipped_ids: []
-                message: Successfully processed alert rules
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
