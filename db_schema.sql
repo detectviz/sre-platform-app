@@ -17,19 +17,16 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Dashboard Types
 CREATE TYPE dashboard_type AS ENUM ('built-in', 'custom', 'grafana');
 
--- Incident Types
-CREATE TYPE incident_status AS ENUM ('New', 'Acknowledged', 'Investigating', 'Resolved', 'Closed');
+CREATE TYPE incident_status AS ENUM ('new', 'acknowledged', 'resolved', 'silenced');
 CREATE TYPE incident_severity AS ENUM ('Critical', 'Warning', 'Info');
 CREATE TYPE incident_impact AS ENUM ('High', 'Medium', 'Low');
 
--- Resource Types
-CREATE TYPE resource_status AS ENUM ('Healthy', 'Warning', 'Critical', 'Unknown');
+CREATE TYPE resource_status AS ENUM ('healthy', 'warning', 'critical', 'offline', 'unknown');
 
--- Automation Types
-CREATE TYPE playbook_type AS ENUM ('Shell Script', 'Python', 'Ansible', 'Terraform');
-CREATE TYPE execution_status AS ENUM ('Pending', 'Running', 'Success', 'Failed', 'Cancelled');
-CREATE TYPE trigger_source AS ENUM ('Manual', 'Scheduled', 'Webhook', 'Incident', 'Alert');
-CREATE TYPE trigger_type AS ENUM ('Schedule (Cron)', 'Webhook', 'Event (Incident/Alert)');
+CREATE TYPE playbook_type AS ENUM ('shell', 'python', 'ansible', 'terraform');
+CREATE TYPE execution_status AS ENUM ('pending', 'running', 'success', 'failed');
+CREATE TYPE trigger_source AS ENUM ('manual', 'schedule', 'webhook', 'event');
+CREATE TYPE trigger_type AS ENUM ('schedule', 'webhook', 'event');
 
 -- User & IAM Types
 CREATE TYPE user_role AS ENUM ('Admin', 'SRE', 'Developer', 'Viewer');
@@ -161,7 +158,7 @@ CREATE TABLE resources (
     id VARCHAR(255) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     type VARCHAR(255) NOT NULL,
-    status resource_status NOT NULL DEFAULT 'Unknown',
+    status resource_status NOT NULL DEFAULT 'unknown',
     provider VARCHAR(255),
     region VARCHAR(255),
     team_id VARCHAR(255) REFERENCES teams(id),
@@ -313,7 +310,7 @@ CREATE TABLE incidents (
     resource_id VARCHAR(255) NOT NULL REFERENCES resources(id),
     rule VARCHAR(255) NOT NULL,
     rule_id VARCHAR(255) NOT NULL REFERENCES alert_rules(id),
-    status incident_status NOT NULL DEFAULT 'New',
+    status incident_status NOT NULL DEFAULT 'new',
     severity incident_severity NOT NULL,
     impact incident_impact NOT NULL,
     assignee VARCHAR(255),
@@ -394,7 +391,7 @@ CREATE TABLE automation_executions (
     incident_id VARCHAR(255) REFERENCES incidents(id),
     alert_rule_id VARCHAR(255) REFERENCES alert_rules(id),
     target_resource_id VARCHAR(255) REFERENCES resources(id),
-    status execution_status NOT NULL DEFAULT 'Pending',
+    status execution_status NOT NULL DEFAULT 'pending',
     trigger_type trigger_source NOT NULL,
     triggered_by VARCHAR(255) NOT NULL REFERENCES users(id),
     parameters JSONB DEFAULT '{}',
