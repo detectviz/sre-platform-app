@@ -7,17 +7,17 @@ paths:
       description: 取得通知管道列表，支援分頁、排序與關鍵字搜尋。
       operationId: listNotificationChannels
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/PageSizeParam'
-        - $ref: '#/components/parameters/SortByParam'
-        - $ref: '#/components/parameters/SortOrderParam'
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - $ref: "#/components/parameters/SortByParam"
+        - $ref: "#/components/parameters/SortOrderParam"
         - name: keyword
           in: query
           description: 依名稱模糊搜尋。
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: 成功取得通知管道列表。
           content:
             application/json:
@@ -33,9 +33,9 @@ paths:
                   items:
                     type: array
                     items:
-                      $ref: '#/components/schemas/NotificationChannel'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                      $ref: "#/components/schemas/NotificationChannel"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
     post:
       tags: [Notifications]
       summary: Create notification channel
@@ -46,25 +46,25 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NotificationChannelCreate'
+              $ref: "#/components/schemas/NotificationChannelCreate"
             example:
               name: SRE On-call Email
-              type: Email
+              type: email
               enabled: true
               config:
                 to: sre-oncall@example.com
                 cc: sre-manager@example.com
       responses:
-        '201':
+        "201":
           description: 通知管道建立成功。
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NotificationChannel'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                $ref: "#/components/schemas/NotificationChannel"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /settings/notification-channels/batch-actions:
     post:
@@ -92,20 +92,20 @@ paths:
               action: enable
               ids: [chan-1, chan-2]
       responses:
-        '200':
+        "200":
           description: 批次操作完成。
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BatchResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                $ref: "#/components/schemas/BatchResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /settings/notification-channels/{id}:
     parameters:
-      - $ref: '#/components/parameters/IdParam'
+      - $ref: "#/components/parameters/IdParam"
     patch:
       tags: [Notifications]
       summary: Update notification channel
@@ -116,45 +116,45 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NotificationChannelUpdate'
+              $ref: "#/components/schemas/NotificationChannelUpdate"
             example:
               enabled: false
               config:
                 to: sre-oncall@example.com
       responses:
-        '200':
+        "200":
           description: 通知管道更新成功。
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NotificationChannel'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                $ref: "#/components/schemas/NotificationChannel"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
     delete:
       tags: [Notifications]
       summary: Soft delete notification channel
       description: 將通知管道標記為刪除。
       operationId: deleteNotificationChannel
       responses:
-        '200':
+        "200":
           description: 刪除成功，回傳空物件。
           content:
             application/json:
               schema:
                 type: object
               example: {}
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /settings/notification-channels/{id}/test:
     parameters:
-      - $ref: '#/components/parameters/IdParam'
+      - $ref: "#/components/parameters/IdParam"
     post:
       tags: [Notifications]
       summary: Test notification channel
@@ -170,7 +170,7 @@ paths:
                   type: string
                   default: 測試通知
       responses:
-        '200':
+        "200":
           description: 測試通知已送出。
           content:
             application/json:
@@ -184,12 +184,12 @@ paths:
               example:
                 success: true
                 message: 測試通知已送出至「SRE On-call Email」。
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /settings/notification-strategies:
     get:
@@ -198,17 +198,17 @@ paths:
       description: 取得通知策略列表，支援分頁、排序與關鍵字搜尋。
       operationId: listNotificationStrategies
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/PageSizeParam'
-        - $ref: '#/components/parameters/SortByParam'
-        - $ref: '#/components/parameters/SortOrderParam'
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - $ref: "#/components/parameters/SortByParam"
+        - $ref: "#/components/parameters/SortOrderParam"
         - name: keyword
           in: query
           description: 依策略名稱模糊搜尋。
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: 成功取得通知策略列表。
           content:
             application/json:
@@ -224,9 +224,9 @@ paths:
                   items:
                     type: array
                     items:
-                      $ref: '#/components/schemas/NotificationStrategy'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                      $ref: "#/components/schemas/NotificationStrategy"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
     post:
       tags: [Notifications]
       summary: Create notification strategy
@@ -237,25 +237,25 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NotificationStrategyCreate'
+              $ref: "#/components/schemas/NotificationStrategyCreate"
             example:
               name: Critical Database Alerts
               enabled: true
-              trigger_condition: severity == 'Critical'
-              severity_levels: [Critical]
-              impact_levels: [High]
+              trigger_condition: severity == 'critical'
+              severity_levels: [critical]
+              impact_levels: [high]
               channel_ids: [chan-1]
       responses:
-        '201':
+        "201":
           description: 通知策略建立成功。
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NotificationStrategy'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                $ref: "#/components/schemas/NotificationStrategy"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /settings/notification-strategies/batch-actions:
     post:
@@ -283,20 +283,20 @@ paths:
               action: disable
               ids: [strat-001, strat-002]
       responses:
-        '200':
+        "200":
           description: 批次操作完成。
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BatchResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                $ref: "#/components/schemas/BatchResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /settings/notification-strategies/{id}:
     parameters:
-      - $ref: '#/components/parameters/IdParam'
+      - $ref: "#/components/parameters/IdParam"
     patch:
       tags: [Notifications]
       summary: Update notification strategy
@@ -307,40 +307,40 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NotificationStrategyUpdate'
+              $ref: "#/components/schemas/NotificationStrategyUpdate"
             example:
               enabled: false
               channel_ids: [chan-1, chan-2]
       responses:
-        '200':
+        "200":
           description: 通知策略更新成功。
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NotificationStrategy'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                $ref: "#/components/schemas/NotificationStrategy"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
     delete:
       tags: [Notifications]
       summary: Soft delete notification strategy
       description: 將通知策略標記為刪除。
       operationId: deleteNotificationStrategy
       responses:
-        '200':
+        "200":
           description: 刪除成功，回傳空物件。
           content:
             application/json:
               schema:
                 type: object
               example: {}
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /settings/notification-history:
     get:
@@ -349,12 +349,12 @@ paths:
       description: 取得通知發送紀錄，支援分頁與排序。
       operationId: listNotificationHistory
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/PageSizeParam'
-        - $ref: '#/components/parameters/SortByParam'
-        - $ref: '#/components/parameters/SortOrderParam'
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - $ref: "#/components/parameters/SortByParam"
+        - $ref: "#/components/parameters/SortOrderParam"
       responses:
-        '200':
+        "200":
           description: 成功取得通知紀錄。
           content:
             application/json:
@@ -370,20 +370,20 @@ paths:
                   items:
                     type: array
                     items:
-                      $ref: '#/components/schemas/NotificationHistoryRecord'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                      $ref: "#/components/schemas/NotificationHistoryRecord"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /settings/notification-history/{id}/resend:
     parameters:
-      - $ref: '#/components/parameters/IdParam'
+      - $ref: "#/components/parameters/IdParam"
     post:
       tags: [Notifications]
       summary: Resend notification history record
       description: 重新發送指定的通知紀錄。
       operationId: resendNotificationHistory
       responses:
-        '200':
+        "200":
           description: 通知已重新發送。
           content:
             application/json:
@@ -397,7 +397,7 @@ paths:
               example:
                 success: true
                 message: 通知已重新發送。
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"

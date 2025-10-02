@@ -15,8 +15,8 @@ interface NewIncidentModalProps {
 
 type FormState = IncidentCreateRequest & { assignee?: string };
 
-const DEFAULT_IMPACT: Incident['impact'] = 'Medium';
-const DEFAULT_SEVERITY: Incident['severity'] = 'Warning';
+const DEFAULT_IMPACT: Incident['impact'] = 'medium';
+const DEFAULT_SEVERITY: Incident['severity'] = 'warning';
 
 const NewIncidentModal: React.FC<NewIncidentModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { options } = useOptions();

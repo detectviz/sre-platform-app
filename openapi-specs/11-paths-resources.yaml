@@ -7,10 +7,10 @@ paths:
       description: Retrieve a paginated list of resources with optional filtering
       operationId: listResources
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/PageSizeParam'
-        - $ref: '#/components/parameters/SortByParam'
-        - $ref: '#/components/parameters/SortOrderParam'
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - $ref: "#/components/parameters/SortByParam"
+        - $ref: "#/components/parameters/SortOrderParam"
         - name: type
           in: query
           description: Filter by resource type
@@ -22,8 +22,8 @@ paths:
           description: Filter by resource status
           schema:
             type: string
-            enum: [Healthy, Warning, Critical, Unknown]
-          example: Healthy
+            enum: [healthy, warning, critical, unknown]
+          example: healthy
         - name: environment
           in: query
           description: Filter by environment
@@ -37,7 +37,7 @@ paths:
             type: string
           example: team-sre
       responses:
-        '200':
+        "200":
           description: Successful response with paginated resources
           content:
             application/json:
@@ -53,11 +53,11 @@ paths:
                   items:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Resource'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                      $ref: "#/components/schemas/Resource"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
     post:
       tags: [Resources]
@@ -69,7 +69,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ResourceCreate'
+              $ref: "#/components/schemas/ResourceCreate"
             example:
               name: "web-server-01"
               type: "Server"
@@ -87,20 +87,20 @@ paths:
                   value: frontend
               team_id: "team-sre"
       responses:
-        '201':
+        "201":
           description: Resource created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Resource'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                $ref: "#/components/schemas/Resource"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /resources/{id}:
     parameters:
-      - $ref: '#/components/parameters/IdParam'
+      - $ref: "#/components/parameters/IdParam"
 
     get:
       tags: [Resources]
@@ -108,16 +108,16 @@ paths:
       description: Retrieve a specific resource by its ID
       operationId: getResourceById
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Resource'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                $ref: "#/components/schemas/Resource"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
     patch:
       tags: [Resources]
@@ -128,12 +128,12 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ResourceUpdate'
+              $ref: "#/components/schemas/ResourceUpdate"
             examples:
               updateStatus:
                 summary: Update status
                 value:
-                  status: "Warning"
+                  status: "warning"
               updateTags:
                 summary: Update tags
                 value:
@@ -147,18 +147,18 @@ paths:
                     - key: version
                       value: v2.0
       responses:
-        '200':
+        "200":
           description: Resource updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Resource'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                $ref: "#/components/schemas/Resource"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
     delete:
       tags: [Resources]
@@ -166,16 +166,16 @@ paths:
       description: Delete a resource
       operationId: deleteResource
       responses:
-        '204':
+        "204":
           description: Resource deleted successfully
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /resources/{id}/metrics:
     parameters:
-      - $ref: '#/components/parameters/IdParam'
+      - $ref: "#/components/parameters/IdParam"
 
     get:
       tags: [Resources]
@@ -191,7 +191,7 @@ paths:
             default: 60
           example: 120
       responses:
-        '200':
+        "200":
           description: Successful response with resource metrics
           content:
             application/json:
@@ -237,10 +237,10 @@ paths:
                       min: 45.2
                       unit: "%"
                   timestamp: "2024-01-15T10:30:00Z"
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /resources/batch-tag:
     post:
@@ -287,21 +287,21 @@ paths:
                   value: terraform
               replace: false
       responses:
-        '200':
+        "200":
           description: Batch tag completed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BatchResult'
+                $ref: "#/components/schemas/BatchResult"
               example:
                 success: true
                 updated: 3
                 skipped_ids: []
                 message: "Successfully tagged 3 resources"
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /resources/batch-actions:
     post:
@@ -331,18 +331,18 @@ paths:
               action: delete
               ids: ["res-old-001", "res-old-002"]
       responses:
-        '200':
+        "200":
           description: Batch action completed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BatchResult'
+                $ref: "#/components/schemas/BatchResult"
               example:
                 success: true
                 updated: 2
                 skipped_ids: []
                 message: Successfully deleted 2 resources
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"

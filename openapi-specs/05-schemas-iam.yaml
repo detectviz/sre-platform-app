@@ -20,8 +20,8 @@ components:
           example: zhang.san@example.com
         role:
           type: string
-          enum: [Admin, SRE, Developer, Viewer]
-          example: SRE
+          enum: [admin, sre, developer, viewer]
+          example: sre
         team:
           type: string
           example: SRE 平台團隊
@@ -61,7 +61,7 @@ components:
           format: email
         role:
           type: string
-          enum: [Admin, SRE, Developer, Viewer]
+          enum: [admin, sre, developer, viewer]
         team:
           type: string
 
@@ -75,7 +75,7 @@ components:
           format: email
         role:
           type: string
-          enum: [Admin, SRE, Developer, Viewer]
+          enum: [admin, sre, developer, viewer]
         team:
           type: string
         status:

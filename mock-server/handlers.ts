@@ -2,15 +2,13 @@ import { DB, uuidv4 } from './db';
 import type { ConnectionStatus, DiscoveryJob, Incident, NotificationStrategy, Resource, ResourceLink, ConfigVersion, TabConfigMap, TagDefinition, NotificationChannelType } from '../types';
 import { auditLogMiddleware } from './auditLog';
 
-type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+type HttpMethod = 'get' | 'post' | 'put' | 'patch' | 'delete';
 
 const INCIDENT_STATUS_LABELS: Record<Incident['status'], string> = {
     new: 'New',
-    acknowledged: 'Acknowledged',
-    investigating: 'Investigating',
-    resolved: 'Resolved',
-    closed: 'Closed',
-    silenced: 'Silenced',
+    acknowledged: 'acknowledged',
+    resolved: 'resolved',
+    silenced: 'silenced',
 };
 
 const INCIDENT_STATUS_VALUES = Object.keys(INCIDENT_STATUS_LABELS) as Incident['status'][];
@@ -135,21 +133,21 @@ const resolveAutomationScriptId = (automation: any) => {
 
 const getConfigEntityCollection = (entityType: ConfigVersion['entity_type']) => {
     switch (entityType) {
-        case 'AlertRule':
+        case 'alertrule':
             return { collection: DB.alert_rules, label: 'Alert rule' };
-        case 'AutomationPlaybook':
+        case 'automationplaybook':
             return { collection: DB.playbooks, label: 'Automation playbook' };
-        case 'Dashboard':
+        case 'dashboard':
             return { collection: DB.dashboards, label: 'Dashboard' };
-        case 'NotificationStrategy':
+        case 'notificationstrategy':
             return { collection: DB.notification_strategies, label: 'Notification strategy' };
-        case 'SilenceRule':
+        case 'silencerule':
             return { collection: DB.silence_rules, label: 'Silence rule' };
-        case 'Resource':
+        case 'resource':
             return { collection: DB.resources, label: 'Resource' };
-        case 'Team':
+        case 'team':
             return { collection: DB.teams, label: 'Team' };
-        case 'User':
+        case 'user':
             return { collection: DB.users, label: 'User' };
         default:
             return null;
@@ -727,8 +725,8 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     }
 
                     // 驗證枚舉值
-                    validateEnum(severity, ['Critical', 'Warning', 'Info'], 'severity');
-                    validateEnum(impact, ['High', 'Medium', 'Low'], 'impact');
+                    validateEnum(severity, ['critical', 'warning', 'info'], 'severity');
+                    validateEnum(impact, ['high', 'medium', 'low'], 'impact');
 
                     const resource = DB.resources.find((r: any) => r.id === resource_id);
                     if (!resource) {
@@ -1080,7 +1078,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         summary: `手動觸發: ${rule.name}`,
                         resource: 'Test Resource',
                         resource_id: 'res-test',
-                        impact: 'Low',
+                        impact: 'low',
                         rule: rule.name,
                         rule_id: rule.id,
                         status: 'new',
@@ -2488,7 +2486,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         if (!name || !email || !role || !team) {
                             throw { status: 400, message: 'Missing required fields: name, email, role, team' };
                         }
-                        if (!['Admin', 'SRE', 'Developer', 'Viewer'].includes(role)) {
+                        if (!['admin', 'sre', 'developer', 'viewer'].includes(role)) {
                             throw { status: 400, message: 'Invalid role value' };
                         }
 
@@ -2737,9 +2735,9 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         analysis.incident_ids = incidentIds;
                         analysis.timeline = Array.isArray(analysis.timeline)
                             ? analysis.timeline.map((entry: any, index: number) => ({
-                                  ...entry,
-                                  incident_id: incidentIds[index % incidentIds.length],
-                              }))
+                                ...entry,
+                                incident_id: incidentIds[index % incidentIds.length],
+                            }))
                             : [];
                         return analysis;
                     }
@@ -2777,15 +2775,15 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         const batchAnalysis = JSON.parse(JSON.stringify(DB.analysis_batch_resource_report));
                         batchAnalysis.analyses = Array.isArray(batchAnalysis.analyses)
                             ? batchAnalysis.analyses.map((item: any, index: number) => {
-                                  const resourceId = resourceIds[index] ?? resourceIds[index % resourceIds.length];
-                                  const resource = DB.resources.find((res: Resource) => res.id === resourceId);
-                                  return {
-                                      ...item,
-                                      resource_id: resourceId,
-                                      resource_name: resource?.name ?? item.resource_name,
-                                      analysis_time: new Date().toISOString(),
-                                  };
-                              })
+                                const resourceId = resourceIds[index] ?? resourceIds[index % resourceIds.length];
+                                const resource = DB.resources.find((res: Resource) => res.id === resourceId);
+                                return {
+                                    ...item,
+                                    resource_id: resourceId,
+                                    resource_name: resource?.name ?? item.resource_name,
+                                    analysis_time: new Date().toISOString(),
+                                };
+                            })
                             : [];
                         batchAnalysis.summary = {
                             total_resources: resourceIds.length,
@@ -2904,14 +2902,14 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const anomalyDetection = JSON.parse(JSON.stringify(DB.analysis_anomaly_detection));
                     anomalyDetection.anomalies = Array.isArray(anomalyDetection.anomalies)
                         ? anomalyDetection.anomalies.map((item: any, index: number) => {
-                              const resourceId = resourceIds[index % resourceIds.length];
-                              const resource = DB.resources.find((res: Resource) => res.id === resourceId);
-                              return {
-                                  ...item,
-                                  resource_id: resourceId,
-                                  resource_name: resource?.name ?? item.resource_name,
-                              };
-                          })
+                            const resourceId = resourceIds[index % resourceIds.length];
+                            const resource = DB.resources.find((res: Resource) => res.id === resourceId);
+                            return {
+                                ...item,
+                                resource_id: resourceId,
+                                resource_name: resource?.name ?? item.resource_name,
+                            };
+                        })
                         : [];
                     anomalyDetection.summary = {
                         total_anomalies: anomalyDetection.anomalies.length,
@@ -3306,7 +3304,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     if (!name || !type || enabled === undefined || !config) {
                         throw { status: 400, message: 'Missing required fields: name, type, enabled, config' };
                     }
-                    const validTypes: NotificationChannelType[] = ['Email', 'Webhook (通用)', 'Slack', 'LINE Notify', 'SMS'];
+                    const validTypes: NotificationChannelType[] = ['email', 'webhook', 'slack', 'line', 'sms'];
                     if (!validTypes.includes(type)) {
                         throw { status: 400, message: 'Invalid channel type' };
                     }

@@ -7,7 +7,7 @@ paths:
       description: 取得分析總覽資料，包括系統健康度、異常事件與建議行動。
       operationId: getAnalysisOverview
       responses:
-        '200':
+        "200":
           description: 成功取得分析總覽。
           content:
             application/json:
@@ -74,8 +74,8 @@ paths:
                   - id: log-1
                     level: error
                     message: Failed to process payment
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /analysis/capacity-planning:
     get:
@@ -84,7 +84,7 @@ paths:
       description: 取得容量規劃趨勢、預測與建議。
       operationId: getCapacityPlanningAnalysis
       responses:
-        '200':
+        "200":
           description: 成功取得容量規劃資料。
           content:
             application/json:
@@ -133,22 +133,20 @@ paths:
                 trends:
                   cpu:
                     historical:
-                      - ['2024-09-01T00:00:00Z', 45]
+                      - ["2024-09-01T00:00:00Z", 45]
                     forecast:
-                      - ['2024-10-01T00:00:00Z', 52]
+                      - ["2024-10-01T00:00:00Z", 52]
                   memory:
                     historical:
-                      - ['2024-09-01T00:00:00Z', 60]
+                      - ["2024-09-01T00:00:00Z", 60]
                     forecast:
-                      - ['2024-10-01T00:00:00Z', 63]
+                      - ["2024-10-01T00:00:00Z", 63]
                 forecast_model:
                   prediction:
-                    - ['2024-10-01T00:00:00Z', 52]
+                    - ["2024-10-01T00:00:00Z", 52]
                   confidence_band:
-                    -
-                      - ['2024-10-01T00:00:00Z', 47]
-                    -
-                      - ['2024-10-01T00:00:00Z', 57]
+                    - - ["2024-10-01T00:00:00Z", 47]
+                    - - ["2024-10-01T00:00:00Z", 57]
                 suggestions:
                   - id: cap-1
                     title: 擴充資料庫節點
@@ -159,16 +157,16 @@ paths:
                     risk_level: high
                     optimization_suggestions: []
                 options:
-                  time_range_options: ['7d', '14d', '30d']
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                  time_range_options: ["7d", "14d", "30d"]
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   # ===================
   # Incident Analysis
   # ===================
   /analysis/incidents/{id}:
     parameters:
-      - $ref: '#/components/parameters/IdParam'
+      - $ref: "#/components/parameters/IdParam"
 
     post:
       tags: [Analysis]
@@ -194,18 +192,18 @@ paths:
               include_related: true
               time_window_hours: 48
       responses:
-        '200':
+        "200":
           description: 成功生成事件分析報告。
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/IncidentAnalysis'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '503':
-          $ref: '#/components/responses/AIServiceUnavailable'
+                $ref: "#/components/schemas/IncidentAnalysis"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          $ref: "#/components/responses/AIServiceUnavailable"
 
   /analysis/incidents/multi:
     post:
@@ -230,27 +228,27 @@ paths:
             example:
               incident_ids: [INC-001, INC-004, INC-010]
       responses:
-        '200':
+        "200":
           description: 成功生成多事件關聯分析報告。
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MultiIncidentAnalysis'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '503':
-          $ref: '#/components/responses/AIServiceUnavailable'
+                $ref: "#/components/schemas/MultiIncidentAnalysis"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          $ref: "#/components/responses/AIServiceUnavailable"
 
   # ===================
   # Resource Analysis
   # ===================
   /analysis/resources/{id}:
     parameters:
-      - $ref: '#/components/parameters/IdParam'
+      - $ref: "#/components/parameters/IdParam"
 
     post:
       tags: [Analysis]
@@ -277,18 +275,18 @@ paths:
               analysis_depth: comprehensive
               time_window_days: 14
       responses:
-        '200':
+        "200":
           description: 成功生成資源分析報告。
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ResourceAnalysis'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '503':
-          $ref: '#/components/responses/AIServiceUnavailable'
+                $ref: "#/components/schemas/ResourceAnalysis"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          $ref: "#/components/responses/AIServiceUnavailable"
 
   /analysis/resources/batch:
     post:
@@ -318,7 +316,7 @@ paths:
               resource_ids: [res-001, res-005, res-010]
               analysis_depth: detailed
       responses:
-        '200':
+        "200":
           description: 成功完成批次資源分析。
           content:
             application/json:
@@ -328,7 +326,7 @@ paths:
                   analyses:
                     type: array
                     items:
-                      $ref: '#/components/schemas/ResourceAnalysis'
+                      $ref: "#/components/schemas/ResourceAnalysis"
                   summary:
                     type: object
                     properties:
@@ -344,14 +342,14 @@ paths:
                     total_resources: 3
                     high_risk_count: 1
                     recommendations_count: 7
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '503':
-          $ref: '#/components/responses/AIServiceUnavailable'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          $ref: "#/components/responses/AIServiceUnavailable"
 
   # ===================
   # Log Analysis
@@ -402,18 +400,18 @@ paths:
               resource_ids: [res-001, res-002]
               severity_filter: [error, warning]
       responses:
-        '200':
+        "200":
           description: 成功完成日誌分析。
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LogAnalysis'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '503':
-          $ref: '#/components/responses/AIServiceUnavailable'
+                $ref: "#/components/schemas/LogAnalysis"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          $ref: "#/components/responses/AIServiceUnavailable"
 
   # ===================
   # Predictive Analysis
@@ -448,7 +446,7 @@ paths:
               prediction_days: 45
               metrics: [cpu_usage, memory_usage]
       responses:
-        '200':
+        "200":
           description: 成功生成容量預測結果。
           content:
             application/json:
@@ -501,14 +499,14 @@ paths:
                           confidence: 0.72
                       threshold_breach_date: 2024-03-10
                       recommendation: 建議在 2024-03-01 前增加 CPU 資源
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '503':
-          $ref: '#/components/responses/AIServiceUnavailable'
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          $ref: "#/components/responses/AIServiceUnavailable"
 
   /analysis/predict/incidents:
     post:
@@ -544,7 +542,7 @@ paths:
               time_horizon_hours: 48
               min_probability: 0.7
       responses:
-        '200':
+        "200":
           description: 成功生成事件預測結果。
           content:
             application/json:
@@ -570,7 +568,7 @@ paths:
                           format: date-time
                         severity:
                           type: string
-                          enum: [Critical, Warning, Info]
+                          enum: [critical, warning, info]
                         preventive_actions:
                           type: array
                           items:
@@ -585,17 +583,17 @@ paths:
                       predicted_issue: CPU 使用率可能超過 90%
                       probability: 0.82
                       estimated_time: 2024-01-16T14:30:00Z
-                      severity: Warning
+                      severity: warning
                       preventive_actions:
                         - 考慮增加 CPU 資源
                         - 檢查是否有異常進程
                   analysis_timestamp: 2024-01-15T10:00:00Z
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '503':
-          $ref: '#/components/responses/AIServiceUnavailable'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "503":
+          $ref: "#/components/responses/AIServiceUnavailable"
 
   # ===================
   # Anomaly Detection
@@ -641,7 +639,7 @@ paths:
                 end: 2024-01-15T23:59:59Z
               sensitivity: high
       responses:
-        '200':
+        "200":
           description: 成功完成異常偵測。
           content:
             application/json:
@@ -698,9 +696,9 @@ paths:
                   summary:
                     total_anomalies: 5
                     high_severity_count: 2
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '503':
-          $ref: '#/components/responses/AIServiceUnavailable'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          $ref: "#/components/responses/AIServiceUnavailable"

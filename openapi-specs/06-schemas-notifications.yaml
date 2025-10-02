@@ -16,8 +16,8 @@ components:
           example: Ops Team Email
         type:
           type: string
-          enum: [Email, Webhook (通用), Slack, LINE Notify, SMS]
-          example: Email
+          enum: [email, webhook, slack, line, sms]
+          example: email
         enabled:
           type: boolean
           example: true
@@ -56,7 +56,7 @@ components:
           maxLength: 200
         type:
           type: string
-          enum: [Email, Webhook (通用), Slack, LINE Notify, SMS]
+          enum: [email, webhook, slack, line, sms]
         enabled:
           type: boolean
         config:
@@ -97,19 +97,19 @@ components:
           example: true
         trigger_condition:
           type: string
-          example: severity == 'Critical' OR impact == 'High'
+          example: severity == 'critical' OR impact == 'high'
         severity_levels:
           type: array
           items:
             type: string
-            enum: [Critical, Warning, Info]
-          example: [Critical]
+            enum: [critical, warning, info]
+          example: [critical]
         impact_levels:
           type: array
           items:
             type: string
-            enum: [High, Medium, Low]
-          example: [High, Medium]
+            enum: [high, medium, low]
+          example: [high, medium]
         channel_ids:
           type: array
           items:
@@ -146,12 +146,12 @@ components:
           type: array
           items:
             type: string
-            enum: [Critical, Warning, Info]
+            enum: [critical, warning, info]
         impact_levels:
           type: array
           items:
             type: string
-            enum: [High, Medium, Low]
+            enum: [high, medium, low]
         channel_ids:
           type: array
           items:
@@ -192,8 +192,8 @@ components:
           example: notif-001
         channel_type:
           type: string
-          enum: [Email, Webhook (通用), Slack, LINE Notify, SMS]
-          example: Email
+          enum: [email, webhook, slack, line, sms]
+          example: email
         incident_id:
           type: string
           example: INC-001

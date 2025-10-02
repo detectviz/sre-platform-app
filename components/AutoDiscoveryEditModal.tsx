@@ -17,13 +17,13 @@ interface AutoDiscoveryEditModalProps {
 
 const getDefaultTemplateForKind = (kind: DiscoveryJobKind): DiscoveryJobExporterBinding['template_id'] => {
   switch (kind) {
-    case 'SNMP':
+    case 'snmp':
       return 'snmp_exporter';
-    case 'Custom Script':
+    case 'custom_script':
       return 'none';
-    case 'K8s':
-    case 'Cloud Provider':
-    case 'Static Range':
+    case 'k8s':
+    case 'cloud_provider':
+    case 'static_range':
     default:
       return 'node_exporter';
   }
@@ -41,26 +41,26 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
 
   useEffect(() => {
     if (isOpen && autoDiscoveryOptions) {
-      const defaultKind = (job?.kind as DiscoveryJobKind) || autoDiscoveryOptions.job_kinds[0] || 'K8s';
+      const defaultKind = (job?.kind as DiscoveryJobKind) || autoDiscoveryOptions.job_kinds[0] || 'k8s';
       const defaultTemplate = job?.exporter_binding?.template_id || getDefaultTemplateForKind(defaultKind);
       const initialData: Partial<DiscoveryJob> = job
         ? {
-            ...job,
-            kind: job.kind,
-            target_config: job.target_config || {},
-            exporter_binding: job.exporter_binding || { template_id: defaultTemplate },
-            edge_gateway: job.edge_gateway || { enabled: false },
-            tags: job.tags || []
-          }
+          ...job,
+          kind: job.kind,
+          target_config: job.target_config || {},
+          exporter_binding: job.exporter_binding || { template_id: defaultTemplate },
+          edge_gateway: job.edge_gateway || { enabled: false },
+          tags: job.tags || []
+        }
         : {
-            name: '',
-            kind: defaultKind,
-            schedule: '0 * * * *',
-            target_config: {},
-            exporter_binding: { template_id: defaultTemplate },
-            edge_gateway: { enabled: false },
-            tags: []
-          };
+          name: '',
+          kind: defaultKind,
+          schedule: '0 * * * *',
+          target_config: {},
+          exporter_binding: { template_id: defaultTemplate },
+          edge_gateway: { enabled: false },
+          tags: []
+        };
       setFormData(initialData);
     }
     if (!isOpen) {
@@ -95,7 +95,7 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
 
   const handleExporterBindingChange = (updates: Partial<DiscoveryJobExporterBinding>) => {
     setFormData((prev) => {
-      const current = prev.exporter_binding || { template_id: getDefaultTemplateForKind((prev.kind as DiscoveryJobKind) || 'K8s') };
+      const current = prev.exporter_binding || { template_id: getDefaultTemplateForKind((prev.kind as DiscoveryJobKind) || 'k8s') };
       const nextBinding: DiscoveryJobExporterBinding = { ...current, ...updates };
       if (updates.template_id) {
         delete nextBinding.overrides_yaml;
@@ -139,7 +139,7 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
   };
 
   const handleSave = () => {
-    const exporter_binding: DiscoveryJobExporterBinding = formData.exporter_binding || { template_id: getDefaultTemplateForKind((formData.kind as DiscoveryJobKind) || 'K8s') };
+    const exporter_binding: DiscoveryJobExporterBinding = formData.exporter_binding || { template_id: getDefaultTemplateForKind((formData.kind as DiscoveryJobKind) || 'k8s') };
     const payload: Partial<DiscoveryJob> = {
       ...formData,
       target_config: formData.target_config || {},
@@ -213,7 +213,7 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
             </div>
           </>
         );
-      case 'SNMP':
+      case 'snmp':
         return (
           <div className="grid grid-cols-2 gap-4">
             <FormRow label="Community String">
@@ -235,7 +235,7 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
             </FormRow>
           </div>
         );
-      case 'Static Range':
+      case 'static_range':
         return (
           <FormRow label="IP 範圍">
             <input
@@ -247,7 +247,7 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
             />
           </FormRow>
         );
-      case 'Cloud Provider':
+      case 'cloud_provider':
         return (
           <FormRow label="API Key">
             <input

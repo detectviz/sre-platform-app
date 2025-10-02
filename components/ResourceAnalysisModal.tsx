@@ -6,9 +6,9 @@ import { Resource, ResourceAnalysis } from '../types';
 import api from '../services/api';
 
 interface ResourceAnalysisModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  resources: Resource[];
+    isOpen: boolean;
+    onClose: () => void;
+    resources: Resource[];
 }
 
 const Section: React.FC<{ title: string; icon: string; children: React.ReactNode }> = ({ title, icon, children }) => (
@@ -23,20 +23,20 @@ const Section: React.FC<{ title: string; icon: string; children: React.ReactNode
     </div>
 );
 
-const RiskLevelPill: React.FC<{ level: 'High' | 'Medium' | 'Low' }> = ({ level }) => {
+const RiskLevelPill: React.FC<{ level: 'high' | 'medium' | 'low' }> = ({ level }) => {
     const styles = {
-        High: 'bg-red-500/20 text-red-400',
-        Medium: 'bg-yellow-500/20 text-yellow-400',
-        Low: 'bg-sky-500/20 text-sky-400',
+        high: 'bg-red-500/20 text-red-400',
+        medium: 'bg-yellow-500/20 text-yellow-400',
+        low: 'bg-sky-500/20 text-sky-400',
     };
     return <span className={`px-2 py-1 text-xs font-semibold rounded-full ${styles[level]}`}>{level}</span>;
 };
 
-const OptimizationTypePill: React.FC<{ type: 'Cost' | 'Performance' | 'Security' }> = ({ type }) => {
+const OptimizationTypePill: React.FC<{ type: 'cost' | 'performance' | 'security' }> = ({ type }) => {
     const styles = {
-        Cost: 'bg-green-500/20 text-green-400',
-        Performance: 'bg-blue-500/20 text-blue-400',
-        Security: 'bg-purple-500/20 text-purple-400',
+        cost: 'bg-green-500/20 text-green-400',
+        performance: 'bg-blue-500/20 text-blue-400',
+        security: 'bg-purple-500/20 text-purple-400',
     };
     return <span className={`px-2 py-1 text-xs font-semibold rounded-full ${styles[type]}`}>{type}</span>;
 };
@@ -118,7 +118,7 @@ const ResourceAnalysisModal: React.FC<ResourceAnalysisModalProps> = ({ isOpen, o
                 <Section title="優化建議" icon="wrench">
                     <div className="space-y-3">
                         {analysis.optimization_suggestions.map((suggestion, i) => (
-                             <div key={i} className="p-3 bg-slate-800/50 rounded-lg">
+                            <div key={i} className="p-3 bg-slate-800/50 rounded-lg">
                                 <div className="flex justify-between items-start">
                                     <Link to={`/resources/list/${suggestion.resource_id}`} className="font-semibold text-white hover:underline">{suggestion.resource_name}</Link>
                                     <OptimizationTypePill type={suggestion.type} />

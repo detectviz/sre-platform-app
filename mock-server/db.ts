@@ -1184,9 +1184,9 @@ const MOCK_DASHBOARD_TEMPLATES: DashboardTemplate[] = [
     { id: 'tpl-002', name: '業務 KPI 總覽', description: '追蹤關鍵業務指標，如用戶註冊數、營收、轉換率等。適用於產品經理、業務團隊使用。', icon: 'briefcase', category: '業務' },
 ];
 const MOCK_INCIDENTS: Incident[] = [
-    { id: 'INC-001', summary: 'API 延遲超過閾值', resource: 'api-server-01', resource_id: 'res-001', impact: 'High', rule: 'API 延遲規則', rule_id: 'rule-002', status: 'new', severity: 'Warning', assignee: '張三', team_id: 'team-001', owner_id: 'usr-001', tags: { team: 'SRE Platform', owner: 'Alice Chen', env: 'production', service: 'api-gateway' }, occurred_at: '2024-01-15T10:30:00Z', created_at: '2024-01-15T10:30:00Z', updated_at: '2024-01-15T10:30:00Z', acknowledged_at: undefined, resolved_at: undefined, silenced_by: undefined, notifications_sent: undefined, history: [{ timestamp: '2024-01-15T10:30:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "API 延遲規則".' }] },
-    { id: 'INC-002', summary: '資料庫連接超時', resource: 'db-primary', resource_id: 'res-002', impact: 'High', rule: '資料庫連接規則', rule_id: 'rule-db-conn', status: 'acknowledged', severity: 'Critical', assignee: '李四', team_id: 'team-002', owner_id: 'usr-002', tags: { team: 'Core Infrastructure', owner: 'Bob Lee', env: 'production', service: 'database' }, occurred_at: '2024-01-15T10:15:00Z', created_at: '2024-01-15T10:15:00Z', updated_at: '2024-01-15T10:15:00Z', acknowledged_at: '2024-01-15T10:20:00Z', resolved_at: undefined, silenced_by: undefined, notifications_sent: undefined, history: [{ timestamp: '2024-01-15T10:15:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "資料庫連接規則".' }] },
-    { id: 'INC-003', summary: 'CPU 使用率異常', resource: 'web-prod-12', resource_id: 'res-004', impact: 'Medium', rule: 'CPU 使用率規則', rule_id: 'rule-cpu', status: 'resolved', severity: 'Warning', assignee: '王五', team_id: 'team-003', owner_id: 'usr-003', tags: { team: 'API Services', owner: 'Charlie Wu', env: 'production' }, occurred_at: '2024-01-15T09:45:00Z', created_at: '2024-01-15T09:45:00Z', updated_at: '2024-01-15T09:45:00Z', acknowledged_at: '2024-01-15T10:00:00Z', resolved_at: '2024-01-15T10:05:00Z', silenced_by: undefined, notifications_sent: undefined, history: [{ timestamp: '2024-01-15T09:45:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "CPU 使用率規則".' }] },
+    { id: 'INC-001', summary: 'API 延遲超過閾值', resource: 'api-server-01', resource_id: 'res-001', impact: 'high', rule: 'API 延遲規則', rule_id: 'rule-002', status: 'new', severity: 'warning', assignee: '張三', team_id: 'team-001', owner_id: 'usr-001', tags: { team: 'SRE Platform', owner: 'Alice Chen', env: 'production', service: 'api-gateway' }, occurred_at: '2024-01-15T10:30:00Z', created_at: '2024-01-15T10:30:00Z', updated_at: '2024-01-15T10:30:00Z', acknowledged_at: undefined, resolved_at: undefined, silenced_by: undefined, notifications_sent: undefined, history: [{ timestamp: '2024-01-15T10:30:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "API 延遲規則".' }] },
+    { id: 'INC-002', summary: '資料庫連接超時', resource: 'db-primary', resource_id: 'res-002', impact: 'high', rule: '資料庫連接規則', rule_id: 'rule-db-conn', status: 'acknowledged', severity: 'critical', assignee: '李四', team_id: 'team-002', owner_id: 'usr-002', tags: { team: 'Core Infrastructure', owner: 'Bob Lee', env: 'production', service: 'database' }, occurred_at: '2024-01-15T10:15:00Z', created_at: '2024-01-15T10:15:00Z', updated_at: '2024-01-15T10:15:00Z', acknowledged_at: '2024-01-15T10:20:00Z', resolved_at: undefined, silenced_by: undefined, notifications_sent: undefined, history: [{ timestamp: '2024-01-15T10:15:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "資料庫連接規則".' }] },
+    { id: 'INC-003', summary: 'CPU 使用率異常', resource: 'web-prod-12', resource_id: 'res-004', impact: 'medium', rule: 'CPU 使用率規則', rule_id: 'rule-cpu', status: 'resolved', severity: 'warning', assignee: '王五', team_id: 'team-003', owner_id: 'usr-003', tags: { team: 'API Services', owner: 'Charlie Wu', env: 'production' }, occurred_at: '2024-01-15T09:45:00Z', created_at: '2024-01-15T09:45:00Z', updated_at: '2024-01-15T09:45:00Z', acknowledged_at: '2024-01-15T10:00:00Z', resolved_at: '2024-01-15T10:05:00Z', silenced_by: undefined, notifications_sent: undefined, history: [{ timestamp: '2024-01-15T09:45:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "CPU 使用率規則".' }] },
 ];
 const MOCK_QUICK_SILENCE_DURATIONS = [1, 2, 4, 8, 12, 24]; // hours
 const MOCK_ALERT_RULE_DEFAULT: Partial<AlertRule> = {
@@ -1199,7 +1199,7 @@ const MOCK_ALERT_RULE_DEFAULT: Partial<AlertRule> = {
     labels: [],
     condition_groups: [
         {
-            logic: 'OR',
+            logic: 'or',
             severity: 'warning',
             conditions: [
                 {
@@ -1272,7 +1272,7 @@ const MOCK_ALERT_RULE_TEMPLATES: AlertRuleTemplate[] = [
         data: {
             name: 'High CPU Usage on Prod Hosts',
             description: 'Monitors CPU usage on production hosts and alerts when it exceeds 90% for 5 minutes.',
-            condition_groups: [{ logic: 'OR', severity: 'warning', conditions: [{ metric: 'cpu_usage_percent', operator: '>', threshold: 90, duration_minutes: 5 }] }],
+            condition_groups: [{ logic: 'or', severity: 'warning', conditions: [{ metric: 'cpu_usage_percent', operator: '>', threshold: 90, duration_minutes: 5 }] }],
             title_template: '[{{severity}}] High CPU on {{resource.name}}',
             content_template: 'CPU usage is at {{value}}%, exceeding the threshold of {{threshold}}% for {{duration}} minutes.',
             automation: { enabled: true, script_id: 'play-002' }
@@ -1291,7 +1291,7 @@ const MOCK_ALERT_RULE_TEMPLATES: AlertRuleTemplate[] = [
         data: {
             name: 'Low Disk Space',
             description: 'Alerts when disk space is critically low.',
-            condition_groups: [{ logic: 'OR', severity: 'critical', conditions: [{ metric: 'disk_free_percent', operator: '<', threshold: 10, duration_minutes: 15 }] }],
+            condition_groups: [{ logic: 'or', severity: 'critical', conditions: [{ metric: 'disk_free_percent', operator: '<', threshold: 10, duration_minutes: 15 }] }],
             title_template: '[{{severity}}] Low Disk Space on {{resource.name}}',
             content_template: 'Disk space is at {{value}}%, which is below the threshold of {{threshold}}%.'
         },
@@ -1308,7 +1308,7 @@ const MOCK_ALERT_RULE_TEMPLATES: AlertRuleTemplate[] = [
         data: {
             name: 'Database Connection Failures',
             description: 'Triggers when the rate of DB connection failures exceeds 5%.',
-            condition_groups: [{ logic: 'OR', severity: 'critical', conditions: [{ metric: 'db_connection_error_rate', operator: '>', threshold: 5, duration_minutes: 2 }] }],
+            condition_groups: [{ logic: 'or', severity: 'critical', conditions: [{ metric: 'db_connection_error_rate', operator: '>', threshold: 5, duration_minutes: 2 }] }],
             title_template: '[{{severity}}] DB Connection Errors on {{resource.name}}',
             content_template: 'Database connection error rate is at {{value}}%, exceeding the threshold of {{threshold}}%.'
         },
@@ -1411,14 +1411,14 @@ const MOCK_AUTOMATION_EXECUTIONS: AutomationExecution[] = [
     },
 ];
 const MOCK_AUTOMATION_TRIGGERS: AutomationTrigger[] = [
-    { id: 'trig-001', name: '每日日誌歸檔', description: '在每天凌晨 3 點運行「歸檔舊日誌」腳本。', type: 'Schedule', enabled: true, target_playbook_id: 'play-005', config: { cron: '0 3 * * *', cron_description: '每日 03:00' }, last_triggered_at: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(), creator: 'Admin User', created_at: '2025-09-19T08:00:00Z', updated_at: '2025-09-19T08:00:00Z' },
+    { id: 'trig-001', name: '每日日誌歸檔', description: '在每天凌晨 3 點運行「歸檔舊日誌」腳本。', type: 'schedule', enabled: true, target_playbook_id: 'play-005', config: { cron: '0 3 * * *', cron_description: '每日 03:00' }, last_triggered_at: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(), creator: 'Admin User', created_at: '2025-09-19T08:00:00Z', updated_at: '2025-09-19T08:00:00Z' },
 ];
 const MOCK_USERS: User[] = [
-    { id: 'usr-001', name: 'Admin User', email: 'admin@sre.platform', role: 'Admin', team: 'SRE Platform', status: 'active', last_login_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(), created_at: '2024-01-01T09:00:00Z', updated_at: '2024-01-15T10:00:00Z' },
-    { id: 'usr-002', name: 'Emily White', email: 'emily.w@example.com', role: 'SRE', team: 'Core Infrastructure', status: 'active', last_login_at: new Date(Date.now() - 60 * 60 * 1000).toISOString(), created_at: '2024-01-02T09:00:00Z', updated_at: '2024-01-14T10:00:00Z' },
-    { id: 'usr-003', name: 'John Doe', email: 'john.d@example.com', role: 'Developer', team: 'API Services', status: 'active', last_login_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), created_at: '2024-01-03T09:00:00Z', updated_at: '2024-01-13T10:00:00Z' },
-    { id: 'usr-004', name: 'Sarah Connor', email: 'sarah.c@example.com', role: 'Viewer', team: 'Marketing', status: 'inactive', last_login_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), created_at: '2024-01-04T09:00:00Z', updated_at: '2024-01-12T10:00:00Z' },
-    { id: 'usr-005', name: 'pending.invite@example.com', email: 'pending.invite@example.com', role: 'Developer', team: 'API Services', status: 'invited', last_login_at: null, created_at: '2024-01-15T09:00:00Z', updated_at: '2024-01-15T09:00:00Z' },
+    { id: 'usr-001', name: 'Admin User', email: 'admin@sre.platform', role: 'admin', team: 'SRE Platform', status: 'active', last_login_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(), created_at: '2024-01-01T09:00:00Z', updated_at: '2024-01-15T10:00:00Z' },
+    { id: 'usr-002', name: 'Emily White', email: 'emily.w@example.com', role: 'sre', team: 'Core Infrastructure', status: 'active', last_login_at: new Date(Date.now() - 60 * 60 * 1000).toISOString(), created_at: '2024-01-02T09:00:00Z', updated_at: '2024-01-14T10:00:00Z' },
+    { id: 'usr-003', name: 'John Doe', email: 'john.d@example.com', role: 'developer', team: 'API Services', status: 'active', last_login_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), created_at: '2024-01-03T09:00:00Z', updated_at: '2024-01-13T10:00:00Z' },
+    { id: 'usr-004', name: 'Sarah Connor', email: 'sarah.c@example.com', role: 'viewer', team: 'Marketing', status: 'inactive', last_login_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), created_at: '2024-01-04T09:00:00Z', updated_at: '2024-01-12T10:00:00Z' },
+    { id: 'usr-005', name: 'pending.invite@example.com', email: 'pending.invite@example.com', role: 'developer', team: 'API Services', status: 'invited', last_login_at: null, created_at: '2024-01-15T09:00:00Z', updated_at: '2024-01-15T09:00:00Z' },
 ];
 const MOCK_USER_STATUSES: User['status'][] = ['active', 'invited', 'inactive'];
 const MOCK_TEAMS: Team[] = [
@@ -1469,20 +1469,20 @@ const MOCK_NOTIFICATION_STRATEGIES: NotificationStrategy[] = [
         enabled: true,
         trigger_condition: 'severity = Critical AND service = api-gateway',
         channel_count: 2,
-        severity_levels: ['Critical'],
-        impact_levels: ['High'],
+        severity_levels: ['critical'],
+        impact_levels: ['high'],
         creator: 'Admin',
         created_at: '2025-09-20T10:00:00Z',
         updated_at: '2025-09-20T10:00:00Z'
     }
 ];
 const MOCK_NOTIFICATION_STRATEGY_OPTIONS: NotificationStrategyOptions = {
-    severity_levels: ['Critical', 'Warning', 'Info'],
-    impact_levels: ['High', 'Medium', 'Low'],
+    severity_levels: ['critical', 'warning', 'info'],
+    impact_levels: ['high', 'medium', 'low'],
     default_condition: 'severity = Critical',
     condition_keys: {
-        severity: ['Critical', 'Warning', 'Info'],
-        impact: ['High', 'Medium', 'Low'],
+        severity: ['critical', 'warning', 'info'],
+        impact: ['high', 'medium', 'low'],
         service: ['api-gateway', 'payment-service']
     },
     tag_keys: ['env', 'service'],
@@ -1496,7 +1496,7 @@ const MOCK_NOTIFICATION_CHANNELS: NotificationChannel[] = [
     {
         id: 'chan-1',
         name: 'SRE On-call Email',
-        type: 'Email',
+        type: 'email',
         enabled: true,
         config: {
             to: 'sre-oncall@example.com',
@@ -1526,7 +1526,7 @@ const MOCK_NOTIFICATION_CHANNEL_ICONS = {
     'Default': { icon: 'bell', color: 'text-slate-400' }
 };
 const MOCK_NOTIFICATION_HISTORY: NotificationHistoryRecord[] = [
-    { id: 'nh-1', timestamp: '2025-09-23T14:05:10Z', strategy: 'Critical Database Alerts', channel: 'SRE On-call Email', channel_type: 'Email', recipient: 'sre-team@example.com', status: 'success', content: 'DB CPU > 95%' },
+    { id: 'nh-1', timestamp: '2025-09-23T14:05:10Z', strategy: 'Critical Database Alerts', channel: 'SRE On-call Email', channel_type: 'email', recipient: 'sre-team@example.com', status: 'sent', content: 'DB CPU > 95%' },
 ];
 const MOCK_LOGIN_HISTORY: LoginHistoryRecord[] = [
     { id: 'lh-1', timestamp: '2025-09-23T10:00:00Z', ip: '192.168.1.1', device: 'Chrome on macOS', status: 'success' },
@@ -1554,7 +1554,7 @@ const MOCK_GRAFANA_OPTIONS: GrafanaOptions = {
     refresh_label: '刷新',
     time_label: '時間',
 };
-const MOCK_AUTH_SETTINGS: AuthSettings = { provider: 'Keycloak', enabled: true, client_id: 'sre-platform-client', client_secret: '...', realm: 'sre', auth_url: '...', token_url: '...', user_info_url: '...', idp_admin_url: DEFAULT_IDP_ADMIN_URL };
+const MOCK_AUTH_SETTINGS: AuthSettings = { provider: 'keycloak', enabled: true, client_id: 'sre-platform-client', client_secret: '...', realm: 'sre', auth_url: '...', token_url: '...', user_info_url: '...', idp_admin_url: DEFAULT_IDP_ADMIN_URL };
 const LAYOUT_WIDGETS: LayoutWidget[] = [
     // Incident Management
     { id: 'incident_pending_count', name: '待處理事件', description: '顯示目前狀態為「新」的事件總數。', supported_pages: ['事件'] },
@@ -1716,7 +1716,7 @@ const MOCK_RESOURCE_LINKS: ResourceLink[] = [
 const MOCK_CONFIG_VERSIONS: ConfigVersion[] = [
     {
         id: 'cv-001',
-        entity_type: 'AlertRule',
+        entity_type: 'alertrule',
         entity_id: 'rule-001',
         version: 1,
         config_snapshot: MOCK_ALERT_RULES[0],
@@ -1726,7 +1726,7 @@ const MOCK_CONFIG_VERSIONS: ConfigVersion[] = [
     },
     {
         id: 'cv-002',
-        entity_type: 'AlertRule',
+        entity_type: 'alertrule',
         entity_id: 'rule-001',
         version: 2,
         config_snapshot: { ...MOCK_ALERT_RULES[0], threshold: 95 },
@@ -1736,7 +1736,7 @@ const MOCK_CONFIG_VERSIONS: ConfigVersion[] = [
     },
     {
         id: 'cv-003',
-        entity_type: 'AutomationPlaybook',
+        entity_type: 'automationplaybook',
         entity_id: 'play-001',
         version: 1,
         config_snapshot: MOCK_PLAYBOOKS[0],
@@ -1884,14 +1884,14 @@ const MOCK_RESOURCE_ANALYSIS: ResourceAnalysis = {
         {
             resource_id: 'res-002',
             resource_name: 'rds-prod-main',
-            risk_level: 'High',
+            risk_level: 'high',
             reason: '記憶體使用率連續 3 天超過 90%，且慢查詢日誌數量增加。',
             recommendation: '建議立即升級資料庫實例類型，並分析慢查詢。'
         },
         {
             resource_id: 'res-007',
             resource_name: 'api-service',
-            risk_level: 'Medium',
+            risk_level: 'medium',
             reason: '副本數 (3) 在流量高峰期可能不足，CPU Throttling 指標上升。',
             recommendation: '建議將 HPA 的最小副本數調整為 5。'
         }
@@ -1901,7 +1901,7 @@ const MOCK_RESOURCE_ANALYSIS: ResourceAnalysis = {
             resource_id: 'res-004',
             resource_name: 'web-prod-12',
             suggestion: '此 EC2 實例的平均 CPU 使用率低於 10%。建議將實例類型從 `t3.large` 降級為 `t3.medium` 以節省成本。',
-            type: 'Cost'
+            type: 'cost'
         }
     ]
 };
@@ -2248,7 +2248,7 @@ const MOCK_INCIDENT_PREDICTION_REPORT = {
             predicted_issue: 'CPU 使用率可能超過 90%',
             probability: 0.82,
             estimated_time: '2024-01-16T14:30:00Z',
-            severity: 'Warning',
+            severity: 'warning',
             preventive_actions: ['考慮增加 CPU 資源', '檢查是否有異常進程'],
         },
         {
@@ -2257,7 +2257,7 @@ const MOCK_INCIDENT_PREDICTION_REPORT = {
             predicted_issue: '支付錯誤率可能上升至 5%',
             probability: 0.74,
             estimated_time: '2024-01-16T16:00:00Z',
-            severity: 'Critical',
+            severity: 'critical',
             preventive_actions: ['提前擴大資料庫連線池', '預先啟用備援節點'],
         },
     ],
@@ -2375,9 +2375,7 @@ const MOCK_TAB_CONFIGS: TabConfigMap = {
 const INCIDENT_STATUS_STYLES: Record<Incident['status'], { label: string; class_name: string }> = {
     new: { label: '新事件', class_name: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border border-amber-400/30 shadow-sm' },
     acknowledged: { label: '已認領', class_name: 'bg-gradient-to-r from-sky-500 to-blue-500 text-white border border-sky-400/30 shadow-sm' },
-    investigating: { label: '調查中', class_name: 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white border border-indigo-400/30 shadow-sm' },
     resolved: { label: '已解決', class_name: 'bg-gradient-to-r from-emerald-500 to-green-500 text-white border border-emerald-400/30 shadow-sm' },
-    closed: { label: '已關閉', class_name: 'bg-gradient-to-r from-slate-500 to-gray-500 text-white border border-slate-400/30 shadow-sm' },
     silenced: { label: '已靜音', class_name: 'bg-gradient-to-r from-slate-600 to-slate-500 text-slate-200 border border-slate-500/30 shadow-sm' },
 };
 
@@ -2491,29 +2489,29 @@ const MOCK_AUTOMATION_EXECUTION_OPTIONS: AutomationExecutionOptions = {
 
 const MOCK_NOTIFICATION_CHANNEL_OPTIONS: NotificationChannelOptions = {
     channel_types: [
-        { value: 'Email', label: 'Email' },
-        { value: 'Webhook (通用)', label: 'Webhook (通用)' },
-        { value: 'Slack', label: 'Slack' },
-        { value: 'LINE Notify', label: 'LINE Notify' },
-        { value: 'SMS', label: 'SMS' }
+        { value: 'email', label: 'Email' },
+        { value: 'webhook', label: 'Webhook (通用)' },
+        { value: 'slack', label: 'Slack' },
+        { value: 'line', label: 'LINE Notify' },
+        { value: 'sms', label: 'SMS' }
     ],
-    http_methods: ['POST', 'PUT', 'GET']
+    http_methods: ['post', 'put', 'get']
 };
 
 const MOCK_AUTOMATION_TRIGGER_SEVERITY_OPTIONS = MOCK_ALERT_RULE_OPTIONS.severities.map(({ value, label }) => ({ value, label }));
 
 const MOCK_AUTOMATION_TRIGGER_OPTIONS: AutomationTriggerOptions = {
     trigger_types: [
-        { value: 'Schedule', label: '排程' },
-        { value: 'Webhook', label: 'Webhook' },
-        { value: 'Event', label: '事件' }
+        { value: 'schedule', label: '排程' },
+        { value: 'webhook', label: 'Webhook' },
+        { value: 'event', label: '事件' }
     ],
     condition_keys: ['severity', 'resource.type', 'tag.env'],
     severity_options: MOCK_AUTOMATION_TRIGGER_SEVERITY_OPTIONS,
     default_configs: {
-        'Schedule': { cron: '0 * * * *' },
-        'Webhook': { webhook_url: 'https://sre.platform/api/v1/webhooks/hook-generated-id' },
-        'Event': { event_conditions: `severity = ${MOCK_AUTOMATION_TRIGGER_SEVERITY_OPTIONS[0]?.value ?? 'critical'}` }
+        'schedule': { cron: '0 * * * *' },
+        'webhook': { webhook_url: 'https://sre.platform/api/v1/webhooks/hook-generated-id' },
+        'event': { event_conditions: `severity = ${MOCK_AUTOMATION_TRIGGER_SEVERITY_OPTIONS[0]?.value ?? 'critical'}` }
     }
 };
 
@@ -2565,25 +2563,25 @@ const MOCK_TOPOLOGY_OPTIONS: TopologyOptions = {
 
 const MOCK_NOTIFICATION_HISTORY_OPTIONS: NotificationHistoryOptions = {
     statuses: [
-        { value: 'success', label: 'Success' },
+        { value: 'sent', label: 'Success' },
         { value: 'failed', label: 'Failed' },
     ],
     channel_types: [
-        { value: 'Email', label: 'Email' },
-        { value: 'Webhook (通用)', label: 'Webhook (通用)' },
-        { value: 'Slack', label: 'Slack' },
-        { value: 'LINE Notify', label: 'LINE Notify' },
-        { value: 'SMS', label: 'SMS' },
+        { value: 'email', label: 'Email' },
+        { value: 'webhook', label: 'Webhook (通用)' },
+        { value: 'slack', label: 'Slack' },
+        { value: 'line', label: 'LINE Notify' },
+        { value: 'sms', label: 'SMS' },
     ],
 };
 
 const MOCK_DATASOURCE_OPTIONS: DatasourceOptions = {
-    types: ['VictoriaMetrics', 'Grafana', 'Elasticsearch', 'Prometheus', '自訂'],
-    auth_methods: ['Token', 'Basic Auth', 'Keycloak 整合', '無'],
+    types: ['victoriametrics', 'grafana', 'elasticsearch', 'prometheus', '自訂'],
+    auth_methods: ['token', 'basic_auth', 'keycloak_整合', '無'],
 };
 
 const MOCK_AUTO_DISCOVERY_OPTIONS: AutoDiscoveryOptions = {
-    job_kinds: ['K8s', 'SNMP', 'Cloud Provider', 'Static Range', 'Custom Script'],
+    job_kinds: ['k8s', 'snmp', 'cloud_provider', 'static_range', 'custom_script'],
     exporter_templates: [
         { id: 'none', name: '不部署 Exporter', description: '僅建立資源資料，不自動綁定監控代理。' },
         { id: 'node_exporter', name: 'Node Exporter', description: '適用於 Linux/Windows 主機的系統監控。', supports_overrides: true },
@@ -2629,31 +2627,31 @@ const MOCK_DATASOURCES: Datasource[] = [
     {
         id: 'ds-001',
         name: 'Prometheus-A',
-        type: 'Prometheus',
+        type: 'prometheus',
         status: 'ok',
         created_at: '2025-09-01T12:30:00Z',
         url: 'http://prometheus-a.internal:9090',
-        auth_method: 'None',
+        auth_method: 'none',
         tags: [{ id: 'tag-1', key: 'env', value: 'production' }]
     },
     {
         id: 'ds-002',
         name: 'VM-Cluster-1',
-        type: 'VictoriaMetrics',
+        type: 'victoriametrics',
         status: 'error',
         created_at: '2025-09-10T09:22:00Z',
         url: 'http://vm-cluster-1.internal:8428',
-        auth_method: 'Token',
+        auth_method: 'token',
         tags: [{ id: 'tag-2', key: 'env', value: 'production' }, { id: 'tag-3', key: 'cluster', value: '1' }]
     },
     {
         id: 'ds-003',
         name: 'Main Grafana',
-        type: 'Grafana',
+        type: 'grafana',
         status: 'pending',
         created_at: '2025-09-11T15:00:00Z',
         url: 'http://grafana.internal',
-        auth_method: 'Keycloak Integration',
+        auth_method: 'keycloak_integration',
         tags: []
     }
 ];
@@ -2662,7 +2660,7 @@ const MOCK_DISCOVERY_JOBS: DiscoveryJob[] = [
     {
         id: 'dj-001',
         name: 'K8s Cluster A',
-        kind: 'K8s',
+        kind: 'k8s',
         schedule: '0 9 * * *', // 每天 09:00
         last_run_at: '2025-09-23T09:00:15Z',
         status: 'success',
@@ -2676,7 +2674,7 @@ const MOCK_DISCOVERY_JOBS: DiscoveryJob[] = [
     {
         id: 'dj-002',
         name: 'IDC-SNMP-Scan',
-        kind: 'SNMP',
+        kind: 'snmp',
         schedule: '30 * * * *', // 每小時 30 分
         last_run_at: '2025-09-23T10:30:05Z',
         status: 'partial_failure',
@@ -2690,7 +2688,7 @@ const MOCK_DISCOVERY_JOBS: DiscoveryJob[] = [
     {
         id: 'dj-003',
         name: 'Cloud Provider Sync',
-        kind: 'Cloud Provider',
+        kind: 'cloud_provider',
         schedule: '0 0 * * *', // 每天
         last_run_at: '2025-09-23T00:00:10Z',
         status: 'running',

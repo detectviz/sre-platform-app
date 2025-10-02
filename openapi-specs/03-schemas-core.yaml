@@ -117,7 +117,8 @@ components:
     # ===================
     Incident:
       type: object
-      required: [id, summary, resource_id, rule_id, status, severity, created_at]
+      required:
+        [id, summary, resource_id, rule_id, status, severity, created_at]
       properties:
         id:
           type: string
@@ -141,12 +142,12 @@ components:
           example: new
         severity:
           type: string
-          enum: [Critical, Warning, Info]
-          example: Warning
+          enum: [critical, warning, info]
+          example: warning
         impact:
           type: string
-          enum: [High, Medium, Low]
-          example: High
+          enum: [high, medium, low]
+          example: high
         assignee:
           type: string
           example: 張三
@@ -229,10 +230,10 @@ components:
           maxLength: 500
         severity:
           type: string
-          enum: [Critical, Warning, Info]
+          enum: [critical, warning, info]
         impact:
           type: string
-          enum: [High, Medium, Low]
+          enum: [high, medium, low]
         tags:
           type: object
           additionalProperties:
@@ -257,7 +258,8 @@ components:
     # ===================
     AlertRule:
       type: object
-      required: [id, name, resource_type, metric_name, enabled, severity, created_at]
+      required:
+        [id, name, resource_type, metric_name, enabled, severity, created_at]
       properties:
         id:
           type: string
@@ -312,7 +314,7 @@ components:
             properties:
               operator:
                 type: string
-                enum: [AND, OR]
+                enum: [and, or]
               conditions:
                 type: array
                 minItems: 1
@@ -325,7 +327,7 @@ components:
                       example: cpu_usage_percent
                     operator:
                       type: string
-                      enum: ['>', '>=', '<', '<=', '==']
+                      enum: [">", ">=", "<", "<=", "=="]
                     value:
                       oneOf:
                         - type: number
@@ -379,7 +381,7 @@ components:
         condition_groups:
           type: array
           items:
-            $ref: '#/components/schemas/AlertRuleConditionGroup'
+            $ref: "#/components/schemas/AlertRuleConditionGroup"
 
     AlertRuleUpdate:
       type: object
@@ -404,7 +406,7 @@ components:
         condition_groups:
           type: array
           items:
-            $ref: '#/components/schemas/AlertRuleConditionGroup'
+            $ref: "#/components/schemas/AlertRuleConditionGroup"
 
     AlertRuleConditionGroup:
       type: object

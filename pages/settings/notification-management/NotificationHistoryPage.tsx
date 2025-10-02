@@ -35,10 +35,10 @@ const NotificationHistoryPage: React.FC = () => {
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
-    
+
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
-    
+
     useEffect(() => {
         api.get<IconConfig>('/ui/icons-config')
             .then(res => setIconConfig(res.data))
@@ -76,13 +76,13 @@ const NotificationHistoryPage: React.FC = () => {
             setIsLoading(false);
         }
     }, [currentPage, pageSize, filters, pageKey]);
-    
+
     useEffect(() => {
         if (pageKey) {
             fetchHistory();
         }
     }, [fetchHistory, pageKey]);
-    
+
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
         if (!pageKey) {
             showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
@@ -106,13 +106,13 @@ const NotificationHistoryPage: React.FC = () => {
             showToast('通知已成功重新發送。', 'success');
             setSelectedRecord(null); // Close drawer on success
             fetchHistory();
-        } catch(err) {
+        } catch (err) {
             showToast('重新發送通知失敗。', 'error');
         } finally {
             setResendingId(null);
         }
     };
-    
+
     const getChannelTypeIcon = (type: NotificationChannelType) => {
         const fallback = { icon: 'bell', color: 'text-slate-400' };
         if (!iconConfig) return fallback;
@@ -130,7 +130,7 @@ const NotificationHistoryPage: React.FC = () => {
             data: history,
         });
     };
-    
+
     const renderDrawerExtra = () => {
         if (selectedRecord?.status === 'failed') {
             const isResending = resendingId === selectedRecord.id;
@@ -156,7 +156,7 @@ const NotificationHistoryPage: React.FC = () => {
         }
         return <span className="text-xs text-slate-500">無可執行動作</span>;
     };
-    
+
     const renderCellContent = (record: NotificationHistoryRecord, columnKey: string) => {
         const { icon, color } = getChannelTypeIcon(record.channel_type);
         switch (columnKey) {
@@ -172,7 +172,7 @@ const NotificationHistoryPage: React.FC = () => {
             case 'recipient': return record.recipient;
             case 'status':
                 return (
-                    <span className={`font-semibold ${record.status === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                    <span className={`font-semibold ${record.status === 'sent' ? 'text-green-400' : 'text-red-400'}`}>
                         {record.status.toUpperCase()}
                     </span>
                 );
@@ -218,13 +218,13 @@ const NotificationHistoryPage: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
-                 <Pagination 
+                <Pagination
                     total={totalHistory}
                     page={currentPage}
                     pageSize={pageSize}
                     onPageChange={setCurrentPage}
                     onPageSizeChange={setPageSize}
-                 />
+                />
             </TableContainer>
 
             <Drawer

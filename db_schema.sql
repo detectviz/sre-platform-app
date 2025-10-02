@@ -19,8 +19,8 @@ CREATE TYPE dashboard_type AS ENUM ('built-in', 'custom', 'grafana');
 
 
 CREATE TYPE incident_status AS ENUM ('new', 'acknowledged', 'resolved', 'silenced');
-CREATE TYPE incident_severity AS ENUM ('Critical', 'Warning', 'Info');
-CREATE TYPE incident_impact AS ENUM ('High', 'Medium', 'Low');
+CREATE TYPE incident_severity AS ENUM ('critical', 'warning', 'info');
+CREATE TYPE incident_impact AS ENUM ('high', 'medium', 'low');
 
 CREATE TYPE resource_status AS ENUM ('healthy', 'warning', 'critical', 'offline', 'unknown');
 
@@ -30,30 +30,30 @@ CREATE TYPE trigger_source AS ENUM ('manual', 'schedule', 'webhook', 'event');
 CREATE TYPE trigger_type AS ENUM ('schedule', 'webhook', 'event');
 
 -- User & IAM Types
-CREATE TYPE user_role AS ENUM ('Admin', 'SRE', 'Developer', 'Viewer');
+CREATE TYPE user_role AS ENUM ('admin', 'sre', 'developer', 'viewer');
 CREATE TYPE user_status AS ENUM ('active', 'invited', 'inactive');
 
 -- Alert Rule Types
-CREATE TYPE alert_severity AS ENUM ('Critical', 'Warning', 'Info');
+CREATE TYPE alert_severity AS ENUM ('critical', 'warning', 'info');
 CREATE TYPE condition_operator AS ENUM ('>', '<', '>=', '<=', '==', '!=');
-CREATE TYPE condition_logic AS ENUM ('AND', 'OR');
+CREATE TYPE condition_logic AS ENUM ('and', 'or');
 
 -- Notification Types
-CREATE TYPE notification_channel_type AS ENUM ('Email', 'Webhook (通用)', 'Slack', 'LINE Notify', 'SMS');
+CREATE TYPE notification_channel_type AS ENUM ('email', 'webhook', 'slack', 'line', 'sms');
 CREATE TYPE notification_status AS ENUM ('sent', 'failed', 'pending');
 CREATE TYPE test_result AS ENUM ('success', 'failed', 'not_tested');
 
 -- Audit Types
-CREATE TYPE audit_action AS ENUM ('CREATE', 'READ', 'UPDATE', 'DELETE', 'EXECUTE');
+CREATE TYPE audit_action AS ENUM ('create', 'read', 'update', 'delete', 'execute');
 CREATE TYPE audit_result AS ENUM ('success', 'failure');
 
 -- Datasource Types
-CREATE TYPE datasource_type AS ENUM ('VictoriaMetrics', 'Grafana', 'Elasticsearch', 'Prometheus', 'Custom');
-CREATE TYPE auth_method AS ENUM ('Token', 'Basic Auth', 'Keycloak Integration', 'None');
+CREATE TYPE datasource_type AS ENUM ('victoriametrics', 'grafana', 'elasticsearch', 'prometheus', 'custom');
+CREATE TYPE auth_method AS ENUM ('token', 'basic_auth', 'keycloak_integration', 'none');
 CREATE TYPE connection_status AS ENUM ('ok', 'error', 'pending');
 
 -- Discovery Types
-CREATE TYPE discovery_job_kind AS ENUM ('K8s', 'SNMP', 'Cloud Provider', 'Static Range', 'Custom Script');
+CREATE TYPE discovery_job_kind AS ENUM ('k8s', 'snmp', 'cloud_provider', 'static_range', 'custom_script');
 CREATE TYPE discovery_job_status AS ENUM ('success', 'partial_failure', 'failed', 'running');
 CREATE TYPE discovered_resource_status AS ENUM ('new', 'imported', 'ignored');
 

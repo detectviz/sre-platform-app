@@ -259,7 +259,7 @@ const IncidentListPage: React.FC = () => {
             case 'resource':
                 return inc.resource;
             case 'assignee':
-                if (inc.status === 'New' || !inc.assignee) {
+                if (inc.status === 'new' || !inc.assignee) {
                     return (
                         <button
                             onClick={(e) => { e.stopPropagation(); handleAcknowledge([inc.id]); }}

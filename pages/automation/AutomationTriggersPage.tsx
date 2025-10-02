@@ -184,9 +184,9 @@ const AutomationTriggersPage: React.FC = () => {
 
     const getTriggerTypePill = (type: TriggerType) => {
         switch (type) {
-            case 'Schedule': return 'bg-blue-500/20 text-blue-300';
-            case 'Webhook': return 'bg-purple-500/20 text-purple-300';
-            case 'Event': return 'bg-amber-500/20 text-amber-300';
+            case 'schedule': return 'bg-blue-500/20 text-blue-300';
+            case 'webhook': return 'bg-purple-500/20 text-purple-300';
+            case 'event': return 'bg-amber-500/20 text-amber-300';
         }
     };
 
@@ -204,7 +204,7 @@ const AutomationTriggersPage: React.FC = () => {
             case 'name':
                 return <span className="font-medium text-white">{trigger.name}</span>;
             case 'type':
-                const typeLabel = trigger.type === 'Schedule' ? '排程' : trigger.type === 'Webhook' ? 'Webhook' : trigger.type === 'Event' ? '事件' : trigger.type;
+                const typeLabel = trigger.type === 'schedule' ? '排程' : trigger.type === 'webhook' ? 'Webhook' : trigger.type === 'event' ? '事件' : trigger.type;
                 return (
                     <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getTriggerTypePill(trigger.type)}`}>
                         {typeLabel}

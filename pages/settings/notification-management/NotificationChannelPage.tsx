@@ -163,7 +163,7 @@ const NotificationChannelPage: React.FC = () => {
         switch (status) {
             case 'success': return 'bg-green-500/20 text-green-400';
             case 'failed': return 'bg-red-500/20 text-red-400';
-            case 'pending': return 'bg-yellow-500/20 text-yellow-400 animate-pulse';
+            case 'not_tested': return 'bg-yellow-500/20 text-yellow-400 animate-pulse';
         }
     };
 

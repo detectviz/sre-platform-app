@@ -63,10 +63,10 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
                 const initialFormData = trigger || {
                     name: '',
                     description: '',
-                    type: triggerOptions.trigger_types[0]?.value || 'Schedule',
+                    type: triggerOptions.trigger_types[0]?.value || 'schedule',
                     enabled: true,
                     target_playbook_id: playbooksRes.data[0]?.id || '',
-                    config: triggerOptions.default_configs?.Schedule || { cron: '0 * * * *' },
+                    config: triggerOptions.default_configs?.schedule || { cron: '0 * * * *' },
                 };
                 setFormData(initialFormData);
 

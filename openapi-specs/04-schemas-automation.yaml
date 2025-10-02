@@ -151,7 +151,16 @@ components:
     # ===================
     AutomationExecution:
       type: object
-      required: [id, script_id, script_name, status, trigger_source, triggered_by, start_time]
+      required:
+        [
+          id,
+          script_id,
+          script_name,
+          status,
+          trigger_source,
+          triggered_by,
+          start_time,
+        ]
       properties:
         id:
           type: string
@@ -200,7 +209,7 @@ components:
               type: string
           example:
             stdout: Execution started...
-            stderr: ''
+            stderr: ""
         incident_id:
           type: string
           nullable: true
@@ -243,8 +252,8 @@ components:
           example: 每日備份觸發器
         type:
           type: string
-          enum: [Schedule, Webhook, Event]
-          example: Schedule
+          enum: [schedule, webhook, event]
+          example: schedule
         enabled:
           type: boolean
           example: true
@@ -320,7 +329,7 @@ components:
           maxLength: 200
         type:
           type: string
-          enum: [Schedule, Webhook, Event]
+          enum: [schedule, webhook, event]
         enabled:
           type: boolean
         target_playbook_id:

@@ -7,10 +7,10 @@ paths:
       description: Retrieve a paginated list of incidents with optional filtering
       operationId: listIncidents
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/PageSizeParam'
-        - $ref: '#/components/parameters/SortByParam'
-        - $ref: '#/components/parameters/SortOrderParam'
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - $ref: "#/components/parameters/SortByParam"
+        - $ref: "#/components/parameters/SortOrderParam"
         - name: status
           in: query
           description: Filter by incident status
@@ -23,8 +23,8 @@ paths:
           description: Filter by severity level
           schema:
             type: string
-            enum: [Critical, Warning, Info]
-          example: Critical
+            enum: [critical, warning, info]
+          example: critical
         - name: assignee
           in: query
           description: Filter by assignee name
@@ -32,7 +32,7 @@ paths:
             type: string
           example: 張三
       responses:
-        '200':
+        "200":
           description: Successful response with paginated incidents
           content:
             application/json:
@@ -48,11 +48,11 @@ paths:
                   items:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Incident'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                      $ref: "#/components/schemas/Incident"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
     post:
       tags: [Incidents]
@@ -64,33 +64,33 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/IncidentCreate'
+              $ref: "#/components/schemas/IncidentCreate"
             example:
               resource_id: "res-001"
               rule_id: "rule-cpu-high"
               summary: "CPU usage exceeded 90%"
-              severity: "Critical"
-              impact: "High"
+              severity: "critical"
+              impact: "high"
               tags:
                 env: production
                 service: web
       responses:
-        '201':
+        "201":
           description: Incident created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Incident'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
+                $ref: "#/components/schemas/Incident"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
           description: Referenced resource or rule not found
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /incidents/{id}:
     parameters:
-      - $ref: '#/components/parameters/IdParam'
+      - $ref: "#/components/parameters/IdParam"
 
     get:
       tags: [Incidents]
@@ -98,20 +98,20 @@ paths:
       description: Retrieve a specific incident by its ID
       operationId: getIncidentById
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Incident'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                $ref: "#/components/schemas/Incident"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /incidents/{id}/actions:
     parameters:
-      - $ref: '#/components/parameters/IdParam'
+      - $ref: "#/components/parameters/IdParam"
 
     post:
       tags: [Incidents]
@@ -128,7 +128,15 @@ paths:
               properties:
                 action:
                   type: string
-                  enum: [acknowledge, resolve, assign, silence, add_note, delete_note]
+                  enum:
+                    [
+                      acknowledge,
+                      resolve,
+                      assign,
+                      silence,
+                      add_note,
+                      delete_note,
+                    ]
                   description: Action to perform on the incident
                 assignee_name:
                   type: string
@@ -156,18 +164,18 @@ paths:
                   action: silence
                   duration_hours: 2
       responses:
-        '200':
+        "200":
           description: Incident updated after performing the action
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Incident'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                $ref: "#/components/schemas/Incident"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
     patch:
       tags: [Incidents]
@@ -178,7 +186,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/IncidentUpdate'
+              $ref: "#/components/schemas/IncidentUpdate"
             examples:
               updateStatus:
                 summary: Update status
@@ -190,18 +198,18 @@ paths:
                   assignee: "張三"
                   status: "acknowledged"
       responses:
-        '200':
+        "200":
           description: Incident updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Incident'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                $ref: "#/components/schemas/Incident"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
     delete:
       tags: [Incidents]
@@ -209,12 +217,12 @@ paths:
       description: Delete an incident
       operationId: deleteIncident
       responses:
-        '204':
+        "204":
           description: Incident deleted successfully
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /incidents/batch-close:
     post:
@@ -243,21 +251,21 @@ paths:
               incident_ids: ["INC-001", "INC-002", "INC-003"]
               resolution_note: "問題已通過重啟服務解決"
       responses:
-        '200':
+        "200":
           description: Batch close completed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BatchResult'
+                $ref: "#/components/schemas/BatchResult"
               example:
                 success: true
                 updated: 2
                 skipped_ids: ["INC-003"]
                 message: "Successfully closed 2 incidents, skipped 1 (already resolved)"
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /incidents/batch-assign:
     post:
@@ -297,13 +305,13 @@ paths:
                   incident_ids: ["INC-001", "INC-002"]
                   assignee_name: "張三"
       responses:
-        '200':
+        "200":
           description: Batch assign completed
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/BatchResult'
+                  - $ref: "#/components/schemas/BatchResult"
                   - type: object
                     properties:
                       assignee:
@@ -316,12 +324,12 @@ paths:
                 skipped_ids: []
                 assignee: "張三"
                 assignee_id: "usr-003"
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
           description: Assignee not found
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /incidents/batch-ignore:
     post:
@@ -345,13 +353,13 @@ paths:
             example:
               incident_ids: ["INC-004", "INC-005"]
       responses:
-        '200':
+        "200":
           description: Batch ignore completed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BatchResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                $ref: "#/components/schemas/BatchResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"

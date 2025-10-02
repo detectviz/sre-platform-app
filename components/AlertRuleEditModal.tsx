@@ -306,7 +306,7 @@ const Step2 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
     const addGroup = () => {
         const newGroups = [...(formData.condition_groups || [])];
         newGroups.push({
-            logic: 'OR',
+            logic: 'or',
             severity: 'warning',
             conditions: [{ metric: '', operator: '>', threshold: 0, duration_minutes: 5 }]
         });

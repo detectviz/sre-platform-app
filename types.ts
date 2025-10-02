@@ -131,8 +131,8 @@ export interface RuleAnalysisReport {
 
 
 export type IncidentStatus = 'new' | 'acknowledged' | 'resolved' | 'silenced';
-export type IncidentSeverity = 'Critical' | 'Warning' | 'Info';
-export type IncidentImpact = 'High' | 'Medium' | 'Low';
+export type IncidentSeverity = 'critical' | 'warning' | 'info';
+export type IncidentImpact = 'high' | 'medium' | 'low';
 
 export interface Incident {
   id: string;
@@ -318,7 +318,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'Admin' | 'SRE' | 'Developer' | 'Viewer';
+  role: 'admin' | 'sre' | 'developer' | 'viewer';
   team: string;
   status: 'active' | 'invited' | 'inactive';
   last_login_at: string | null;
@@ -374,7 +374,7 @@ export interface RuleCondition {
 }
 
 export interface ConditionGroup {
-  logic: 'AND' | 'OR';
+  logic: 'and' | 'or';
   conditions: RuleCondition[];
   severity: 'critical' | 'warning' | 'info';
 }
@@ -476,7 +476,7 @@ export interface SilenceRuleTemplate {
   data: Partial<SilenceRule>;
 }
 
-export type NotificationChannelType = 'Email' | 'Webhook (通用)' | 'Slack' | 'LINE Notify' | 'SMS';
+export type NotificationChannelType = 'email' | 'webhook' | 'slack' | 'line' | 'sms';
 
 export interface NotificationChannel {
   id: string;
@@ -488,7 +488,7 @@ export interface NotificationChannel {
     cc?: string;
     bcc?: string;
     webhook_url?: string;
-    http_method?: 'POST' | 'PUT' | 'GET';
+    http_method?: 'post' | 'put' | 'get';
     mention?: string;
     access_token?: string;
     phone_number?: string;
@@ -545,7 +545,7 @@ export interface UserPreferences {
 }
 
 export interface AuthSettings {
-  provider: 'Keycloak' | 'Auth0' | 'Google' | 'Custom';
+  provider: 'keycloak' | 'auth0' | 'google' | 'custom';
   enabled: boolean;
   client_id: string;
   client_secret: string;
@@ -983,7 +983,7 @@ export interface AutomationScriptOptions {
 
 export interface NotificationChannelOptions {
   channel_types: { value: NotificationChannelType, label: string }[];
-  http_methods: ('POST' | 'PUT' | 'GET')[];
+  http_methods: ('post' | 'put' | 'get')[];
 }
 
 export interface NotificationStrategyOptions {
@@ -1024,8 +1024,8 @@ export interface LogExplorerFilters {
 }
 
 // --- Datasource & Discovery Types ---
-export type DatasourceType = 'VictoriaMetrics' | 'Grafana' | 'Elasticsearch' | 'Prometheus' | 'Custom' | '自訂';
-export type AuthMethod = 'Token' | 'Basic Auth' | 'Keycloak Integration' | 'Keycloak 整合' | 'None' | '無';
+export type DatasourceType = 'victoriametrics' | 'grafana' | 'elasticsearch' | 'prometheus' | 'custom' | '自訂';
+export type AuthMethod = 'token' | 'basic_auth' | 'keycloak_integration' | 'keycloak_整合' | 'none' | '無';
 export type ConnectionStatus = 'ok' | 'error' | 'pending';
 
 export interface DatasourceTestResponse {
@@ -1056,7 +1056,7 @@ export interface ResourceLink {
 // 新增 ConfigVersion 接口定義
 export interface ConfigVersion<T = any> {
   id: string;
-  entity_type: 'AlertRule' | 'AutomationPlaybook' | 'Dashboard' | 'NotificationStrategy' | 'SilenceRule' | 'Resource' | 'Team' | 'User';
+  entity_type: 'alertrule' | 'automationplaybook' | 'dashboard' | 'notificationstrategy' | 'silencerule' | 'resource' | 'team' | 'user';
   entity_id: string;
   version: number;
   config_snapshot: T;
@@ -1077,7 +1077,7 @@ export interface Datasource {
   deleted_at?: string;
 }
 
-export type DiscoveryJobKind = 'K8s' | 'SNMP' | 'Cloud Provider' | 'Static Range' | 'Custom Script';
+export type DiscoveryJobKind = 'k8s' | 'snmp' | 'cloud_provider' | 'static_range' | 'custom_script';
 export type DiscoveryJobStatus = 'success' | 'partial_failure' | 'failed' | 'running';
 
 export type ExporterTemplateId = 'none' | 'node_exporter' | 'snmp_exporter' | 'modbus_exporter' | 'ipmi_exporter';
@@ -1149,7 +1149,7 @@ export interface ResourceOverviewData {
 export interface ResourceRisk {
   resource_id: string;
   resource_name: string;
-  risk_level: 'High' | 'Medium' | 'Low';
+  risk_level: 'high' | 'medium' | 'low';
   reason: string;
   recommendation: string;
 }
@@ -1158,7 +1158,7 @@ export interface OptimizationSuggestion {
   resource_id: string;
   resource_name: string;
   suggestion: string;
-  type: 'Cost' | 'Performance' | 'Security';
+  type: 'cost' | 'performance' | 'security';
 }
 
 export interface ResourceAnalysis {
