@@ -3,59 +3,59 @@
 ### 1.dashboard-overview-ai-summary.png ✅ **已完成**
 ![dashboard-overview-ai-summary.png](images/dashboard-overview-ai-summary.png)
 總覽卡片僅部分顯示「事件數＋變化百分比」，AI 每日簡報卡片卻只顯示文字，呈現資訊密度落差；建議將 AI 條目改為標題＋副標＋百分比的共用模板。下方「建議操作」按鈕與文案區塊的邊距不一致，右側按鈕略貼齊框線，建議提升間距並統一按鈕尺寸與左側章節內距。
-**實現狀態**: AI 簡報以三張等寬卡片呈現重點數據、嚴重度標籤與操作按鈕，並保持一致留白與按鈕樣式。
+- **實現狀態**: AI 簡報以三張等寬卡片呈現重點數據、嚴重度標籤與操作按鈕，並保持一致留白與按鈕樣式。
 
 ### 2.incidents-list-overview.png ✅ **已完成**
 ![incidents-list-overview.png](images/incidents-list-overview.png)
 事故統計卡片的紅色卡片帶有「2 嚴重」文字，但其他卡片只保留百分比，建議統一顯示欄位組合以維持閱讀節奏。表格中的狀態膠囊高度與行距不一致，使得複選框與文字未能垂直置中；可調整行高並對齊圖示，使行為操作欄更易讀。
-**實現狀態**: 表格狀態、嚴重度與影響欄統一使用 StatusTag，並調整列內元件垂直對齊與字距以符合設計系統。
+- **實現狀態**: 表格狀態、嚴重度與影響欄統一使用 StatusTag，並調整列內元件垂直對齊與字距以符合設計系統。
 
 ### 3.incidents-detail-ai-analysis.png ✅ **已完成**
 ![incidents-detail-ai-analysis.png](images/incidents-detail-ai-analysis.png)
 詳細側欄的標籤（New、Warning、High）使用英文，而主列表為中文狀態，語言混用；建議統一翻譯或提供多語切換。AI 自動分析區塊的分隔線與標題間距不足，建議加入更明顯的區塊背景或分隔，避免內容看起來擁擠。
-**實現狀態**: AI 分析區塊採卡片化分段與共用 AIAnalysisDisplay，新增區塊標題、提示與 CTA 提升可讀性與層次。
+- **實現狀態**: AI 分析區塊採卡片化分段與共用 AIAnalysisDisplay，新增區塊標題、提示與 CTA 提升可讀性與層次。
 
 ### 4.incidents-detail-timeline.png ✅ **已完成**
 ![incidents-detail-timeline.png](images/incidents-detail-timeline.png)
 「建議步驟」區塊比上方卡片窄，導致右側執行按鈕懸浮在外；建議維持與 AI 區塊同寬並拉齊按鈕位置。時間軸文字全部使用英文事件描述，與其他中文敘述不符，可補充中文翻譯與明確的使用者名稱顯示方式。
-**實現狀態**: 時間軸事件標題改為繁中、顯示用戶名稱並提供翻譯後的詳細敘述，同時調整節點樣式與操作按鈕位置。
+- **實現狀態**: 時間軸事件標題改為繁中、顯示用戶名稱並提供翻譯後的詳細敘述，同時調整節點樣式與操作按鈕位置。
 
 ### 5.incidents-assign-modal.png ✅ **已完成**
 ![incidents-assign-modal.png](images/incidents-assign-modal.png)
 彈窗標題與背景列表字體大小差異大，且下方按鈕排列採左右對齊，與其他模態窗的右對齊不一致；建議統一採右側主次按鈕。使用者下拉選單未顯示角色或群組資訊，可在選項後方補充標籤減少指派錯誤。
-**實現狀態**: 指派彈窗加入欄位說明、使用 StatusTag 呈現團隊／角色／狀態並統一按鈕置右，提高資訊透明度。
+- **實現狀態**: 指派彈窗加入欄位說明、使用 StatusTag 呈現團隊／角色／狀態並統一按鈕置右，提高資訊透明度。
 
 ### 6.incidents-silence-modal.png ✅ **已完成**
 ![incidents-silence-modal.png](images/incidents-silence-modal.png)
 靜音時長按鈕使用不同高度的 pill 元件，文字左右 padding 不一；建議改用固定寬高與等距排列。提醒文字「您可以在靜音規則頁面檢視…」顏色過淺，與背景對比不足，應調整為次要文字色或加入提示圖示。
-**實現狀態**: 指派彈窗加入欄位說明、使用 StatusTag 呈現團隊／角色／狀態並統一按鈕置右，提高資訊透明度。
+- **實現狀態**: 指派彈窗加入欄位說明、使用 StatusTag 呈現團隊／角色／狀態並統一按鈕置右，提高資訊透明度。
 
 ### 7.incidents-alert-rules-list.png ✅ **已完成**
 ![incidents-alert-rules-list.png](images/incidents-alert-rules-list.png)
 切換分頁標籤的底線顏色與狀態條件顏色不一致，容易誤判狀態；建議以品牌色統一分頁底線。表格內的「自動化」欄位使用勾叉圖示但缺少文字說明，建議加入 Tooltip 或直接顯示「已啟用／未啟用」。
-**實現狀態**: 
+- **實現狀態**: 
 - 導覽分頁底線統一使用品牌色強調作用中狀態。
 - 自動化欄位改用具 Tooltip 的 StatusTag 並將錯誤訊息改為共用 toast，以繁中描述批次操作或匯出失敗原因。
 
 ### 8.incidents-alert-rules-column-settings.png ✅ **已完成**
 ![incidents-alert-rules-column-settings.png](images/incidents-alert-rules-column-settings.png)
 欄位設定彈窗左右欄標題缺乏視覺階層，使用者難以辨別拖曳方向；建議為可選欄位區塊加上背景或邊框。已顯示欄位的上下箭頭與拖曳手柄間距太近，容易誤點，應增加間距或改用統一的排序圖示。
-**實現狀態**: 欄位設定彈窗以框線／背景區分可選與已顯示欄位，加入拖曳提示、排序按鈕與空狀態描述強化操作指引。
+- **實現狀態**: 欄位設定彈窗以框線／背景區分可選與已顯示欄位，加入拖曳提示、排序按鈕與空狀態描述強化操作指引。
 
 ### 9.incidents-alert-rule-wizard-step1.png ✅ **已完成**
 ![incidents-alert-rule-wizard-step1.png](images/incidents-alert-rule-wizard-step1.png)
 步驟導覽使用數字徽章，但完成與未完成的顏色差異不明顯；可加入勾勾圖示強調完成狀態。範本卡片內英文描述未對齊卡片寬度，行距較緊湊，建議增大行距並加上繁體中文簡述，減少語言切換負擔。
-**實現狀態**: 範本卡片提供繁中簡述、條列重點與預覽膠囊，並支援依類型篩選與搜尋，提升選取效率。
+- **實現狀態**: 範本卡片提供繁中簡述、條列重點與預覽膠囊，並支援依類型篩選與搜尋，提升選取效率。
 
 ### 10.incidents-alert-rule-wizard-step2-basic.png ✅ **已完成**
 ![incidents-alert-rule-wizard-step2-basic.png](images/incidents-alert-rule-wizard-step2-basic.png)
 表單欄位沒有欄位說明文字，部分使用者可能不清楚輸入格式；建議在輸入框下方加上輔助說明。下方監控範圍區塊的背景與主卡同色，容易與其他欄位混淆，可加入淡色分隔或卡片邊框。
-**實現狀態**: 附加篩選提示改為項目列表，並在匹配資源預覽區顯示醒目的徽章與載入狀態，提供即時回饋。
+- **實現狀態**: 附加篩選提示改為項目列表，並在匹配資源預覽區顯示醒目的徽章與載入狀態，提供即時回饋。
 
 ### 11.incidents-alert-rule-wizard-step2-scope.png ✅ **已完成**
 ![incidents-alert-rule-wizard-step2-scope.png](images/incidents-alert-rule-wizard-step2-scope.png)
 「附加篩選條件」說明文字過長且缺乏段落分隔，閱讀負擔重；建議使用列表或換行顯示。匹配資源預覽的數字沒有視覺重點，可加入徽章或顏色提示目前符合的資源數。
-**實現狀態**: 附加篩選提示改為項目列表，並在匹配資源預覽區顯示醒目的徽章與載入狀態，提供即時回饋。
+- **實現狀態**: 附加篩選提示改為項目列表，並在匹配資源預覽區顯示醒目的徽章與載入狀態，提供即時回饋。
 
 ### 12.incidents-alert-rule-wizard-step3.png
 ![incidents-alert-rule-wizard-step3.png](images/incidents-alert-rule-wizard-step3.png)
@@ -68,7 +68,7 @@
 ### 14.incidents-alert-rule-wizard-step5.png ✅ **已完成**
 ![incidents-alert-rule-wizard-step5.png](images/incidents-alert-rule-wizard-step5.png)
 「啟用自動化響應」勾選框位置偏左，與上方卡片內距不同，視覺上不齊；建議調整左右留白。腳本參數欄位僅顯示「實例數量 *」缺乏單位說明，建議補上輸入範例或限制值。
-**實現狀態**: 自動化區塊加入啟用說明、腳本選單、參數提示與布林標籤本地化，確保腳本參數輸入有單位與輔助文案。
+- **實現狀態**: 自動化區塊加入啟用說明、腳本選單、參數提示與布林標籤本地化，確保腳本參數輸入有單位與輔助文案。
 
 ### 15.incidents-silence-rules-list.png
 ![incidents-silence-rules-list.png](images/incidents-silence-rules-list.png)
@@ -110,13 +110,13 @@
 ![resources-datasources-list.png](images/resources-datasources-list.png)
 表格顯示的連線狀態圖示（正常、失敗、測試中）與資源列表用色不同，容易混淆；建議共用狀態色票。操作欄缺少「測試連線」的快速按鈕，只能在編輯彈窗中操作，建議加上快捷操作。
 
-**實現狀態**: 已添加測試連線快捷按鈕，支援快速測試已儲存資料來源連線狀態。
+- **實現狀態**: 已添加測試連線快捷按鈕，支援快速測試已儲存資料來源連線狀態。
 
 ### 25.resources-edit-datasource-modal.png ✅ **已完成**
 ![resources-edit-datasource-modal.png](images/resources-edit-datasource-modal.png)
 標籤區塊使用 Tag 組件但刪除 icon 與上方表單對齊不佳，可調整為單列顯示。下方操作按鈕與測試連線按鈕混在一起，建議改為左側「測試」右側「取消／儲存」的主次按鈕排列。
 
-**實現狀態**: 已調整按鈕排列為左側「測試」右側「取消／儲存」，並支援編輯前測試連線功能。
+- **實現狀態**: 已調整按鈕排列為左側「測試」右側「取消／儲存」，並支援編輯前測試連線功能。
 
 ### 26.resources-auto-discovery-list.png
 ![resources-auto-discovery-list.png](images/resources-auto-discovery-list.png)
@@ -330,7 +330,7 @@ JSON 文字全部置中顯示，閱讀困難；建議改為等寬字體左對齊
 ![notifications-add-channel-webhook.png](images/notifications-add-channel-webhook.png)
 Webhook 表單沒有驗證方式欄位，與其他系統整合需求不符，建議加入認證設定。名稱欄位與類型欄位高度不同，視覺上不一致，可統一表單控件高度。
 
-**實現狀態**: 已支援通知管道測試功能，僅允許已儲存管道呼叫測試 API 並回寫最新測試結果。
+- **實現狀態**: 已支援通知管道測試功能，僅允許已儲存管道呼叫測試 API 並回寫最新測試結果。
 
 ### 65.notifications-add-channel-slack.png
 ![notifications-add-channel-slack.png](images/notifications-add-channel-slack.png)
@@ -396,13 +396,13 @@ JSON 詳情區同樣缺乏複製功能且行距緊密，建議提供格式化顯
 ![platform-tags-overview.png](images/platform-tags-overview.png)
 標籤管理區塊的警告條顏色偏橘與系統警告黃不同，建議使用一致的警告色。操作欄僅提供編輯／刪除，缺少批次匯入的入口，建議新增與上方按鈕一致的功能。
 
-**實現狀態**: 已實現標籤批次匯入功能，支援從 CSV 檔案匯入標籤並提供任務狀態追蹤。
+- **實現狀態**: 已實現標籤批次匯入功能，支援從 CSV 檔案匯入標籤並提供任務狀態追蹤。
 
 ### 71.platform-email-settings.png ✅ **已完成**
 ![platform-email-settings.png](images/platform-email-settings.png)
 表單欄位無欄位驗證提示，像是「密碼」欄位應提供強度指標。下方「發送測試郵件」按鈕與儲存按鈕同色，建議改為次要按鈕避免誤操作。
 
-**實現狀態**: 已實現 SMTP 測試功能，支援發送測試郵件並顯示測試結果。
+- **實現狀態**: 已實現 SMTP 測試功能，支援發送測試郵件並顯示測試結果。
 
 ### 72.platform-identity-settings.png
 ![platform-identity-settings.png](images/platform-identity-settings.png)
@@ -443,7 +443,7 @@ JSON 詳情區同樣缺乏複製功能且行距緊密，建議提供格式化顯
 ![platform-grafana-settings.png](images/platform-grafana-settings.png)
 Grafana URL 預設為 http://localhost:3000，缺乏說明是否為預設值或實際連線；建議加上提示。API Key 欄位只有眼睛圖示沒有複製按鈕，建議補齊操作。
 
-**實現狀態**: 已實現 Grafana 測試與 API Key 管理功能，支援連線測試和 API Key 遮蔽重新產生。
+- **實現狀態**: 已實現 Grafana 測試與 API Key 管理功能，支援連線測試和 API Key 遮蔽重新產生。
 
 ### 76.platform-license-page.png
 ![platform-license-page.png](images/platform-license-page.png)
@@ -485,7 +485,7 @@ Grafana URL 預設為 http://localhost:3000，缺乏說明是否為預設值或�
 ![profile-preferences.png](images/profile-preferences.png)
 偏好設定的下拉選單全部使用相同寬度且無說明，建議在下拉內加入選項提示。儲存設定按鈕位置偏右下，與其他頁面主按鈕位置不同，建議統一放在右下且加上次要按鈕。
 
-**實現狀態**: 已實現偏好設定匯出功能，支援將個人偏好設定匯出為檔案。
+- **實現狀態**: 已實現偏好設定匯出功能，支援將個人偏好設定匯出為檔案。
 ## 平台一致性二次審查補充
 
 ### 審查方法與全域原則
