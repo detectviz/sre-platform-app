@@ -925,6 +925,12 @@ export interface BacktestingTimeRange {
   end_time: string;
 }
 
+export type BacktestingMatchStatus =
+  | 'true_positive'
+  | 'false_positive'
+  | 'false_negative'
+  | 'unknown';
+
 export interface BacktestingActualEvent {
   id?: string;
   label: string;
@@ -932,6 +938,11 @@ export interface BacktestingActualEvent {
   end_time?: string;
   severity?: IncidentSeverity;
   notes?: string;
+  tags?: string[];
+  match_status?: BacktestingMatchStatus;
+  matched_trigger_point_id?: string | null;
+  detection_time?: string;
+  detection_delay_seconds?: number | null;
 }
 
 export interface BacktestingTaskOptions {
@@ -968,6 +979,12 @@ export interface BacktestingTriggerPoint {
   value: number;
   condition_summary: string;
   duration_minutes?: number;
+  match_status?: BacktestingMatchStatus;
+  ground_truth_event_id?: string | null;
+  ground_truth_event_label?: string | null;
+  tags?: string[];
+  notes?: string;
+  detection_delay_seconds?: number | null;
 }
 
 export interface BacktestingRecommendation {

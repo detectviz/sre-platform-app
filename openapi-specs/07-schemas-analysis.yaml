@@ -579,6 +579,11 @@ components:
       type: string
       enum: [queued, pending, running, completed, failed]
 
+    BacktestingMatchStatus:
+      type: string
+      description: Comparison outcome between replay trigger and ground truth annotation.
+      enum: [true_positive, false_positive, false_negative, unknown]
+
     BacktestingTimeRange:
       type: object
       required: [start_time, end_time]
@@ -612,6 +617,27 @@ components:
         notes:
           type: string
           description: Additional context for the event comparison.
+        tags:
+          type: array
+          description: Labeled attributes of the incident for downstream correlation.
+          items:
+            type: string
+        match_status:
+          $ref: '#/components/schemas/BacktestingMatchStatus'
+        matched_trigger_point_id:
+          type: string
+          nullable: true
+          description: Identifier of the detected trigger that matched this ground truth event.
+        detection_time:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp when the rule detected the event, if any.
+        detection_delay_seconds:
+          type: number
+          format: float
+          nullable: true
+          description: Time difference in seconds between the annotated start and detection time.
 
     BacktestingTaskOptions:
       type: object
@@ -698,7 +724,29 @@ components:
         duration_minutes:
           type: integer
           minimum: 0
+        match_status:
+          $ref: '#/components/schemas/BacktestingMatchStatus'
+        ground_truth_event_id:
+          type: string
           nullable: true
+          description: Matched ground truth event identifier.
+        ground_truth_event_label:
+          type: string
+          nullable: true
+          description: Display name of the matched ground truth event.
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tags carried over from the triggering datapoints or alert metadata.
+        notes:
+          type: string
+          description: Additional diagnostic notes for this trigger.
+        detection_delay_seconds:
+          type: number
+          format: float
+          nullable: true
+          description: Detection delay (seconds) relative to the annotated event.
 
     BacktestingRecommendation:
       type: object
