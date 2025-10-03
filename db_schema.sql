@@ -635,6 +635,26 @@ CREATE INDEX idx_log_analyses_time_range ON log_analyses(time_range_start, time_
 CREATE INDEX idx_log_analyses_analysis_time ON log_analyses(analysis_time);
 
 -- Backtesting Tasks Table
+-- Ground Truth Events Table (Manual annotations)
+CREATE TABLE ground_truth_events (
+    id VARCHAR(255) PRIMARY KEY,
+    resource_id VARCHAR(255) REFERENCES resources(id),
+    rule_id VARCHAR(255) REFERENCES alert_rules(id),
+    event_timestamp TIMESTAMPTZ NOT NULL,
+    end_timestamp TIMESTAMPTZ,
+    tags TEXT[] DEFAULT '{}',
+    severity incident_severity,
+    description TEXT,
+    created_by VARCHAR(255) REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ
+);
+
+CREATE INDEX idx_ground_truth_events_timestamp ON ground_truth_events(event_timestamp);
+CREATE INDEX idx_ground_truth_events_rule_id ON ground_truth_events(rule_id);
+CREATE INDEX idx_ground_truth_events_resource_id ON ground_truth_events(resource_id);
+
 CREATE TABLE backtesting_tasks (
     id VARCHAR(255) PRIMARY KEY,
     rule_ids TEXT[] NOT NULL,
@@ -879,6 +899,7 @@ CREATE TRIGGER update_automation_triggers_updated_at BEFORE UPDATE ON automation
 CREATE TRIGGER update_notification_channels_updated_at BEFORE UPDATE ON notification_channels FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_notification_strategies_updated_at BEFORE UPDATE ON notification_strategies FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_dashboards_updated_at BEFORE UPDATE ON dashboards FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_ground_truth_events_updated_at BEFORE UPDATE ON ground_truth_events FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_backtesting_tasks_updated_at BEFORE UPDATE ON backtesting_tasks FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_backtesting_results_updated_at BEFORE UPDATE ON backtesting_results FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_tag_definitions_updated_at BEFORE UPDATE ON tag_definitions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -912,6 +933,7 @@ COMMENT ON TABLE incident_analyses IS 'AI-powered incident analysis results';
 COMMENT ON TABLE resource_analyses IS 'AI-powered resource analysis and optimization suggestions';
 COMMENT ON TABLE multi_incident_analyses IS 'Correlation analysis across multiple incidents';
 COMMENT ON TABLE log_analyses IS 'Log pattern analysis and anomaly detection';
+COMMENT ON TABLE ground_truth_events IS 'Human annotated incidents used as ground truth for replay validation';
 COMMENT ON TABLE backtesting_tasks IS 'Historical replay tasks for validating alert rules against past data';
 COMMENT ON TABLE backtesting_results IS 'Per-rule backtesting outcomes, trigger timeline, and tuning metrics';
 COMMENT ON TABLE audit_logs IS 'Audit trail for all system operations';
