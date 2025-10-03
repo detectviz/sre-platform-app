@@ -72,6 +72,7 @@ CREATE TYPE discovered_resource_status AS ENUM ('new', 'imported', 'ignored');
 CREATE TYPE risk_level AS ENUM ('high', 'medium', 'low');
 CREATE TYPE optimization_type AS ENUM ('cost', 'performance', 'security');
 CREATE TYPE insight_type AS ENUM ('trend', 'anomaly', 'forecast');
+CREATE TYPE backtesting_status AS ENUM ('queued', 'pending', 'running', 'completed', 'failed');
 
 -- =====================================================
 -- CORE TABLES
@@ -633,6 +634,57 @@ CREATE TABLE log_analyses (
 CREATE INDEX idx_log_analyses_time_range ON log_analyses(time_range_start, time_range_end);
 CREATE INDEX idx_log_analyses_analysis_time ON log_analyses(analysis_time);
 
+-- Backtesting Tasks Table
+CREATE TABLE backtesting_tasks (
+    id VARCHAR(255) PRIMARY KEY,
+    rule_ids TEXT[] NOT NULL,
+    time_range_start TIMESTAMPTZ NOT NULL,
+    time_range_end TIMESTAMPTZ NOT NULL,
+    datasource_id VARCHAR(255) REFERENCES datasources(id),
+    status backtesting_status NOT NULL DEFAULT 'queued',
+    requested_by VARCHAR(255) REFERENCES users(id),
+    actual_events JSONB DEFAULT '[]',
+    options JSONB DEFAULT '{}',
+    total_triggers INTEGER NOT NULL DEFAULT 0,
+    false_positive_count INTEGER NOT NULL DEFAULT 0,
+    false_negative_count INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMPTZ,
+    failure_reason TEXT
+);
+
+CREATE INDEX idx_backtesting_tasks_status ON backtesting_tasks(status);
+CREATE INDEX idx_backtesting_tasks_requested_by ON backtesting_tasks(requested_by);
+CREATE INDEX idx_backtesting_tasks_created_at ON backtesting_tasks(created_at);
+CREATE INDEX idx_backtesting_tasks_completed_at ON backtesting_tasks(completed_at);
+
+-- Backtesting Results Table
+CREATE TABLE backtesting_results (
+    id VARCHAR(255) PRIMARY KEY,
+    task_id VARCHAR(255) NOT NULL REFERENCES backtesting_tasks(id) ON DELETE CASCADE,
+    rule_id VARCHAR(255) NOT NULL REFERENCES alert_rules(id) ON DELETE CASCADE,
+    rule_name VARCHAR(255) NOT NULL,
+    triggered_count INTEGER NOT NULL DEFAULT 0,
+    trigger_points JSONB DEFAULT '[]',
+    metric_series JSONB DEFAULT '[]',
+    actual_events JSONB DEFAULT '[]',
+    false_positive_count INTEGER NOT NULL DEFAULT 0,
+    false_negative_count INTEGER NOT NULL DEFAULT 0,
+    precision DECIMAL(5,4),
+    recall DECIMAL(5,4),
+    recommendations JSONB DEFAULT '[]',
+    suggested_threshold DECIMAL(12,4),
+    suggested_duration_minutes INTEGER,
+    execution_time_ms INTEGER,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_backtesting_results_task_id ON backtesting_results(task_id);
+CREATE INDEX idx_backtesting_results_rule_id ON backtesting_results(rule_id);
+CREATE INDEX idx_backtesting_results_created_at ON backtesting_results(created_at);
+
 -- =====================================================
 -- AUDIT & CONFIGURATION
 -- =====================================================
@@ -827,6 +879,8 @@ CREATE TRIGGER update_automation_triggers_updated_at BEFORE UPDATE ON automation
 CREATE TRIGGER update_notification_channels_updated_at BEFORE UPDATE ON notification_channels FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_notification_strategies_updated_at BEFORE UPDATE ON notification_strategies FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_dashboards_updated_at BEFORE UPDATE ON dashboards FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_backtesting_tasks_updated_at BEFORE UPDATE ON backtesting_tasks FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_backtesting_results_updated_at BEFORE UPDATE ON backtesting_results FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_tag_definitions_updated_at BEFORE UPDATE ON tag_definitions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_user_preferences_updated_at BEFORE UPDATE ON user_preferences FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_user_preference_export_jobs_updated_at BEFORE UPDATE ON user_preference_export_jobs FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -858,6 +912,8 @@ COMMENT ON TABLE incident_analyses IS 'AI-powered incident analysis results';
 COMMENT ON TABLE resource_analyses IS 'AI-powered resource analysis and optimization suggestions';
 COMMENT ON TABLE multi_incident_analyses IS 'Correlation analysis across multiple incidents';
 COMMENT ON TABLE log_analyses IS 'Log pattern analysis and anomaly detection';
+COMMENT ON TABLE backtesting_tasks IS 'Historical replay tasks for validating alert rules against past data';
+COMMENT ON TABLE backtesting_results IS 'Per-rule backtesting outcomes, trigger timeline, and tuning metrics';
 COMMENT ON TABLE audit_logs IS 'Audit trail for all system operations';
 COMMENT ON TABLE config_versions IS 'Version control for entity configurations';
 COMMENT ON TABLE tag_definitions IS 'Tag registry for standardized tagging';

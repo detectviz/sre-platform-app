@@ -918,6 +918,106 @@ export interface CapacityPlanningTimeRangeOption {
   default?: boolean;
 }
 
+export type BacktestingTaskStatus = 'queued' | 'pending' | 'running' | 'completed' | 'failed';
+
+export interface BacktestingTimeRange {
+  start_time: string;
+  end_time: string;
+}
+
+export interface BacktestingActualEvent {
+  id?: string;
+  label: string;
+  start_time: string;
+  end_time?: string;
+  severity?: IncidentSeverity;
+  notes?: string;
+}
+
+export interface BacktestingTaskOptions {
+  datasource_id?: string;
+  evaluation_window_minutes?: number;
+  sensitivity?: 'conservative' | 'balanced' | 'aggressive';
+  include_recommendations?: boolean;
+}
+
+export interface BacktestingRunRequest {
+  rule_ids: string[];
+  time_range: BacktestingTimeRange;
+  actual_events?: BacktestingActualEvent[];
+  options?: BacktestingTaskOptions;
+}
+
+export interface BacktestingRunResponse {
+  task_id: string;
+  status: BacktestingTaskStatus;
+  submitted_at: string;
+  rule_count: number;
+  estimated_completion_time?: string | null;
+}
+
+export interface BacktestingMetricPoint {
+  timestamp: string;
+  value: number;
+  threshold?: number | null;
+  baseline?: number | null;
+}
+
+export interface BacktestingTriggerPoint {
+  timestamp: string;
+  value: number;
+  condition_summary: string;
+  duration_minutes?: number;
+}
+
+export interface BacktestingRecommendation {
+  type: 'threshold' | 'duration' | 'sensitivity' | 'automation';
+  title: string;
+  description: string;
+  impact?: CapacityPlanningImpactLevel;
+  suggested_threshold?: number;
+  suggested_duration_minutes?: number;
+  suggested_sensitivity?: BacktestingTaskOptions['sensitivity'];
+}
+
+export interface BacktestingRuleResult {
+  rule_id: string;
+  rule_name: string;
+  triggered_count: number;
+  trigger_points: BacktestingTriggerPoint[];
+  metric_series: BacktestingMetricPoint[];
+  actual_events: BacktestingActualEvent[];
+  false_positive_count: number;
+  false_negative_count: number;
+  precision?: number | null;
+  recall?: number | null;
+  recommendations: BacktestingRecommendation[];
+  suggested_threshold?: number | null;
+  suggested_duration_minutes?: number | null;
+  execution_time_ms?: number;
+}
+
+export interface BacktestingBatchSummary {
+  total_rules: number;
+  total_triggers: number;
+  false_positive_rate?: number | null;
+  false_negative_rate?: number | null;
+  average_precision?: number | null;
+  average_recall?: number | null;
+  recommendations: BacktestingRecommendation[];
+}
+
+export interface BacktestingResultsResponse {
+  task_id: string;
+  status: BacktestingTaskStatus;
+  requested_at: string;
+  completed_at?: string;
+  duration_seconds?: number;
+  rule_results: BacktestingRuleResult[];
+  batch_summary?: BacktestingBatchSummary;
+  message?: string;
+}
+
 export interface PageMetadata {
   column_config_key: string;
 }
