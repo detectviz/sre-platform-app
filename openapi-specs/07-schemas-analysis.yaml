@@ -584,6 +584,11 @@ components:
       description: Comparison outcome between replay trigger and ground truth annotation.
       enum: [true_positive, false_positive, false_negative, unknown]
 
+    BacktestingAnnotationStatus:
+      type: string
+      description: Workflow confirmation status for human annotated ground truth events.
+      enum: [pending, confirmed, dismissed]
+
     BacktestingTimeRange:
       type: object
       required: [start_time, end_time]
@@ -622,6 +627,8 @@ components:
           description: Labeled attributes of the incident for downstream correlation.
           items:
             type: string
+        annotation_status:
+          $ref: '#/components/schemas/BacktestingAnnotationStatus'
         match_status:
           $ref: '#/components/schemas/BacktestingMatchStatus'
         matched_trigger_point_id:
@@ -638,6 +645,15 @@ components:
           format: float
           nullable: true
           description: Time difference in seconds between the annotated start and detection time.
+        confirmed_by:
+          type: string
+          nullable: true
+          description: User identifier that confirmed the annotation.
+        confirmed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp when the annotation was confirmed.
 
     BacktestingTaskOptions:
       type: object

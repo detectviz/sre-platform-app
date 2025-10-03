@@ -73,6 +73,7 @@ CREATE TYPE risk_level AS ENUM ('high', 'medium', 'low');
 CREATE TYPE optimization_type AS ENUM ('cost', 'performance', 'security');
 CREATE TYPE insight_type AS ENUM ('trend', 'anomaly', 'forecast');
 CREATE TYPE backtesting_status AS ENUM ('queued', 'pending', 'running', 'completed', 'failed');
+CREATE TYPE ground_truth_annotation_status AS ENUM ('pending', 'confirmed', 'dismissed');
 
 -- =====================================================
 -- CORE TABLES
@@ -644,7 +645,10 @@ CREATE TABLE ground_truth_events (
     end_timestamp TIMESTAMPTZ,
     tags TEXT[] DEFAULT '{}',
     severity incident_severity,
-    description TEXT,
+    notes TEXT,
+    annotation_status ground_truth_annotation_status NOT NULL DEFAULT 'pending',
+    confirmed_by VARCHAR(255) REFERENCES users(id),
+    confirmed_at TIMESTAMPTZ,
     created_by VARCHAR(255) REFERENCES users(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

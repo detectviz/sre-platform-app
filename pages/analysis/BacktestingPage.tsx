@@ -6,6 +6,8 @@ import api from '../../services/api';
 import { showToast } from '../../services/toast';
 import {
     AlertRule,
+    BacktestingActualEvent,
+    BacktestingAnnotationStatus,
     BacktestingMatchStatus,
     BacktestingResultsResponse,
     BacktestingRuleResult,
@@ -36,6 +38,13 @@ const formatDisplayTime = (value: string) => {
     });
 };
 
+const createManualEventId = () => `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+const ensureEventHasId = (event: BacktestingActualEvent): BacktestingActualEvent => ({
+    ...event,
+    id: event.id || createManualEventId(),
+});
+
 const BacktestingPage: React.FC = () => {
     const defaultStart = useMemo(() => {
         const date = new Date();
@@ -53,6 +62,126 @@ const BacktestingPage: React.FC = () => {
     const [quickRange, setQuickRange] = useState<'1h' | '24h' | '7d' | 'custom'>('7d');
 
     const [includeRecommendations, setIncludeRecommendations] = useState(true);
+
+    const [manualEvents, setManualEvents] = useState<BacktestingActualEvent[]>([]);
+    const [isEventFormOpen, setIsEventFormOpen] = useState(false);
+    const [editingEventId, setEditingEventId] = useState<string | null>(null);
+    const [eventForm, setEventForm] = useState<{
+        label: string;
+        start: string;
+        end: string;
+        tags: string;
+        notes: string;
+        annotation_status: BacktestingAnnotationStatus;
+    }>({
+        label: '',
+        start: '',
+        end: '',
+        tags: '',
+        notes: '',
+        annotation_status: 'pending',
+    });
+
+    const resetEventForm = useCallback(() => {
+        setEventForm({
+            label: '',
+            start: '',
+            end: '',
+            tags: '',
+            notes: '',
+            annotation_status: 'pending',
+        });
+        setEditingEventId(null);
+        setIsEventFormOpen(false);
+    }, []);
+
+    const handleOpenCreateEventForm = () => {
+        resetEventForm();
+        setIsEventFormOpen(true);
+    };
+
+    const handleOpenEditEventForm = (event: BacktestingActualEvent) => {
+        const eventId = event.id || createManualEventId();
+        if (!event.id) {
+            setManualEvents(prev => prev.map(existing => {
+                if (existing === event) {
+                    return { ...event, id: eventId };
+                }
+                return existing;
+            }));
+        }
+        setEditingEventId(eventId);
+        setEventForm({
+            label: event.label,
+            start: toInputValue(new Date(event.start_time)),
+            end: event.end_time ? toInputValue(new Date(event.end_time)) : '',
+            tags: event.tags?.join(', ') || '',
+            notes: event.notes || '',
+            annotation_status: event.annotation_status || 'pending',
+        });
+        setIsEventFormOpen(true);
+    };
+
+    const handleEventFormChange = <K extends keyof typeof eventForm>(key: K, value: (typeof eventForm)[K]) => {
+        setEventForm(prev => ({ ...prev, [key]: value }));
+    };
+
+    const handleDeleteManualEvent = (id: string) => {
+        setManualEvents(prev => prev.filter(event => event.id !== id));
+    };
+
+    const handleQuickUpdateAnnotationStatus = (id: string, status: BacktestingAnnotationStatus) => {
+        setManualEvents(prev => prev.map(event => (event.id === id ? { ...event, annotation_status: status } : event)));
+    };
+
+    const handleSubmitEventForm = () => {
+        const isEditing = Boolean(editingEventId);
+        if (!eventForm.label.trim()) {
+            showToast('請輸入事件標題。', 'warning');
+            return;
+        }
+        if (!eventForm.start) {
+            showToast('請選擇事件開始時間。', 'warning');
+            return;
+        }
+
+        const isoStart = toISOValue(eventForm.start);
+        let isoEnd: string | undefined;
+        if (eventForm.end) {
+            isoEnd = toISOValue(eventForm.end);
+            if (new Date(isoStart) > new Date(isoEnd)) {
+                showToast('事件結束時間需晚於開始時間。', 'warning');
+                return;
+            }
+        }
+
+        const tags = eventForm.tags
+            .split(',')
+            .map(tag => tag.trim())
+            .filter(Boolean);
+
+        const eventId = editingEventId || createManualEventId();
+
+        const payload: BacktestingActualEvent = {
+            id: eventId,
+            label: eventForm.label.trim(),
+            start_time: isoStart,
+            end_time: isoEnd,
+            notes: eventForm.notes.trim() ? eventForm.notes.trim() : undefined,
+            tags: tags.length ? tags : undefined,
+            annotation_status: eventForm.annotation_status,
+        };
+
+        setManualEvents(prev => {
+            if (isEditing) {
+                return prev.map(event => (event.id === eventId ? { ...event, ...payload } : event));
+            }
+            return [...prev, payload];
+        });
+
+        resetEventForm();
+        showToast(isEditing ? '已更新人工事件。' : '已新增人工事件。', 'success');
+    };
 
 
     const [taskId, setTaskId] = useState<string | null>(null);
@@ -93,9 +222,11 @@ const BacktestingPage: React.FC = () => {
         }
     }, [results, activeRuleId]);
 
-    const handleSelectRule = (ruleId: string) => {
+    const handleSelectRule = useCallback((ruleId: string) => {
         setSelectedRuleIds([ruleId]); // Only allow single selection
-    };
+        setManualEvents([]);
+        resetEventForm();
+    }, [resetEventForm]);
 
     const stopPolling = () => {
         if (pollingRef.current) {
@@ -159,13 +290,48 @@ const BacktestingPage: React.FC = () => {
             return;
         }
 
+        const rangeStart = new Date(startInput).getTime();
+        const rangeEnd = new Date(endInput).getTime();
+        const outOfRangeEvent = manualEvents.find(event => {
+            const eventStart = new Date(event.start_time).getTime();
+            if (Number.isNaN(eventStart)) {
+                return true;
+            }
+            if (eventStart < rangeStart || eventStart > rangeEnd) {
+                return true;
+            }
+            if (event.end_time) {
+                const eventEnd = new Date(event.end_time).getTime();
+                if (Number.isNaN(eventEnd) || eventEnd < rangeStart || eventEnd > rangeEnd) {
+                    return true;
+                }
+            }
+            return false;
+        });
+
+        if (outOfRangeEvent) {
+            showToast('人工事件時間需落在回放區間內。', 'warning');
+            return;
+        }
+
+        const sanitizedEvents = manualEvents.map(event => ({
+            id: event.id,
+            label: event.label,
+            start_time: event.start_time,
+            end_time: event.end_time,
+            severity: event.severity,
+            notes: event.notes,
+            tags: event.tags,
+            annotation_status: event.annotation_status,
+        }));
+
         const payload: BacktestingRunRequest = {
             rule_ids: selectedRuleIds,
             time_range: {
                 start_time: toISOValue(startInput),
                 end_time: toISOValue(endInput),
             },
-            actual_events: [],
+            actual_events: sanitizedEvents,
             options: {
                 evaluation_window_minutes: 15, // Default value
                 sensitivity: 'balanced', // Default value
@@ -199,6 +365,45 @@ const BacktestingPage: React.FC = () => {
         return matched || results.rule_results[0];
     }, [results, activeRuleId]);
 
+    const handleImportEventsFromResults = useCallback(() => {
+        if (!activeRule) {
+            showToast('目前沒有可匯入的回放結果。', 'info');
+            return;
+        }
+        if (activeRule.actual_events.length === 0) {
+            showToast('這次回放沒有人工標記事件。', 'info');
+            return;
+        }
+        const imported = activeRule.actual_events.map(event =>
+            ensureEventHasId({
+                ...event,
+                annotation_status: event.annotation_status || (event.match_status ? 'confirmed' : 'pending'),
+            })
+        );
+        setManualEvents(imported);
+        resetEventForm();
+        showToast('已匯入回放結果中的人工事件。', 'success');
+    }, [activeRule, resetEventForm]);
+
+    useEffect(() => {
+        if (!activeRule) {
+            return;
+        }
+        if (manualEvents.length > 0) {
+            return;
+        }
+        if (activeRule.actual_events.length === 0) {
+            return;
+        }
+        const seeded = activeRule.actual_events.map(event =>
+            ensureEventHasId({
+                ...event,
+                annotation_status: event.annotation_status || (event.match_status ? 'confirmed' : 'pending'),
+            })
+        );
+        setManualEvents(seeded);
+    }, [activeRule, manualEvents.length]);
+
     const precision = activeRule?.precision ?? null;
     const recall = activeRule?.recall ?? null;
     const falsePositiveRate = useMemo(() => {
@@ -221,12 +426,25 @@ const BacktestingPage: React.FC = () => {
         const metricValues = activeRule.metric_series.map(point => point.value);
         const thresholdValues = activeRule.metric_series.map(point => point.threshold ?? null);
         const baselineValues = activeRule.metric_series.map(point => point.baseline ?? null);
+        const numericMetricValues = metricValues.filter(value => typeof value === 'number') as number[];
+        const fallbackMetricValue = numericMetricValues.length > 0 ? Math.max(...numericMetricValues) : 0;
 
         const statusColorMap: Record<BacktestingMatchStatus, string> = {
             true_positive: '#34d399',
             false_positive: '#f87171',
             false_negative: '#fbbf24',
             unknown: '#94a3b8',
+        };
+        const matchStatusLabelMap: Record<BacktestingMatchStatus, string> = {
+            true_positive: '命中',
+            false_positive: '誤報',
+            false_negative: '漏報',
+            unknown: '無對照',
+        };
+        const annotationStatusLabelMap: Record<BacktestingAnnotationStatus, string> = {
+            pending: '待確認',
+            confirmed: '已確認',
+            dismissed: '已忽略',
         };
 
         const triggerPoints = activeRule.trigger_points.map(point => {
@@ -243,6 +461,31 @@ const BacktestingPage: React.FC = () => {
                     borderColor: '#0f172a',
                     borderWidth: 1,
                 },
+            };
+        });
+
+        const actualEventMarkers = activeRule.actual_events.map(event => {
+            const eventTime = new Date(event.start_time).getTime();
+            const nearestPoint = activeRule.metric_series.reduce<
+                { point: BacktestingRuleResult['metric_series'][number]; diff: number } | null
+            >((closest, point) => {
+                const diff = Math.abs(new Date(point.timestamp).getTime() - eventTime);
+                if (!closest || diff < closest.diff) {
+                    return { point, diff };
+                }
+                return closest;
+            }, null);
+            const yValue = nearestPoint?.point.value ?? fallbackMetricValue;
+            const matchStatus: BacktestingMatchStatus = event.match_status || 'unknown';
+            const annotationStatus: BacktestingAnnotationStatus = event.annotation_status || 'pending';
+            const displayTimestamp = formatDisplayTime(event.start_time);
+            return {
+                value: [displayTimestamp, yValue],
+                event_label: event.label,
+                match_status: matchStatus,
+                annotation_status: annotationStatus,
+                notes: event.notes,
+                end_time: event.end_time,
             };
         });
 
@@ -276,13 +519,7 @@ const BacktestingPage: React.FC = () => {
                 }
                 if (item.seriesName === '觸發點') {
                     const matchStatus: BacktestingMatchStatus = item.data?.match_status || 'unknown';
-                    const statusLabel = matchStatus === 'true_positive'
-                        ? '命中'
-                        : matchStatus === 'false_positive'
-                            ? '誤報'
-                            : matchStatus === 'false_negative'
-                                ? '漏報'
-                                : '無對照';
+                    const statusLabel = matchStatusLabelMap[matchStatus] || matchStatusLabelMap.unknown;
                     const delay = item.data?.detection_delay_seconds;
                     const groundTruthLabel = item.data?.ground_truth_event_label;
                     rows.push(
@@ -294,12 +531,84 @@ const BacktestingPage: React.FC = () => {
                     if (typeof delay === 'number') {
                         rows.push(`<div class="text-xs">偵測延遲：${delay} 秒</div>`);
                     }
+                } else if (item.seriesName === '人工事件') {
+                    const matchStatus: BacktestingMatchStatus = item.data?.match_status || 'unknown';
+                    const annotationStatus: BacktestingAnnotationStatus = item.data?.annotation_status || 'pending';
+                    const statusLabel = matchStatusLabelMap[matchStatus] || matchStatusLabelMap.unknown;
+                    const annotationLabel = annotationStatusLabelMap[annotationStatus] || annotationStatusLabelMap.pending;
+                    rows.push(
+                        `<div>${item.marker} ${item.seriesName} — ${item.data?.event_label || '人工標記'}</div>`
+                    );
+                    rows.push(`<div class="text-xs">對照：${statusLabel} ｜ 標記狀態：${annotationLabel}</div>`);
+                    if (item.data?.end_time) {
+                        rows.push(`<div class="text-xs">結束：${formatDisplayTime(item.data.end_time)}</div>`);
+                    }
+                    if (item.data?.notes) {
+                        rows.push(`<div class="text-xs">備註：${item.data.notes}</div>`);
+                    }
                 } else {
                     rows.push(`<div>${item.marker} ${item.seriesName}: ${item.data}</div>`);
                 }
             });
             return rows.join('');
         };
+
+        const legendEntries = ['指標值', '門檻值', '基準值', '觸發點'];
+        if (actualEventMarkers.length > 0) {
+            legendEntries.push('人工事件');
+        }
+
+        const series: any[] = [
+            {
+                name: '指標值',
+                type: 'line',
+                smooth: true,
+                symbol: 'none',
+                data: metricValues,
+                lineStyle: { width: 2 },
+            },
+            {
+                name: '門檻值',
+                type: 'line',
+                symbol: 'none',
+                data: thresholdValues,
+                lineStyle: { type: 'dashed', width: 1 },
+            },
+            {
+                name: '基準值',
+                type: 'line',
+                symbol: 'none',
+                data: baselineValues,
+                lineStyle: { type: 'dotted', width: 1 },
+            },
+            {
+                name: '觸發點',
+                type: 'scatter',
+                data: triggerPoints,
+                symbolSize: 12,
+                emphasis: {
+                    scale: 1.2,
+                },
+            },
+        ];
+
+        if (actualEventMarkers.length > 0) {
+            series.push({
+                name: '人工事件',
+                type: 'scatter',
+                data: actualEventMarkers,
+                symbol: 'diamond',
+                symbolSize: 14,
+                itemStyle: {
+                    color: '#38bdf8',
+                    borderColor: '#0ea5e9',
+                    borderWidth: 1.5,
+                },
+                emphasis: {
+                    scale: 1.1,
+                },
+            });
+        }
 
         return {
             tooltip: {
@@ -311,7 +620,7 @@ const BacktestingPage: React.FC = () => {
                 formatter: tooltipFormatter,
             },
             legend: {
-                data: ['指標值', '門檻值', '基準值', '觸發點'],
+                data: legendEntries,
                 textStyle: { color: '#cbd5f5' },
             },
             grid: { left: '3%', right: '4%', bottom: '14%', containLabel: true },
@@ -347,39 +656,7 @@ const BacktestingPage: React.FC = () => {
                     },
                 },
             ],
-            series: [
-                {
-                    name: '指標值',
-                    type: 'line',
-                    smooth: true,
-                    symbol: 'none',
-                    data: metricValues,
-                    lineStyle: { width: 2 },
-                },
-                {
-                    name: '門檻值',
-                    type: 'line',
-                    symbol: 'none',
-                    data: thresholdValues,
-                    lineStyle: { type: 'dashed', width: 1 },
-                },
-                {
-                    name: '基準值',
-                    type: 'line',
-                    symbol: 'none',
-                    data: baselineValues,
-                    lineStyle: { type: 'dotted', width: 1 },
-                },
-                {
-                    name: '觸發點',
-                    type: 'scatter',
-                    data: triggerPoints,
-                    symbolSize: 12,
-                    emphasis: {
-                        scale: 1.2,
-                    },
-                },
-            ],
+            series,
             ...(markAreas.length > 0 ? {
                 markArea: {
                     data: markAreas,
@@ -414,9 +691,34 @@ const BacktestingPage: React.FC = () => {
         },
     };
 
+    const annotationStatusConfig: Record<BacktestingAnnotationStatus, { label: string; className: string }> = {
+        pending: {
+            label: '待確認',
+            className: 'bg-slate-500/10 border border-slate-500/40 text-slate-200',
+        },
+        confirmed: {
+            label: '已確認',
+            className: 'bg-sky-400/10 border border-sky-400/30 text-sky-200',
+        },
+        dismissed: {
+            label: '已忽略',
+            className: 'bg-amber-500/10 border border-amber-500/30 text-amber-200',
+        },
+    };
+
     const renderMatchBadge = (status?: BacktestingMatchStatus) => {
         const key = status || 'unknown';
         const config = matchStatusConfig[key] ?? matchStatusConfig.unknown;
+        return (
+            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${config.className}`}>
+                {config.label}
+            </span>
+        );
+    };
+
+    const renderAnnotationBadge = (status?: BacktestingAnnotationStatus) => {
+        const key = status || 'pending';
+        const config = annotationStatusConfig[key] ?? annotationStatusConfig.pending;
         return (
             <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${config.className}`}>
                 {config.label}
@@ -565,6 +867,190 @@ const BacktestingPage: React.FC = () => {
                             <span>產出策略調校建議</span>
                         </label>
                     </div>
+
+                    <div className="border-t border-slate-800 pt-4 space-y-3">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                            <div>
+                                <h3 className="text-sm font-semibold text-slate-200 flex items-center space-x-2">
+                                    <Icon name="flag" className="w-4 h-4" />
+                                    <span>人工標記事件</span>
+                                </h3>
+                                <p className="text-xs text-slate-500">
+                                    建立或匯入人工標記，作為回放 Precision / Recall 的對照基準。
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={handleImportEventsFromResults}
+                                    className="rounded-md border border-slate-700 px-3 py-1 text-xs text-slate-300 hover:border-sky-500 hover:text-sky-200"
+                                    disabled={!activeRule}
+                                >
+                                    匯入回放結果
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={isEventFormOpen ? resetEventForm : handleOpenCreateEventForm}
+                                    className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                                        isEventFormOpen
+                                            ? 'border border-rose-500/40 text-rose-200 hover:border-rose-400'
+                                            : 'border border-sky-500/60 bg-sky-500/10 text-sky-200 hover:border-sky-400'
+                                    }`}
+                                >
+                                    {isEventFormOpen ? '取消' : '新增事件'}
+                                </button>
+                            </div>
+                        </div>
+
+                        {isEventFormOpen && (
+                            <div className="space-y-3 rounded-md border border-slate-800 bg-slate-900/60 p-3">
+                                <div>
+                                    <label className="text-xs font-medium text-slate-400">事件名稱</label>
+                                    <input
+                                        type="text"
+                                        value={eventForm.label}
+                                        onChange={e => handleEventFormChange('label', e.target.value)}
+                                        className="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                                        placeholder="例如：CPU 過載"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    <div>
+                                        <label className="text-xs font-medium text-slate-400">開始時間</label>
+                                        <input
+                                            type="datetime-local"
+                                            value={eventForm.start}
+                                            onChange={e => handleEventFormChange('start', e.target.value)}
+                                            className="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-medium text-slate-400">結束時間（可選）</label>
+                                        <input
+                                            type="datetime-local"
+                                            value={eventForm.end}
+                                            onChange={e => handleEventFormChange('end', e.target.value)}
+                                            className="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-medium text-slate-400">標記狀態</label>
+                                    <select
+                                        value={eventForm.annotation_status}
+                                        onChange={e => handleEventFormChange('annotation_status', e.target.value as BacktestingAnnotationStatus)}
+                                        className="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                                    >
+                                        <option value="pending">待確認</option>
+                                        <option value="confirmed">已確認</option>
+                                        <option value="dismissed">已忽略</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-medium text-slate-400">標籤（以逗號分隔）</label>
+                                    <input
+                                        type="text"
+                                        value={eventForm.tags}
+                                        onChange={e => handleEventFormChange('tags', e.target.value)}
+                                        className="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                                        placeholder="cpu, latency"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-medium text-slate-400">備註</label>
+                                    <textarea
+                                        value={eventForm.notes}
+                                        onChange={e => handleEventFormChange('notes', e.target.value)}
+                                        className="mt-1 h-20 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                                        placeholder="補充說明或排查紀錄"
+                                    />
+                                </div>
+                                <div className="flex items-center justify-end gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={resetEventForm}
+                                        className="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-300 hover:border-slate-500"
+                                    >
+                                        取消
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleSubmitEventForm}
+                                        className="rounded-md border border-emerald-500/60 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-200 hover:border-emerald-400"
+                                    >
+                                        {editingEventId ? '儲存變更' : '加入事件'}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                            {manualEvents.length === 0 && (
+                                <div className="text-sm text-slate-500">
+                                    尚未建立人工標記事件，可新增或匯入既有資料。
+                                </div>
+                            )}
+                            {manualEvents.map(event => {
+                                return (
+                                    <div key={event.id ?? event.start_time} className="space-y-2 rounded-md border border-slate-800 bg-slate-900/50 px-3 py-2 text-sm text-slate-200">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="space-y-1">
+                                                <div className="font-medium text-slate-100">{event.label}</div>
+                                                <div className="text-xs text-slate-400">
+                                                    {formatDisplayTime(event.start_time)}
+                                                    {event.end_time && ` ~ ${formatDisplayTime(event.end_time)}`}
+                                                </div>
+                                                {event.tags && event.tags.length > 0 && (
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {event.tags.map(tag => (
+                                                            <span key={tag} className="rounded bg-slate-800 px-2 py-0.5 text-[10px] text-slate-300">#{tag}</span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                {event.notes && <div className="text-xs text-slate-400">{event.notes}</div>}
+                                            </div>
+                                            <div className="flex flex-col items-end gap-1 text-xs text-slate-400">
+                                                <span>對照結果</span>
+                                                {renderMatchBadge(event.match_status)}
+                                                <span className="pt-1">標記狀態</span>
+                                                {renderAnnotationBadge(event.annotation_status)}
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2 border-t border-slate-800 pt-2 text-[11px] text-slate-400">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleOpenEditEventForm(event)}
+                                                className="rounded border border-slate-700 px-2 py-1 hover:border-sky-500 hover:text-sky-200"
+                                            >
+                                                編輯
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => event.id && handleQuickUpdateAnnotationStatus(event.id, 'confirmed')}
+                                                className="rounded border border-emerald-500/40 px-2 py-1 text-emerald-200 hover:border-emerald-400"
+                                            >
+                                                標記為已確認
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => event.id && handleQuickUpdateAnnotationStatus(event.id, 'dismissed')}
+                                                className="rounded border border-amber-500/40 px-2 py-1 text-amber-200 hover:border-amber-400"
+                                            >
+                                                忽略
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => event.id && handleDeleteManualEvent(event.id)}
+                                                className="rounded border border-rose-500/40 px-2 py-1 text-rose-200 hover:border-rose-400"
+                                            >
+                                                刪除
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
                 </div>
 
                 <div className="bg-slate-900/40 border border-slate-800 rounded-lg p-4 space-y-4 xl:col-span-2">
@@ -673,10 +1159,11 @@ const BacktestingPage: React.FC = () => {
                                                                 <div className="text-xs text-slate-500">偵測延遲：{point.detection_delay_seconds} 秒</div>
                                                             )}
                                                         </div>
-                                                        <div className="flex flex-col items-end gap-1">
+                                                        <div className="flex flex-col items-end gap-1 text-xs text-slate-400">
+                                                            <span>對照結果</span>
                                                             {renderMatchBadge(status)}
                                                             {point.tags && point.tags.length > 0 && (
-                                                                <div className="flex flex-wrap justify-end gap-1">
+                                                                <div className="flex flex-wrap justify-end gap-1 pt-1">
                                                                     {point.tags.map(tag => (
                                                                         <span key={tag} className="rounded bg-slate-800 px-2 py-0.5 text-[10px] text-slate-300">
                                                                             #{tag}
@@ -753,10 +1240,13 @@ const BacktestingPage: React.FC = () => {
                                                         )}
                                                         {event.notes && <div className="text-xs text-slate-400">{event.notes}</div>}
                                                     </div>
-                                                    <div className="flex flex-col items-end gap-1">
+                                                    <div className="flex flex-col items-end gap-1 text-xs text-slate-400">
+                                                        <span>對照結果</span>
                                                         {renderMatchBadge(event.match_status)}
+                                                        <span className="pt-1">標記狀態</span>
+                                                        {renderAnnotationBadge(event.annotation_status)}
                                                         {event.matched_trigger_point_id && (
-                                                            <span className="text-[10px] text-slate-400">觸發 ID：{event.matched_trigger_point_id}</span>
+                                                            <span className="pt-1 text-[10px] text-slate-400">觸發 ID：{event.matched_trigger_point_id}</span>
                                                         )}
                                                     </div>
                                                 </div>

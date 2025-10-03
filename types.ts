@@ -931,6 +931,8 @@ export type BacktestingMatchStatus =
   | 'false_negative'
   | 'unknown';
 
+export type BacktestingAnnotationStatus = 'pending' | 'confirmed' | 'dismissed';
+
 export interface BacktestingActualEvent {
   id?: string;
   label: string;
@@ -939,10 +941,13 @@ export interface BacktestingActualEvent {
   severity?: IncidentSeverity;
   notes?: string;
   tags?: string[];
+  annotation_status?: BacktestingAnnotationStatus;
   match_status?: BacktestingMatchStatus;
   matched_trigger_point_id?: string | null;
   detection_time?: string;
   detection_delay_seconds?: number | null;
+  confirmed_by?: string | null;
+  confirmed_at?: string | null;
 }
 
 export interface BacktestingTaskOptions {
