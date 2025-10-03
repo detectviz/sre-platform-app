@@ -3945,6 +3945,43 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 }
                 break;
             }
+            case 'POST /backtesting': {
+                if (id === 'run') {
+                    // Simulate backtesting task creation
+                    const taskId = `task-${Date.now()}`;
+                    const submittedAt = new Date().toISOString();
+                    const response = {
+                        task_id: taskId,
+                        status: 'running' as const,
+                        submitted_at: submittedAt,
+                        rule_count: body?.rule_ids?.length || 1,
+                        estimated_completion_time: new Date(Date.now() + 30000).toISOString(), // 30 seconds
+                    };
+
+                    // Simulate task completion after 2 seconds
+                    setTimeout(() => {
+                        const baseResult = DB.backtesting_results['task-001'];
+                        if (baseResult) {
+                            // Create a deep copy and update it
+                            const result = JSON.parse(JSON.stringify(baseResult));
+                            result.task_id = taskId;
+                            result.status = 'completed';
+                            result.completed_at = new Date().toISOString();
+                            result.requested_at = submittedAt;
+                            DB.backtesting_results[taskId] = result;
+                        }
+                    }, 2000);
+
+                    return response;
+                }
+                break;
+            }
+            case 'GET /backtesting': {
+                if (id === 'results' && subId && DB.backtesting_results[subId]) {
+                    return DB.backtesting_results[subId];
+                }
+                throw { status: 404, message: 'Backtesting task not found' };
+            }
         }
     } catch (e: any) {
         throw e;

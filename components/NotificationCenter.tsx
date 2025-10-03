@@ -33,7 +33,7 @@ const NotificationCenter: React.FC = () => {
         return content.TIME_UNITS.JUST_NOW;
     }, [content]);
 
-    const unreadCount = notifications.filter(n => n.status === 'unread').length;
+    const unreadCount = Array.isArray(notifications) ? notifications.filter(n => n.status === 'unread').length : 0;
 
     // Fetch notifications function
     const fetchNotifications = useCallback((setLoading: boolean) => {
@@ -45,7 +45,7 @@ const NotificationCenter: React.FC = () => {
             api.get<NotificationItem[]>('/notifications'),
             api.get<NotificationOptions>('/notifications/options')
         ]).then(([notificationsRes, optionsRes]) => {
-            setNotifications(notificationsRes.data);
+            setNotifications(Array.isArray(notificationsRes.data) ? notificationsRes.data : []);
             setOptions(optionsRes.data);
         }).catch(err => {
             console.error("Failed to fetch notifications", err);
@@ -90,7 +90,7 @@ const NotificationCenter: React.FC = () => {
         if (!content) return;
         api.post(`/notifications/${id}/read`)
             .then(() => {
-                setNotifications(prev => prev.map(n => n.id === id ? { ...n, status: 'read' } : n));
+                setNotifications(prev => Array.isArray(prev) ? prev.map(n => n.id === id ? { ...n, status: 'read' } : n) : []);
             })
             .catch(() => showToast(content.TOAST.MARK_ONE_ERROR, 'error'));
     };
@@ -99,19 +99,19 @@ const NotificationCenter: React.FC = () => {
         if (!content) return;
         api.post('/notifications/read-all')
             .then(() => {
-                setNotifications(prev => prev.map(n => ({ ...n, status: 'read' })));
+                setNotifications(prev => Array.isArray(prev) ? prev.map(n => ({ ...n, status: 'read' })) : []);
             })
             .catch(() => showToast(content.TOAST.MARK_ALL_ERROR, 'error'));
     };
 
     const handleClearAllRead = () => {
-        if (!content) return;
+        if (!content || !Array.isArray(notifications)) return;
         const readIds = notifications.filter(n => n.status === 'read').map(n => n.id);
         if (readIds.length === 0) return;
 
         api.post('/notifications/clear-read', { ids: readIds })
             .then(() => {
-                setNotifications(prev => prev.filter(n => n.status !== 'read'));
+                setNotifications(prev => Array.isArray(prev) ? prev.filter(n => n.status !== 'read') : []);
                 showToast('已清除所有已讀通知', 'success');
             })
             .catch(() => showToast('清除失敗', 'error'));
@@ -181,7 +181,7 @@ const NotificationCenter: React.FC = () => {
                     <div className="flex justify-between items-center p-4 border-b border-slate-700/50 shrink-0">
                         <h3 className="font-semibold text-white">{content.TITLE}</h3>
                         <div className="flex items-center gap-2">
-                            {notifications.filter(n => n.status === 'read').length > 0 && (
+                            {Array.isArray(notifications) && notifications.filter(n => n.status === 'read').length > 0 && (
                                 <button onClick={handleClearAllRead} className="text-xs text-slate-400 hover:text-slate-300">
                                     清除已讀
                                 </button>
@@ -196,7 +196,7 @@ const NotificationCenter: React.FC = () => {
                     <div className="flex-grow overflow-y-auto">
                         {isLoading ? (
                             <div className="flex items-center justify-center p-8"><Icon name="loader-circle" className="w-6 h-6 animate-spin text-slate-400" /></div>
-                        ) : notifications.length === 0 ? (
+                        ) : !Array.isArray(notifications) || notifications.length === 0 ? (
                             <div className="text-center p-8 text-slate-400">{content.NO_NOTIFICATIONS}</div>
                         ) : (
                             <div className="divide-y divide-slate-700/30">

@@ -2447,13 +2447,84 @@ const MOCK_LOG_ANALYSIS_REPORT_V2 = {
     patterns_found: [
         { pattern: 'Connection timeout', count: 89, severity: 'error' },
         { pattern: 'Slow query detected', count: 145, severity: 'warning' },
-        { pattern: 'Authentication failure', count: 42, severity: 'error' },
     ],
-    anomalies: [
-        { timestamp: '2024-01-15T09:30:00Z', description: '支付服務逾時錯誤在 5 分鐘內暴增 3 倍。', severity: 'high' },
-        { timestamp: '2024-01-15T11:05:00Z', description: 'API 閘道出現間歇性 5xx 錯誤。', severity: 'medium' },
-    ],
-    insights: '檢測到支付服務與 API 閘道同時出現錯誤尖峰，建議檢視兩者間的相依性與佇列設定。',
+};
+
+const MOCK_BACKTESTING_RESULTS = {
+    'task-001': {
+        task_id: 'task-001',
+        status: 'completed',
+        requested_at: '2025-10-02T10:00:00Z',
+        completed_at: '2025-10-02T10:02:30Z',
+        duration_seconds: 150,
+        rule_results: [
+            {
+                rule_id: 'rule-001',
+                rule_name: 'API Response Time Alert',
+                triggered_count: 12,
+                trigger_points: [
+                    { timestamp: '2025-09-25T14:30:00Z', value: 1250, condition_summary: 'Response time > 1000ms for 5 minutes' },
+                    { timestamp: '2025-09-26T09:15:00Z', value: 1180, condition_summary: 'Response time > 1000ms for 5 minutes' },
+                    { timestamp: '2025-09-27T16:45:00Z', value: 1350, condition_summary: 'Response time > 1000ms for 5 minutes' },
+                ],
+                metric_series: [
+                    { timestamp: '2025-09-25T10:00:00Z', value: 450 },
+                    { timestamp: '2025-09-25T11:00:00Z', value: 480 },
+                    { timestamp: '2025-09-25T12:00:00Z', value: 520 },
+                    { timestamp: '2025-09-25T13:00:00Z', value: 890 },
+                    { timestamp: '2025-09-25T14:00:00Z', value: 1250 },
+                    { timestamp: '2025-09-25T15:00:00Z', value: 780 },
+                    { timestamp: '2025-09-26T08:00:00Z', value: 420 },
+                    { timestamp: '2025-09-26T09:00:00Z', value: 1180 },
+                    { timestamp: '2025-09-26T10:00:00Z', value: 650 },
+                    { timestamp: '2025-09-27T15:00:00Z', value: 580 },
+                    { timestamp: '2025-09-27T16:00:00Z', value: 1350 },
+                    { timestamp: '2025-09-27T17:00:00Z', value: 720 },
+                ].map(point => ({ ...point, threshold: 1000, baseline: 500 })),
+                actual_events: [
+                    { label: 'Database maintenance', start_time: '2025-09-25T14:00:00Z', end_time: '2025-09-25T15:00:00Z' },
+                    { label: 'Traffic spike', start_time: '2025-09-26T09:00:00Z', end_time: '2025-09-26T10:00:00Z' },
+                    { label: 'Service deployment', start_time: '2025-09-27T16:00:00Z', end_time: '2025-09-27T17:00:00Z' },
+                ],
+                false_positive_count: 3,
+                false_negative_count: 1,
+                precision: 0.75,
+                recall: 0.92,
+                recommendations: [
+                    {
+                        type: 'threshold',
+                        title: '調整響應時間門檻',
+                        description: '將門檻從 1000ms 調整為 1200ms 可減少 25% 的誤報',
+                        suggested_threshold: 1200,
+                    },
+                    {
+                        type: 'duration',
+                        title: '延長持續時間檢查',
+                        description: '將持續時間從 5 分鐘增加到 10 分鐘可提升準確度',
+                        suggested_duration_minutes: 10,
+                    },
+                ],
+                suggested_threshold: 1150,
+                suggested_duration_minutes: 8,
+                execution_time_ms: 2500,
+            },
+        ],
+        batch_summary: {
+            total_rules: 1,
+            total_triggers: 12,
+            false_positive_rate: 0.25,
+            false_negative_rate: 0.08,
+            average_precision: 0.75,
+            average_recall: 0.92,
+            recommendations: [
+                {
+                    type: 'automation',
+                    title: '啟用自動化調整',
+                    description: '建議啟用基於回放結果的自動門檻調整',
+                },
+            ],
+        },
+    },
 };
 
 const MOCK_CAPACITY_PREDICTION_REPORT = {
@@ -2585,7 +2656,7 @@ const MOCK_TAB_CONFIGS: TabConfigMap = {
         { label: '分析總覽', path: '/analyzing', icon: 'bar-chart-2' },
         { label: '日誌探索', path: '/analyzing/logs', icon: 'search' },
         { label: '容量規劃', path: '/analyzing/capacity', icon: 'bar-chart-big' },
-        { label: 'Backtesting', path: '/analyzing/backtesting', icon: 'history' },
+        { label: '歷史數據回放', path: '/analyzing/backtesting', icon: 'history' },
     ],
     automation: [
         { label: '腳本庫', path: '/automation', icon: 'notebook-tabs' },
@@ -3143,6 +3214,7 @@ function createInitialDB() {
         analysis_capacity_prediction: JSON.parse(JSON.stringify(MOCK_CAPACITY_PREDICTION_REPORT)),
         analysis_incident_prediction: JSON.parse(JSON.stringify(MOCK_INCIDENT_PREDICTION_REPORT)),
         analysis_anomaly_detection: JSON.parse(JSON.stringify(MOCK_ANOMALY_DETECTION_REPORT)),
+        backtesting_results: JSON.parse(JSON.stringify(MOCK_BACKTESTING_RESULTS)),
         // Consolidated UI Options
         all_options: JSON.parse(JSON.stringify(MOCK_ALL_OPTIONS)),
         // New Datasource/Discovery data

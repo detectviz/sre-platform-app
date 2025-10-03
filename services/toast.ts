@@ -12,14 +12,16 @@ const createToastContainer = (): HTMLElement => {
     return container;
 };
 
-export const showToast = (message: string, type: 'error' | 'success' = 'error') => {
+export const showToast = (message: string, type: 'error' | 'success' | 'warning' = 'error') => {
     const container = createToastContainer();
 
     const toast = document.createElement('div');
     const typeClasses = type === 'error'
         ? 'bg-red-900/80 border-red-700/80 text-red-200'
-        : 'bg-green-900/80 border-green-700/80 text-green-200';
-    
+        : type === 'warning'
+            ? 'bg-orange-900/80 border-orange-700/80 text-orange-200'
+            : 'bg-green-900/80 border-green-700/80 text-green-200';
+
     toast.className = `flex items-center p-4 rounded-lg shadow-2xl border backdrop-blur-md`;
     toast.classList.add(...typeClasses.split(' '));
 
@@ -29,9 +31,9 @@ export const showToast = (message: string, type: 'error' | 'success' = 'error') 
     toast.style.opacity = '0';
     toast.style.transform = 'translateX(100%)';
 
-    const iconName = type === 'error' ? 'alert-circle' : 'check-circle';
-    const iconColor = type === 'error' ? 'text-red-400' : 'text-green-400';
-    
+    const iconName = type === 'error' ? 'alert-circle' : type === 'warning' ? 'alert-triangle' : 'check-circle';
+    const iconColor = type === 'error' ? 'text-red-400' : type === 'warning' ? 'text-orange-400' : 'text-green-400';
+
     toast.innerHTML = `
         <i data-lucide="${iconName}" class="w-5 h-5 mr-3 shrink-0 ${iconColor}"></i>
         <span class="flex-grow">${message}</span>
@@ -61,7 +63,7 @@ export const showToast = (message: string, type: 'error' | 'success' = 'error') 
     const hideTimeout = setTimeout(hideAndRemove, 3500);
 
     container.prepend(toast);
-    
+
     // @ts-ignore
     if (window.lucide) {
         // @ts-ignore
