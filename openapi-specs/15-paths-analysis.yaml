@@ -137,6 +137,68 @@ paths:
         "503":
           $ref: "#/components/responses/AIServiceUnavailable"
 
+  /backtesting/run:
+    post:
+      tags: [Analysis]
+      summary: Run alert rule backtesting
+      description: Trigger a historical data replay for one or multiple alert rules within a specific time range.
+      operationId: runBacktesting
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BacktestingRunRequest"
+      responses:
+        "202":
+          description: Backtesting task accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BacktestingRunResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /backtesting/results/{task_id}:
+    parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Analysis]
+      summary: Get backtesting results
+      description: Retrieve the aggregated results, trigger timeline, and tuning recommendations for a completed backtesting task.
+      operationId: getBacktestingResults
+      responses:
+        "200":
+          description: Backtesting execution summary and detailed metrics.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BacktestingResultsResponse"
+        "202":
+          description: Backtesting task is still running.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BacktestingResultsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /analysis/resources/batch:
     post:
       tags: [Analysis]

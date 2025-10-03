@@ -574,3 +574,266 @@ components:
         details:
           type: object
           additionalProperties: true
+
+    BacktestingTaskStatus:
+      type: string
+      enum: [queued, pending, running, completed, failed]
+
+    BacktestingTimeRange:
+      type: object
+      required: [start_time, end_time]
+      properties:
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+
+    BacktestingActualEvent:
+      type: object
+      required: [label, start_time]
+      properties:
+        id:
+          type: string
+          description: Optional identifier provided by clients for idempotency.
+        label:
+          type: string
+          description: Display name for the incident or maintenance window.
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+          nullable: true
+        severity:
+          $ref: '#/components/schemas/IncidentSeverity'
+        notes:
+          type: string
+          description: Additional context for the event comparison.
+
+    BacktestingTaskOptions:
+      type: object
+      properties:
+        datasource_id:
+          type: string
+          description: Datasource identifier for metrics replay.
+        evaluation_window_minutes:
+          type: integer
+          minimum: 1
+          default: 15
+        sensitivity:
+          type: string
+          enum: [conservative, balanced, aggressive]
+          default: balanced
+        include_recommendations:
+          type: boolean
+          default: true
+
+    BacktestingRunRequest:
+      type: object
+      required: [rule_ids, time_range]
+      properties:
+        rule_ids:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        time_range:
+          $ref: '#/components/schemas/BacktestingTimeRange'
+        actual_events:
+          type: array
+          items:
+            $ref: '#/components/schemas/BacktestingActualEvent'
+        options:
+          $ref: '#/components/schemas/BacktestingTaskOptions'
+
+    BacktestingRunResponse:
+      type: object
+      required: [task_id, status, submitted_at, rule_count]
+      properties:
+        task_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/BacktestingTaskStatus'
+        submitted_at:
+          type: string
+          format: date-time
+        rule_count:
+          type: integer
+          minimum: 1
+        estimated_completion_time:
+          type: string
+          format: date-time
+          nullable: true
+
+    BacktestingMetricPoint:
+      type: object
+      required: [timestamp, value]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        value:
+          type: number
+        threshold:
+          type: number
+          nullable: true
+        baseline:
+          type: number
+          nullable: true
+
+    BacktestingTriggerPoint:
+      type: object
+      required: [timestamp, value, condition_summary]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        value:
+          type: number
+        condition_summary:
+          type: string
+        duration_minutes:
+          type: integer
+          minimum: 0
+          nullable: true
+
+    BacktestingRecommendation:
+      type: object
+      required: [type, title, description]
+      properties:
+        type:
+          type: string
+          enum: [threshold, duration, sensitivity, automation]
+        title:
+          type: string
+        description:
+          type: string
+        impact:
+          type: string
+          enum: ['高', '中', '低']
+        suggested_threshold:
+          type: number
+          nullable: true
+        suggested_duration_minutes:
+          type: integer
+          nullable: true
+        suggested_sensitivity:
+          type: string
+          enum: [conservative, balanced, aggressive]
+          nullable: true
+
+    BacktestingRuleResult:
+      type: object
+      required:
+        - rule_id
+        - rule_name
+        - triggered_count
+        - trigger_points
+        - metric_series
+        - actual_events
+        - false_positive_count
+        - false_negative_count
+        - recommendations
+      properties:
+        rule_id:
+          type: string
+        rule_name:
+          type: string
+        triggered_count:
+          type: integer
+          minimum: 0
+        trigger_points:
+          type: array
+          items:
+            $ref: '#/components/schemas/BacktestingTriggerPoint'
+        metric_series:
+          type: array
+          items:
+            $ref: '#/components/schemas/BacktestingMetricPoint'
+        actual_events:
+          type: array
+          items:
+            $ref: '#/components/schemas/BacktestingActualEvent'
+        false_positive_count:
+          type: integer
+          minimum: 0
+        false_negative_count:
+          type: integer
+          minimum: 0
+        precision:
+          type: number
+          nullable: true
+        recall:
+          type: number
+          nullable: true
+        recommendations:
+          type: array
+          items:
+            $ref: '#/components/schemas/BacktestingRecommendation'
+        suggested_threshold:
+          type: number
+          nullable: true
+        suggested_duration_minutes:
+          type: integer
+          nullable: true
+        execution_time_ms:
+          type: integer
+          nullable: true
+
+    BacktestingBatchSummary:
+      type: object
+      required: [total_rules, total_triggers, recommendations]
+      properties:
+        total_rules:
+          type: integer
+          minimum: 1
+        total_triggers:
+          type: integer
+          minimum: 0
+        false_positive_rate:
+          type: number
+          nullable: true
+        false_negative_rate:
+          type: number
+          nullable: true
+        average_precision:
+          type: number
+          nullable: true
+        average_recall:
+          type: number
+          nullable: true
+        recommendations:
+          type: array
+          items:
+            $ref: '#/components/schemas/BacktestingRecommendation'
+
+    BacktestingResultsResponse:
+      type: object
+      required: [task_id, status, requested_at, rule_results]
+      properties:
+        task_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/BacktestingTaskStatus'
+        requested_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        duration_seconds:
+          type: number
+          nullable: true
+        rule_results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BacktestingRuleResult'
+        batch_summary:
+          $ref: '#/components/schemas/BacktestingBatchSummary'
+        message:
+          type: string
+          nullable: true

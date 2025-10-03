@@ -2585,6 +2585,7 @@ const MOCK_TAB_CONFIGS: TabConfigMap = {
         { label: '分析總覽', path: '/analyzing', icon: 'bar-chart-2' },
         { label: '日誌探索', path: '/analyzing/logs', icon: 'search' },
         { label: '容量規劃', path: '/analyzing/capacity', icon: 'bar-chart-big' },
+        { label: 'Backtesting', path: '/analyzing/backtesting', icon: 'history' },
     ],
     automation: [
         { label: '腳本庫', path: '/automation', icon: 'notebook-tabs' },

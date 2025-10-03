@@ -39,6 +39,7 @@ import LogExplorerPage from './pages/analysis/LogExplorerPage';
 import DashboardTemplatesPage from './pages/dashboards/DashboardTemplatesPage';
 import DashboardEditorPage from './pages/dashboards/DashboardEditorPage';
 import CapacityPlanningPage from './pages/analysis/CapacityPlanningPage';
+import BacktestingPage from './pages/analysis/BacktestingPage';
 import InfrastructureInsightsPage from './pages/dashboards/InfrastructureInsightsPage';
 import api from './services/api';
 import Icon from './components/Icon';
@@ -173,6 +174,7 @@ const AppRoutes: React.FC = () => {
             <Route index element={<AnalysisOverviewPage />} />
             <Route path="logs" element={<LogExplorerPage />} />
             <Route path="capacity" element={<CapacityPlanningPage />} />
+            <Route path="backtesting" element={<BacktestingPage />} />
           </Route>
 
           <Route path="automation" element={<PageWithTabsLayout title={pageLayouts.automation.title} description={pageLayouts.automation.description} kpi_page_name={pageLayouts.automation.kpi_page_name} tabs={tabConfigs?.automation || []} />}>
