@@ -392,6 +392,13 @@ const BacktestingPage: React.FC = () => {
                         ) : null}
                     </div>
 
+                    {results && results.status !== 'completed' && results.status !== 'failed' && (
+                        <div className="flex items-center space-x-3 rounded-md border border-slate-800 bg-slate-900/60 px-4 py-3 text-slate-300">
+                            <Icon name="loader-circle" className="h-4 w-4 animate-spin" />
+                            <span>{results.message || '回放模擬執行中，請稍候...'}</span>
+                        </div>
+                    )}
+
                     {!results && (
                         <div className="flex flex-col items-center justify-center text-slate-500 py-12 space-y-3">
                             <Icon name="line-chart" className="w-10 h-10" />
