@@ -144,8 +144,11 @@
 **互動流程**
 - **輸入需求**: 使用者在文字框中輸入想實現的自動化任務，例如「寫一個 python 腳本，檢查指定 URL 的 HTTP 狀態碼」。
 - **產生腳本**: 使用者點擊「產生」按鈕，系統顯示載入中狀態，並向後端發送請求。
+    - **實現細節**: 期間顯示 loading 狀態並清空上次結果 【F:components/GeneratePlaybookWithAIModal.tsx†L33-L116】
 - **預覽結果**: 後端處理完畢後，在結果區顯示建議的腳本類型、腳本內容和參數。
+    - **實現細節**: 結果區支援腳本類型、內容與參數列表，但目前僅以長文區塊呈現且高度依賴使用者自行捲動 【F:components/GeneratePlaybookWithAIModal.tsx†L75-L145】
 - **套用結果**: 使用者檢視結果後，若滿意，可點擊「套用」。系統會將結果回填至「編輯腳本」視窗的對應欄位，並關閉此 AI 視窗。
+    - **實現細節**: 套用時同步關閉視窗，並將資料傳遞至父層腳本編輯模態 【F:components/GeneratePlaybookWithAIModal.tsx†L86-L145】【F:components/AutomationPlaybookEditModal.tsx†L106-L112】
 - **關閉**: 使用者可隨時點擊「取消」或關閉按鈕，放棄此次操作。
 
 **API 與資料流**
@@ -153,6 +156,7 @@
   - `POST /api/v1/ai/automation/generate-script`: 發送使用者需求以產生腳本。
     - **傳出參數**: `prompt: string` (使用者輸入的需求)
     - **傳入資料**: `GeneratedPlaybook` 物件
+    - **實現細節**: mock server 直接回傳預生成腳本範本，回傳結構包含 `type`, `content`, `parameters` 【F:components/GeneratePlaybookWithAIModal.tsx†L33-L41】【F:mock-server/handlers.ts†L521-L523】【F:mock-server/db.ts†L2103-L2109】
 - **資料模型**: `GeneratedPlaybook`
   ```typescript
   // AI 產生的腳本物件

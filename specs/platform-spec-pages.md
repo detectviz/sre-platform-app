@@ -24,6 +24,7 @@
     -   系統會使用**目前表單中**的設定（而非已儲存的設定）來嘗試發送一封測試郵件。
     -   按鈕會進入「測試中...」的禁用狀態，並顯示載入圖示。
     -   測試完成後，會在按鈕下方顯示測試結果，包括成功或失敗的訊息以及測試時間。
+    -   **實現細節**: 點擊「發送測試郵件」會在按鈕上顯示載入狀態，收到回應後顯示成功/失敗訊息與時間戳 【F:pages/settings/platform/MailSettingsPage.tsx†L114-L127】
 
 **API 與資料流**
 1.  **取得郵件設定**
@@ -41,13 +42,16 @@
           "encryption_modes": ["none", "tls", "ssl"]
         }
         ```
+    -   **實現細節**: 首次進入頁面觸發 `fetchSettings()` 呼叫 API 載入當前設定，根據回應刷新狀態或顯示錯誤訊息 【F:pages/settings/platform/MailSettingsPage.tsx†L15-L30】
 2.  **更新郵件設定**
     -   **API**: `PUT /api/v1/settings/mail`
     -   **傳出參數 (Request Body)**: `MailSettings` 物件 (不含 `encryption_modes`)。
     -   **傳入資料 (Response)**: 更新後的 `MailSettings` 物件。
+    -   **實現細節**: 儲存流程直接將目前 `settings` 物件送出；若請求失敗則跳出 alert，未使用頁面統一的 toast 機制 【F:pages/settings/platform/MailSettingsPage.tsx†L51-L121】
 3.  **測試郵件設定**
     -   **API**: `POST /api/v1/settings/mail/test`
     -   **傳出參數 (Request Body)**: 目前表單的郵件設定。
+    -   **實現細節**: 觸發測試郵件；若伺服器地址或收件人包含 `invalid`/`fail` 會回傳失敗訊息 【F:pages/settings/platform/MailSettingsPage.tsx†L38-L47】【F:mock-server/handlers.ts†L3533-L3542】
     -   **傳入資料 (Response)**: `MailTestResponse` 物件。
         ```json
         // 成功

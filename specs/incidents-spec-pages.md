@@ -326,9 +326,11 @@
 
 - **步驟 1: 選擇範本 (`step1`)**
     - 提供一個可搜尋的範本列表，使用者可從預設範本開始，或選擇「從空白建立」。
+    - **實現細節**: 精靈首步呈現雙欄版面：左側依監控目標類型列出篩選按鈕，右側顯示可捲動的範本卡片清單，卡片內容含概要、預設條件與通知示例，並以顏色框線高亮已選範本 【F:components/AlertRuleEditModal.tsx†L73-L200】
 - **步驟 2: 基本資訊與生效範圍 (`step2-basic`, `step2-scope`)**
     - **基本資訊**: 填寫 `規則名稱`、`描述`、`等級`，並可選地指派給特定 `團隊` 或 `負責人`。
     - **生效範圍**: 讓使用者從一個可搜尋的資源列表中，勾選此規則要監控的目標資源。
+    - **實現細節**: 第二步聚焦規則基本資料：上方提供名稱與描述欄位，下方以卡片呈現監控範圍設定、附加標籤篩選與符合資源預覽 【F:components/AlertRuleEditModal.tsx†L308-L399】
 - **步驟 3: 觸發條件 (`step3`)**
     - 允許使用者定義一或多個觸發條件。每個條件包含 `指標 (Metric)`、`運算子 (Function)` 和 `閾值 (Threshold)`。
     - 支援設定觸發的持續時間（例如：持續超過 5 分鐘）。
@@ -342,12 +344,16 @@
 
 **互動流程**
 1. 使用者從步驟 1 選擇範本或空白建立開始。
+    - **實現細節**: 初次開啟會同時載入監控資源類型與可用範本，載入完成前使用骨架畫面；使用者可透過左側類型切換、右上搜尋框即時縮小結果，再以按鈕選定範本以啟用「下一步」 【F:components/AlertRuleEditModal.tsx†L31-L137】【F:components/AlertRuleEditModal.tsx†L970-L1000】
 2. 依序填寫步驟 2 到 5 的表單內容。
+    - **實現細節**: 進入步驟即載入資源群組與資源列表，使用者可依「全部／群組／特定資源」模式切換；每次切換會重設已選清單，避免過期條件殘留 【F:components/AlertRuleEditModal.tsx†L231-L367】
 3. 系統應在使用者輸入時提供即時驗證（例如，必填欄位不可為空）。
+    - **實現細節**: 若尚未選取範本便嘗試前進，系統會以 toast 阻擋並提醒使用者完成選取，確保流程完整性 【F:components/AlertRuleEditModal.tsx†L970-L1000】
 4. 在最後一步點擊「完成」或「儲存」按鈕，系統將所有步驟的資料整合成一個物件，提交給後端。
 
 **API 與資料流**
 - **取得範本列表**: `GET /api/v1/alert-rules/templates`
+    - **實現細節**: 進入步驟時同步呼叫 `GET /alert-rules/resource-types` 與 `GET /alert-rules/templates` 取得篩選條件與範本資料 【F:components/AlertRuleEditModal.tsx†L31-L137】【F:mock-server/handlers.ts†L1152-L1183】
 - **取得資源列表**: `GET /api/v1/resources`
 - **取得指標列表**: `GET /api/v1/alert-rules/metrics`
 - **取得自動化腳本列表**: `GET /api/v1/automation/scripts`
@@ -355,6 +361,8 @@
     - **傳入參數**: 一個包含所有精靈步驟設定的 `AlertRule` 物件。
 - **更新現有規則**: `PATCH /api/v1/alert-rules/:id`
     - **傳入參數**: 同上，但包含要更新的規則 ID。
+- **預設範本設定**: `GET /api/v1/alert-rules/templates/default`
+    - **實現細節**: 若為新增流程，下一步會預先取得預設值以併入範本預設值 【F:components/AlertRuleEditModal.tsx†L907-L998】【F:mock-server/handlers.ts†L1152-L1183】
 - **資料流**: 在精靈的每一步，前端可能會呼叫對應的 API 來填充下拉選單選項（如資源、指標、腳本）。當使用者完成所有步驟並儲存時，前端將彙整所有狀態，透過單一的 `POST` 或 `PATCH` 請求發送給後端。
 
 **需求與規格定義**

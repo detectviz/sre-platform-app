@@ -3953,6 +3953,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     const requestedRuleId: string = typeof body?.rule_id === 'string' && body.rule_id
                         ? body.rule_id
                         : 'rule-001';
+                    const actualEvents = Array.isArray(body?.actual_events) ? body.actual_events : [];
 
                     const response = {
                         task_id: taskId,
@@ -3996,6 +3997,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                                     ...template,
                                     rule_id: requestedRuleId,
                                     rule_name: matchedRule?.name ?? template.rule_name ?? requestedRuleId,
+                                    actual_events: actualEvents,
                                 },
                             ];
 

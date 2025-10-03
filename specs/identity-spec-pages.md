@@ -47,8 +47,13 @@
 - **搜尋與篩選**:
     - 使用者點擊「搜尋和篩選」按鈕。
     - 系統彈出 `UnifiedSearchModal` 視窗，提供基於多個條件的搜尋功能。
+    - **實現細節**: 目前僅支援關鍵字過濾；清除篩選會將頁碼重置至第一頁 【F:pages/settings/identity-access/PersonnelManagementPage.tsx†L361-L371】【F:components/UnifiedSearchModal.tsx†L317-L358】
 - **分頁**:
     - 使用者可以點擊分頁元件來切換頁碼或調整每頁顯示的項目數量。
+- **編輯人員**:
+    - **實現細節**: 顯示不可變更的電子郵件與姓名欄位，並允許調整角色、團隊與狀態；儲存後觸發 API 更新並關閉模態 【F:pages/settings/identity-access/PersonnelManagementPage.tsx†L317-L329】【F:components/UserEditModal.tsx†L16-L101】
+- **邀請人員**:
+    - **實現細節**: 必填電子郵件與角色，提交後會重置表單欄位；若缺少必填欄位則不送出 【F:pages/settings/identity-access/PersonnelManagementPage.tsx†L120-L131】【F:components/InviteUserModal.tsx†L21-L117】
 
 **API 與資料流**
 - **載入使用者列表**:
@@ -59,6 +64,7 @@
         - `filters`: (可選) 篩選條件物件
     - **傳出資料**: `{ "items": User[], "total": number }`
     - **流程**: 頁面載入時，呼叫此 API 獲取第一頁的使用者資料並渲染列表。
+    - **實現細節**: 同時呼叫 `GET /api/v1/settings/column-config/{pageKey}` 與 `GET /api/v1/pages/columns/{pageKey}` 取得欄位定義與個人化設定 【F:pages/settings/identity-access/PersonnelManagementPage.tsx†L52-L90】【F:mock-server/handlers.ts†L2680-L2703】
 - **刪除使用者**:
     - **API**: `DELETE /api/v1/iam/users/:id`
     - **傳入參數**: `id` (使用者 ID)

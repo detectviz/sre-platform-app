@@ -1,9 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import Icon from '../../components/Icon';
 import EChartsReact from '../../components/EChartsReact';
 import api from '../../services/api';
 import { showToast } from '../../services/toast';
+import type { TimeRangePickerProps } from 'antd';
+import { DatePicker } from 'antd';
+import dayjs from 'dayjs';
+import type { Dayjs } from 'dayjs';
 import {
     AlertRule,
     BacktestingResultsResponse,
@@ -14,38 +17,47 @@ import {
 } from '../../types';
 
 
-const toInputValue = (date: Date) => {
-    const tzOffset = date.getTimezoneOffset() * 60000;
-    return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
+const toInputValue = (date: Date | Dayjs) => {
+    const dayjsDate = dayjs(date);
+    return dayjsDate.format('YYYY-MM-DDTHH:mm');
 };
 
-const toISOValue = (value: string) => new Date(value).toISOString();
-
-const formatDisplayTime = (value: string) => {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-        return value;
+const toISOValue = (value: string | Dayjs) => {
+    if (typeof value === 'string') {
+        return new Date(value).toISOString();
     }
-    return date.toLocaleString('zh-TW', {
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-    });
+    return value.toISOString();
+};
+
+const formatDisplayTime = (value: string | Dayjs) => {
+    const dayjsDate = dayjs(value);
+    if (!dayjsDate.isValid()) {
+        return String(value);
+    }
+    return dayjsDate.format('MM/DD HH:mm');
 };
 
 type MinimalManualEvent = {
     label: string;
-    timestamp: string;
+    start_time: string;
+    end_time: string;
 };
+
+const rangePresets: TimeRangePickerProps['presets'] = [
+    { label: 'Last 7 Days', value: [dayjs().add(-7, 'd'), dayjs()] },
+    { label: 'Last 14 Days', value: [dayjs().add(-14, 'd'), dayjs()] },
+    { label: 'Last 30 Days', value: [dayjs().add(-30, 'd'), dayjs()] },
+    { label: 'Last 90 Days', value: [dayjs().add(-90, 'd'), dayjs()] },
+];
 
 const BacktestingPage: React.FC = () => {
     const defaultStart = useMemo(() => {
         const date = new Date();
         date.setDate(date.getDate() - 7);
-        return date;
+        return dayjs(date);
     }, []);
+
+    const defaultEnd = useMemo(() => dayjs(), []);
 
     const [availableRules, setAvailableRules] = useState<AlertRule[]>([]);
     const [isLoadingRules, setIsLoadingRules] = useState(false);
@@ -53,33 +65,41 @@ const BacktestingPage: React.FC = () => {
     const [activeRuleId, setActiveRuleId] = useState<string | null>(null);
 
     const [startInput, setStartInput] = useState<string>(toInputValue(defaultStart));
-    const [endInput, setEndInput] = useState<string>(toInputValue(new Date()));
+    const [endInput, setEndInput] = useState<string>(toInputValue(defaultEnd));
+    const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([defaultStart, defaultEnd]);
+    const [eventDateRange, setEventDateRange] = useState<[Dayjs, Dayjs] | null>(null);
 
     const [manualEvents, setManualEvents] = useState<MinimalManualEvent[]>([]);
     const [newEventLabel, setNewEventLabel] = useState('');
-    const [newEventTime, setNewEventTime] = useState('');
+    const [newEventStartTime, setNewEventStartTime] = useState('');
+    const [newEventEndTime, setNewEventEndTime] = useState('');
+    const [isEventSectionExpanded, setIsEventSectionExpanded] = useState(false);
 
     const handleAddManualEvent = useCallback(() => {
-        if (!newEventLabel.trim()) {
-            showToast('請輸入事件標題。', 'warning');
-            return;
-        }
-        if (!newEventTime) {
-            showToast('請選擇事件時間。', 'warning');
+        if (!eventDateRange || !eventDateRange[0] || !eventDateRange[1]) {
+            showToast('請選擇事件時間段。', 'warning');
             return;
         }
 
-        const isoTime = toISOValue(newEventTime);
+        const startTimeMs = eventDateRange[0].toDate().getTime();
+        const endTimeMs = eventDateRange[1].toDate().getTime();
+
+        if (startTimeMs >= endTimeMs) {
+            showToast('結束時間必須晚於開始時間。', 'warning');
+            return;
+        }
+
         const newEvent: MinimalManualEvent = {
-            label: newEventLabel.trim(),
-            timestamp: isoTime,
+            label: newEventLabel.trim() || '已標記事件',
+            start_time: toISOValue(eventDateRange[0]),
+            end_time: toISOValue(eventDateRange[1]),
         };
 
         setManualEvents(prev => [...prev, newEvent]);
         setNewEventLabel('');
-        setNewEventTime('');
+        setEventDateRange(null);
         showToast('已新增實際事件。', 'success');
-    }, [newEventLabel, newEventTime]);
+    }, [newEventLabel, eventDateRange]);
 
     const handleDeleteManualEvent = useCallback((index: number) => {
         setManualEvents(prev => prev.filter((_, idx) => idx !== index));
@@ -128,8 +148,24 @@ const BacktestingPage: React.FC = () => {
         setSelectedRuleId(ruleId);
         setManualEvents([]);
         setNewEventLabel('');
-        setNewEventTime('');
+        setEventDateRange(null);
         setActiveRuleId(ruleId);
+    }, []);
+
+    const handleDateRangeChange = useCallback((dates: [Dayjs, Dayjs] | null) => {
+        if (dates) {
+            setDateRange(dates);
+            setStartInput(toInputValue(dates[0]));
+            setEndInput(toInputValue(dates[1]));
+        }
+    }, []);
+
+    const handleEventDateRangeChange = useCallback((dates: [Dayjs, Dayjs] | null) => {
+        if (dates) {
+            setEventDateRange(dates);
+            setNewEventStartTime(toInputValue(dates[0]));
+            setNewEventEndTime(toInputValue(dates[1]));
+        }
     }, []);
 
     const stopPolling = () => {
@@ -162,24 +198,6 @@ const BacktestingPage: React.FC = () => {
         pollingRef.current = window.setInterval(() => pollResults(id), 5000);
     }, [pollResults]);
 
-    const applyQuickRange = useCallback((range: '1h' | '24h' | '7d' | 'custom') => {
-        setQuickRange(range);
-        if (range === 'custom') {
-            return;
-        }
-        const end = new Date();
-        const start = new Date(end.getTime());
-        if (range === '1h') {
-            start.setHours(end.getHours() - 1);
-        } else if (range === '24h') {
-            start.setDate(end.getDate() - 1);
-        } else if (range === '7d') {
-            start.setDate(end.getDate() - 7);
-        }
-        setStartInput(toInputValue(start));
-        setEndInput(toInputValue(end));
-    }, []);
-
     const handleRunBacktesting = async () => {
         if (!selectedRuleId) {
             showToast('請先選擇要回放的告警規則。', 'warning');
@@ -197,11 +215,12 @@ const BacktestingPage: React.FC = () => {
         const rangeStart = new Date(startInput).getTime();
         const rangeEnd = new Date(endInput).getTime();
         const outOfRangeEvent = manualEvents.find(event => {
-            const eventTime = new Date(event.timestamp).getTime();
-            if (Number.isNaN(eventTime)) {
+            const eventStartTime = new Date(event.start_time).getTime();
+            const eventEndTime = new Date(event.end_time).getTime();
+            if (Number.isNaN(eventStartTime) || Number.isNaN(eventEndTime)) {
                 return true;
             }
-            return eventTime < rangeStart || eventTime > rangeEnd;
+            return eventEndTime < rangeStart || eventStartTime > rangeEnd;
         });
 
         if (outOfRangeEvent) {
@@ -211,7 +230,8 @@ const BacktestingPage: React.FC = () => {
 
         const sanitizedEvents = manualEvents.map(event => ({
             label: event.label,
-            start_time: event.timestamp,
+            start_time: event.start_time,
+            end_time: event.end_time,
         }));
 
         const payload: BacktestingRunRequest = {
@@ -249,24 +269,6 @@ const BacktestingPage: React.FC = () => {
         return matched || results.rule_results[0];
     }, [results, activeRuleId]);
 
-    const handleImportEventsFromResults = useCallback(() => {
-        if (!activeRule) {
-            showToast('目前沒有可匯入的回放結果。', 'info');
-            return;
-        }
-        if (activeRule.actual_events.length === 0) {
-            showToast('這次回放沒有人工標記事件。', 'info');
-            return;
-        }
-        const imported = activeRule.actual_events.map(event => ({
-            label: event.label,
-            timestamp: event.start_time,
-        }));
-        setManualEvents(imported);
-        setNewEventLabel('');
-        setNewEventTime('');
-        showToast('已匯入回放結果中的實際事件。', 'success');
-    }, [activeRule]);
 
     useEffect(() => {
         if (!activeRule) {
@@ -280,7 +282,8 @@ const BacktestingPage: React.FC = () => {
         }
         const seeded = activeRule.actual_events.map(event => ({
             label: event.label,
-            timestamp: event.start_time,
+            start_time: event.start_time,
+            end_time: event.end_time || event.start_time,
         }));
         setManualEvents(seeded);
     }, [activeRule, manualEvents.length]);
@@ -293,16 +296,56 @@ const BacktestingPage: React.FC = () => {
         const labels = activeRule.metric_series.map(point => formatDisplayTime(point.timestamp));
         const metricValues = activeRule.metric_series.map(point => point.value);
         const thresholdValues = activeRule.metric_series.map(point => point.threshold ?? null);
-        const triggerPoints = activeRule.trigger_points.map(point => [formatDisplayTime(point.timestamp), point.value]);
+
+        // 將觸發點映射到 x 軸索引 - 找最接近的時間點
+        const triggerPoints = activeRule.trigger_points.map(point => {
+            const triggerTime = new Date(point.timestamp).getTime();
+
+            // 找到最接近的 metric_series 索引
+            let closestIndex = -1;
+            let minDiff = Infinity;
+
+            activeRule.metric_series.forEach((metricPoint, index) => {
+                const metricTime = new Date(metricPoint.timestamp).getTime();
+                const diff = Math.abs(triggerTime - metricTime);
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    closestIndex = index;
+                }
+            });
+
+            // 如果時間差在 30 分鐘以內，視為匹配
+            if (closestIndex >= 0 && minDiff < 30 * 60 * 1000) {
+                return [closestIndex, point.value];
+            }
+
+            return null;
+        }).filter(p => p !== null);
+
+        // 建立圖表標註（markArea）用於顯示事件時間段
+        const markAreaData: any[] = [];
+        manualEvents.forEach((event, index) => {
+            const eventStart = new Date(event.start_time).getTime();
+            const eventEnd = new Date(event.end_time).getTime();
+            const seriesStart = new Date(activeRule.metric_series[0].timestamp).getTime();
+            const seriesEnd = new Date(activeRule.metric_series[activeRule.metric_series.length - 1].timestamp).getTime();
+
+            // 檢查事件是否在時間範圍內
+            if (eventEnd >= seriesStart && eventStart <= seriesEnd) {
+                const startLabel = formatDisplayTime(event.start_time);
+                const endLabel = formatDisplayTime(event.end_time);
+                markAreaData.push([
+                    { name: event.label, xAxis: startLabel },
+                    { xAxis: endLabel }
+                ]);
+            }
+        });
 
         return {
-            backgroundColor: 'transparent',
+            backgroundColor: '#e5e7eb',
             tooltip: {
                 trigger: 'axis',
-                axisPointer: {
-                    type: 'line',
-                    lineStyle: { color: '#334155' },
-                },
+                axisPointer: { type: 'line' },
                 valueFormatter: (value: number | string | null) => {
                     if (value === null || value === undefined || Number.isNaN(Number(value))) {
                         return '—';
@@ -311,58 +354,121 @@ const BacktestingPage: React.FC = () => {
                 },
             },
             legend: {
-                data: ['指標值', '門檻值', '觸發點'],
-                textStyle: { color: '#94a3b8' },
+                data: markAreaData.length > 0
+                    ? ['CPU 使用率過高', '告警閾值', '模擬告警觸發點', '標記事件']
+                    : ['CPU 使用率過高', '告警閾值', '模擬告警觸發點'],
+                textStyle: { color: '#374151' },
+                top: 10,
+                icon: 'roundRect',
+                itemStyle: {
+                    borderWidth: 0,
+                },
             },
             grid: {
-                left: 40,
-                right: 20,
-                top: 30,
-                bottom: 60,
+                left: 60,
+                right: 40,
+                top: 50,
+                bottom: 80,
+                containLabel: false,
             },
             xAxis: {
                 type: 'category',
                 boundaryGap: false,
                 data: labels,
-                axisLabel: { color: '#94a3b8', rotate: 45 },
-                axisLine: { lineStyle: { color: '#1e293b' } },
+                axisLabel: {
+                    color: '#6b7280',
+                    rotate: 35,
+                    fontSize: 11,
+                },
+                axisLine: { lineStyle: { color: '#d1d5db' } },
                 axisTick: { show: false },
             },
             yAxis: {
                 type: 'value',
-                axisLabel: { color: '#94a3b8' },
-                axisLine: { lineStyle: { color: '#1e293b' } },
-                splitLine: { lineStyle: { color: '#1e293b' } },
+                name: '數值 (%)',
+                nameTextStyle: { color: '#374151' },
+                axisLabel: { color: '#6b7280' },
+                axisLine: { lineStyle: { color: '#d1d5db' } },
+                splitLine: { lineStyle: { color: '#e5e7eb', type: 'solid' } },
             },
             series: [
                 {
-                    name: '指標值',
+                    name: 'CPU 使用率過高',
                     type: 'line',
                     data: metricValues,
+                    smooth: true,
                     showSymbol: false,
-                    lineStyle: { width: 2, color: '#38bdf8' },
+                    lineStyle: { width: 2, color: '#3b82f6' },
+                    areaStyle: {
+                        color: {
+                            type: 'linear',
+                            x: 0, y: 0, x2: 0, y2: 1,
+                            colorStops: [
+                                { offset: 0, color: 'rgba(59, 130, 246, 0.2)' },
+                                { offset: 1, color: 'rgba(59, 130, 246, 0.05)' }
+                            ]
+                        }
+                    },
+                    markArea: markAreaData.length > 0 ? {
+                        silent: true,
+                        itemStyle: {
+                            color: 'rgba(16, 185, 129, 0.2)',
+                            borderWidth: 0,
+                        },
+                        label: {
+                            show: true,
+                            position: 'top',
+                            color: '#065f46',
+                            fontSize: 10,
+                            formatter: (params: any) => params.name || '已標記事件'
+                        },
+                        data: markAreaData,
+                    } : undefined,
                 },
                 {
-                    name: '門檻值',
+                    name: '告警閾值',
                     type: 'line',
                     data: thresholdValues,
                     showSymbol: false,
-                    lineStyle: { width: 1, color: '#f97316', type: 'dashed' },
-                },
-                {
-                    name: '觸發點',
-                    type: 'scatter',
-                    data: triggerPoints,
-                    symbolSize: 8,
                     itemStyle: {
-                        color: '#facc15',
-                        borderColor: '#0f172a',
-                        borderWidth: 1,
+                        color: '#f97316',
+                    },
+                    lineStyle: {
+                        width: 2,
+                        color: '#f97316',
+                        type: [6, 6],
                     },
                 },
+                {
+                    name: '模擬告警觸發點',
+                    type: 'scatter',
+                    data: triggerPoints,
+                    symbol: 'triangle',
+                    symbolSize: 16,
+                    symbolRotate: 180,
+                    itemStyle: {
+                        color: '#ef4444',
+                    },
+                    z: 10,
+                },
+                // 虛擬系列用於在圖例中顯示「標記事件」
+                ...(markAreaData.length > 0 ? [{
+                    name: '標記事件',
+                    type: 'line' as const,
+                    data: [],
+                    lineStyle: {
+                        color: 'rgba(16, 185, 129, 0.5)',
+                        width: 0,
+                    },
+                    itemStyle: {
+                        color: 'rgba(16, 185, 129, 0.2)',
+                        borderWidth: 0,
+                    },
+                    showSymbol: false,
+                }] : []),
             ],
         };
-    }, [activeRule]);
+    }, [activeRule, manualEvents]);
 
     const renderStatus = () => {
         if (!taskId) {
@@ -385,30 +491,13 @@ const BacktestingPage: React.FC = () => {
         );
     };
 
-    const leftActions = (
-        <ToolbarButton
-            icon="play"
-            text="執行回放"
-            onClick={handleRunBacktesting}
-            disabled={isSubmitting || !selectedRuleId}
-        />
-    );
-
-    const rightActions = (
-        <div className="flex items-center space-x-4">
-            {renderStatus()}
-            <ToolbarButton
-                icon="refresh-cw"
-                text="重新載入規則"
-                onClick={fetchRules}
-                disabled={isLoadingRules}
-            />
-        </div>
-    );
-
     return (
         <div className="h-full flex flex-col space-y-4">
-            <Toolbar leftActions={leftActions} rightActions={rightActions} />
+            {taskId && taskStatus !== 'completed' && taskStatus !== 'failed' && (
+                <div className="flex justify-end">
+                    {renderStatus()}
+                </div>
+            )}
 
             {error && (
                 <div className="bg-rose-500/10 border border-rose-500/20 text-rose-200 px-4 py-3 rounded-md">
@@ -418,10 +507,7 @@ const BacktestingPage: React.FC = () => {
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
                 <div className="bg-slate-900/40 border border-slate-800 rounded-lg p-4 space-y-4 xl:col-span-1">
-                    <div>
-                        <h2 className="text-lg font-semibold text-slate-100">回放設定</h2>
-                        <p className="text-sm text-slate-400">選擇模擬所需的規則與時間區間。</p>
-                    </div>
+                    <h2 className="text-lg font-semibold text-slate-100">設定回放任務</h2>
 
                     <div className="space-y-4">
                         <div>
@@ -443,122 +529,122 @@ const BacktestingPage: React.FC = () => {
                             </select>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-4">
-                            <div>
-                                <label className="text-sm font-medium text-slate-300">開始時間</label>
-                                <input
-                                    type="datetime-local"
-                                    value={startInput}
-                                    onChange={event => setStartInput(event.target.value)}
-                                    className="mt-1 w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-slate-100"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-sm font-medium text-slate-300">結束時間</label>
-                                <input
-                                    type="datetime-local"
-                                    value={endInput}
-                                    onChange={event => setEndInput(event.target.value)}
-                                    className="mt-1 w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-slate-100"
-                                />
-                            </div>
+                        <div>
+                            <label className="text-sm font-medium text-slate-300 mb-2 block">選擇時間段</label>
+                            <DatePicker.RangePicker
+                                value={dateRange}
+                                onChange={handleDateRangeChange}
+                                presets={[
+                                    {
+                                        label: <span aria-label="Current Time to End of Day">Now ~ EOD</span>,
+                                        value: () => [dayjs(), dayjs().endOf('day')],
+                                    },
+                                    ...rangePresets,
+                                ]}
+                                showTime
+                                format="YYYY/MM/DD HH:mm"
+                                className="w-full"
+                            />
                         </div>
 
-                        <div className="border-t border-slate-800 pt-4 space-y-3">
-                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                                <div>
-                                    <h3 className="text-sm font-semibold text-slate-200 flex items-center space-x-2">
-                                        <Icon name="flag" className="w-4 h-4" />
-                                        <span>實際事件</span>
-                                    </h3>
-                                    <p className="text-xs text-slate-500">新增或匯入事件標籤與時間，作為回放對照。</p>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={handleImportEventsFromResults}
-                                    className="rounded-md border border-slate-700 px-3 py-1 text-xs text-slate-300 hover:border-sky-500 hover:text-sky-200"
-                                    disabled={!activeRule}
-                                >
-                                    匯入回放結果
-                                </button>
-                            </div>
+                        <button
+                            type="button"
+                            onClick={handleRunBacktesting}
+                            disabled={isSubmitting || !selectedRuleId}
+                            className="w-full rounded-md bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed px-3 py-2 text-sm font-medium text-white flex items-center justify-center space-x-2 transition-colors"
+                        >
+                            <Icon name="play" className="w-4 h-4" />
+                            <span>{isSubmitting ? '回放中...' : '開始回放'}</span>
+                        </button>
 
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                                <div className="sm:col-span-2">
-                                    <label className="text-xs font-medium text-slate-400">事件名稱</label>
-                                    <input
-                                        type="text"
-                                        value={newEventLabel}
-                                        onChange={e => setNewEventLabel(e.target.value)}
-                                        className="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-                                        placeholder="例如：CPU 過載"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-xs font-medium text-slate-400">事件時間</label>
-                                    <input
-                                        type="datetime-local"
-                                        value={newEventTime}
-                                        onChange={e => setNewEventTime(e.target.value)}
-                                        className="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-                                    />
-                                </div>
-                            </div>
+                        <div className="border-t border-slate-800 pt-4">
                             <button
                                 type="button"
-                                onClick={handleAddManualEvent}
-                                className="w-full rounded-md border border-emerald-500/60 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-200 hover:border-emerald-400"
+                                onClick={() => setIsEventSectionExpanded(!isEventSectionExpanded)}
+                                className="w-full flex items-center justify-between text-sm font-semibold text-slate-200 hover:text-slate-100 transition-colors"
                             >
-                                新增事件
+                                <span>實際事件比對</span>
+                                <Icon
+                                    name={isEventSectionExpanded ? "chevron-up" : "chevron-down"}
+                                    className="w-4 h-4"
+                                />
                             </button>
 
-                            <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                                {manualEvents.length === 0 && (
-                                    <div className="text-sm text-slate-500">尚未新增實際事件。</div>
-                                )}
-                                {manualEvents.map((event, index) => (
-                                    <div
-                                        key={`${event.timestamp}-${event.label}-${index}`}
-                                        className="flex items-center justify-between rounded-md border border-slate-800 bg-slate-900/50 px-3 py-2 text-sm text-slate-200"
-                                    >
+                            {isEventSectionExpanded && (
+                                <div className="mt-3 space-y-3">
+                                    <div className="space-y-3">
                                         <div>
-                                            <div className="font-medium text-slate-100">{event.label}</div>
-                                            <div className="text-xs text-slate-400">{formatDisplayTime(event.timestamp)}</div>
+                                            <label className="text-xs font-medium text-slate-400">事件說明（選填）</label>
+                                            <input
+                                                type="text"
+                                                value={newEventLabel}
+                                                onChange={e => setNewEventLabel(e.target.value)}
+                                                className="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                                                placeholder="例如：服務更新導致負載上升"
+                                            />
                                         </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleDeleteManualEvent(index)}
-                                            className="rounded border border-rose-500/40 px-2 py-1 text-xs text-rose-200 hover:border-rose-400"
-                                        >
-                                            刪除
-                                        </button>
+                                        <div>
+                                            <label className="text-xs font-medium text-slate-400">時間段</label>
+                                            <DatePicker.RangePicker
+                                                value={eventDateRange}
+                                                onChange={handleEventDateRangeChange}
+                                                presets={[
+                                                    {
+                                                        label: <span aria-label="Current Time to End of Day">Now ~ EOD</span>,
+                                                        value: () => [dayjs(), dayjs().endOf('day')],
+                                                    },
+                                                    { label: 'Last 1 Hour', value: [dayjs().add(-1, 'hour'), dayjs()] },
+                                                    { label: 'Last 6 Hours', value: [dayjs().add(-6, 'hour'), dayjs()] },
+                                                    { label: 'Last 24 Hours', value: [dayjs().add(-24, 'hour'), dayjs()] },
+                                                ]}
+                                                showTime
+                                                format="YYYY/MM/DD HH:mm"
+                                                className="w-full mt-1"
+                                            />
+                                        </div>
                                     </div>
-                                ))}
-                            </div>
+                                    <button
+                                        type="button"
+                                        onClick={handleAddManualEvent}
+                                        className="w-full rounded-md bg-emerald-600 hover:bg-emerald-700 px-3 py-2 text-sm font-medium text-white flex items-center justify-center space-x-2 transition-colors"
+                                    >
+                                        <Icon name="plus" className="w-4 h-4" />
+                                        <span>標記事件</span>
+                                    </button>
+
+                                    <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                                        {manualEvents.length === 0 && (
+                                            <div className="text-sm text-slate-500">尚未新增實際事件。</div>
+                                        )}
+                                        {manualEvents.map((event, index) => (
+                                            <div
+                                                key={`${event.start_time}-${event.label}-${index}`}
+                                                className="flex items-center justify-between rounded-md border border-slate-800 bg-slate-900/50 px-3 py-2 text-sm text-slate-200"
+                                            >
+                                                <div>
+                                                    <div className="font-medium text-slate-100">{event.label || '已標記事件'}</div>
+                                                    <div className="text-xs text-slate-400">
+                                                        {formatDisplayTime(event.start_time)} ~ {formatDisplayTime(event.end_time)}
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDeleteManualEvent(index)}
+                                                    className="rounded border border-rose-500/40 px-2 py-1 text-xs text-rose-200 hover:border-rose-400"
+                                                >
+                                                    刪除
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
-    
+                    </div>
                 </div>
 
                 <div className="bg-slate-900/40 border border-slate-800 rounded-lg p-4 space-y-4 xl:col-span-2">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div>
-                            <h2 className="text-lg font-semibold text-slate-100">回放結果</h2>
-                            <p className="text-sm text-slate-400">檢視觸發趨勢與時間分布。</p>
-                        </div>
-                        {results?.rule_results?.length ? (
-                            <select
-                                value={activeRule?.rule_id || ''}
-                                onChange={event => setActiveRuleId(event.target.value)}
-                                className="w-full sm:w-72 rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-slate-100"
-                            >
-                                {results.rule_results.map(rule => (
-                                    <option key={rule.rule_id} value={rule.rule_id}>
-                                        {rule.rule_name}
-                                    </option>
-                                ))}
-                            </select>
-                        ) : null}
-                    </div>
+                    <h2 className="text-lg font-semibold text-slate-100">數據趨勢與告警觸發</h2>
 
                     {results && results.status !== 'completed' && results.status !== 'failed' && (
                         <div className="flex items-center space-x-3 rounded-md border border-slate-800 bg-slate-900/60 px-4 py-3 text-slate-300">
@@ -577,53 +663,93 @@ const BacktestingPage: React.FC = () => {
 
                     {results && activeRule && (
                         <>
-                            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                                <div className="bg-slate-900/60 border border-slate-800 rounded-md p-4">
-                                    <div className="text-xs text-slate-400">觸發次數</div>
-                                    <div className="text-3xl font-semibold text-slate-100">{activeRule.triggered_count}</div>
+                            {/* 圖表區域 */}
+                            {chartOption ? (
+                                <div className="h-80 bg-gray-200 border border-slate-700 rounded-md p-4">
+                                    <EChartsReact option={chartOption} />
                                 </div>
-                                <div className="lg:col-span-2">
-                                    {chartOption ? (
-                                        <div className="h-80 bg-slate-950/40 border border-slate-800 rounded-md">
-                                            <EChartsReact option={chartOption} />
-                                        </div>
-                                    ) : (
-                                        <div className="h-80 flex items-center justify-center text-slate-500 border border-slate-800 rounded-md bg-slate-900/40">
-                                            沒有可視化資料。
-                                        </div>
-                                    )}
+                            ) : (
+                                <div className="h-80 flex items-center justify-center text-slate-500 border border-slate-800 rounded-md bg-slate-900/40">
+                                    沒有可視化資料。
+                                </div>
+                            )}
+
+                            {/* 回放結果總覽 - 統計指標 */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                                <div className="bg-slate-900/60 border border-slate-800 rounded-md p-4">
+                                    <p className="text-sm text-slate-400 mb-1">總數據點</p>
+                                    <p className="text-3xl font-bold text-slate-300">{activeRule.metric_series.length}</p>
+                                </div>
+                                <div className="bg-slate-900/60 border border-slate-800 rounded-md p-4">
+                                    <p className="text-sm text-slate-400 mb-1">觸發次數</p>
+                                    <p className="text-3xl font-bold text-blue-400">{activeRule.triggered_count}</p>
+                                </div>
+                                <div className="bg-slate-900/60 border border-slate-800 rounded-md p-4">
+                                    <p className="text-sm text-slate-400 mb-1">觸發率</p>
+                                    <p className="text-3xl font-bold text-green-400">
+                                        {activeRule.metric_series.length > 0
+                                            ? ((activeRule.triggered_count / activeRule.metric_series.length) * 100).toFixed(2)
+                                            : '0.00'}%
+                                    </p>
+                                    <p className="text-xs text-slate-500 mt-1">
+                                        觸發 {activeRule.triggered_count} 次 / 總 {activeRule.metric_series.length} 點
+                                    </p>
+                                </div>
+                                <div className="bg-slate-900/60 border border-slate-800 rounded-md p-4">
+                                    <p className="text-sm text-slate-400 mb-1">告警閾值</p>
+                                    <p className="text-3xl font-bold text-orange-400">
+                                        {activeRule.metric_series[0]?.threshold ?? 'N/A'}
+                                    </p>
                                 </div>
                             </div>
 
-                            <div className="bg-slate-900/60 border border-slate-800 rounded-md p-4 space-y-3">
-                                <h3 className="text-sm font-semibold text-slate-200 flex items-center space-x-2">
-                                    <Icon name="activity" className="w-4 h-4" />
-                                    <span>觸發時間</span>
-                                </h3>
-                                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                                    {activeRule.trigger_points.length === 0 && (
-                                        <div className="text-sm text-slate-500">此規則在指定期間未觸發。</div>
-                                    )}
-                                    {activeRule.trigger_points.map(point => (
-                                        <div
-                                            key={`${point.timestamp}-${point.value}`}
-                                            className="flex items-center justify-between rounded-md border border-slate-800 bg-slate-900/40 px-3 py-2 text-sm text-slate-200"
-                                        >
-                                            <div>
-                                                <div className="font-medium text-slate-100">{formatDisplayTime(point.timestamp)}</div>
-                                                <div className="text-xs text-slate-500">值 {point.value}</div>
-                                            </div>
-                                            {point.condition_summary && (
-                                                <div className="text-xs text-slate-500 text-right max-w-xs truncate">{point.condition_summary}</div>
-                                            )}
-                                        </div>
-                                    ))}
+                            {/* 進階指標預留區域 */}
+                            <div className="mt-6">
+                                <p className="text-sm font-semibold text-slate-300 mb-3">進階指標</p>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                                    <div className="bg-slate-900/40 border border-slate-700 rounded-md p-3 opacity-50">
+                                        <p className="text-xs text-slate-400 mb-1">Precision</p>
+                                        <p className="text-lg font-bold text-slate-500">預留</p>
+                                    </div>
+                                    <div className="bg-slate-900/40 border border-slate-700 rounded-md p-3 opacity-50">
+                                        <p className="text-xs text-slate-400 mb-1">Recall</p>
+                                        <p className="text-lg font-bold text-slate-500">預留</p>
+                                    </div>
+                                    <div className="bg-slate-900/40 border border-slate-700 rounded-md p-3 opacity-50">
+                                        <p className="text-xs text-slate-400 mb-1">F1 Score</p>
+                                        <p className="text-lg font-bold text-slate-500">預留</p>
+                                    </div>
+                                    <div className="bg-slate-900/40 border border-slate-700 rounded-md p-3 opacity-50">
+                                        <p className="text-xs text-slate-400 mb-1">準確率</p>
+                                        <p className="text-lg font-bold text-slate-500">預留</p>
+                                    </div>
                                 </div>
+                                <p className="text-xs text-slate-500 mt-2 text-center">
+                                    進階指標將在未來版本中提供更詳細的告警效能分析
+                                </p>
+                            </div>
+
+                            {/* 觸發時間點詳情 */}
+                            <div className="border-t border-slate-800 pt-4">
+                                <p className="font-semibold text-slate-300 mb-3">觸發時間點詳情</p>
+                                {activeRule.trigger_points.length === 0 ? (
+                                    <p className="text-center text-slate-500 py-4">此時間範圍內未觸發任何告警。</p>
+                                ) : (
+                                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                        {activeRule.trigger_points.map(point => (
+                                            <div
+                                                key={`${point.timestamp}-${point.value}`}
+                                                className="flex items-center justify-between rounded-md border border-slate-800 bg-slate-900/40 px-3 py-2 text-sm"
+                                            >
+                                                <span className="text-slate-300">{formatDisplayTime(point.timestamp)}</span>
+                                                <span className="font-bold text-slate-300">{point.value}%</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </>
                     )}
-                </div>
-
                 </div>
             </div>
         </div>

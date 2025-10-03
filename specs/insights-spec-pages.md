@@ -82,13 +82,16 @@
 - **頁面載入**：
     1. 頁面載入時，呼叫 `GET /analysis/capacity-planning` API 獲取所有資料。
     2. 載入期間顯示讀取中動畫，若失敗則顯示錯誤訊息及重試按鈕。
+    - **實現細節**: 初次載入呼叫 `fetchData()` 取得容量資料並設定預設時間範圍；若 API 回傳 `default` 選項，會自動帶入該值 【F:pages/analysis/CapacityPlanningPage.tsx†L41-L66】
 - **觸發分析**：
     1. 使用者點擊「觸發 AI 分析」按鈕。
     2. 系統重新呼叫 `GET /analysis/capacity-planning` API 以獲取最新的分析資料。
     3. 頁面資料會全部刷新。
+    - **實現細節**: 以 `isRefresh=true` 重新呼叫同一 GET API，顯示載入指示並防止重複點擊；錯誤時提供重試按鈕 【F:pages/analysis/CapacityPlanningPage.tsx†L41-L61】【F:pages/analysis/CapacityPlanningPage.tsx†L212-L217】
 - **匯出報表**：
     1. 使用者點擊「匯出報表」按鈕。
     2. 系統會將「詳細分析」表格中的資料轉換為 CSV 格式並下載。
+    - **實現細節**: 會檢查 `resource_analysis` 是否有資料，若為空則以 `alert` 告知，否則依序輸出 CSV 【F:pages/analysis/CapacityPlanningPage.tsx†L155-L172】【F:services/export.ts†L1-L37】
 - **時間範圍選擇**：
     1. 使用者點擊下拉選單可選擇不同的時間範圍。
     2. **[INCONSISTENCY]** 目前版本的選擇操作僅更新 UI 狀態，並未觸發任何資料查詢。
@@ -106,6 +109,10 @@
     1. 前端 `CapacityPlanningPage.tsx` 元件呼叫 API 獲取資料。
     2. Mock Server (`handlers.ts`) 回傳 `DB` 中預定義的容量規劃資料。
     3. 前端收到資料後，透過 `setData` 更新 state，並將資料渲染至圖表、列表與表格中。
+- **實現細節**:
+  - 主要資料來源為 `GET /analysis/capacity-planning`，回傳趨勢、預測模型、建議、資源分析與時間範圍選項，伺服器端動態生成趨勢並回傳預設選項 【F:pages/analysis/CapacityPlanningPage.tsx†L41-L55】【F:mock-server/handlers.ts†L2960-L3004】
+  - AI 建議與資源分析資料由 `DB.capacity_suggestions`、`DB.capacity_resource_analysis` 提供，包含嚴重度、成本影響與 `last_evaluated_at` 時戳 【F:mock-server/db.ts†L2176-L2240】【F:mock-server/db.ts†L2242-L2277】
+  - 匯出流程透過 `exportToCsv` 產生檔案並觸發瀏覽器下載 【F:services/export.ts†L1-L37】
 
 **需求與規格定義**
 - **使用者需求**：

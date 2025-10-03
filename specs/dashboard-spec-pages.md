@@ -246,10 +246,12 @@
 
 **互動流程**
 - **刷新簡報**: 使用者可以點擊「AI 每日簡報」區塊右上角的刷新按鈕，以獲取最新的分析結果。
+    - **實現細節**: 點擊重新整理按鈕觸發 `POST /ai/briefing/generate` 以重新產生摘要；期間按鈕進入 loading 狀態避免重複送出 【F:pages/SREWarRoomPage.tsx†L82-L93】【F:pages/SREWarRoomPage.tsx†L183-L187】
 - **查看異常詳情**: 點擊「關鍵異常」中提到的實體連結（如 `支付 API`），應導向該實體的詳細監控頁面。
 - **執行建議操作**: 點擊「建議操作」中的「查看日誌」按鈕，應導向相關的日誌查詢頁面，並可能預先填入篩選條件。
 - **圖表互動**:
     - 使用者將滑鼠懸停在熱力圖或長條圖的某個區塊上時，應顯示一個工具提示 (Tooltip)，提供該區塊的詳細數據（例如：服務名稱、具體健康分數、資源群組的各狀態數量）。
+    - **實現細節**: 服務健康度與資源群組圖表點擊資料列時，分別導向資源清單與資源群組頁面，延續使用者調查流程 【F:pages/SREWarRoomPage.tsx†L95-L109】
     - [NEEDS CLARIFICATION: 截圖中未顯示] 點擊圖表中的某個元素（如一個長條或熱力圖方格）可能會觸發下鑽 (Drill-down) 功能，顯示更詳細的數據或導向相關資源列表。
 
 **API 與資料流**
@@ -261,15 +263,22 @@
         - `anomalies`: 對應「關鍵異常」。
         - `suggestions`: 對應「建議操作」。
 - **獲取服務健康度**:
-    - **API**: `GET /api/v1/dashboards/sre-war-room/service-health` (根據 `handlers.ts` 推測)
+    - **API**: `GET /api/v1/dashboards/sre-war-room/service-health`
     - **用途**: 獲取熱力圖所需的數據。
     - **傳出資料**: 回傳一個 `ServiceHealthData` 物件，包含 `heatmap_data`, `x_axis_labels`, `y_axis_labels`。
+    - **實現細節**: 失敗時顯示錯誤並允許重試 【F:pages/SREWarRoomPage.tsx†L56-L74】【F:mock-server/handlers.ts†L534-L538】
 - **獲取資源群組狀態**:
-    - **API**: `GET /api/v1/dashboards/sre-war-room/resource-group-status` (根據 `handlers.ts` 推測)
+    - **API**: `GET /api/v1/dashboards/sre-war-room/resource-group-status`
     - **用途**: 獲取堆疊長條圖所需的數據。
     - **傳出資料**: 回傳一個 `ResourceGroupStatusData` 物件，包含 `group_names` 和 `series` 陣列。
+    - **實現細節**: 失敗時顯示錯誤並允許重試 【F:pages/SREWarRoomPage.tsx†L56-L74】【F:mock-server/handlers.ts†L534-L538】
 - **獲取頂部 KPI**:
     - **API**: 可能是透過 `GET /api/v1/incidents/count` 搭配不同的 `matchers` 參數來分別獲取各狀態的事件數量，或是由一個專門的 KPI API 提供。
+- **AI 簡報資料**:
+    - **API**: `GET /ai/briefing`、`POST /ai/briefing/generate`
+    - **實現細節**: 回傳摘要、異常與建議文字；資料來源為 mock DB 的 `ai_briefing` 【F:mock-server/handlers.ts†L462-L470】【F:mock-server/db.ts†L3122-L3134】
+- **KPI 區塊資料**:
+    - **實現細節**: `PageKPIs` 會呼叫 `GET /kpi-data`、`GET /settings/widgets` 與 `GET /settings/layouts`，並緩存於元件狀態；缺資料時改顯示缺少設定的提示卡 【F:components/PageKPIs.tsx†L29-L59】【F:mock-server/handlers.ts†L3200-L3244】【F:mock-server/handlers.ts†L3880-L3902】
 
 **需求與規格定義**
 - **使用者需求**:

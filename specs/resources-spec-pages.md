@@ -47,20 +47,31 @@
 **API 與資料流**
 - **獲取掃描任務列表**：
     - `GET /api/v1/resources/discovery-jobs`
-    - **傳出資料**：`{ items: DiscoveryJob[], total: number }`。
+    - **傳出資料**：`{ items: DiscoveryJob[], total: number }`
+    - **實現細節**：前端使用 `fetchJobs` 函數依目前 `filters` 狀態呼叫 API 【F:pages/resources/AutoDiscoveryPage.tsx†L21-L84】
+
 - **新增掃描任務**：
     - `POST /api/v1/resources/discovery-jobs`
-    - **傳入參數**：`Partial<DiscoveryJob>`，包含新任務的設定。
+    - **傳入資料**：`DiscoveryJob` 物件
+    - **實現細節**：點擊「新增掃描」或「編輯」會開啟 `AutoDiscoveryEditModal`，Modal 送出後依據是否含 `id` 決定 POST 或 PATCH 【F:pages/resources/AutoDiscoveryPage.tsx†L46-L111】
+
 - **更新掃描任務**：
-    - `PATCH /api/v1/resources/discovery-jobs/:id`
-    - **傳入參數**：`Partial<DiscoveryJob>`，包含要更新的欄位。
+    - `PATCH /api/v1/resources/discovery-jobs/{id}`
+    - **傳入資料**：部分更新的 `DiscoveryJob` 物件
+    - **實現細節**：編輯模式下載入現有資料並提供完整表單更新 【F:pages/resources/AutoDiscoveryPage.tsx†L46-L111】
+
 - **刪除掃描任務**：
-    - `DELETE /api/v1/resources/discovery-jobs/:id`
-- **手動執行任務**：
-    - `POST /api/v1/resources/discovery-jobs/:id/run`
+    - `DELETE /api/v1/resources/discovery-jobs/{id}`
+    - **實現細節**：刪除按鈕先顯示警示 Modal，再於確認時呼叫 DELETE，成功或失敗皆以 toast 回饋 【F:pages/resources/AutoDiscoveryPage.tsx†L52-L84】
+
+- **手動執行掃描**：
+    - `POST /api/v1/resources/discovery-jobs/{id}/run`
+    - **實現細節**：即時呼叫 `/run` 端點並重新整理列表；「查看結果」開啟抽屜供後續批次匯入或標籤處理 【F:pages/resources/AutoDiscoveryPage.tsx†L101-L176】
+
 - **獲取掃描結果**：
     - `GET /api/v1/resources/discovery-jobs/:id/results`
     - **傳出資料**：`DiscoveredResource[]`，包含發現的資源列表。
+    - **實現細節**：結果抽屜使用 `DiscoveryJobResultDrawer` 組件顯示掃描資源清單 【F:components/DiscoveryJobResultDrawer.tsx†L15-L69】
 
 **需求與規格定義**
 - **使用者需求**：
