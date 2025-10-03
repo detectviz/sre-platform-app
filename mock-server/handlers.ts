@@ -3950,15 +3950,15 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                     // Simulate backtesting task creation
                     const taskId = `task-${Date.now()}`;
                     const submittedAt = new Date().toISOString();
-                    const requestedRuleIds: string[] = Array.isArray(body?.rule_ids) && body.rule_ids.length > 0
-                        ? body.rule_ids
-                        : ['rule-001'];
+                    const requestedRuleId: string = typeof body?.rule_id === 'string' && body.rule_id
+                        ? body.rule_id
+                        : 'rule-001';
 
                     const response = {
                         task_id: taskId,
                         status: 'running' as const,
                         submitted_at: submittedAt,
-                        rule_count: requestedRuleIds.length,
+                        rule_count: 1,
                         estimated_completion_time: new Date(Date.now() + 30000).toISOString(), // 30 seconds
                     };
 
@@ -3982,30 +3982,22 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                                 ? result.rule_results
                                 : [];
 
-                            // Tailor the response to the requested rules
-                            const updatedRuleResults: BacktestingRuleResult[] = requestedRuleIds.map((ruleId, index) => {
-                                const template = templateResults[index % Math.max(templateResults.length, 1)] ?? {
-                                    rule_id: ruleId,
-                                    rule_name: ruleId,
-                                    triggered_count: 0,
-                                    trigger_points: [],
-                                    metric_series: [],
-                                    actual_events: [],
-                                    false_positive_count: 0,
-                                    false_negative_count: 0,
-                                    precision: null,
-                                    recall: null,
-                                    recommendations: [],
-                                };
-                                const matchedRule = DB.alert_rules.find((item: AlertRule) => item.id === ruleId);
-                                return {
+                            const template = templateResults[0] ?? {
+                                rule_id: requestedRuleId,
+                                rule_name: requestedRuleId,
+                                triggered_count: 0,
+                                trigger_points: [],
+                                metric_series: [],
+                                actual_events: [],
+                            };
+                            const matchedRule = DB.alert_rules.find((item: AlertRule) => item.id === requestedRuleId);
+                            const updatedRuleResults: BacktestingRuleResult[] = [
+                                {
                                     ...template,
-                                    rule_id: ruleId,
-                                    rule_name: matchedRule?.name ?? template.rule_name ?? ruleId,
-                                };
-                            });
-
-                            const totalTriggers = updatedRuleResults.reduce((sum, rule) => sum + (rule.triggered_count ?? 0), 0);
+                                    rule_id: requestedRuleId,
+                                    rule_name: matchedRule?.name ?? template.rule_name ?? requestedRuleId,
+                                },
+                            ];
 
                             result.task_id = taskId;
                             result.status = 'completed';
@@ -4013,10 +4005,6 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                             result.requested_at = submittedAt;
                             result.duration_seconds = result.duration_seconds ?? 150;
                             result.rule_results = updatedRuleResults;
-                            if (result.batch_summary) {
-                                result.batch_summary.total_rules = updatedRuleResults.length;
-                                result.batch_summary.total_triggers = totalTriggers;
-                            }
 
                             DB.backtesting_results[taskId] = result;
                         } else {

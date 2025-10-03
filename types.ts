@@ -925,43 +925,17 @@ export interface BacktestingTimeRange {
   end_time: string;
 }
 
-export type BacktestingMatchStatus =
-  | 'true_positive'
-  | 'false_positive'
-  | 'false_negative'
-  | 'unknown';
-
-export type BacktestingAnnotationStatus = 'pending' | 'confirmed' | 'dismissed';
-
 export interface BacktestingActualEvent {
-  id?: string;
   label: string;
   start_time: string;
   end_time?: string;
-  severity?: IncidentSeverity;
   notes?: string;
-  tags?: string[];
-  annotation_status?: BacktestingAnnotationStatus;
-  match_status?: BacktestingMatchStatus;
-  matched_trigger_point_id?: string | null;
-  detection_time?: string;
-  detection_delay_seconds?: number | null;
-  confirmed_by?: string | null;
-  confirmed_at?: string | null;
-}
-
-export interface BacktestingTaskOptions {
-  datasource_id?: string;
-  evaluation_window_minutes?: number;
-  sensitivity?: 'conservative' | 'balanced' | 'aggressive';
-  include_recommendations?: boolean;
 }
 
 export interface BacktestingRunRequest {
-  rule_ids: string[];
+  rule_id: string;
   time_range: BacktestingTimeRange;
   actual_events?: BacktestingActualEvent[];
-  options?: BacktestingTaskOptions;
 }
 
 export interface BacktestingRunResponse {
@@ -983,23 +957,6 @@ export interface BacktestingTriggerPoint {
   timestamp: string;
   value: number;
   condition_summary: string;
-  duration_minutes?: number;
-  match_status?: BacktestingMatchStatus;
-  ground_truth_event_id?: string | null;
-  ground_truth_event_label?: string | null;
-  tags?: string[];
-  notes?: string;
-  detection_delay_seconds?: number | null;
-}
-
-export interface BacktestingRecommendation {
-  type: 'threshold' | 'duration' | 'sensitivity' | 'automation';
-  title: string;
-  description: string;
-  impact?: CapacityPlanningImpactLevel;
-  suggested_threshold?: number;
-  suggested_duration_minutes?: number;
-  suggested_sensitivity?: BacktestingTaskOptions['sensitivity'];
 }
 
 export interface BacktestingRuleResult {
@@ -1009,24 +966,6 @@ export interface BacktestingRuleResult {
   trigger_points: BacktestingTriggerPoint[];
   metric_series: BacktestingMetricPoint[];
   actual_events: BacktestingActualEvent[];
-  false_positive_count: number;
-  false_negative_count: number;
-  precision?: number | null;
-  recall?: number | null;
-  recommendations: BacktestingRecommendation[];
-  suggested_threshold?: number | null;
-  suggested_duration_minutes?: number | null;
-  execution_time_ms?: number;
-}
-
-export interface BacktestingBatchSummary {
-  total_rules: number;
-  total_triggers: number;
-  false_positive_rate?: number | null;
-  false_negative_rate?: number | null;
-  average_precision?: number | null;
-  average_recall?: number | null;
-  recommendations: BacktestingRecommendation[];
 }
 
 export interface BacktestingResultsResponse {
@@ -1036,7 +975,6 @@ export interface BacktestingResultsResponse {
   completed_at?: string;
   duration_seconds?: number;
   rule_results: BacktestingRuleResult[];
-  batch_summary?: BacktestingBatchSummary;
   message?: string;
 }
 

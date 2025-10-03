@@ -2486,44 +2486,8 @@ const MOCK_BACKTESTING_RESULTS = {
                     { label: 'Traffic spike', start_time: '2025-09-26T09:00:00Z', end_time: '2025-09-26T10:00:00Z' },
                     { label: 'Service deployment', start_time: '2025-09-27T16:00:00Z', end_time: '2025-09-27T17:00:00Z' },
                 ],
-                false_positive_count: 3,
-                false_negative_count: 1,
-                precision: 0.75,
-                recall: 0.92,
-                recommendations: [
-                    {
-                        type: 'threshold',
-                        title: '調整響應時間門檻',
-                        description: '將門檻從 1000ms 調整為 1200ms 可減少 25% 的誤報',
-                        suggested_threshold: 1200,
-                    },
-                    {
-                        type: 'duration',
-                        title: '延長持續時間檢查',
-                        description: '將持續時間從 5 分鐘增加到 10 分鐘可提升準確度',
-                        suggested_duration_minutes: 10,
-                    },
-                ],
-                suggested_threshold: 1150,
-                suggested_duration_minutes: 8,
-                execution_time_ms: 2500,
             },
         ],
-        batch_summary: {
-            total_rules: 1,
-            total_triggers: 12,
-            false_positive_rate: 0.25,
-            false_negative_rate: 0.08,
-            average_precision: 0.75,
-            average_recall: 0.92,
-            recommendations: [
-                {
-                    type: 'automation',
-                    title: '啟用自動化調整',
-                    description: '建議啟用基於回放結果的自動門檻調整',
-                },
-            ],
-        },
     },
 };
 
