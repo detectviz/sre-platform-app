@@ -17,6 +17,8 @@ import Drawer from '../../../components/Drawer';
 import SearchableSelect from '../../../components/SearchableSelect';
 import StatusTag from '../../../components/StatusTag';
 import { formatRelativeTime } from '../../../utils/time';
+import SortableColumnHeaderCell from '../../../components/SortableColumnHeaderCell';
+import useTableSorting from '../../../hooks/useTableSorting';
 
 const PAGE_IDENTIFIER = 'teams';
 
@@ -46,12 +48,14 @@ const TeamManagementPage: React.FC = () => {
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
 
+    const { sortConfig, sortParams, handleSort } = useTableSorting({ defaultSortKey: 'created_at', defaultSortDirection: 'desc' });
+
     const fetchTeamsAndUsers = useCallback(async () => {
         if (!pageKey) return;
         setIsLoading(true);
         setError(null);
         try {
-            const params = { page: currentPage, page_size: pageSize, ...filters };
+            const params = { page: currentPage, page_size: pageSize, ...filters, ...sortParams };
             const [teamsRes, usersRes, columnConfigRes, allColumnsRes] = await Promise.all([
                 api.get<{ items: Team[], total: number }>('/iam/teams', { params }),
                 api.get<{ items: User[] }>('/iam/users', { params: { page: 1, page_size: 1000 } }),
@@ -76,7 +80,7 @@ const TeamManagementPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, filters, pageKey]);
+    }, [currentPage, pageSize, filters, pageKey, sortParams]);
 
     useEffect(() => {
         if (pageKey) {
@@ -233,9 +237,18 @@ const TeamManagementPage: React.FC = () => {
                                     <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
                                         checked={isAllSelected} ref={el => { if (el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
-                                {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
-                                ))}
+                                {visibleColumns.map(key => {
+                                    const column = allColumns.find(c => c.key === key);
+                                    return (
+                                        <SortableColumnHeaderCell
+                                            key={key}
+                                            column={column}
+                                            columnKey={key}
+                                            sortConfig={sortConfig}
+                                            onSort={handleSort}
+                                        />
+                                    );
+                                })}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
                         </thead>

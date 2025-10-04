@@ -47,7 +47,14 @@ export type AuditAction =
   | 'login'
   | 'logout'
   | 'permission_change';
-export type AuditResult = 'success' | 'failure';
+export type AuditResult =
+  | 'success'
+  | 'failure'
+  | 'failed'
+  | 'error'
+  | 'partial'
+  | 'pending'
+  | 'unknown';
 
 export type RiskLevel = 'high' | 'medium' | 'low';
 export type OptimizationType = 'cost' | 'performance' | 'security';
@@ -440,14 +447,24 @@ export interface Role {
   deleted_at?: string;
 }
 
+export interface AuditLogIdentity {
+  id?: string;
+  name?: string;
+}
+
+export interface AuditLogTargetDetails {
+  type?: string;
+  name?: string;
+}
+
 export interface AuditLog {
   id: string;
-  timestamp: string;
-  user: { id: string, name: string };
+  timestamp?: string;
+  user?: AuditLogIdentity | null;
   action: AuditAction;
-  target: { type: string, name: string };
-  result: AuditResult;
-  ip: string;
+  target?: AuditLogTargetDetails | null;
+  result?: AuditResult | string;
+  ip?: string;
   details: Record<string, any>;
 }
 
@@ -1547,4 +1564,6 @@ export interface AllOptions {
 export interface TableColumn {
   key: string;
   label: string;
+  sortable?: boolean;
+  sort_key?: string;
 }

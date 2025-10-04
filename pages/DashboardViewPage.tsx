@@ -112,6 +112,53 @@ const DashboardViewPage: React.FC = () => {
     }
   }, [grafanaUrl]);
 
+  const resourceCount = dashboard?.resource_ids?.length ?? 0;
+  const updatedDisplay = formatTimestamp(dashboard?.updated_at, { showSeconds: false });
+  const updatedRelative = formatRelativeFromNow(dashboard?.updated_at);
+  const emptyValue = pageContent?.EMPTY_VALUE ?? '—';
+  const description = (dashboard?.description ?? '').trim();
+
+  const typeBadgeMapping: Record<string, { label: string; tone: 'info' | 'neutral' | 'default'; icon: string }> = {
+    'built-in': { label: pageContent?.TYPE_BUILT_IN ?? '內建儀表板', tone: 'info', icon: 'sparkles' },
+    grafana: { label: pageContent?.TYPE_GRAFANA ?? 'Grafana 儀表板', tone: 'info', icon: 'area-chart' },
+    custom: { label: pageContent?.TYPE_CUSTOM ?? '自訂儀表板', tone: 'neutral', icon: 'layout-dashboard' },
+  };
+  const typeBadge = typeBadgeMapping[dashboard?.type ?? 'custom'] ?? typeBadgeMapping.custom;
+
+  const resourceBadgeLabel = pageContent?.RESOURCE_COUNT_BADGE?.replace('{count}', String(resourceCount))
+    ?? `${resourceCount} 個資源`;
+  const resourceBadgeTooltipTemplate = pageContent?.RESOURCE_BADGE_TOOLTIP;
+  const resourceBadgeTooltip = resourceBadgeTooltipTemplate
+    ? resourceBadgeTooltipTemplate.replace('{count}', String(resourceCount))
+    : undefined;
+
+  const metadataItems = [
+    {
+      key: 'owner',
+      icon: 'user-round',
+      label: pageContent?.OWNER_LABEL ?? '擁有者',
+      value: dashboard?.owner || emptyValue,
+    },
+    {
+      key: 'category',
+      icon: 'folder',
+      label: pageContent?.CATEGORY_LABEL ?? '分類',
+      value: dashboard?.category || emptyValue,
+    },
+    {
+      key: 'updated',
+      icon: 'clock',
+      label: pageContent?.UPDATED_AT_LABEL ?? '最後更新',
+      value: updatedDisplay ? `${updatedDisplay}${updatedRelative ? `（${updatedRelative}）` : ''}` : emptyValue,
+    },
+    {
+      key: 'resources',
+      icon: 'layers',
+      label: pageContent?.RESOURCE_COUNT_LABEL ?? '關聯資源',
+      value: String(resourceCount),
+    },
+  ];
+
   if (isLoading && !dashboard) {
     return (
       <div className="space-y-6">
@@ -196,61 +243,6 @@ const DashboardViewPage: React.FC = () => {
 
     return <Navigate to="/home" replace />;
   }
-
-  const resourceCount = dashboard.resource_ids?.length ?? 0;
-  const updatedDisplay = formatTimestamp(dashboard.updated_at, { showSeconds: false });
-  const updatedRelative = formatRelativeFromNow(dashboard.updated_at);
-  const emptyValue = pageContent?.EMPTY_VALUE ?? '—';
-  const description = (dashboard.description ?? '').trim();
-
-  const typeBadge = useMemo(() => {
-    const mapping: Record<string, { label: string; tone: 'info' | 'neutral' | 'default'; icon: string }> = {
-      'built-in': { label: pageContent?.TYPE_BUILT_IN ?? '內建儀表板', tone: 'info', icon: 'sparkles' },
-      grafana: { label: pageContent?.TYPE_GRAFANA ?? 'Grafana 儀表板', tone: 'info', icon: 'area-chart' },
-      custom: { label: pageContent?.TYPE_CUSTOM ?? '自訂儀表板', tone: 'neutral', icon: 'layout-dashboard' },
-    };
-    return mapping[dashboard.type] ?? mapping.custom;
-  }, [dashboard.type, pageContent]);
-
-  const resourceBadgeLabel = useMemo(
-    () => pageContent?.RESOURCE_COUNT_BADGE?.replace('{count}', String(resourceCount)) ?? `${resourceCount} 個資源`,
-    [pageContent, resourceCount],
-  );
-
-  const resourceBadgeTooltip = useMemo(
-    () => pageContent?.RESOURCE_BADGE_TOOLTIP?.replace('{count}', String(resourceCount)),
-    [pageContent, resourceCount],
-  );
-
-  const metadataItems = useMemo(
-    () => [
-      {
-        key: 'owner',
-        icon: 'user-round',
-        label: pageContent?.OWNER_LABEL ?? '擁有者',
-        value: dashboard.owner || emptyValue,
-      },
-      {
-        key: 'category',
-        icon: 'folder',
-        label: pageContent?.CATEGORY_LABEL ?? '分類',
-        value: dashboard.category || emptyValue,
-      },
-      {
-        key: 'updated',
-        icon: 'clock',
-        label: pageContent?.UPDATED_AT_LABEL ?? '最後更新',
-        value: updatedDisplay ? `${updatedDisplay}${updatedRelative ? `（${updatedRelative}）` : ''}` : emptyValue,
-      },
-      {
-        key: 'resources',
-        icon: 'layers',
-        label: pageContent?.RESOURCE_COUNT_LABEL ?? '關聯資源',
-        value: String(resourceCount),
-      },
-    ],
-    [dashboard, emptyValue, pageContent, resourceCount, updatedDisplay, updatedRelative],
-  );
 
   const backLabel = pageContent?.BACK_TO_LIST ?? '返回儀表板列表';
   const refreshLabel = pageContent?.REFRESH_LABEL ?? '重新載入資料';

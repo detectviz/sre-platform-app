@@ -20,14 +20,12 @@ import { useOptions } from '../../contexts/OptionsContext';
 import StatusTag from '../../components/StatusTag';
 import IconButton from '../../components/IconButton';
 import SearchableSelect from '../../components/SearchableSelect';
+import QuickFilterBar, { type QuickFilterOption } from '../../components/QuickFilterBar';
+import FormRow from '../../components/FormRow';
+import SearchInput from '../../components/SearchInput';
 import { DATASOURCE_STATUS_META } from '../../utils/datasource';
-
-const STATUS_FILTERS: Array<{ value: ConnectionStatus | undefined; label: string; icon: string }> = [
-  { value: undefined, label: '全部狀態', icon: 'sparkles' },
-  { value: 'ok', label: DATASOURCE_STATUS_META.ok.label, icon: DATASOURCE_STATUS_META.ok.icon },
-  { value: 'pending', label: DATASOURCE_STATUS_META.pending.label, icon: DATASOURCE_STATUS_META.pending.icon },
-  { value: 'error', label: DATASOURCE_STATUS_META.error.label, icon: DATASOURCE_STATUS_META.error.icon },
-];
+import SortableHeader from '../../components/SortableHeader';
+import useTableSorting from '../../hooks/useTableSorting';
 
 const formatDateTime = (value?: string) =>
   value ? dayjs(value).format('YYYY/MM/DD HH:mm') : '—';
@@ -51,6 +49,19 @@ const DatasourceManagementPage: React.FC = () => {
   const { options } = useOptions();
   const datasourceOptions = options?.datasources;
 
+  const updateFilters = useCallback(
+    (updater: (prev: DatasourceFilters) => DatasourceFilters) => {
+      setFilters(prev => {
+        const next = updater(prev);
+        if (next !== prev) {
+          setCurrentPage(1);
+        }
+        return next;
+      });
+    },
+    [setCurrentPage],
+  );
+
   const typeLookup = useMemo(() => {
     const map = new Map<string, { label: string; className?: string }>();
     datasourceOptions?.types.forEach(descriptor => {
@@ -67,19 +78,68 @@ const DatasourceManagementPage: React.FC = () => {
     return map;
   }, [datasourceOptions?.auth_methods]);
 
+  const statusFilterOptions = useMemo<QuickFilterOption[]>(
+    () => [
+      {
+        value: 'all',
+        label: '全部狀態',
+        icon: <Icon name="sparkles" className="h-3.5 w-3.5 text-slate-300" aria-hidden />,
+      },
+      ...(['ok', 'pending', 'error'] as ConnectionStatus[]).map(status => {
+        const meta = DATASOURCE_STATUS_META[status];
+        return {
+          value: status,
+          label: meta.label,
+          icon: <Icon name={meta.icon} className="h-3.5 w-3.5" aria-hidden />,
+          tooltip: meta.description,
+        } satisfies QuickFilterOption;
+      }),
+    ],
+    [],
+  );
+
+  const appliedFilters = useMemo(() => {
+    const items: Array<{ key: string; label: string }> = [];
+    if (filters.keyword) {
+      items.push({ key: 'keyword', label: `關鍵字：${filters.keyword}` });
+    }
+    if (filters.type) {
+      const label = typeLookup.get(filters.type)?.label ?? filters.type;
+      items.push({ key: 'type', label: `類型：${label}` });
+    }
+    if (filters.status) {
+      const meta = DATASOURCE_STATUS_META[filters.status];
+      items.push({ key: 'status', label: `狀態：${meta.label}` });
+    }
+    return items;
+  }, [filters, typeLookup]);
+
+  const hasAppliedFilters = appliedFilters.length > 0;
+
+  const statusFilterValue = filters.status ? [filters.status] : ['all'];
+
+  const { sortConfig, sortParams, handleSort } = useTableSorting({ defaultSortKey: 'updated_at', defaultSortDirection: 'desc' });
+
   useEffect(() => {
     const handler = window.setTimeout(() => {
-      setFilters(prev => {
-        const normalized = searchTerm.trim() === '' ? undefined : searchTerm.trim();
-        if (prev.keyword === normalized || (!prev.keyword && normalized === undefined)) {
+      const normalizedTerm = searchTerm.trim();
+      const keyword = normalizedTerm === '' ? undefined : normalizedTerm;
+      updateFilters(prev => {
+        if (!keyword) {
+          if (!prev.keyword) return prev;
+          const next = { ...prev };
+          delete next.keyword;
+          return next;
+        }
+        if (prev.keyword === keyword) {
           return prev;
         }
-        return { ...prev, keyword: normalized };
+        return { ...prev, keyword };
       });
     }, 300);
 
     return () => window.clearTimeout(handler);
-  }, [searchTerm]);
+  }, [searchTerm, updateFilters]);
 
   const fetchDatasources = useCallback(async () => {
     setIsLoading(true);
@@ -89,6 +149,7 @@ const DatasourceManagementPage: React.FC = () => {
         page: currentPage,
         page_size: pageSize,
         ...filters,
+        ...sortParams,
       };
 
       const { data } = await api.get<{ items: Datasource[]; total: number }>('/resources/datasources', { params });
@@ -100,14 +161,14 @@ const DatasourceManagementPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [filters, currentPage, pageSize]);
+  }, [filters, currentPage, pageSize, sortParams]);
 
   useEffect(() => {
     fetchDatasources();
   }, [fetchDatasources]);
 
   const handleTypeFilterChange = (value: string) => {
-    setFilters(prev => {
+    updateFilters(prev => {
       if (!value) {
         if (!prev.type) return prev;
         const next = { ...prev };
@@ -119,26 +180,24 @@ const DatasourceManagementPage: React.FC = () => {
     });
   };
 
-  const resetTypeFilter = () => {
-    setFilters(prev => {
-      if (!prev.type) return prev;
-      const next = { ...prev };
-      delete next.type;
-      return next;
-    });
-  };
-
-  const handleStatusFilterChange = (value: ConnectionStatus | undefined) => {
-    setFilters(prev => {
-      if (!value) {
+  const handleStatusFilterChange = (values: string[]) => {
+    const selected = values[0];
+    updateFilters(prev => {
+      if (!selected || selected === 'all') {
         if (!prev.status) return prev;
         const next = { ...prev };
         delete next.status;
         return next;
       }
-      if (prev.status === value) return prev;
-      return { ...prev, status: value };
+      if (prev.status === selected) return prev;
+      return { ...prev, status: selected as ConnectionStatus };
     });
+  };
+
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setFilters({});
+    setCurrentPage(1);
   };
 
   const handleNew = () => {
@@ -214,83 +273,80 @@ const DatasourceManagementPage: React.FC = () => {
 
   return (
     <div className="flex h-full flex-col space-y-4">
-      <Toolbar
-        leftActions={(
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-slate-400">快速搜尋</span>
-              <div className="flex w-64 items-center gap-2 rounded-lg border border-slate-700/70 bg-slate-900/60 px-3 py-2 text-sm focus-within:border-sky-500 focus-within:ring-2 focus-within:ring-sky-500/20">
-                <Icon name="search" className="h-4 w-4 text-slate-400" />
-                <input
-                  value={searchTerm}
-                  onChange={event => setSearchTerm(event.target.value)}
-                  placeholder="輸入名稱、URL 或標籤"
-                  className="w-full bg-transparent text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none"
-                  aria-label="搜尋資料來源"
-                />
-                {searchTerm && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchTerm('')}
-                    className="text-slate-400 transition hover:text-white"
-                    aria-label="清除搜尋條件"
-                  >
-                    <Icon name="x" className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center justify-between text-xs font-medium text-slate-400">
+      {hasAppliedFilters && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-700/70 bg-slate-900/40 px-3 py-2">
+          <span className="text-xs text-slate-400">篩選條件：</span>
+          {appliedFilters.map(filter => (
+            <StatusTag key={filter.key} dense tone="neutral" label={filter.label} />
+          ))}
+          <button
+            type="button"
+            onClick={handleResetFilters}
+            className="text-xs font-medium text-sky-300 transition hover:text-sky-200"
+          >
+            清除全部
+          </button>
+        </div>
+      )}
+
+      <div className="space-y-3 rounded-xl border border-slate-700/70 bg-slate-900/40 p-4">
+        <div className="grid gap-3 md:grid-cols-[minmax(0,360px)_minmax(0,260px)]">
+          <FormRow
+            className="flex flex-col gap-2"
+            label={<span>快速搜尋</span>}
+            description="輸入名稱、連線 URL 或標籤關鍵字進行模糊搜尋。"
+          >
+            <SearchInput
+              value={searchTerm}
+              onChange={setSearchTerm}
+              placeholder="輸入名稱、URL 或標籤"
+              ariaLabel="搜尋資料來源"
+              className="w-full"
+            />
+          </FormRow>
+          <FormRow
+            className="flex flex-col gap-2"
+            label={(
+              <div className="flex items-center justify-between">
                 <span>資料來源類型</span>
                 {filters.type && (
                   <button
                     type="button"
-                    onClick={resetTypeFilter}
-                    className="text-[11px] text-sky-300 transition hover:text-sky-200"
+                    onClick={() => handleTypeFilterChange('')}
+                    className="text-[11px] font-medium text-sky-300 transition hover:text-sky-200"
                   >
                     清除
                   </button>
                 )}
               </div>
-              <div className="w-48">
-                <SearchableSelect
-                  value={filters.type || ''}
-                  onChange={handleTypeFilterChange}
-                  options={(datasourceOptions?.types || []).map(option => ({ value: option.value, label: option.label }))}
-                  placeholder="輸入關鍵字搜尋類型"
-                  emptyMessage="沒有符合的資料來源類型"
-                />
-              </div>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-slate-400">連線狀態</span>
-              <div className="flex items-center gap-2 rounded-full border border-slate-700/70 bg-slate-900/60 px-1.5 py-1">
-                {STATUS_FILTERS.map(option => {
-                  const isActive = option.value ? filters.status === option.value : !filters.status;
-                  return (
-                    <button
-                      key={option.label}
-                      type="button"
-                      onClick={() => handleStatusFilterChange(option.value)}
-                      className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 ${isActive ? 'bg-sky-600/20 text-sky-200' : 'text-slate-300 hover:text-white'
-                        }`}
-                      aria-pressed={isActive}
-                    >
-                      <Icon name={option.icon} className="h-3.5 w-3.5" />
-                      {option.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
+            )}
+            description="依據來源型別快速縮小結果範圍。"
+          >
+            <SearchableSelect
+              value={filters.type || ''}
+              onChange={handleTypeFilterChange}
+              options={(datasourceOptions?.types || []).map(option => ({ value: option.value, label: option.label }))}
+              placeholder="輸入關鍵字搜尋類型"
+              emptyMessage="沒有符合的資料來源類型"
+            />
+          </FormRow>
+        </div>
+
+        <QuickFilterBar
+          label="連線狀態"
+          options={statusFilterOptions}
+          mode="single"
+          value={statusFilterValue}
+          onChange={handleStatusFilterChange}
+        />
+      </div>
+
+      <Toolbar
         rightActions={(
-          <div className="flex items-center gap-2">
-            <IconButton icon="refresh-cw" label="重新整理" tooltip="重新整理列表" onClick={fetchDatasources} isLoading={isLoading} />
+          <>
+            <ToolbarButton icon="refresh-cw" text="重新整理" onClick={fetchDatasources} disabled={isLoading} />
             <ToolbarButton icon="plus" text="新增資料來源" primary onClick={handleNew} />
-          </div>
+          </>
         )}
       />
 
@@ -299,10 +355,34 @@ const DatasourceManagementPage: React.FC = () => {
           <table className="w-full table-fixed text-left text-sm text-slate-200">
             <thead className="sticky top-0 z-10 bg-slate-900/70 text-xs uppercase tracking-wider text-slate-400">
               <tr>
-                <th className="px-6 py-3 font-semibold">名稱與標籤</th>
-                <th className="px-6 py-3 font-semibold">類型 / 驗證</th>
-                <th className="px-6 py-3 font-semibold">連線狀態</th>
-                <th className="px-6 py-3 font-semibold">建立 / 更新時間</th>
+                <SortableHeader
+                  label="名稱與標籤"
+                  sortKey="name"
+                  sortConfig={sortConfig}
+                  onSort={handleSort}
+                  className="font-semibold"
+                />
+                <SortableHeader
+                  label="類型 / 驗證"
+                  sortKey="type"
+                  sortConfig={sortConfig}
+                  onSort={handleSort}
+                  className="font-semibold"
+                />
+                <SortableHeader
+                  label="連線狀態"
+                  sortKey="status"
+                  sortConfig={sortConfig}
+                  onSort={handleSort}
+                  className="font-semibold"
+                />
+                <SortableHeader
+                  label="建立 / 更新時間"
+                  sortKey="updated_at"
+                  sortConfig={sortConfig}
+                  onSort={handleSort}
+                  className="font-semibold"
+                />
                 <th className="px-6 py-3 text-center font-semibold">操作</th>
               </tr>
             </thead>

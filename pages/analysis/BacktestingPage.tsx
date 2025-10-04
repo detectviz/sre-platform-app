@@ -311,70 +311,129 @@ const BacktestingPage: React.FC = () => {
             return null;
         }
 
-        const labels = activeRule.metric_series.map(point => formatDisplayTime(point.timestamp));
-        const metricValues = activeRule.metric_series.map(point => point.value);
-        const thresholdValues = activeRule.metric_series.map(point => point.threshold ?? null);
+        const metricSeries = activeRule.metric_series.map(point => ({
+            value: [point.timestamp, point.value],
+        }));
 
-        // 將觸發點映射到 x 軸索引 - 找最接近的時間點
-        const triggerPoints = activeRule.trigger_points.map(point => {
-            const triggerTime = new Date(point.timestamp).getTime();
+        const thresholdSeries = activeRule.metric_series.map(point => ({
+            value: [point.timestamp, point.threshold ?? null],
+        }));
 
-            // 找到最接近的 metric_series 索引
-            let closestIndex = -1;
-            let minDiff = Infinity;
+        const triggerPoints = activeRule.trigger_points.map(point => ({
+            value: [point.timestamp, point.value],
+            name: point.condition_summary,
+        }));
 
-            activeRule.metric_series.forEach((metricPoint, index) => {
-                const metricTime = new Date(metricPoint.timestamp).getTime();
-                const diff = Math.abs(triggerTime - metricTime);
-                if (diff < minDiff) {
-                    minDiff = diff;
-                    closestIndex = index;
+        const seriesStart = new Date(activeRule.metric_series[0].timestamp).getTime();
+        const seriesEnd = new Date(activeRule.metric_series[activeRule.metric_series.length - 1].timestamp).getTime();
+
+        const minimumEventDuration = 5 * 60 * 1000; // 5 分鐘最小顯示跨度
+
+        const markAreaData = manualEvents
+            .map(event => {
+                const eventStart = new Date(event.start_time).getTime();
+                const eventEnd = new Date(event.end_time).getTime();
+
+                if (Number.isNaN(eventStart) || Number.isNaN(eventEnd)) {
+                    return null;
                 }
-            });
 
-            // 如果時間差在 30 分鐘以內，視為匹配
-            if (closestIndex >= 0 && minDiff < 30 * 60 * 1000) {
-                return [closestIndex, point.value];
+                if (eventEnd < seriesStart || eventStart > seriesEnd) {
+                    return null;
+                }
+
+                const clampedStart = Math.max(eventStart, seriesStart);
+                let clampedEnd = Math.min(eventEnd, seriesEnd);
+
+                if (clampedEnd <= clampedStart) {
+                    clampedEnd = Math.min(clampedStart + minimumEventDuration, seriesEnd);
+                }
+
+                if (clampedEnd <= clampedStart) {
+                    return null;
+                }
+
+                const rangeLabel = `${event.label}\n${dayjs(event.start_time).format('MM/DD HH:mm')} ~ ${dayjs(event.end_time).format('MM/DD HH:mm')}`;
+
+                return [
+                    {
+                        xAxis: clampedStart,
+                        name: event.label,
+                        itemStyle: {
+                            color: 'rgba(16, 185, 129, 0.18)',
+                            borderWidth: 0,
+                        },
+                        label: {
+                            show: true,
+                            color: '#0f766e',
+                            fontSize: 10,
+                            align: 'left',
+                            backgroundColor: 'rgba(15, 118, 110, 0.08)',
+                            borderRadius: 4,
+                            padding: [6, 8],
+                            formatter: rangeLabel,
+                        },
+                    },
+                    {
+                        xAxis: clampedEnd,
+                    },
+                ];
+            })
+            .filter((value): value is [Record<string, unknown>, Record<string, unknown>] => Boolean(value));
+
+        const legendItems = ['CPU 使用率過高', '告警閾值', '模擬告警觸發點'];
+        if (markAreaData.length > 0) {
+            legendItems.push('標記事件時間段');
+        }
+
+        const tooltipFormatter = (params: any[]) => {
+            if (!params || params.length === 0) {
+                return '';
             }
 
-            return null;
-        }).filter(p => p !== null);
+            const primaryValue = params[0]?.value?.[0];
+            const timestampLabel = dayjs(primaryValue).isValid()
+                ? dayjs(primaryValue).format('YYYY/MM/DD HH:mm')
+                : '';
 
-        // 建立圖表標註（markArea）用於顯示事件時間段
-        const markAreaData: any[] = [];
-        manualEvents.forEach((event, index) => {
-            const eventStart = new Date(event.start_time).getTime();
-            const eventEnd = new Date(event.end_time).getTime();
-            const seriesStart = new Date(activeRule.metric_series[0].timestamp).getTime();
-            const seriesEnd = new Date(activeRule.metric_series[activeRule.metric_series.length - 1].timestamp).getTime();
+            const rows = params
+                .filter(item => item.seriesType !== 'markArea')
+                .map(item => {
+                    const rawValue = Array.isArray(item.value) ? item.value[1] : item.value;
+                    const displayValue = rawValue === null || rawValue === undefined || Number.isNaN(Number(rawValue))
+                        ? '—'
+                        : `${Number(rawValue).toFixed(2)}%`;
+                    const condition = item.seriesName === '模擬告警觸發點' && item.data?.name
+                        ? `<div style="margin-left:16px;color:#94a3b8;">條件：${item.data.name}</div>`
+                        : '';
+                    return `
+                        <div style="display:flex;align-items:center;margin-top:4px;gap:8px;">
+                            <span style="display:inline-block;width:8px;height:8px;border-radius:9999px;background:${item.color};"></span>
+                            <span style="color:#1f2937;">${item.seriesName}：${displayValue}</span>
+                        </div>
+                        ${condition}
+                    `;
+                })
+                .join('');
 
-            // 檢查事件是否在時間範圍內
-            if (eventEnd >= seriesStart && eventStart <= seriesEnd) {
-                const startLabel = formatDisplayTime(event.start_time);
-                const endLabel = formatDisplayTime(event.end_time);
-                markAreaData.push([
-                    { name: event.label, xAxis: startLabel },
-                    { xAxis: endLabel }
-                ]);
-            }
-        });
+            return `
+                <div style="font-size:12px;color:#0f172a;">
+                    <div style="margin-bottom:4px;">${timestampLabel}</div>
+                    ${rows}
+                </div>
+            `;
+        };
 
         return {
             backgroundColor: '#e5e7eb',
             tooltip: {
                 trigger: 'axis',
                 axisPointer: { type: 'line' },
-                valueFormatter: (value: number | string | null) => {
-                    if (value === null || value === undefined || Number.isNaN(Number(value))) {
-                        return '—';
-                    }
-                    return `${Number(value).toFixed(2)}%`;
-                },
+                formatter: tooltipFormatter,
+                extraCssText: 'box-shadow:0 10px 25px rgba(15,23,42,0.12);border-radius:8px;padding:12px 14px;background:#fff;',
             },
             legend: {
-                data: markAreaData.length > 0
-                    ? ['CPU 使用率過高', '告警閾值', '模擬告警觸發點', '標記事件']
-                    : ['CPU 使用率過高', '告警閾值', '模擬告警觸發點'],
+                data: legendItems,
                 textStyle: { color: '#374151' },
                 top: 10,
                 icon: 'roundRect',
@@ -386,20 +445,24 @@ const BacktestingPage: React.FC = () => {
                 left: 60,
                 right: 40,
                 top: 50,
-                bottom: 80,
+                bottom: 70,
                 containLabel: false,
             },
             xAxis: {
-                type: 'category',
+                type: 'time',
                 boundaryGap: false,
-                data: labels,
                 axisLabel: {
                     color: '#6b7280',
                     rotate: 35,
                     fontSize: 11,
+                    formatter: (value: number | string) => {
+                        const parsed = dayjs(value);
+                        return parsed.isValid() ? parsed.format('MM/DD HH:mm') : value;
+                    },
                 },
                 axisLine: { lineStyle: { color: '#d1d5db' } },
                 axisTick: { show: false },
+                splitLine: { show: false },
             },
             yAxis: {
                 type: 'value',
@@ -413,7 +476,7 @@ const BacktestingPage: React.FC = () => {
                 {
                     name: 'CPU 使用率過高',
                     type: 'line',
-                    data: metricValues,
+                    data: metricSeries,
                     smooth: true,
                     showSymbol: false,
                     lineStyle: { width: 2, color: '#3b82f6' },
@@ -423,30 +486,21 @@ const BacktestingPage: React.FC = () => {
                             x: 0, y: 0, x2: 0, y2: 1,
                             colorStops: [
                                 { offset: 0, color: 'rgba(59, 130, 246, 0.2)' },
-                                { offset: 1, color: 'rgba(59, 130, 246, 0.05)' }
-                            ]
-                        }
+                                { offset: 1, color: 'rgba(59, 130, 246, 0.05)' },
+                            ],
+                        },
                     },
-                    markArea: markAreaData.length > 0 ? {
-                        silent: true,
-                        itemStyle: {
-                            color: 'rgba(16, 185, 129, 0.2)',
-                            borderWidth: 0,
-                        },
-                        label: {
-                            show: true,
-                            position: 'top',
-                            color: '#065f46',
-                            fontSize: 10,
-                            formatter: (params: any) => params.name || '已標記事件'
-                        },
-                        data: markAreaData,
-                    } : undefined,
+                    markArea: markAreaData.length > 0
+                        ? {
+                              silent: true,
+                              data: markAreaData,
+                          }
+                        : undefined,
                 },
                 {
                     name: '告警閾值',
                     type: 'line',
-                    data: thresholdValues,
+                    data: thresholdSeries,
                     showSymbol: false,
                     itemStyle: {
                         color: '#f97316',
@@ -466,24 +520,25 @@ const BacktestingPage: React.FC = () => {
                     symbolRotate: 180,
                     itemStyle: {
                         color: '#ef4444',
+                        borderColor: '#fff',
+                        borderWidth: 1,
                     },
                     z: 10,
                 },
-                // 虛擬系列用於在圖例中顯示「標記事件」
-                ...(markAreaData.length > 0 ? [{
-                    name: '標記事件',
-                    type: 'line' as const,
-                    data: [],
-                    lineStyle: {
-                        color: 'rgba(16, 185, 129, 0.5)',
-                        width: 0,
-                    },
-                    itemStyle: {
-                        color: 'rgba(16, 185, 129, 0.2)',
-                        borderWidth: 0,
-                    },
-                    showSymbol: false,
-                }] : []),
+                ...(markAreaData.length > 0
+                    ? [
+                          {
+                              name: '標記事件時間段',
+                              type: 'line' as const,
+                              data: [],
+                              showSymbol: false,
+                              lineStyle: {
+                                  color: 'rgba(16, 185, 129, 0.5)',
+                                  width: 0,
+                              },
+                          },
+                      ]
+                    : []),
             ],
         };
     }, [activeRule, manualEvents]);

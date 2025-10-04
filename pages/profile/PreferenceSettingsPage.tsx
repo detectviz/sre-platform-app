@@ -163,16 +163,32 @@ const PreferenceSettingsPage: React.FC = () => {
     setIsExporting(true);
     try {
       const { data } = await api.post<UserPreferenceExportResponse>('/me/preferences/export', { format: 'json' });
-      showToast('偏好設定匯出連結已生成。', 'success');
-      if (data.download_url) {
-        window.open(data.download_url, '_blank', 'noopener');
+      const latestPreferencesResponse = await api.get<UserPreferences>('/me/preferences');
+      const latestPreferences = latestPreferencesResponse.data;
+      setPreferences(latestPreferences);
+      setInitialPreferences(latestPreferences);
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const derivedFileName = data.download_url?.split('/').pop();
+      const fileName = derivedFileName && derivedFileName.trim().length > 0
+        ? derivedFileName
+        : `preferences-${timestamp}.json`;
+      const exportContent = JSON.stringify(latestPreferences, null, 2);
+
+      if (typeof window !== 'undefined') {
+        const blob = new Blob([exportContent], { type: 'application/json;charset=utf-8' });
+        const downloadUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(downloadUrl);
+        showToast('偏好設定已匯出並下載 JSON 檔案。', 'success');
+      } else {
+        showToast('偏好設定匯出完成，請於支援下載的環境操作。', 'success');
       }
-      const exportMetadata: Pick<UserPreferences, 'last_exported_at' | 'last_export_format'> = {
-        last_exported_at: data.job.completed_at ?? data.expires_at,
-        last_export_format: data.format,
-      };
-      setPreferences(prev => (prev ? { ...prev, ...exportMetadata } : prev));
-      setInitialPreferences(prev => (prev ? { ...prev, ...exportMetadata } : prev));
     } catch (err) {
       showToast('偏好設定匯出失敗。', 'error');
     } finally {
@@ -209,7 +225,7 @@ const PreferenceSettingsPage: React.FC = () => {
                 value={preferences.theme}
                 onChange={value => handleChange('theme', value)}
                 options={themeOptions}
-                placeholder="搜尋主題或輸入名稱"
+                placeholder="請選擇介面主題"
               />
             </FormRow>
             <FormRow label="語言" description={describeLanguage(preferences.language)}>
@@ -217,7 +233,7 @@ const PreferenceSettingsPage: React.FC = () => {
                 value={preferences.language}
                 onChange={value => handleChange('language', value)}
                 options={languageOptions}
-                placeholder="輸入語言名稱或代碼"
+                placeholder="請選擇語言"
               />
             </FormRow>
             <FormRow
@@ -229,7 +245,7 @@ const PreferenceSettingsPage: React.FC = () => {
                 value={preferences.timezone}
                 onChange={value => handleChange('timezone', value)}
                 options={timezoneOptions}
-                placeholder="搜尋城市或時區代碼，例如 Asia/Taipei"
+                placeholder="請選擇時區"
               />
             </FormRow>
           </div>
@@ -253,7 +269,7 @@ const PreferenceSettingsPage: React.FC = () => {
                 value={preferences.default_page}
                 onChange={value => handleChange('default_page', value)}
                 options={dashboardOptions}
-                placeholder="輸入儀表板名稱或 ID"
+                placeholder="請選擇預設首頁"
                 disabled={!hasDashboards}
                 emptyMessage="目前沒有可用的儀表板"
               />

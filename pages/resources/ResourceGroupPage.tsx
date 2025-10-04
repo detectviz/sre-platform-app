@@ -19,6 +19,8 @@ import IconButton from '../../components/IconButton';
 import Drawer from '../../components/Drawer';
 import { useOptions } from '../../contexts/OptionsContext';
 import { formatRelativeTime } from '../../utils/time';
+import SortableColumnHeaderCell from '../../components/SortableColumnHeaderCell';
+import useTableSorting from '../../hooks/useTableSorting';
 
 const PAGE_IDENTIFIER = 'resource_groups';
 
@@ -72,7 +74,7 @@ const ResourceGroupPage: React.FC = () => {
     const englishFromValue = useCallback((value: string) => (
         value.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())
     ), []);
-
+    const { sortConfig, sortParams, handleSort } = useTableSorting({ defaultSortKey: 'name' });
 
     const fetchGroups = useCallback(async () => {
         if (!pageKey) return;
@@ -83,6 +85,7 @@ const ResourceGroupPage: React.FC = () => {
                 page: currentPage,
                 page_size: pageSize,
                 ...filters,
+                ...sortParams,
             };
 
             const [groupsRes, columnConfigRes, allColumnsRes] = await Promise.all([
@@ -108,7 +111,7 @@ const ResourceGroupPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [filters, pageKey, currentPage, pageSize]);
+    }, [filters, pageKey, currentPage, pageSize, sortParams]);
 
     useEffect(() => {
         if (pageKey) {
@@ -286,9 +289,18 @@ const ResourceGroupPage: React.FC = () => {
                     <table className="w-full text-sm text-left text-slate-300">
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
-                                {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
-                                ))}
+                                {visibleColumns.map(key => {
+                                    const column = allColumns.find(c => c.key === key);
+                                    return (
+                                        <SortableColumnHeaderCell
+                                            key={key}
+                                            column={column}
+                                            columnKey={key}
+                                            sortConfig={sortConfig}
+                                            onSort={handleSort}
+                                        />
+                                    );
+                                })}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
                         </thead>

@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useState } from 'react';
+import React, { useId, useMemo } from 'react';
 import Icon from './Icon';
 
 export interface SearchableSelectOption {
@@ -7,7 +7,7 @@ export interface SearchableSelectOption {
 }
 
 interface SearchableSelectProps {
-  value: string;
+  value?: string;
   onChange: (value: string) => void;
   options: SearchableSelectOption[];
   placeholder?: string;
@@ -19,66 +19,56 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
   value,
   onChange,
   options,
-  placeholder = '輸入關鍵字快速搜尋',
+  placeholder = '請選擇',
   disabled,
-  emptyMessage = '沒有符合的選項',
+  emptyMessage = '目前沒有可用的選項',
 }) => {
-  const inputId = useId();
-  const datalistId = `${inputId}-options`;
-  const [displayValue, setDisplayValue] = useState('');
+  const selectId = useId();
 
-  useEffect(() => {
-    const selected = options.find(opt => opt.value === value);
-    if (selected) {
-      setDisplayValue(selected.label);
-    } else if (!value) {
-      setDisplayValue('');
-    }
-  }, [options, value]);
+  const normalizedValue = typeof value === 'string' ? value : '';
 
-  const handleChange = (next: string) => {
-    setDisplayValue(next);
-    const matchedOption = options.find(opt => opt.value === next || opt.label === next);
-    if (matchedOption) {
-      onChange(matchedOption.value);
-    }
-  };
+  const hasValue = useMemo(
+    () => options.some(option => option.value === normalizedValue),
+    [options, normalizedValue]
+  );
+  const selectValue = hasValue ? normalizedValue : '';
+  const isEmpty = options.length === 0;
 
-  const handleBlur = () => {
-    const matchedOption = options.find(opt => opt.value === displayValue || opt.label === displayValue);
-    if (!matchedOption) {
-      const selected = options.find(opt => opt.value === value);
-      setDisplayValue(selected ? selected.label : '');
-    }
+  const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    onChange(event.target.value);
   };
 
   return (
-    <div className="relative flex items-center rounded-md border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm focus-within:border-sky-500 focus-within:ring-2 focus-within:ring-sky-500/30">
-      <Icon name="search" className="mr-2 h-4 w-4 text-slate-400" />
-      <input
-        list={datalistId}
-        id={inputId}
-        value={displayValue}
-        onChange={event => handleChange(event.target.value)}
-        onBlur={handleBlur}
-        placeholder={placeholder}
-        disabled={disabled}
-        className="w-full bg-transparent text-sm text-white placeholder:text-slate-500 focus:outline-none"
-        aria-autocomplete="list"
-        aria-expanded="false"
-        role="combobox"
-      />
-      <datalist id={datalistId}>
-        {options.length === 0 ? (
+    <div className="relative">
+      <select
+        id={selectId}
+        value={selectValue}
+        onChange={handleChange}
+        disabled={disabled || isEmpty}
+        className="w-full appearance-none rounded-md border border-slate-700 bg-slate-900/60 px-3 py-2 pr-10 text-sm text-white focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {isEmpty ? (
           <option value="" disabled>
             {emptyMessage}
           </option>
         ) : (
-          options.map(option => (
-            <option key={option.value} value={option.label} />
-          ))
+          <>
+            <option value="" disabled>
+              {placeholder}
+            </option>
+            {options.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </>
         )}
-      </datalist>
+      </select>
+      <Icon
+        name="chevron-down"
+        className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+        aria-hidden="true"
+      />
     </div>
   );
 };

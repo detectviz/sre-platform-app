@@ -17,6 +17,8 @@ import StatusTag from '../../../components/StatusTag';
 import IconButton from '../../../components/IconButton';
 import JsonPreview from '../../../components/JsonPreview';
 import { formatRelativeTime } from '../../../utils/time';
+import SortableColumnHeaderCell from '../../../components/SortableColumnHeaderCell';
+import useTableSorting from '../../../hooks/useTableSorting';
 import QuickFilterBar, { QuickFilterOption } from '../../../components/QuickFilterBar';
 import { useOptions } from '../../../contexts/OptionsContext';
 
@@ -113,6 +115,8 @@ const NotificationHistoryPage: React.FC = () => {
             .catch(err => console.error("Failed to fetch icon config", err));
     }, []);
 
+    const { sortConfig, sortParams, handleSort } = useTableSorting({ defaultSortKey: 'timestamp', defaultSortDirection: 'desc' });
+
     const fetchHistory = useCallback(async () => {
         if (!pageKey) return;
         setIsLoading(true);
@@ -121,7 +125,8 @@ const NotificationHistoryPage: React.FC = () => {
             const params = {
                 page: currentPage,
                 page_size: pageSize,
-                ...filters
+                ...filters,
+                ...sortParams
             };
             const [historyRes, columnConfigRes, allColumnsRes] = await Promise.all([
                 api.get<{ items: NotificationHistoryRecord[], total: number }>('/settings/notification-history', { params }),
@@ -143,7 +148,7 @@ const NotificationHistoryPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, filters, pageKey]);
+    }, [currentPage, pageSize, filters, pageKey, sortParams]);
 
     useEffect(() => {
         if (pageKey) {
@@ -334,9 +339,18 @@ const NotificationHistoryPage: React.FC = () => {
                     <table className="w-full text-sm text-left text-slate-300">
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
-                                {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
-                                ))}
+                                {visibleColumns.map(key => {
+                                    const column = allColumns.find(c => c.key === key);
+                                    return (
+                                        <SortableColumnHeaderCell
+                                            key={key}
+                                            column={column}
+                                            columnKey={key}
+                                            sortConfig={sortConfig}
+                                            onSort={handleSort}
+                                        />
+                                    );
+                                })}
                             </tr>
                         </thead>
                         <tbody>

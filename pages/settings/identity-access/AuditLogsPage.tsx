@@ -17,6 +17,7 @@ import { useOptions } from '../../../contexts/OptionsContext';
 import StatusTag from '../../../components/StatusTag';
 import JsonPreview from '../../../components/JsonPreview';
 import { formatRelativeTime } from '../../../utils/time';
+import useTableSorting from '../../../hooks/useTableSorting';
 
 const PAGE_IDENTIFIER = 'audit_logs';
 
@@ -34,7 +35,6 @@ const AuditLogsPage: React.FC = () => {
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
-    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'timestamp', direction: 'desc' });
     
     const { metadata: pageMetadata } = usePageMetadata();
     const { options } = useOptions();
@@ -61,11 +61,59 @@ const AuditLogsPage: React.FC = () => {
     const resultToneMap: Record<string, 'success' | 'danger' | 'warning' | 'info' | 'neutral'> = {
         success: 'success',
         failed: 'danger',
+        failure: 'danger',
         error: 'danger',
         partial: 'warning',
+        pending: 'info',
     };
 
     const getActionLabel = (action: string) => actionLabelMap[action] || action;
+
+    const getResultLabel = (result?: string | null) => {
+        switch (result) {
+            case 'success':
+                return '成功';
+            case 'failure':
+            case 'failed':
+            case 'error':
+                return '失敗';
+            case 'partial':
+                return '部分完成';
+            case 'pending':
+                return '處理中';
+            case undefined:
+            case null:
+                return '未知結果';
+            default: {
+                const normalized = result.replace?.(/_/g, ' ') || '';
+                return normalized ? normalized.toUpperCase() : '未知結果';
+            }
+        }
+    };
+
+    const resolveResultTone = (result?: string | null): 'success' | 'danger' | 'warning' | 'info' | 'neutral' => {
+        if (!result) {
+            return 'neutral';
+        }
+        return resultToneMap[result] || 'neutral';
+    };
+
+    const formatTimestamp = (timestamp?: string) => {
+        if (!timestamp) {
+            return { exact: '--', relative: '--' };
+        }
+        return {
+            exact: timestamp,
+            relative: formatRelativeTime(timestamp),
+        };
+    };
+
+    const selectedLogTimestamp = useMemo(
+        () => formatTimestamp(selectedLog?.timestamp),
+        [selectedLog?.timestamp]
+    );
+
+    const { sortConfig, sortParams, handleSort } = useTableSorting({ defaultSortKey: 'timestamp', defaultSortDirection: 'desc' });
 
     const fetchAuditLogs = useCallback(async () => {
         if (!pageKey) return;
@@ -75,12 +123,9 @@ const AuditLogsPage: React.FC = () => {
             const params: any = {
                 page: currentPage,
                 page_size: pageSize,
-                ...filters
+                ...filters,
+                ...sortParams
             };
-             if (sortConfig) {
-                params.sort_by = sortConfig.key;
-                params.sort_order = sortConfig.direction;
-            }
             const [logsRes, columnConfigRes, allColumnsRes] = await Promise.all([
                 api.get<{ items: AuditLog[], total: number }>('/iam/audit-logs', { params }),
                 api.get<string[]>(`/settings/column-config/${pageKey}`),
@@ -101,7 +146,7 @@ const AuditLogsPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, filters, pageKey, sortConfig]);
+    }, [currentPage, pageSize, filters, pageKey, sortParams]);
 
     useEffect(() => {
         if (pageKey) {
@@ -109,14 +154,6 @@ const AuditLogsPage: React.FC = () => {
         }
     }, [fetchAuditLogs, pageKey]);
     
-    const handleSort = (key: string) => {
-        let direction: 'asc' | 'desc' = 'asc';
-        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
-            direction = 'desc';
-        }
-        setSortConfig({ key, direction });
-    };
-
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
         if (!pageKey) {
             showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
@@ -143,53 +180,65 @@ const AuditLogsPage: React.FC = () => {
             headers: ['id', 'timestamp', 'user_name', 'action', 'target_type', 'target_name', 'result', 'ip'],
             data: logs.map(log => ({
                 id: log.id,
-                timestamp: log.timestamp,
-                user_name: log.user.name,
+                timestamp: log.timestamp ?? '',
+                user_name: log.user?.name ?? '未知使用者',
                 action: log.action,
-                target_type: log.target.type,
-                target_name: log.target.name,
-                result: log.result,
-                ip: log.ip,
+                target_type: log.target?.type ?? '未指定',
+                target_name: log.target?.name ?? '未提供',
+                result: log.result ?? '未提供',
+                ip: log.ip ?? '未提供',
             })),
         });
     };
-    
+
     const renderCellContent = (log: AuditLog, columnKey: string) => {
         switch (columnKey) {
-            case 'timestamp':
+            case 'timestamp': {
+                const timestampParts = formatTimestamp(log.timestamp);
                 return (
                     <div className="flex flex-col">
-                        <span className="font-medium text-white">{formatRelativeTime(log.timestamp)}</span>
-                        <span className="text-xs text-slate-500">{log.timestamp}</span>
+                        <span className="font-medium text-white">{timestampParts.relative}</span>
+                        <span className="text-xs text-slate-500">{timestampParts.exact}</span>
                     </div>
                 );
-            case 'user':
+            }
+            case 'user': {
+                const userName = log.user?.name ?? '未知使用者';
+                const userId = log.user?.id ?? '—';
                 return (
                     <div className="flex flex-col">
-                        <span className="font-semibold text-white">{log.user.name}</span>
-                        <span className="text-xs text-slate-500">ID: {log.user.id}</span>
+                        <span className="font-semibold text-white">{userName}</span>
+                        <span className="text-xs text-slate-500">ID: {userId}</span>
                     </div>
                 );
+            }
             case 'action':
                 return <StatusTag label={getActionLabel(log.action)} tone="info" dense tooltip={log.action} />;
-            case 'target':
+            case 'target': {
+                const targetName = log.target?.name ?? '未提供';
+                const targetType = log.target?.type ?? '未指定';
                 return (
                     <div className="space-y-0.5">
-                        <span className="font-medium text-white">{log.target.name}</span>
-                        <span className="text-xs text-slate-500">類型：{log.target.type}</span>
+                        <span className="font-medium text-white">{targetName}</span>
+                        <span className="text-xs text-slate-500">類型：{targetType}</span>
                     </div>
                 );
+            }
             case 'result':
                 return (
                     <StatusTag
-                        label={log.result === 'success' ? '成功' : '失敗'}
-                        tone={resultToneMap[log.result] || 'neutral'}
+                        label={getResultLabel(log.result)}
+                        tone={resolveResultTone(log.result)}
                         dense
-                        tooltip={log.result}
+                        tooltip={log.result ?? '未提供'}
                     />
                 );
             case 'ip':
-                return <code className="text-xs text-slate-200 bg-slate-800/60 px-2 py-1 rounded-md">{log.ip}</code>;
+                return (
+                    <code className="text-xs text-slate-200 bg-slate-800/60 px-2 py-1 rounded-md">
+                        {log.ip ?? '—'}
+                    </code>
+                );
             default:
                 return <span className="text-slate-500">--</span>;
         }
@@ -249,13 +298,13 @@ const AuditLogsPage: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
-                 <Pagination 
+                <Pagination
                     total={totalLogs}
                     page={currentPage}
                     pageSize={pageSize}
                     onPageChange={setCurrentPage}
                     onPageSizeChange={setPageSize}
-                 />
+                />
             </TableContainer>
 
             <Drawer
@@ -271,30 +320,30 @@ const AuditLogsPage: React.FC = () => {
                                 <p className="text-xs text-slate-500">動作</p>
                                 <div className="mt-2 flex items-center gap-2">
                                     <StatusTag label={getActionLabel(selectedLog.action)} tone="info" />
-                                    <StatusTag label={selectedLog.result === 'success' ? '成功' : '失敗'} tone={resultToneMap[selectedLog.result] || 'neutral'} />
+                                    <StatusTag label={getResultLabel(selectedLog.result)} tone={resolveResultTone(selectedLog.result)} />
                                 </div>
                             </div>
                             <div className="border border-slate-700/70 rounded-lg p-4 bg-slate-900/60">
                                 <p className="text-xs text-slate-500">觸發時間</p>
-                                <p className="mt-2 text-sm text-white">{selectedLog.timestamp}</p>
-                                <p className="text-xs text-slate-500">{formatRelativeTime(selectedLog.timestamp)}</p>
+                                <p className="mt-2 text-sm text-white">{selectedLogTimestamp.exact}</p>
+                                <p className="text-xs text-slate-500">{selectedLogTimestamp.relative}</p>
                             </div>
                             <div className="border border-slate-700/70 rounded-lg p-4 bg-slate-900/60">
                                 <p className="text-xs text-slate-500">操作人員</p>
-                                <p className="mt-2 text-sm text-white">{selectedLog.user.name}</p>
-                                <code className="text-xs text-slate-200 bg-slate-800/60 px-2 py-1 rounded-md">ID: {selectedLog.user.id}</code>
+                                <p className="mt-2 text-sm text-white">{selectedLog.user?.name ?? '未知使用者'}</p>
+                                <code className="text-xs text-slate-200 bg-slate-800/60 px-2 py-1 rounded-md">ID: {selectedLog.user?.id ?? '—'}</code>
                             </div>
                             <div className="border border-slate-700/70 rounded-lg p-4 bg-slate-900/60 space-y-1">
                                 <p className="text-xs text-slate-500">目標</p>
-                                <p className="text-sm text-white">{selectedLog.target.name}</p>
-                                <span className="text-xs text-slate-500">類型：{selectedLog.target.type}</span>
+                                <p className="text-sm text-white">{selectedLog.target?.name ?? '未提供'}</p>
+                                <span className="text-xs text-slate-500">類型：{selectedLog.target?.type ?? '未指定'}</span>
                                 <div className="flex items-center gap-2 text-xs text-slate-400">
                                     <span>來源 IP：</span>
-                                    <code className="bg-slate-800/60 px-2 py-1 rounded-md">{selectedLog.ip}</code>
+                                    <code className="bg-slate-800/60 px-2 py-1 rounded-md">{selectedLog.ip ?? '—'}</code>
                                 </div>
                             </div>
                         </div>
-                        <JsonPreview data={selectedLog.details} title="詳細內容 (JSON)" />
+                        <JsonPreview data={selectedLog.details ?? {}} title="詳細內容 (JSON)" />
                     </div>
                 )}
             </Drawer>
@@ -309,7 +358,7 @@ const AuditLogsPage: React.FC = () => {
                 }}
                 initialFilters={filters}
             />
-             <ColumnSettingsModal
+            <ColumnSettingsModal
                 isOpen={isColumnSettingsModalOpen}
                 onClose={() => setIsColumnSettingsModalOpen(false)}
                 onSave={handleSaveColumnConfig}
