@@ -53,7 +53,8 @@ import {
     StyleDescriptor,
     ChartTheme,
     ResourceLink,
-    ConfigVersion
+    ConfigVersion,
+    KpiDataEntry
 } from '../types';
 import { TAG_SCOPE_OPTIONS, createTagDefinitions, getEnumValuesForTag } from '../tag-registry';
 
@@ -1014,6 +1015,9 @@ const MOCK_ALL_COLUMNS: Record<string, TableColumn[]> = {
         { key: 'status', label: '狀態' },
         { key: 'name', label: '名稱' },
         { key: 'type', label: '類型' },
+        { key: 'event_count', label: '事件數', sortable: true },
+        { key: 'cpu_usage', label: 'CPU 使用率', sortable: true, sort_key: 'metrics.cpu' },
+        { key: 'memory_usage', label: '記憶體使用率', sortable: true, sort_key: 'metrics.memory' },
         { key: 'provider', label: '供應商' },
         { key: 'region', label: '地區' },
         { key: 'owner', label: '擁有者' },
@@ -1529,11 +1533,76 @@ const MOCK_SILENCE_RULE_OPTIONS: SilenceRuleOptions = {
     ],
 };
 const MOCK_RESOURCES: Resource[] = [
-    { id: 'res-001', name: 'api-gateway-prod-01', status: 'healthy', type: 'API Gateway', provider: 'AWS', region: 'us-east-1', owner: 'SRE Team', last_check_in_at: new Date(Date.now() - 30 * 1000).toISOString(), created_at: '2024-01-10T10:00:00Z', updated_at: '2024-01-15T11:00:00Z' },
-    { id: 'res-002', name: 'rds-prod-main', status: 'critical', type: 'RDS Database', provider: 'AWS', region: 'us-east-1', owner: 'DBA Team', last_check_in_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(), created_at: '2024-01-10T10:00:00Z', updated_at: '2024-01-15T11:00:00Z' },
-    { id: 'res-003', name: 'k8s-prod-cluster', status: 'healthy', type: 'EKS Cluster', provider: 'AWS', region: 'us-west-2', owner: 'SRE Team', last_check_in_at: new Date(Date.now() - 60 * 1000).toISOString(), created_at: '2024-01-10T10:00:00Z', updated_at: '2024-01-15T11:00:00Z' },
-    { id: 'res-004', name: 'web-prod-12', status: 'healthy', type: 'EC2 Instance', provider: 'AWS', region: 'us-west-2', owner: 'Web Team', last_check_in_at: new Date(Date.now() - 45 * 1000).toISOString(), created_at: '2024-01-10T10:00:00Z', updated_at: '2024-01-15T11:00:00Z' },
-    { id: 'res-007', name: 'api-service', status: 'warning', type: 'Kubernetes', provider: 'AWS', region: 'us-east-1', owner: 'API Services', last_check_in_at: new Date(Date.now() - 60 * 1000).toISOString(), created_at: '2024-01-10T10:00:00Z', updated_at: '2024-01-15T11:00:00Z' },
+    {
+        id: 'res-001',
+        name: 'api-gateway-prod-01',
+        status: 'healthy',
+        type: 'API Gateway',
+        provider: 'AWS',
+        region: 'us-east-1',
+        owner: 'SRE Team',
+        event_count: 0,
+        metrics: { cpu: 42.3, memory: 55.1 },
+        last_check_in_at: new Date(Date.now() - 30 * 1000).toISOString(),
+        created_at: '2024-01-10T10:00:00Z',
+        updated_at: '2024-01-15T11:00:00Z'
+    },
+    {
+        id: 'res-002',
+        name: 'rds-prod-main',
+        status: 'critical',
+        type: 'RDS Database',
+        provider: 'AWS',
+        region: 'us-east-1',
+        owner: 'DBA Team',
+        event_count: 4,
+        metrics: { cpu: 88.6, memory: 76.4 },
+        last_check_in_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+        created_at: '2024-01-10T10:00:00Z',
+        updated_at: '2024-01-15T11:00:00Z'
+    },
+    {
+        id: 'res-003',
+        name: 'k8s-prod-cluster',
+        status: 'healthy',
+        type: 'EKS Cluster',
+        provider: 'AWS',
+        region: 'us-west-2',
+        owner: 'SRE Team',
+        event_count: 1,
+        metrics: { cpu: 57.2, memory: 61.3 },
+        last_check_in_at: new Date(Date.now() - 60 * 1000).toISOString(),
+        created_at: '2024-01-10T10:00:00Z',
+        updated_at: '2024-01-15T11:00:00Z'
+    },
+    {
+        id: 'res-004',
+        name: 'web-prod-12',
+        status: 'healthy',
+        type: 'EC2 Instance',
+        provider: 'AWS',
+        region: 'us-west-2',
+        owner: 'Web Team',
+        event_count: 0,
+        metrics: { cpu: 34.5, memory: 49.2 },
+        last_check_in_at: new Date(Date.now() - 45 * 1000).toISOString(),
+        created_at: '2024-01-10T10:00:00Z',
+        updated_at: '2024-01-15T11:00:00Z'
+    },
+    {
+        id: 'res-007',
+        name: 'api-service',
+        status: 'warning',
+        type: 'Kubernetes',
+        provider: 'AWS',
+        region: 'us-east-1',
+        owner: 'API Services',
+        event_count: 2,
+        metrics: { cpu: 82.1, memory: 69.5 },
+        last_check_in_at: new Date(Date.now() - 60 * 1000).toISOString(),
+        created_at: '2024-01-10T10:00:00Z',
+        updated_at: '2024-01-15T11:00:00Z'
+    },
 ];
 const MOCK_RESOURCE_GROUPS: ResourceGroup[] = [
     { id: 'rg-001', name: '正式環境 Web 伺服器', description: '所有面向正式環境的 Web 伺服器', owner_team: 'Web Team', member_ids: ['res-004'], status_summary: { healthy: 12, warning: 1, critical: 0 }, created_at: '2024-01-12T10:00:00Z', updated_at: '2024-01-12T10:00:00Z' },
@@ -1913,53 +1982,51 @@ const DEFAULT_LAYOUTS: Record<string, { widget_ids: string[]; updated_at: string
     "平台": { widget_ids: ['platform_tags_defined', 'platform_auth_provider', 'platform_mail_status'], updated_at: '2025-09-24T10:30:00Z', updated_by: 'Admin User' },
     "profile": { widget_ids: ['profile_login_count_7d', 'profile_last_password_change', 'profile_mfa_status'], updated_at: '2025-09-24T10:30:00Z', updated_by: 'Admin User' },
 };
-const KPI_DATA: Record<string, any> = {
-    'incident_pending_count': { value: '5', description: '2 嚴重', icon: 'shield-alert', icon_bg_color: 'bg-red-500' },
-    'incident_in_progress': { value: '3', description: '↓15% vs yesterday', icon: 'clock', icon_bg_color: 'bg-yellow-500' },
-    'incident_resolved_today': { value: '12', description: '↑8% vs yesterday', icon: 'check-circle', icon_bg_color: 'bg-green-500' },
-    'sre_pending_incidents': { value: '5', description: '2 嚴重', icon: 'shield-alert', icon_bg_color: 'bg-red-500' },
-    'sre_in_progress': { value: '3', description: '↓15% vs yesterday', icon: 'clock', icon_bg_color: 'bg-yellow-500' },
-    'sre_resolved_today': { value: '12', description: '↑8% vs yesterday', icon: 'check-circle', icon_bg_color: 'bg-green-500' },
-    'sre_automation_rate': { value: '35.2%', description: '4 事件自動解決', icon: 'bot', icon_bg_color: 'bg-sky-500' },
-    'infra_total_resources': { value: '120', description: '跨雲供應商', icon: 'database-zap', icon_bg_color: 'bg-blue-500' },
-    'infra_running': { value: '115', description: '95.8% 健康', icon: 'heart-pulse', icon_bg_color: 'bg-green-500' },
-    'infra_anomalies': { value: '5', description: '4.2% 需要關注', icon: 'siren', icon_bg_color: 'bg-orange-500' },
-    'infra_offline': { value: '0', description: '0% 離線', icon: 'cloud-off', icon_bg_color: 'bg-slate-500' },
+const KPI_DATA: Record<string, KpiDataEntry> = {
+    'incident_pending_count': { value: '5', description: '2 嚴重', color: 'error', trend: 'up', change: '+2 件' },
+    'incident_in_progress': { value: '3', description: '↓15% vs yesterday', color: 'warning', trend: 'down', change: '15%' },
+    'incident_resolved_today': { value: '12', description: '↑8% vs yesterday', color: 'success', trend: 'up', change: '8%' },
+    'sre_pending_incidents': { value: '5', description: '2 嚴重', color: 'error', trend: 'up', change: '+2 件' },
+    'sre_in_progress': { value: '3', description: '↓15% vs yesterday', color: 'warning', trend: 'down', change: '15%' },
+    'sre_resolved_today': { value: '12', description: '↑8% vs yesterday', color: 'success', trend: 'up', change: '8%' },
+    'sre_automation_rate': { value: '35.2%', description: '4 事件自動解決', color: 'primary', trend: 'up', change: '4 次' },
+    'infra_total_resources': { value: '120', description: '跨雲供應商', color: 'primary' },
+    'infra_running': { value: '115', description: '95.8% 健康', color: 'success' },
+    'infra_anomalies': { value: '5', description: '4.2% 需要關注', color: 'warning', trend: 'up', change: '4.2%' },
+    'infra_offline': { value: '0', description: '0% 離線', color: 'default' },
 
-    // NEW DATA
-    'resource_total_count': { value: '345', description: '↑2% vs last week', icon: 'database', icon_bg_color: 'bg-blue-500' },
-    'resource_health_rate': { value: '98.5%', description: '340 健康', icon: 'heart-pulse', icon_bg_color: 'bg-green-500' },
-    'resource_alerting': { value: '5', description: '3 critical, 2 warning', icon: 'siren', icon_bg_color: 'bg-orange-500' },
-    'resource_group_count': { value: '15', description: '↑2 vs last month', icon: 'layout-grid', icon_bg_color: 'bg-purple-500' },
+    'resource_total_count': { value: '345', description: '↑2% vs last week', color: 'primary', trend: 'up', change: '2%' },
+    'resource_health_rate': { value: '98.5%', description: '340 健康', color: 'success' },
+    'resource_alerting': { value: '5', description: '3 critical, 2 warning', color: 'warning', trend: 'up', change: '5 項' },
+    'resource_group_count': { value: '15', description: '↑2 vs last month', color: 'primary', trend: 'up', change: '2' },
 
-    'dashboard_total_count': { value: '28', description: '↑3 vs last month', icon: 'layout-dashboard', icon_bg_color: 'bg-indigo-500' },
-    'dashboard_custom_count': { value: '12', description: '使用者自訂的內建儀表板數量。', icon: 'layout-template', icon_bg_color: 'bg-cyan-500' },
-    'dashboard_grafana_count': { value: '16', description: '從 Grafana 連結的儀表板數量。', icon: 'area-chart', icon_bg_color: 'bg-green-500' },
+    'dashboard_total_count': { value: '28', description: '↑3 vs last month', color: 'primary', trend: 'up', change: '3' },
+    'dashboard_custom_count': { value: '12', description: '使用者自訂的內建儀表板數量。', color: 'primary' },
+    'dashboard_grafana_count': { value: '16', description: '從 Grafana 連結的儀表板數量。', color: 'success' },
 
-    'analysis_critical_anomalies': { value: '3', description: '↑1 vs yesterday', icon: 'zap', icon_bg_color: 'bg-red-500' },
-    'analysis_log_volume': { value: '25.1 GB', description: '↓5% vs yesterday', icon: 'file-text', icon_bg_color: 'bg-teal-500' },
-    'analysis_trace_errors': { value: '1.2%', description: '↑0.3% vs last hour', icon: 'git-fork', icon_bg_color: 'bg-orange-500' },
+    'analysis_critical_anomalies': { value: '3', description: '↑1 vs yesterday', color: 'error', trend: 'up', change: '+1' },
+    'analysis_log_volume': { value: '25.1 GB', description: '↓5% vs yesterday', color: 'warning', trend: 'down', change: '5%' },
+    'analysis_trace_errors': { value: '1.2%', description: '↑0.3% vs last hour', color: 'error', trend: 'up', change: '0.3%' },
 
-    'automation_runs_today': { value: '1,283', description: '↑10% vs yesterday', icon: 'bot', icon_bg_color: 'bg-sky-500' },
-    'automation_success_rate': { value: '99.8%', description: '2 failures', icon: 'check-circle', icon_bg_color: 'bg-green-500' },
-    'automation_suppressed_alerts': { value: '45', description: 'Saved 2 hours of toil', icon: 'bell-off', icon_bg_color: 'bg-purple-500' },
+    'automation_runs_today': { value: '1,283', description: '↑10% vs yesterday', color: 'primary', trend: 'up', change: '10%' },
+    'automation_success_rate': { value: '99.8%', description: '2 failures', color: 'success', trend: 'down', change: '2 次' },
+    'automation_suppressed_alerts': { value: '45', description: 'Saved 2 hours of toil', color: 'primary' },
 
-    'iam_total_users': { value: '124', description: '↑5 new users this month', icon: 'users', icon_bg_color: 'bg-cyan-500' },
-    'iam_active_users': { value: '98', description: '79% active rate', icon: 'user-check', icon_bg_color: 'bg-green-500' },
-    'iam_login_failures': { value: '8', description: 'From 3 unique IPs', icon: 'shield-off', icon_bg_color: 'bg-red-500' },
+    'iam_total_users': { value: '124', description: '↑5 new users this month', color: 'primary', trend: 'up', change: '5 人' },
+    'iam_active_users': { value: '98', description: '79% active rate', color: 'success' },
+    'iam_login_failures': { value: '8', description: 'From 3 unique IPs', color: 'error', trend: 'up', change: '3 個 IP' },
 
-    'notification_sent_today': { value: '342', description: '25 critical alerts', icon: 'send', icon_bg_color: 'bg-blue-500' },
-    'notification_failure_rate': { value: '0.5%', description: '2 failed sends', icon: 'alert-triangle', icon_bg_color: 'bg-orange-500' },
-    'notification_channels': { value: '8', description: 'Email, Slack, Webhook', icon: 'share-2', icon_bg_color: 'bg-teal-500' },
+    'notification_sent_today': { value: '342', description: '25 critical alerts', color: 'primary', trend: 'up', change: '25 次' },
+    'notification_failure_rate': { value: '0.5%', description: '2 failed sends', color: 'warning', trend: 'down', change: '2 次失敗' },
+    'notification_channels': { value: '8', description: 'Email, Slack, Webhook', color: 'primary' },
 
-    'platform_tags_defined': { value: '42', description: '12 required tags', icon: 'tags', icon_bg_color: 'bg-indigo-500' },
-    'platform_auth_provider': { value: 'Keycloak', description: 'OIDC Enabled', icon: 'key', icon_bg_color: 'bg-yellow-500' },
-    'platform_mail_status': { value: 'Healthy', description: 'SMTP service is operational', icon: 'mail', icon_bg_color: 'bg-green-500' },
+    'platform_tags_defined': { value: '42', description: '12 required tags', color: 'primary' },
+    'platform_auth_provider': { value: 'Keycloak', description: 'OIDC Enabled', color: 'primary' },
+    'platform_mail_status': { value: 'Healthy', description: 'SMTP service is operational', color: 'success' },
 
-    // Personal Settings
-    'profile_login_count_7d': { value: '8', description: '來自 2 個不同 IP', icon: 'log-in', icon_bg_color: 'bg-blue-500' },
-    'profile_last_password_change': { value: '3 天前', description: '建議每 90 天更新一次', icon: 'key', icon_bg_color: 'bg-yellow-500' },
-    'profile_mfa_status': { value: '已啟用', description: '您的帳戶受到保護', icon: 'shield-check', icon_bg_color: 'bg-green-500' },
+    'profile_login_count_7d': { value: '8', description: '來自 2 個不同 IP', color: 'primary' },
+    'profile_last_password_change': { value: '3 天前', description: '建議每 90 天更新一次', color: 'warning' },
+    'profile_mfa_status': { value: '已啟用', description: '您的帳戶受到保護', color: 'success' },
 };
 const MOCK_AI_BRIEFING = {
     "stability_summary": "系統整體穩定，但支付 API 錯誤率略高於正常水平，需持續關注。",
@@ -3239,7 +3306,7 @@ function createInitialDB() {
         column_configs: {
             dashboards: ['name', 'type', 'category', 'owner', 'updated_at'],
             incidents: ['summary', 'status', 'severity', 'impact', 'resource', 'assignee', 'occurred_at'],
-            resources: ['status', 'name', 'type', 'region', 'owner', 'last_check_in_at'],
+            resources: ['status', 'name', 'type', 'event_count', 'cpu_usage', 'memory_usage'],
             personnel: ['name', 'role', 'team', 'status', 'last_login_at'],
             alert_rules: ['enabled', 'name', 'target', 'conditions_summary', 'severity', 'automation_enabled', 'creator', 'updated_at'],
             silence_rules: ['enabled', 'name', 'type', 'matchers', 'schedule', 'creator', 'created_at'],

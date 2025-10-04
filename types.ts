@@ -245,6 +245,19 @@ export interface LayoutWidget {
   supported_pages: string[];
 }
 
+export type KpiTrendDirection = 'up' | 'down' | null;
+
+export type KpiCardColor = 'default' | 'primary' | 'success' | 'warning' | 'error';
+
+export interface KpiDataEntry {
+  value: number | string;
+  unit?: string;
+  description?: string;
+  color?: KpiCardColor;
+  trend?: KpiTrendDirection;
+  change?: string;
+}
+
 export interface Resource {
   id: string;
   name: string;
@@ -256,6 +269,11 @@ export interface Resource {
   team_id?: string;
   owner_id?: string;
   tags?: KeyValueTag[];
+  event_count?: number;
+  metrics?: {
+    cpu: number;
+    memory: number;
+  };
   last_check_in_at: string;
   created_at: string;
   updated_at: string;
