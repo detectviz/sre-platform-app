@@ -1,11 +1,37 @@
 import React, { useMemo } from 'react';
-import { Card, theme } from 'antd';
+import { theme } from 'antd';
+import { Card } from 'antd';
+import type { CardProps } from 'antd';
 import type { GlobalToken } from 'antd/es/theme/interface';
 import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
 import type { CSSProperties } from 'react';
 import type { KpiCardColor, KpiTrendDirection } from '../types';
 
 export type { KpiCardColor } from '../types';
+
+/**
+ * SRE Platform KPI Card Color System
+ *
+ * 專為監控和運維場景設計的專業色彩系統：
+ *
+ * 🎨 色彩主題說明：
+ * - default: 中性灰色，適用於一般指標
+ * - primary: 品牌藍色，用於主要業務指標
+ * - success: 成功綠色，表示正常運行狀態
+ * - warning: 警告橙色，提示需要關注的指標
+ * - error: 錯誤紅色，表示嚴重問題
+ * - info: 資訊青色，用於一般資訊類指標
+ * - performance: 效能紫色，專為效能指標設計
+ * - resource: 資源綠色，用於資源使用率指標
+ * - health: 健康深綠，強調系統健康狀態
+ * - monitoring: 監控藍色，用於監控相關指標
+ *
+ * 🔧 設計原則：
+ * - 每個主題都有獨特的漸變背景和懸停效果
+ * - 在深色主題下提供優秀的對比度和可讀性
+ * - 色彩語義明確，符合監控運維的視覺語言
+ * - 支援動畫過渡，提供流暢的互動體驗
+ */
 
 import './KpiCard.css';
 
@@ -70,6 +96,7 @@ const parseColor = (color: string): RGB | null => {
 
   return null;
 };
+
 
 const rgbToHsl = ({ r, g, b }: RGB) => {
   const rn = r / 255;
@@ -168,62 +195,127 @@ export const getKpiCardPalette = (token: GlobalToken, tone: KpiCardColor = 'defa
 
   switch (tone) {
     case 'primary': {
-      const base = primaryAccent;
+      const base = primaryAccent || '#3274d9'; // 使用更貼近Grafana的主題藍色
       return {
-        background: buildVibrantGradient(base),
-        value: token.colorWhite,
-        title: 'rgba(255, 255, 255, 0.82)',
-        description: 'rgba(255, 255, 255, 0.78)',
-        unit: 'rgba(255, 255, 255, 0.78)',
+        background: `linear-gradient(135deg, ${base}, ${base})`,
+        value: '#ffffff',
+        title: '#ffffff',
+        description: '#ffffff',
+        unit: '#ffffff',
         hoverShadow: `0 22px 46px -24px ${toRgba(base, 0.55)}`,
         baseColor: base,
-        swatchBorder: 'rgba(255, 255, 255, 0.35)',
+        swatchBorder: '#ffffff',
       };
     }
     case 'success': {
-      const base = token.colorSuccess;
+      const base = token.colorSuccess || '#56c596'; // 使用更貼近Grafana的綠色
       return {
-        background: buildVibrantGradient(base),
-        value: token.colorWhite,
-        title: 'rgba(255, 255, 255, 0.85)',
-        description: 'rgba(255, 255, 255, 0.8)',
-        unit: 'rgba(255, 255, 255, 0.8)',
+        background: `linear-gradient(135deg, ${base}, ${base})`,
+        value: '#ffffff',
+        title: '#ffffff',
+        description: '#ffffff',
+        unit: '#ffffff',
         hoverShadow: `0 22px 46px -24px ${toRgba(base, 0.5)}`,
         baseColor: base,
-        swatchBorder: 'rgba(255, 255, 255, 0.35)',
+        swatchBorder: '#ffffff',
+      };
+    }
+    case 'info': {
+      const base = '#36a2eb'; // 更鮮明的藍色，類似Grafana
+      return {
+        background: `linear-gradient(135deg, ${base}, ${base})`,
+        value: '#ffffff',
+        title: '#ffffff',
+        description: '#ffffff',
+        unit: '#ffffff',
+        hoverShadow: `0 22px 46px -24px ${toRgba(base, 0.5)}`,
+        baseColor: base,
+        swatchBorder: '#ffffff',
+      };
+    }
+    case 'performance': {
+      const base = '#9966ff'; // 更鮮明的紫色，類似Grafana
+      return {
+        background: `linear-gradient(135deg, ${base}, ${base})`,
+        value: '#ffffff',
+        title: '#ffffff',
+        description: '#ffffff',
+        unit: '#ffffff',
+        hoverShadow: `0 22px 46px -24px ${toRgba(base, 0.5)}`,
+        baseColor: base,
+        swatchBorder: '#ffffff',
+      };
+    }
+    case 'resource': {
+      const base = '#56c596'; // 更鮮明的綠色，類似Grafana
+      return {
+        background: `linear-gradient(135deg, ${base}, ${base})`,
+        value: '#ffffff',
+        title: '#ffffff',
+        description: '#ffffff',
+        unit: '#ffffff',
+        hoverShadow: `0 22px 46px -24px ${toRgba(base, 0.5)}`,
+        baseColor: base,
+        swatchBorder: '#ffffff',
+      };
+    }
+    case 'health': {
+      const base = '#4ecdc4'; // 青綠色，更符合Grafana的健康狀態色彩
+      return {
+        background: `linear-gradient(135deg, ${base}, ${base})`,
+        value: '#ffffff',
+        title: '#ffffff',
+        description: '#ffffff',
+        unit: '#ffffff',
+        hoverShadow: `0 22px 46px -24px ${toRgba(base, 0.5)}`,
+        baseColor: base,
+        swatchBorder: '#ffffff',
+      };
+    }
+    case 'monitoring': {
+      const base = '#17becf'; // 青藍色，更符合Grafana的監控色彩
+      return {
+        background: `linear-gradient(135deg, ${base}, ${base})`,
+        value: '#ffffff',
+        title: '#ffffff',
+        description: '#ffffff',
+        unit: '#ffffff',
+        hoverShadow: `0 22px 46px -24px ${toRgba(base, 0.5)}`,
+        baseColor: base,
+        swatchBorder: '#ffffff',
       };
     }
     case 'warning': {
-      const base = token.colorWarning;
+      const base = token.colorWarning || '#f2cc0c'; // 使用更貼近Grafana的黃色
       return {
-        background: buildVibrantGradient(base),
-        value: token.colorWhite,
-        title: 'rgba(255, 255, 255, 0.9)',
-        description: 'rgba(255, 255, 255, 0.85)',
-        unit: 'rgba(255, 255, 255, 0.85)',
+        background: `linear-gradient(135deg, ${base}, ${base})`,
+        value: '#000000', // 黃色背景用黑色文字
+        title: '#000000',
+        description: '#000000',
+        unit: '#000000',
         hoverShadow: `0 22px 46px -24px ${toRgba(base, 0.48)}`,
         baseColor: base,
-        swatchBorder: 'rgba(255, 255, 255, 0.4)',
+        swatchBorder: '#000000',
       };
     }
     case 'error': {
-      const base = token.colorError;
+      const base = token.colorError || '#dc3545'; // 使用更貼近Grafana的紅色
       return {
-        background: buildVibrantGradient(base),
-        value: token.colorWhite,
-        title: 'rgba(255, 255, 255, 0.82)',
-        description: 'rgba(255, 255, 255, 0.78)',
-        unit: 'rgba(255, 255, 255, 0.78)',
+        background: `linear-gradient(135deg, ${base}, ${base})`,
+        value: '#ffffff',
+        title: '#ffffff',
+        description: '#ffffff',
+        unit: '#ffffff',
         hoverShadow: `0 22px 46px -24px ${toRgba(base, 0.52)}`,
         baseColor: base,
-        swatchBorder: 'rgba(255, 255, 255, 0.35)',
+        swatchBorder: '#ffffff',
       };
     }
     case 'default':
     default: {
       const base = neutralBase;
       return {
-        background: `linear-gradient(135deg, ${tuneColor(base, { lightness: 0.08, saturation: -0.05 })}, ${tuneColor(base, { lightness: -0.06, saturation: -0.05 })})`,
+        background: `linear-gradient(135deg, ${base}, ${base})`,
         value: token.colorText,
         title: token.colorTextSecondary,
         description: token.colorTextTertiary ?? token.colorTextSecondary,
@@ -249,16 +341,31 @@ const KpiCard: React.FC<KpiCardProps> = ({
 }) => {
   const { token } = theme.useToken();
 
-  const palette = useMemo(() => getKpiCardPalette(token, color), [token, color]);
+  const palette = useMemo(() => getKpiCardPalette(token, (color as KpiCardColor) || 'default'), [token, color]);
   const trendColor = trend === 'down' ? token.colorError : token.colorSuccess;
 
   const changePalette = useMemo(() => {
-    const tinted = color !== 'default';
+    const tinted = ((color as KpiCardColor) || 'default') !== 'default';
+    const currentColor = (color as KpiCardColor) || 'default';
+
+    // 簡單選擇文字顏色
+    const getTextColor = () => {
+      if (!tinted) return token.colorTextSecondary;
+      // 黃色背景用黑色，其他用白色
+      return currentColor === 'warning' ? '#000000' : '#ffffff';
+    };
+
+    // 為趨勢指標選擇適當的顏色
+    const getTrendIconColor = () => {
+      if (!tinted) return trendColor; // 預設情況使用原始趨勢顏色
+      return getTextColor(); // 有色背景使用對比色
+    };
+
     return {
-      background: tinted ? toRgba(palette.baseColor, 0.25) : token.colorFillSecondary,
-      text: tinted ? 'rgba(255, 255, 255, 0.95)' : token.colorTextSecondary,
-      iconBackground: tinted ? toRgba(palette.baseColor, 0.35) : token.colorBgElevated,
-      iconColor: tinted ? palette.value : trendColor,
+      background: tinted ? palette.baseColor : token.colorFillSecondary,
+      text: getTextColor(),
+      iconBackground: tinted ? palette.baseColor : token.colorBgElevated,
+      iconColor: getTrendIconColor(),
     };
   }, [color, palette.baseColor, palette.value, token.colorBgElevated, token.colorFillSecondary, token.colorTextSecondary, trendColor]);
 
@@ -280,39 +387,61 @@ const KpiCard: React.FC<KpiCardProps> = ({
   const TrendIcon = trend === 'down' ? ArrowDownOutlined : ArrowUpOutlined;
   const showChange = displayTrend || Boolean(change);
 
-  const changeToneStyle = displayTrend && color === 'default' ? { color: trendColor } : undefined;
+  // 為趨勢指標選擇適當的顏色，避免與背景衝突
+  const changeToneStyle = useMemo(() => {
+    if (!displayTrend) return undefined;
+
+    const currentColor = (color as KpiCardColor) || 'default';
+    const tinted = currentColor !== 'default';
+
+    if (!tinted) {
+      // 預設背景使用原始趨勢顏色
+      return { color: trendColor };
+    }
+
+    // 有色背景：黃色用黑色，其他用白色
+    return { color: currentColor === 'warning' ? '#000000' : '#ffffff' };
+  }, [displayTrend, color, trendColor]);
 
   return (
+    // @ts-ignore
     <Card
       bordered={false}
       className={['kpi-card', className].filter(Boolean).join(' ')}
-      style={cardStyle}
-      bodyStyle={{ padding: 0 }}
+      style={{
+        ...cardStyle,
+        padding: '12px',
+        height: '120px',
+      } as React.CSSProperties}
+      bodyStyle={{
+        padding: 0,
+      }}
       onClick={onClick}
+      data-color={(color as KpiCardColor) || 'default'}
     >
       <div className="kpi-card-inner">
         <div className="kpi-card-header">
           <div className="kpi-card-title" title={typeof title === 'string' ? title : undefined}>
             {title}
           </div>
+          {showChange && (
+            <div className="kpi-card-change" style={changeToneStyle}>
+              {displayTrend && (
+                <span className="kpi-card-change-icon">
+                  <TrendIcon />
+                </span>
+              )}
+              {change && <span>{change}</span>}
+            </div>
+          )}
         </div>
         <div className="kpi-card-value-row">
           <span className="kpi-card-value-text">{value}</span>
           {unit && <span className="kpi-card-unit">{unit}</span>}
         </div>
-        {(description || showChange) && (
+        {description && (
           <div className="kpi-card-footer">
-            {description && <div className="kpi-card-description">{description}</div>}
-            {showChange && (
-              <div className="kpi-card-change" style={changeToneStyle}>
-                {displayTrend && (
-                  <span className="kpi-card-change-icon">
-                    <TrendIcon />
-                  </span>
-                )}
-                {change && <span>{change}</span>}
-              </div>
-            )}
+            <div className="kpi-card-description">{description}</div>
           </div>
         )}
       </div>

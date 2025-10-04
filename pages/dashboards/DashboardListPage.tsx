@@ -351,12 +351,12 @@ const DashboardListPage: React.FC = () => {
                                     const column = allColumns.find(c => c.key === key);
                                     const getColumnWidth = (columnKey: string) => {
                                         switch (columnKey) {
-                                            case 'name': return 'w-72'; // 儀表板名稱欄位較寬（增加空間）
-                                            case 'type': return 'w-24'; // 類型欄位稍寬
-                                            case 'category': return 'w-36'; // 分類欄位中等寬度（增加空間）
-                                            case 'owner': return 'w-32'; // 擁有者欄位中等寬度（增加空間）
-                                            case 'updated_at': return 'w-36'; // 最後更新欄位中等寬度（增加空間）
-                                            default: return 'w-24'; // 其他欄位預設寬度
+                                            case 'name': return 'min-w-64 max-w-80'; // 儀表板名稱欄位彈性寬度
+                                            case 'type': return 'w-20'; // 類型欄位較窄
+                                            case 'category': return 'w-28'; // 分類欄位適中
+                                            case 'owner': return 'w-24'; // 擁有者欄位適中
+                                            case 'updated_at': return 'w-32'; // 最後更新欄位適中
+                                            default: return 'w-20'; // 其他欄位預設寬度
                                         }
                                     };
                                     return (
@@ -370,7 +370,7 @@ const DashboardListPage: React.FC = () => {
                                         />
                                     );
                                 })}
-                                <th scope="col" className="px-6 py-3 text-center w-32">{globalContent.OPERATIONS}</th>
+                                <th scope="col" className="px-6 py-3 text-center w-28">{globalContent.OPERATIONS}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -387,12 +387,12 @@ const DashboardListPage: React.FC = () => {
                                     {visibleColumns.map(key => {
                                         const getColumnWidth = (key: string) => {
                                             switch (key) {
-                                                case 'name': return 'w-72'; // 儀表板名稱欄位較寬（增加空間）
-                                                case 'type': return 'w-24'; // 類型欄位稍寬
-                                                case 'category': return 'w-36'; // 分類欄位中等寬度（增加空間）
-                                                case 'owner': return 'w-32'; // 擁有者欄位中等寬度（增加空間）
-                                                case 'updated_at': return 'w-36'; // 最後更新欄位中等寬度（增加空間）
-                                                default: return 'w-24'; // 其他欄位預設寬度
+                                                case 'name': return 'min-w-64 max-w-80'; // 儀表板名稱欄位彈性寬度
+                                                case 'type': return 'w-20'; // 類型欄位較窄
+                                                case 'category': return 'w-28'; // 分類欄位適中
+                                                case 'owner': return 'w-24'; // 擁有者欄位適中
+                                                case 'updated_at': return 'w-32'; // 最後更新欄位適中
+                                                default: return 'w-20'; // 其他欄位預設寬度
                                             }
                                         };
                                         return (
@@ -401,7 +401,7 @@ const DashboardListPage: React.FC = () => {
                                             </td>
                                         );
                                     })}
-                                    <td className="px-6 py-4 text-center w-32" onClick={e => e.stopPropagation()}>
+                                    <td className="px-6 py-4 text-center w-28" onClick={e => e.stopPropagation()}>
                                         <div className="flex items-center justify-end gap-1.5">
                                             <IconButton
                                                 icon={defaultDashboard === d.id ? 'star' : 'star'}

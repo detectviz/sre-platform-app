@@ -247,7 +247,17 @@ export interface LayoutWidget {
 
 export type KpiTrendDirection = 'up' | 'down' | null;
 
-export type KpiCardColor = 'default' | 'primary' | 'success' | 'warning' | 'error';
+export type KpiCardColor =
+  | 'default'
+  | 'primary'
+  | 'success'
+  | 'warning'
+  | 'error'
+  | 'info'
+  | 'performance'
+  | 'resource'
+  | 'health'
+  | 'monitoring';
 
 export interface KpiDataEntry {
   value: number | string;

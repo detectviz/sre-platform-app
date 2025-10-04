@@ -395,7 +395,7 @@ const AppLayout: React.FC = () => {
             </div>
           </div>
         </header>
-        <main className="flex-1 p-6 overflow-y-auto" style={{ height: 'calc(100vh - 48px)' }}>
+        <main className="flex-1 pl-6 pr-6 pt-6 pb-6 overflow-y-auto" style={{ height: 'calc(100vh - 48px)' }}>
           <Outlet />
         </main>
       </div>
