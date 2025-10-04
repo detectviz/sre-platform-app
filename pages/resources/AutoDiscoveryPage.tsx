@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { DiscoveryJob, DiscoveryJobFilters } from '../../types';
-import Icon from '../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
 import Modal from '../../components/Modal';
@@ -12,6 +11,8 @@ import AutoDiscoveryEditModal from '../../components/AutoDiscoveryEditModal';
 import Drawer from '../../components/Drawer';
 import DiscoveryJobResultDrawer from '../../components/DiscoveryJobResultDrawer';
 import { useOptions } from '../../contexts/OptionsContext';
+import StatusTag, { type StatusTagProps } from '../../components/StatusTag';
+import IconButton from '../../components/IconButton';
 
 const AutoDiscoveryPage: React.FC = () => {
     const [jobs, setJobs] = useState<DiscoveryJob[]>([]);
@@ -106,21 +107,62 @@ const AutoDiscoveryPage: React.FC = () => {
         setViewingResultsForJob(job);
     };
 
-    const getStatusIndicator = (status: DiscoveryJob['status']) => {
-        switch (status) {
-            case 'pending':
-                return <div className="flex items-center text-slate-300"><Icon name="clock" className="w-4 h-4 mr-2" /> 等待中</div>;
-            case 'running':
-                return <div className="flex items-center text-sky-400 animate-pulse"><Icon name="loader-circle" className="w-4 h-4 mr-2 animate-spin" /> 執行中</div>;
-            case 'success':
-                return <div className="flex items-center text-green-400"><Icon name="check-circle" className="w-4 h-4 mr-2" /> 成功</div>;
-            case 'failed':
-                return <div className="flex items-center text-red-400"><Icon name="x-circle" className="w-4 h-4 mr-2" /> 失敗</div>;
-            case 'cancelled':
-                return <div className="flex items-center text-slate-400"><Icon name="slash" className="w-4 h-4 mr-2" /> 已取消</div>;
-            default:
-                return <div className="flex items-center text-slate-400"><Icon name="help-circle" className="w-4 h-4 mr-2" /> {status}</div>;
+    const JOB_STATUS_META: Record<DiscoveryJob['status'], { label: string; tone: StatusTagProps['tone']; icon: string }> = {
+        pending: { label: '等待中', tone: 'neutral', icon: 'clock' },
+        running: { label: '執行中', tone: 'info', icon: 'loader-circle' },
+        success: { label: '成功', tone: 'success', icon: 'check-circle' },
+        failed: { label: '失敗', tone: 'danger', icon: 'x-circle' },
+        cancelled: { label: '已取消', tone: 'warning', icon: 'slash' },
+    };
+
+    const getCronDescription = (cron: string) => {
+        const parts = cron.trim().split(/\s+/);
+        if (parts.length !== 5) {
+            return '自訂排程（Cron）';
         }
+        const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
+
+        const formatNumber = (value: string) => value.padStart(2, '0');
+        const describeField = (value: string, unit: string) => {
+            if (value === '*') return `每個${unit}`;
+            if (value.startsWith('*/')) return `每 ${value.replace('*/', '')} 個${unit}`;
+            return `${unit}的 ${value}`;
+        };
+
+        const timeText = hour === '*' && minute === '*'
+            ? '每分鐘'
+            : hour === '*'
+                ? describeField(minute, '分鐘')
+                : minute === '*'
+                    ? describeField(hour, '小時')
+                    : `於 ${formatNumber(hour)}:${formatNumber(minute)} 執行`;
+
+        if (dayOfMonth !== '*' && dayOfWeek === '*') {
+            return `每月的第 ${dayOfMonth} 天，${timeText}`;
+        }
+        if (dayOfWeek !== '*' && dayOfMonth === '*') {
+            const weekdayMap: Record<string, string> = {
+                '0': '週日', '1': '週一', '2': '週二', '3': '週三', '4': '週四', '5': '週五', '6': '週六',
+            };
+            const readableDay = weekdayMap[dayOfWeek] || `週期 ${dayOfWeek}`;
+            return `${readableDay}的 ${timeText}`;
+        }
+        if (month !== '*') {
+            return `${describeField(month, '月份')}的 ${timeText}`;
+        }
+        return `${timeText}（自訂 Cron）`;
+    };
+
+    const renderSchedule = (cron: string) => {
+        const description = getCronDescription(cron);
+        return (
+            <div className="flex flex-col gap-1">
+                <code className="inline-flex w-fit rounded bg-slate-800/70 px-2 py-1 text-xs font-mono text-slate-200" title={description}>
+                    {cron}
+                </code>
+                <span className="text-xs text-slate-400" aria-label={`排程說明：${description}`}>{description}</span>
+            </div>
+        );
     };
 
     return (
@@ -154,19 +196,41 @@ const AutoDiscoveryPage: React.FC = () => {
                                     <td className="px-6 py-4">{
                                         (() => {
                                             const kindDescriptor = autoDiscoveryOptions?.job_kinds.find(k => k.value === job.kind);
-                                            const pillClass = kindDescriptor?.class_name || 'bg-slate-800/60 border border-slate-600 text-slate-200';
                                             const label = kindDescriptor?.label || job.kind;
-                                            return <span className={`px-2 py-1 text-xs font-semibold rounded-full ${pillClass}`}>{label}</span>;
+                                            const className = kindDescriptor?.class_name || '';
+                                            return (
+                                                <StatusTag
+                                                    label={label}
+                                                    className={className}
+                                                    dense
+                                                    tooltip={`掃描類型：${label}`}
+                                                />
+                                            );
                                         })()
                                     }</td>
-                                    <td className="px-6 py-4 font-mono">{job.schedule}</td>
+                                    <td className="px-6 py-4">{renderSchedule(job.schedule)}</td>
                                     <td className="px-6 py-4">{job.last_run_at}</td>
-                                    <td className="px-6 py-4">{getStatusIndicator(job.status)}</td>
-                                    <td className="px-6 py-4 text-center space-x-1">
-                                        <button onClick={() => handleViewResults(job)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="查看結果"><Icon name="list" className="w-4 h-4" /></button>
-                                        <button onClick={() => handleManualRun(job.id)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="手動執行"><Icon name="play" className="w-4 h-4" /></button>
-                                        <button onClick={() => handleEdit(job)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯"><Icon name="edit-3" className="w-4 h-4" /></button>
-                                        <button onClick={() => handleDelete(job)} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除"><Icon name="trash-2" className="w-4 h-4" /></button>
+                                    <td className="px-6 py-4">
+                                        {(() => {
+                                            const meta = JOB_STATUS_META[job.status];
+                                            return (
+                                                <StatusTag
+                                                    label={meta.label}
+                                                    tone={meta.tone}
+                                                    icon={meta.icon}
+                                                    dense
+                                                    tooltip={`任務狀態：${meta.label}`}
+                                                />
+                                            );
+                                        })()}
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <div className="flex items-center justify-center gap-2">
+                                            <IconButton icon="list" label="查看結果" tooltip="檢視最新掃描結果" onClick={() => handleViewResults(job)} />
+                                            <IconButton icon="play" label="手動執行" tooltip="立即手動執行一次掃描" onClick={() => handleManualRun(job.id)} />
+                                            <IconButton icon="edit-3" label="編輯掃描" tooltip="編輯掃描設定" onClick={() => handleEdit(job)} />
+                                            <IconButton icon="trash-2" label="刪除掃描" tooltip="刪除此掃描任務" tone="danger" onClick={() => handleDelete(job)} />
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Modal from './Modal';
 import Icon from './Icon';
 import FormRow from './FormRow';
@@ -8,6 +7,8 @@ import GeneratePlaybookWithAIModal from './GeneratePlaybookWithAIModal';
 import { useOptions } from '../contexts/OptionsContext';
 import { useContent } from '../contexts/ContentContext';
 import { showToast } from '../services/toast';
+import CodeEditor from './CodeEditor';
+import IconButton from './IconButton';
 
 interface AutomationPlaybookEditModalProps {
   isOpen: boolean;
@@ -45,6 +46,14 @@ const AutomationPlaybookEditModal: React.FC<AutomationPlaybookEditModalProps> = 
     const handleSave = () => {
         onSave(formData);
     };
+
+    const scriptTypeLabel = useMemo(() => {
+        if (!scriptOptions?.playbook_types || !formData.type) {
+            return 'TEXT';
+        }
+        const match = scriptOptions.playbook_types.find(opt => opt.value === formData.type);
+        return match?.label || formData.type.toUpperCase();
+    }, [scriptOptions?.playbook_types, formData.type]);
 
     const handleChange = (field: keyof AutomationPlaybook, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -215,29 +224,39 @@ const AutomationPlaybookEditModal: React.FC<AutomationPlaybookEditModalProps> = 
 
                     <div className="flex-grow flex flex-col space-y-4 overflow-y-auto pr-2 -mr-4 pt-4 border-t border-slate-700/50">
                         <FormRow label={content.CONTENT_LABEL}>
-                            <div className="relative">
-                                <textarea value={formData.content || ''} onChange={e => handleChange('content', e.target.value)} rows={10}
-                                          className="w-full bg-slate-900/70 border border-slate-700 rounded-md p-3 text-sm font-mono"
-                                          placeholder={content.CONTENT_PLACEHOLDER}
-                                />
-                                <div className="absolute top-2 right-2 flex items-center space-x-2">
-                                    <input 
-                                        type="file" 
-                                        ref={fileInputRef}
-                                        className="hidden" 
-                                        onChange={handleFileSelect}
-                                        accept=".sh,.py,.txt,application/x-sh,text/x-python"
-                                    />
-                                    <button onClick={handleFileUploadClick} className="flex items-center text-xs font-semibold text-white bg-slate-600 hover:bg-slate-500 rounded-md px-3 py-1.5">
-                                        <Icon name="upload" className="w-4 h-4 mr-1.5" />
-                                        {content.UPLOAD_SCRIPT_BUTTON}
-                                    </button>
-                                    <button onClick={() => setIsAIOpen(true)} className="flex items-center text-xs font-semibold text-white bg-purple-600 hover:bg-purple-500 rounded-md px-3 py-1.5">
-                                        <Icon name="brain-circuit" className="w-4 h-4 mr-1.5" />
-                                        {content.GENERATE_WITH_AI_BUTTON}
-                                    </button>
-                                </div>
-                            </div>
+                            <CodeEditor
+                                value={formData.content || ''}
+                                onChange={value => handleChange('content', value)}
+                                languageLabel={scriptTypeLabel}
+                                placeholder={content.CONTENT_PLACEHOLDER}
+                                ariaLabel={content.CONTENT_LABEL}
+                                toolbar={(
+                                    <>
+                                        <IconButton
+                                            icon="upload"
+                                            label={content.UPLOAD_SCRIPT_BUTTON}
+                                            tooltip={content.UPLOAD_SCRIPT_BUTTON}
+                                            onClick={handleFileUploadClick}
+                                            className="h-8 w-8"
+                                        />
+                                        <IconButton
+                                            icon="brain-circuit"
+                                            label={content.GENERATE_WITH_AI_BUTTON}
+                                            tooltip={content.GENERATE_WITH_AI_BUTTON}
+                                            onClick={() => setIsAIOpen(true)}
+                                            tone="primary"
+                                            className="h-8 w-8"
+                                        />
+                                        <input
+                                            type="file"
+                                            ref={fileInputRef}
+                                            className="hidden"
+                                            onChange={handleFileSelect}
+                                            accept=".sh,.py,.txt,application/x-sh,text/x-python"
+                                        />
+                                    </>
+                                )}
+                            />
                         </FormRow>
 
                         <div>

@@ -1,9 +1,10 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import Modal from './Modal';
 import FormRow from './FormRow';
 import { Resource } from '../types';
 import { useOptions } from '../contexts/OptionsContext';
+import SearchableSelect, { SearchableSelectOption } from './SearchableSelect';
 
 interface ResourceEditModalProps {
   isOpen: boolean;
@@ -17,14 +18,30 @@ const ResourceEditModal: React.FC<ResourceEditModalProps> = ({ isOpen, onClose, 
     const { options, isLoading: isLoadingOptions, error: optionsError } = useOptions();
     const resourceOptions = options?.resources;
 
+    const typeOptions = useMemo<SearchableSelectOption[]>(() => (
+        resourceOptions?.types?.map(option => ({ value: option.value, label: option.label })) || []
+    ), [resourceOptions?.types]);
+
+    const providerOptions = useMemo<SearchableSelectOption[]>(() => (
+        resourceOptions?.providers?.map(value => ({ value, label: value })) || []
+    ), [resourceOptions?.providers]);
+
+    const regionOptions = useMemo<SearchableSelectOption[]>(() => (
+        resourceOptions?.regions?.map(value => ({ value, label: value })) || []
+    ), [resourceOptions?.regions]);
+
+    const ownerOptions = useMemo<SearchableSelectOption[]>(() => (
+        resourceOptions?.owners?.map(value => ({ value, label: value })) || []
+    ), [resourceOptions?.owners]);
+
     useEffect(() => {
         if (isOpen) {
             setFormData(resource || {
                 name: '',
-                type: resourceOptions?.types[0] || '',
-                provider: resourceOptions?.providers[0] || '',
-                region: resourceOptions?.regions[0] || '',
-                owner: resourceOptions?.owners[0] || '',
+                type: resourceOptions?.types?.[0]?.value || '',
+                provider: resourceOptions?.providers?.[0] || '',
+                region: resourceOptions?.regions?.[0] || '',
+                owner: resourceOptions?.owners?.[0] || '',
             });
         }
     }, [isOpen, resource, resourceOptions]);
@@ -54,46 +71,70 @@ const ResourceEditModal: React.FC<ResourceEditModalProps> = ({ isOpen, onClose, 
                 {optionsError && (
                     <div className="p-3 bg-red-900/50 text-red-300 rounded-md text-sm">{optionsError}</div>
                 )}
-                <FormRow label="資源名稱 *">
-                    <input type="text" value={formData.name || ''} onChange={e => handleChange('name', e.target.value)}
-                           className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+                <FormRow
+                    label="資源名稱 *"
+                    description="請輸入易於辨識的中文名稱，支援 64 個字元以內。"
+                >
+                    <input
+                        type="text"
+                        value={formData.name || ''}
+                        onChange={e => handleChange('name', e.target.value)}
+                        placeholder="例如：核心 API Gateway"
+                        className="w-full rounded-md border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30"
+                    />
                 </FormRow>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormRow label="類型">
-                        <select value={formData.type || ''} onChange={e => handleChange('type', e.target.value)}
-                                className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoadingOptions || !!optionsError}>
-                            {isLoadingOptions && <option>載入中...</option>}
-                            {optionsError && <option>錯誤</option>}
-                            {!isLoadingOptions && !optionsError && resourceOptions?.types.map(t => <option key={t} value={t}>{t}</option>)}
-                        </select>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <FormRow
+                        label="類型"
+                        description="依據 SRE DS v0.8 內建類型快速搜尋或輸入英文關鍵字。"
+                    >
+                        <SearchableSelect
+                            value={formData.type || ''}
+                            onChange={value => handleChange('type', value)}
+                            options={typeOptions}
+                            disabled={isLoadingOptions || !!optionsError}
+                            placeholder="輸入類型或英文縮寫"
+                        />
                     </FormRow>
-                    <FormRow label="提供商">
-                         <select value={formData.provider || ''} onChange={e => handleChange('provider', e.target.value)}
-                                className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoadingOptions || !!optionsError}>
-                            {isLoadingOptions && <option>載入中...</option>}
-                            {optionsError && <option>錯誤</option>}
-                            {!isLoadingOptions && !optionsError && resourceOptions?.providers.map(p => <option key={p} value={p}>{p}</option>)}
-                        </select>
+                    <FormRow
+                        label="提供商"
+                        description="支援多雲環境，輸入供應商關鍵字以縮小選項。"
+                    >
+                        <SearchableSelect
+                            value={formData.provider || ''}
+                            onChange={value => handleChange('provider', value)}
+                            options={providerOptions}
+                            disabled={isLoadingOptions || !!optionsError}
+                            placeholder="輸入例如 AWS、GCP"
+                        />
                     </FormRow>
-                 </div>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormRow label="區域">
-                         <select value={formData.region || ''} onChange={e => handleChange('region', e.target.value)}
-                                className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoadingOptions || !!optionsError}>
-                            {isLoadingOptions && <option>載入中...</option>}
-                            {optionsError && <option>錯誤</option>}
-                            {!isLoadingOptions && !optionsError && resourceOptions?.regions.map(r => <option key={r} value={r}>{r}</option>)}
-                        </select>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <FormRow
+                        label="區域"
+                        description="輸入區域代碼以快速鎖定部署位置。"
+                    >
+                        <SearchableSelect
+                            value={formData.region || ''}
+                            onChange={value => handleChange('region', value)}
+                            options={regionOptions}
+                            disabled={isLoadingOptions || !!optionsError}
+                            placeholder="輸入如 ap-northeast-1"
+                        />
                     </FormRow>
-                    <FormRow label="擁有者">
-                        <select value={formData.owner || ''} onChange={e => handleChange('owner', e.target.value)}
-                                className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoadingOptions || !!optionsError}>
-                           {isLoadingOptions && <option>載入中...</option>}
-                           {optionsError && <option>錯誤</option>}
-                           {!isLoadingOptions && !optionsError && resourceOptions?.owners.map(o => <option key={o} value={o}>{o}</option>)}
-                        </select>
+                    <FormRow
+                        label="擁有者"
+                        description="指定負責團隊或服務擁有者，支援中文或英文搜尋。"
+                    >
+                        <SearchableSelect
+                            value={formData.owner || ''}
+                            onChange={value => handleChange('owner', value)}
+                            options={ownerOptions}
+                            disabled={isLoadingOptions || !!optionsError}
+                            placeholder="輸入團隊名稱"
+                        />
                     </FormRow>
-                 </div>
+                </div>
             </div>
         </Modal>
     );

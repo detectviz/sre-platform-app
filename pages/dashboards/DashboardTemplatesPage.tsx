@@ -1,21 +1,35 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DashboardTemplate } from '../../types';
 import Icon from '../../components/Icon';
 import api from '../../services/api';
+import StatusTag from '../../components/StatusTag';
+import { useOptions } from '../../contexts/OptionsContext';
+import { useContent } from '../../contexts/ContentContext';
 
 const DashboardTemplatesPage: React.FC = () => {
     const navigate = useNavigate();
     const [templates, setTemplates] = useState<DashboardTemplate[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const { options } = useOptions();
+    const { content } = useContent();
+    const pageContent = content?.DASHBOARD_TEMPLATES;
 
     useEffect(() => {
         setIsLoading(true);
         api.get<DashboardTemplate[]>('/dashboards/templates')
             .then(res => setTemplates(res.data))
-            .catch(err => console.error("Failed to fetch dashboard templates", err))
+            .catch(err => console.error('Failed to fetch dashboard templates', err))
             .finally(() => setIsLoading(false));
     }, []);
+
+    const categoryDescriptorMap = useMemo(() => {
+        const descriptors = options?.dashboards?.categories ?? [];
+        return descriptors.reduce<Record<string, typeof descriptors[number]>>((acc, descriptor) => {
+            acc[descriptor.value] = descriptor;
+            return acc;
+        }, {});
+    }, [options]);
 
     const handleUseTemplate = (template: DashboardTemplate) => {
         navigate('/dashboards/new', { state: { template } }); 
@@ -29,30 +43,62 @@ const DashboardTemplatesPage: React.FC = () => {
         );
     }
 
+    if (!templates.length) {
+        return (
+            <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+                <Icon name="layout-dashboard" className="h-16 w-16 text-slate-500" />
+                <div className="space-y-1">
+                    <p className="text-lg font-semibold text-slate-100">暫無可用的儀表板範本</p>
+                    <p className="text-sm text-slate-400">請聯絡系統管理員或稍後再試。</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="h-full flex flex-col">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {templates.map((template) => (
-                    <div key={template.id} className="glass-card rounded-xl p-6 flex flex-col justify-between group hover:border-sky-500/50 transition-all duration-300">
-                        <div>
-                            <div className="flex items-start justify-between">
-                                <Icon name={template.icon} className="w-10 h-10 text-sky-400" />
-                                <span className="text-xs bg-slate-700/80 px-2 py-1 rounded-full">{template.category}</span>
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+                {templates.map((template) => {
+                    const categoryDescriptor = categoryDescriptorMap[template.category];
+                    return (
+                        <article
+                            key={template.id}
+                            className="group flex h-full flex-col rounded-xl border border-slate-700/60 bg-slate-900/40 p-6 shadow-sm backdrop-blur transition-all duration-200 hover:border-sky-500/50"
+                        >
+                            <div className="flex flex-1 flex-col gap-4">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-sky-500/10 text-sky-300">
+                                        <Icon name={template.icon} className="h-6 w-6" />
+                                    </div>
+                                    <StatusTag
+                                        dense
+                                        className={categoryDescriptor?.class_name}
+                                        label={categoryDescriptor?.label ?? template.category}
+                                        tooltip={`${categoryDescriptor?.label ?? template.category}｜${template.category}`}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-lg font-semibold text-white" title={template.name}>
+                                        {template.name}
+                                    </h3>
+                                    <p className="text-sm leading-6 text-slate-400" title={template.description}>
+                                        {template.description}
+                                    </p>
+                                </div>
                             </div>
-                            <h3 className="text-xl font-bold mt-4 text-white">{template.name}</h3>
-                            <p className="text-sm text-slate-400 mt-2 flex-grow">{template.description}</p>
-                        </div>
-                        <div className="mt-6">
-                            <button 
-                                onClick={() => handleUseTemplate(template)}
-                                className="w-full flex items-center justify-center text-sm font-semibold text-white bg-slate-700/70 hover:bg-sky-600 px-4 py-2 rounded-lg transition-colors duration-200 group-hover:bg-sky-600"
-                            >
-                                <Icon name="plus-circle" className="w-4 h-4 mr-2" />
-                                使用此範本
-                            </button>
-                        </div>
-                    </div>
-                ))}
+                            <div className="mt-6">
+                                <button
+                                    type="button"
+                                    onClick={() => handleUseTemplate(template)}
+                                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition-colors duration-200 hover:bg-sky-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70"
+                                >
+                                    <Icon name="plus-circle" className="h-4 w-4" />
+                                    {pageContent?.USE_TEMPLATE ?? '使用此範本'}
+                                </button>
+                            </div>
+                        </article>
+                    );
+                })}
             </div>
         </div>
     );

@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { User, PersonnelFilters, TableColumn } from '../../../types';
-import Icon from '../../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../../components/Toolbar';
 import TableContainer from '../../../components/TableContainer';
 import Pagination from '../../../components/Pagination';
@@ -18,6 +17,11 @@ import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 import UserAvatar from '../../../components/UserAvatar';
 import UnifiedSearchModal from '../../../components/UnifiedSearchModal';
 import { useOptions } from '../../../contexts/OptionsContext';
+import PageKPIs from '../../../components/PageKPIs';
+import StatusTag from '../../../components/StatusTag';
+import IconButton from '../../../components/IconButton';
+import Drawer from '../../../components/Drawer';
+import { formatRelativeTime } from '../../../utils/time';
 
 const PAGE_IDENTIFIER = 'personnel';
 
@@ -38,6 +42,7 @@ const PersonnelManagementPage: React.FC = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingUser, setDeletingUser] = useState<User | null>(null);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [viewingUser, setViewingUser] = useState<User | null>(null);
 
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
@@ -107,15 +112,31 @@ const PersonnelManagementPage: React.FC = () => {
         }
     };
 
-    const getStatusPill = (status: User['status']) => {
-        const style = options?.personnel?.statuses.find(s => s.value === status);
-        return style ? style.class_name : 'bg-slate-500/20 text-slate-400';
-    };
-
     const getStatusLabel = (status: User['status']) => {
         const style = options?.personnel?.statuses.find(s => s.value === status);
         return style ? style.label : status;
     };
+
+    const statusStyles = useMemo(() => {
+        const descriptors = options?.personnel?.statuses ?? [];
+        return descriptors.reduce<Record<User['status'], string>>((acc, descriptor) => {
+            acc[descriptor.value as User['status']] = descriptor.class_name;
+            return acc;
+        }, {} as Record<User['status'], string>);
+    }, [options?.personnel?.statuses]);
+
+    const statusSummaries = useMemo(() => {
+        const descriptors = options?.personnel?.statuses ?? [];
+        return descriptors.map(descriptor => {
+            const count = users.filter(user => user.status === descriptor.value).length;
+            return {
+                key: descriptor.value,
+                label: descriptor.label,
+                count,
+                className: descriptor.class_name,
+            };
+        });
+    }, [options?.personnel?.statuses, users]);
 
     const handleInvite = async (details: { email: string; name?: string; role: User['role']; team: string }) => {
         try {
@@ -123,7 +144,7 @@ const PersonnelManagementPage: React.FC = () => {
             setIsInviteModalOpen(false);
             fetchUsers(); // Re-fetch to show the new user
         } catch (err) {
-            alert('Failed to invite user.');
+            showToast('邀請成員失敗，請稍後再試。', 'error');
         }
     };
 
@@ -138,7 +159,7 @@ const PersonnelManagementPage: React.FC = () => {
             setIsEditModalOpen(false);
             fetchUsers();
         } catch (err) {
-            alert('Failed to save user.');
+            showToast('儲存成員資料失敗，請稍後再試。', 'error');
         }
     };
 
@@ -155,7 +176,7 @@ const PersonnelManagementPage: React.FC = () => {
                 setDeletingUser(null);
                 fetchUsers();
             } catch (err) {
-                alert('Failed to delete user.');
+                showToast('刪除成員失敗，請稍後再試。', 'error');
             }
         }
     };
@@ -185,7 +206,11 @@ const PersonnelManagementPage: React.FC = () => {
             setSelectedIds([]);
             fetchUsers();
         } catch (err) {
-            alert(`Failed to ${action} selected users.`);
+            const actionLabels: Record<typeof action, string> = {
+                disable: '停用',
+                delete: '刪除',
+            };
+            showToast(`批次${actionLabels[action]}失敗，請稍後再試。`, 'error');
         }
     };
 
@@ -195,7 +220,7 @@ const PersonnelManagementPage: React.FC = () => {
             : users;
 
         if (dataToExport.length === 0) {
-            alert("沒有可匯出的資料。");
+            showToast('沒有可匯出的資料。', 'warning');
             return;
         }
 
@@ -220,8 +245,16 @@ const PersonnelManagementPage: React.FC = () => {
                 );
             case 'role': return user.role;
             case 'team': return user.team;
-            case 'status': return <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusPill(user.status)}`}>{getStatusLabel(user.status)}</span>;
-            case 'last_login_at': return user.last_login_at;
+            case 'status':
+                return (
+                    <StatusTag
+                        label={getStatusLabel(user.status)}
+                        className={statusStyles[user.status] || 'bg-slate-500/20 text-slate-300'}
+                        dense
+                    />
+                );
+            case 'last_login_at':
+                return user.last_login_at ? formatRelativeTime(user.last_login_at) : '尚未登入';
             default:
                 return <span className="text-slate-500">--</span>;
         }
@@ -242,6 +275,20 @@ const PersonnelManagementPage: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col">
+            <PageKPIs pageName="身份與存取管理" />
+            {statusSummaries.length > 0 && (
+                <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    {statusSummaries.map(summary => (
+                        <div key={summary.key} className="rounded-lg border border-slate-700/60 bg-slate-900/60 p-4">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-slate-400">{summary.label}</span>
+                                <StatusTag label={summary.label} className={summary.className} dense />
+                            </div>
+                            <p className="mt-2 text-2xl font-semibold text-white">{summary.count}</p>
+                        </div>
+                    ))}
+                </div>
+            )}
             <Toolbar
                 leftActions={leftActions}
                 rightActions={
@@ -294,12 +341,9 @@ const PersonnelManagementPage: React.FC = () => {
                                         <td key={key} className="px-6 py-4">{renderCellContent(user, key)}</td>
                                     ))}
                                     <td className="px-6 py-4 text-center space-x-1">
-                                        <button onClick={() => handleEditClick(user)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯">
-                                            <Icon name="edit-3" className="w-4 h-4" />
-                                        </button>
-                                        <button onClick={() => handleDeleteClick(user)} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除">
-                                            <Icon name="trash-2" className="w-4 h-4" />
-                                        </button>
+                                        <IconButton icon="eye" label="檢視成員" tooltip="檢視成員詳情" onClick={() => setViewingUser(user)} />
+                                        <IconButton icon="edit-3" label="編輯成員" tooltip="編輯成員" onClick={() => handleEditClick(user)} />
+                                        <IconButton icon="trash-2" label="刪除成員" tone="danger" tooltip="刪除成員" onClick={() => handleDeleteClick(user)} />
                                     </td>
                                 </tr>
                             ))}
@@ -369,6 +413,47 @@ const PersonnelManagementPage: React.FC = () => {
                 }}
                 initialFilters={filters}
             />
+            <Drawer
+                isOpen={!!viewingUser}
+                onClose={() => setViewingUser(null)}
+                title={viewingUser ? `成員詳情：${viewingUser.name}` : '成員詳情'}
+                width="w-1/2"
+            >
+                {viewingUser && (
+                    <div className="space-y-6 text-sm text-slate-300">
+                        <div className="flex items-center space-x-3">
+                            <UserAvatar user={viewingUser} className="h-12 w-12" iconClassName="h-6 w-6" />
+                            <div>
+                                <p className="text-lg font-semibold text-white">{viewingUser.name}</p>
+                                <p className="text-xs text-slate-400">{viewingUser.email}</p>
+                            </div>
+                            <StatusTag
+                                label={getStatusLabel(viewingUser.status)}
+                                className={statusStyles[viewingUser.status] || 'bg-slate-500/20 text-slate-300'}
+                                dense
+                            />
+                        </div>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div>
+                                <p className="text-xs text-slate-500">角色</p>
+                                <p className="mt-1 font-medium text-white">{viewingUser.role}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-slate-500">所屬團隊</p>
+                                <p className="mt-1 font-medium text-white">{viewingUser.team || '未指派'}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-slate-500">最後登入</p>
+                                <p className="mt-1 font-medium text-white">{viewingUser.last_login_at ? formatRelativeTime(viewingUser.last_login_at) : '尚未登入'}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-slate-500">建立時間</p>
+                                <p className="mt-1 font-medium text-white">{formatRelativeTime(viewingUser.created_at)}</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </Drawer>
         </div>
     );
 };

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import dayjs from 'dayjs';
 import { SilenceRule, TableColumn, RuleAnalysisReport } from '../../types';
 import Icon from '../../components/Icon';
 import SilenceRuleEditModal from '../../components/SilenceRuleEditModal';
@@ -39,11 +40,22 @@ const SilenceRulePage: React.FC = () => {
     const [analysisReport, setAnalysisReport] = useState<RuleAnalysisReport | null>(null);
     const [analysisError, setAnalysisError] = useState<string | null>(null);
     const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
+    const [isExtendModalOpen, setIsExtendModalOpen] = useState(false);
+    const [extendingRule, setExtendingRule] = useState<SilenceRule | null>(null);
+    const [extendChoice, setExtendChoice] = useState<number>(60);
+    const [isCustomExtend, setIsCustomExtend] = useState(false);
+    const [customExtendMinutes, setCustomExtendMinutes] = useState(120);
 
     const { metadata: pageMetadata } = usePageMetadata();
     const { options } = useOptions();
     const silenceRuleOptions = options?.silence_rules;
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
+    const extendPresets = [
+        { label: '30 分鐘', value: 30 },
+        { label: '1 小時', value: 60 },
+        { label: '4 小時', value: 240 },
+    ];
+    const extendOptions = [...extendPresets, { label: '自訂', value: -1 }];
 
     const fetchRules = useCallback(async () => {
         if (!pageKey) return;
@@ -125,6 +137,56 @@ const SilenceRulePage: React.FC = () => {
         }
     };
 
+    const handleExtendOptionSelect = (value: number) => {
+        if (value === -1) {
+            setIsCustomExtend(true);
+        } else {
+            setIsCustomExtend(false);
+            setExtendChoice(value);
+        }
+    };
+
+    const handleExtendRule = (rule: SilenceRule) => {
+        setExtendingRule(rule);
+        setExtendChoice(60);
+        setCustomExtendMinutes(120);
+        setIsCustomExtend(false);
+        setIsExtendModalOpen(true);
+    };
+
+    const handleConfirmExtend = async () => {
+        if (!extendingRule) {
+            return;
+        }
+        const minutesToAdd = isCustomExtend ? customExtendMinutes : extendChoice;
+        if (!minutesToAdd || minutesToAdd <= 0) {
+            showToast('請輸入有效的延長時間。', 'error');
+            return;
+        }
+        if ((extendingRule.schedule?.type || 'single') !== 'single') {
+            showToast('週期性靜音請在編輯中調整排程設定。', 'info');
+            setIsExtendModalOpen(false);
+            setExtendingRule(null);
+            return;
+        }
+
+        const currentEndsAt = extendingRule.schedule?.ends_at || dayjs().format('YYYY-MM-DDTHH:mm');
+        const newEndsAt = dayjs(currentEndsAt).add(minutesToAdd, 'minute').format('YYYY-MM-DDTHH:mm');
+
+        try {
+            await api.patch(`/silence-rules/${extendingRule.id}`, {
+                schedule: { ...extendingRule.schedule, ends_at: newEndsAt },
+            });
+            showToast(`靜音規則已延長 ${minutesToAdd} 分鐘。`, 'success');
+            fetchRules();
+        } catch (err) {
+            showToast('延長靜音規則失敗。', 'error');
+        } finally {
+            setIsExtendModalOpen(false);
+            setExtendingRule(null);
+        }
+    };
+
     const handleDeleteClick = (rule: SilenceRule) => {
         setDeletingRule(rule);
         setIsDeleteModalOpen(true);
@@ -150,7 +212,7 @@ const SilenceRulePage: React.FC = () => {
             await api.patch(`/silence-rules/${rule.id}`, { ...rule, enabled: !rule.enabled });
             fetchRules();
         } catch (err) {
-            alert('Failed to toggle rule status.');
+            showToast('無法更新靜音規則狀態。', 'error');
         }
     };
 
@@ -170,7 +232,7 @@ const SilenceRulePage: React.FC = () => {
             await api.post('/silence-rules/batch-actions', { action, ids: selectedIds });
             fetchRules();
         } catch (err) {
-            alert(`Failed to ${action} selected rules.`);
+            showToast('批次操作失敗，請稍後再試。', 'error');
         } finally {
             setSelectedIds([]);
         }
@@ -198,7 +260,7 @@ const SilenceRulePage: React.FC = () => {
 
     const handleExport = () => {
         if (rules.length === 0) {
-            alert("沒有可匯出的資料。");
+            showToast('沒有可匯出的資料。', 'warning');
             return;
         }
         exportToCsv({
@@ -223,33 +285,67 @@ const SilenceRulePage: React.FC = () => {
         switch (columnKey) {
             case 'enabled':
                 return (
-                    <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" checked={rule.enabled} className="sr-only peer" onChange={() => handleToggleEnable(rule)} />
-                        <div className="w-11 h-6 bg-slate-700 rounded-full peer peer-focus:ring-4 peer-focus:ring-sky-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
+                    <label className="relative inline-flex cursor-pointer items-center">
+                        <input
+                            type="checkbox"
+                            checked={rule.enabled}
+                            className="peer sr-only"
+                            onChange={() => handleToggleEnable(rule)}
+                            aria-label="切換靜音規則啟用狀態"
+                        />
+                        <div className="relative h-6 w-11 rounded-full bg-slate-700 transition-colors peer-focus:ring-2 peer-focus:ring-sky-600 peer-checked:bg-sky-500">
+                            <div className="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform peer-checked:translate-x-5"></div>
+                        </div>
                     </label>
                 );
-            case 'name': return <span className="font-medium text-white">{rule.name}</span>;
+            case 'name':
+                return <span className="block max-w-[220px] truncate font-medium text-white" title={rule.name}>{rule.name}</span>;
             case 'type': {
                 const typeDescriptor = silenceRuleOptions?.types.find(t => t.value === rule.type);
                 const pillClass = typeDescriptor?.class_name || 'bg-slate-800/60 border border-slate-600 text-slate-200';
                 const label = typeDescriptor?.label || rule.type;
-                return <span className={`px-2 py-1 text-xs font-semibold rounded-full ${pillClass}`}>{label}</span>;
-            }
-            case 'matchers': return <code className="text-xs">{rule.matchers.map(m => `${m.key}${m.operator}"${m.value}"`).join(', ')}</code>;
-            case 'schedule':
-                if (rule.schedule.type === 'single') return `${rule.schedule.starts_at} -> ${rule.schedule.ends_at}`;
-                if (rule.schedule.type === 'recurring') {
-                    return rule.schedule.cron_description || rule.schedule.cron || 'N/A';
-                }
-                return 'N/A';
-            case 'creator': return rule.creator;
-            case 'created_at': return rule.created_at;
-            default:
                 return (
-                    <div className="text-center text-slate-500 py-6">
-                        無法載入此步驟內容，請稍後再試。
+                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${pillClass}`}>
+                        {label}
+                    </span>
+                );
+            }
+            case 'matchers':
+                return (
+                    <div className="flex flex-wrap gap-1">
+                        {rule.matchers.map(m => (
+                            <span key={`${m.key}-${m.operator}-${m.value}`} className="rounded-md bg-slate-800/60 px-2 py-1 text-xs font-mono text-slate-200">
+                                {`${m.key} ${m.operator} "${m.value}"`}
+                            </span>
+                        ))}
                     </div>
                 );
+            case 'schedule':
+                if (rule.schedule.type === 'single') {
+                    const start = rule.schedule.starts_at ? dayjs(rule.schedule.starts_at).format('YYYY-MM-DD HH:mm') : '未設定';
+                    const end = rule.schedule.ends_at ? dayjs(rule.schedule.ends_at).format('YYYY-MM-DD HH:mm') : '未設定';
+                    return (
+                        <div className="text-xs text-slate-300">
+                            <div>開始：{start}</div>
+                            <div>結束：{end}</div>
+                        </div>
+                    );
+                }
+                if (rule.schedule.type === 'recurring') {
+                    return (
+                        <div className="text-xs text-slate-300">
+                            <div>{rule.schedule.cron_description || rule.schedule.cron || 'N/A'}</div>
+                            {rule.schedule.timezone && <div className="text-slate-500">時區：{rule.schedule.timezone}</div>}
+                        </div>
+                    );
+                }
+                return 'N/A';
+            case 'creator':
+                return <span className="text-slate-200">{rule.creator}</span>;
+            case 'created_at':
+                return <span className="text-slate-400">{dayjs(rule.created_at).format('YYYY-MM-DD HH:mm')}</span>;
+            default:
+                return <span className="text-slate-400">--</span>;
         }
     };
 
@@ -272,16 +368,16 @@ const SilenceRulePage: React.FC = () => {
             <TableContainer>
                 <div className="flex-1 overflow-y-auto">
                     <table className="w-full text-sm text-left text-slate-300">
-                        <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
+                        <thead className="sticky top-0 z-10 bg-slate-800/50 text-xs uppercase text-slate-400">
                             <tr>
-                                <th scope="col" className="p-4 w-12">
+                                <th scope="col" className="w-12 px-4 py-3">
                                     <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
                                         checked={isAllSelected} ref={el => { if (el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
                                 {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
+                                    <th key={key} scope="col" className="px-5 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
                                 ))}
-                                <th scope="col" className="px-6 py-3 text-center">操作</th>
+                                <th scope="col" className="px-5 py-3 text-center">操作</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -291,16 +387,38 @@ const SilenceRulePage: React.FC = () => {
                                 <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchRules} />
                             ) : rules.map((rule) => (
                                 <tr key={rule.id} className={`border-b border-slate-800 ${selectedIds.includes(rule.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
-                                    <td className="p-4 w-12">
+                                    <td className="w-12 px-4 py-3 align-middle">
                                         <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
                                             checked={selectedIds.includes(rule.id)} onChange={(e) => handleSelectOne(e, rule.id)} />
                                     </td>
                                     {visibleColumns.map(key => (
-                                        <td key={key} className="px-6 py-4">{renderCellContent(rule, key)}</td>
+                                        <td key={key} className="px-5 py-3 align-middle">{renderCellContent(rule, key)}</td>
                                     ))}
-                                    <td className="px-6 py-4 text-center">
-                                        <button onClick={() => handleEditRule(rule)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯"><Icon name="edit-3" className="w-4 h-4" /></button>
-                                        <button onClick={() => handleDeleteClick(rule)} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除"><Icon name="trash-2" className="w-4 h-4" /></button>
+                                    <td className="px-5 py-3 text-center align-middle">
+                                        <div className="flex items-center justify-center gap-1.5">
+                                            <button
+                                                onClick={() => handleExtendRule(rule)}
+                                                className="rounded-md px-2 py-1 text-slate-300 transition-colors hover:bg-slate-700 hover:text-white"
+                                                title="延長靜音"
+                                                aria-label="延長靜音"
+                                            >
+                                                <Icon name="clock" className="h-4 w-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleToggleEnable(rule)}
+                                                className="rounded-md px-2 py-1 text-slate-300 transition-colors hover:bg-slate-700 hover:text-white"
+                                                title={rule.enabled ? '停用靜音規則' : '啟用靜音規則'}
+                                                aria-label={rule.enabled ? '停用靜音規則' : '啟用靜音規則'}
+                                            >
+                                                <Icon name={rule.enabled ? 'pause-circle' : 'play-circle'} className="h-4 w-4" />
+                                            </button>
+                                            <button onClick={() => handleEditRule(rule)} className="rounded-md px-2 py-1 text-slate-300 transition-colors hover:bg-slate-700 hover:text-white" title="編輯" aria-label="編輯靜音規則">
+                                                <Icon name="edit-3" className="h-4 w-4" />
+                                            </button>
+                                            <button onClick={() => handleDeleteClick(rule)} className="rounded-md px-2 py-1 text-red-400 transition-colors hover:bg-red-500/20 hover:text-red-200" title="刪除" aria-label="刪除靜音規則">
+                                                <Icon name="trash-2" className="h-4 w-4" />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -333,6 +451,60 @@ const SilenceRulePage: React.FC = () => {
             >
                 <p>您確定要刪除靜音規則 <strong className="text-amber-400">{deletingRule?.name}</strong> 嗎？</p>
                 <p className="mt-2 text-slate-400">此操作無法復原。</p>
+            </Modal>
+            <Modal
+                isOpen={isExtendModalOpen}
+                onClose={() => setIsExtendModalOpen(false)}
+                title="延長靜音時長"
+                width="w-1/3"
+                footer={
+                    <div className="flex justify-end gap-2">
+                        <button onClick={() => setIsExtendModalOpen(false)} className="rounded-md bg-slate-700 px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-600">取消</button>
+                        <button onClick={handleConfirmExtend} className="rounded-md bg-sky-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700">確定延長</button>
+                    </div>
+                }
+            >
+                <div className="space-y-4">
+                    <p className="text-sm text-slate-300">選擇要在原結束時間後延長的時長。</p>
+                    {extendingRule?.schedule?.ends_at && (
+                        <p className="text-xs text-slate-500">目前結束時間：{dayjs(extendingRule.schedule.ends_at).format('YYYY-MM-DD HH:mm')}</p>
+                    )}
+                    <div className="grid grid-cols-2 gap-2">
+                        {extendOptions.map(opt => {
+                            const isActive = opt.value === -1 ? isCustomExtend : (!isCustomExtend && extendChoice === opt.value);
+                            return (
+                                <button
+                                    key={opt.label}
+                                    type="button"
+                                    onClick={() => {
+                                        handleExtendOptionSelect(opt.value);
+                                        if (opt.value !== -1) {
+                                            setExtendChoice(opt.value);
+                                        }
+                                    }}
+                                    className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${isActive ? 'border-sky-400 bg-sky-500/20 text-sky-100' : 'border-slate-700 bg-slate-900/40 text-slate-200 hover:border-slate-500 hover:bg-slate-800/60'}`}
+                                >
+                                    {opt.label}
+                                </button>
+                            );
+                        })}
+                    </div>
+                    {isCustomExtend && (
+                        <div>
+                            <label className="mb-1 block text-xs text-slate-400">自訂延長分鐘數</label>
+                            <input
+                                type="number"
+                                min={15}
+                                step={15}
+                                value={customExtendMinutes}
+                                onChange={e => setCustomExtendMinutes(Number(e.target.value))}
+                                className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                                placeholder="輸入分鐘數，例如：90"
+                            />
+                            <p className="mt-2 text-xs text-slate-500">系統會在原結束時間後追加指定的分鐘數。</p>
+                        </div>
+                    )}
+                </div>
             </Modal>
             <ColumnSettingsModal
                 isOpen={isColumnSettingsModalOpen}

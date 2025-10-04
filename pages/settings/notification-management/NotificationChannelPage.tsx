@@ -13,6 +13,9 @@ import ColumnSettingsModal from '../../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 import { useOptions } from '../../../contexts/OptionsContext';
 import { showToast } from '../../../services/toast';
+import StatusTag from '../../../components/StatusTag';
+import IconButton from '../../../components/IconButton';
+import { formatRelativeTime } from '../../../utils/time';
 
 type IconConfig = Record<NotificationChannelType | 'Default', { icon: string; color: string; }>;
 
@@ -75,6 +78,14 @@ const NotificationChannelPage: React.FC = () => {
         }
     }, [fetchChannels, pageKey]);
 
+    useEffect(() => {
+        if (!pageKey) return;
+        const interval = setInterval(() => {
+            fetchChannels();
+        }, 30000);
+        return () => clearInterval(interval);
+    }, [fetchChannels, pageKey]);
+
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
         if (!pageKey) {
             showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
@@ -110,7 +121,7 @@ const NotificationChannelPage: React.FC = () => {
             }
             fetchChannels();
         } catch (err) {
-            alert('Failed to save channel.');
+            showToast('儲存通知管道失敗，請稍後再試。', 'error');
         } finally {
             setIsModalOpen(false);
         }
@@ -127,7 +138,7 @@ const NotificationChannelPage: React.FC = () => {
                 await api.del(`/settings/notification-channels/${deletingChannel.id}`);
                 fetchChannels();
             } catch (err) {
-                alert('Failed to delete channel.');
+                showToast('刪除通知管道失敗，請稍後再試。', 'error');
             } finally {
                 setIsDeleteModalOpen(false);
                 setDeletingChannel(null);
@@ -143,7 +154,7 @@ const NotificationChannelPage: React.FC = () => {
             // Re-fetch after a delay to get the final result
             setTimeout(fetchChannels, 2000);
         } catch (err) {
-            alert('Failed to initiate test.');
+            showToast('啟動測試通知失敗，請稍後再試。', 'error');
         }
     };
 
@@ -152,7 +163,7 @@ const NotificationChannelPage: React.FC = () => {
             await api.patch(`/settings/notification-channels/${channel.id}`, { ...channel, enabled: !channel.enabled });
             fetchChannels();
         } catch (err) {
-            alert('Failed to toggle channel status.');
+            showToast('切換通知管道狀態失敗，請稍後再試。', 'error');
         }
     };
 
@@ -162,11 +173,15 @@ const NotificationChannelPage: React.FC = () => {
         return iconConfig[type] || iconConfig.Default || fallback;
     };
 
-    const getTestResultPill = (status: NotificationChannel['last_test_result']) => {
+    const getTestResultTone = (status: NotificationChannel['last_test_result']) => {
         switch (status) {
-            case 'success': return 'bg-green-500/20 text-green-400';
-            case 'failed': return 'bg-red-500/20 text-red-400';
-            case 'not_tested': return 'bg-yellow-500/20 text-yellow-400 animate-pulse';
+            case 'success':
+                return 'success';
+            case 'failed':
+                return 'danger';
+            case 'not_tested':
+            default:
+                return 'neutral';
         }
     };
 
@@ -186,7 +201,12 @@ const NotificationChannelPage: React.FC = () => {
             await api.post('/settings/notification-channels/batch-actions', { action, ids: selectedIds });
             fetchChannels();
         } catch (err) {
-            alert(`Failed to ${action} selected channels.`);
+            const actionLabels: Record<typeof action, string> = {
+                enable: '啟用',
+                disable: '停用',
+                delete: '刪除',
+            };
+            showToast(`批次${actionLabels[action]}失敗，請稍後再試。`, 'error');
         } finally {
             setSelectedIds([]);
         }
@@ -209,9 +229,11 @@ const NotificationChannelPage: React.FC = () => {
         switch (columnKey) {
             case 'enabled':
                 return (
-                    <label className="relative inline-flex items-center cursor-pointer">
+                    <label className="relative inline-flex items-center cursor-pointer" aria-label={channel.enabled ? '停用管道' : '啟用管道'}>
                         <input type="checkbox" checked={channel.enabled} className="sr-only peer" onChange={() => handleToggleEnable(channel)} />
-                        <div className="w-11 h-6 bg-slate-700 rounded-full peer peer-checked:bg-sky-600 peer-checked:after:translate-x-full after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                        <div className="w-12 h-6 bg-slate-700 rounded-full peer peer-checked:bg-sky-600 transition-colors">
+                            <span className="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-[24px]"></span>
+                        </div>
                     </label>
                 );
             case 'name': return <span className="font-medium text-white">{channel.name}</span>;
@@ -228,11 +250,19 @@ const NotificationChannelPage: React.FC = () => {
             }
             case 'last_test_result':
                 return (
-                    <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full capitalize ${getTestResultPill(channel.last_test_result)}`}>
-                        {channel.last_test_result}
-                    </span>
+                    <StatusTag
+                        label={channel.last_test_result === 'success' ? '測試成功' : channel.last_test_result === 'failed' ? '測試失敗' : '尚未測試'}
+                        tone={getTestResultTone(channel.last_test_result)}
+                        dense
+                    />
                 );
-            case 'last_tested_at': return channel.last_tested_at;
+            case 'last_tested_at':
+                return channel.last_tested_at ? (
+                    <div className="flex flex-col">
+                        <span className="font-medium text-white">{formatRelativeTime(channel.last_tested_at)}</span>
+                        <span className="text-xs text-slate-500">{channel.last_tested_at}</span>
+                    </div>
+                ) : <span className="text-slate-500">尚未測試</span>;
             default:
                 return <span className="text-slate-500">--</span>;
         }
@@ -245,6 +275,7 @@ const NotificationChannelPage: React.FC = () => {
                 rightActions={
                     <>
                         <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => setIsColumnSettingsModalOpen(true)} />
+                        <ToolbarButton icon="refresh-cw" text="重新整理" onClick={fetchChannels} />
                         <ToolbarButton icon="plus" text="新增管道" primary onClick={handleNewChannel} />
                     </>
                 }
@@ -272,6 +303,15 @@ const NotificationChannelPage: React.FC = () => {
                                 <TableLoader colSpan={visibleColumns.length + 2} />
                             ) : error ? (
                                 <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchChannels} />
+                            ) : channels.length === 0 ? (
+                                <tr>
+                                    <td colSpan={visibleColumns.length + 2} className="px-6 py-12 text-center text-slate-400">
+                                        <div className="space-y-3">
+                                            <p className="text-sm">尚未建立任何通知管道，請點擊「新增管道」新增電子郵件、Slack 或其他整合。</p>
+                                            <ToolbarButton icon="plus" text="新增管道" primary onClick={handleNewChannel} />
+                                        </div>
+                                    </td>
+                                </tr>
                             ) : channels.map((channel) => (
                                 <tr key={channel.id} className={`border-b border-slate-800 ${selectedIds.includes(channel.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
                                     <td className="p-4 w-12">
@@ -279,11 +319,14 @@ const NotificationChannelPage: React.FC = () => {
                                             checked={selectedIds.includes(channel.id)} onChange={(e) => handleSelectOne(e, channel.id)} />
                                     </td>
                                     {visibleColumns.map(key => (
-                                        <td key={key} className="px-6 py-4">{renderCellContent(channel, key)}</td>
+                                        <td key={key} className="px-6 py-4 align-top">{renderCellContent(channel, key)}</td>
                                     ))}
-                                    <td className="px-6 py-4 text-center space-x-1">
-                                        <button onClick={() => handleEditChannel(channel)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯"><Icon name="edit-3" className="w-4 h-4" /></button>
-                                        <button onClick={() => handleDeleteClick(channel)} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除"><Icon name="trash-2" className="w-4 h-4" /></button>
+                                    <td className="px-6 py-4 text-center">
+                                        <div className="flex items-center justify-center gap-2">
+                                            <IconButton icon="refresh-cw" label="測試管道" tooltip="發送測試通知" onClick={() => handleTestChannel(channel.id)} size="sm" />
+                                            <IconButton icon="edit-3" label="編輯管道" tooltip="編輯管道" onClick={() => handleEditChannel(channel)} size="sm" />
+                                            <IconButton icon="trash-2" label="刪除管道" tooltip="刪除管道" tone="danger" onClick={() => handleDeleteClick(channel)} size="sm" />
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

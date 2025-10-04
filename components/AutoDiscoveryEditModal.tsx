@@ -33,11 +33,33 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
   const [formData, setFormData] = useState<Partial<DiscoveryJob>>({});
   const [isTesting, setIsTesting] = useState(false);
   const kubeconfigInputRef = useRef<HTMLInputElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const { options, isLoading: isLoadingOptions } = useOptions();
   const autoDiscoveryOptions = options?.auto_discovery;
   const exporter_templates = autoDiscoveryOptions?.exporter_templates || [];
   const mib_profiles = autoDiscoveryOptions?.mib_profiles || [];
   const edge_gateways = autoDiscoveryOptions?.edge_gateways || [];
+
+  const sectionDefinitions = [
+    { id: 'discovery-basic', title: '基本資訊', description: '設定任務名稱、掃描類型與排程週期。' },
+    { id: 'discovery-target', title: '目標配置', description: '填寫要掃描的網域、憑證或區段參數。' },
+    { id: 'discovery-exporter', title: 'Exporter 綁定', description: '選擇監控模板與必要的 MIB/Profile。' },
+    { id: 'discovery-edge', title: '邊緣掃描', description: '決定是否透過 Edge Gateway 執行任務。' },
+    { id: 'discovery-tags', title: '標籤與分類', description: '為匯入資源預先套用標籤。' },
+  ] as const;
+
+  const registerSectionRef = (id: string) => (node: HTMLDivElement | null) => {
+    sectionRefs.current[id] = node;
+  };
+
+  const handleSectionScroll = (id: string) => {
+    const container = scrollContainerRef.current;
+    const target = sectionRefs.current[id];
+    if (container && target) {
+      container.scrollTo({ top: target.offsetTop - 16, behavior: 'smooth' });
+    }
+  };
 
   useEffect(() => {
     if (isOpen && autoDiscoveryOptions) {
@@ -191,8 +213,8 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
               accept=".yaml,.yml,.kubeconfig,text/plain"
               onChange={handleFileSelect}
             />
-            <div className="space-y-1">
-              <div className="flex justify-between items-center mb-1">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
                 <label className="block text-sm font-medium text-slate-300">Kubeconfig</label>
                 <button
                   type="button"
@@ -203,6 +225,7 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
                   上傳檔案
                 </button>
               </div>
+              <p className="text-xs text-slate-400">支援直接貼上或上傳 kubeconfig，請確認檔案包含 <code className="rounded bg-slate-900/60 px-1 py-0.5">clusters</code>、<code className="rounded bg-slate-900/60 px-1 py-0.5">users</code> 與 <code className="rounded bg-slate-900/60 px-1 py-0.5">contexts</code> 欄位。</p>
               <textarea
                 rows={5}
                 value={(formData.target_config as any)?.kubeconfig || ''}
@@ -210,17 +233,33 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
                 className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm font-mono"
                 placeholder="在此貼上您的 kubeconfig YAML 或上傳檔案。"
               />
+              <pre className="overflow-x-auto rounded-md border border-slate-700/70 bg-slate-900/40 p-3 text-[11px] leading-5 text-slate-300">
+apiVersion: v1
+clusters:
+  - cluster:
+      server: https://your-api-server
+    name: sre-platform
+users:
+  - name: sre-bot
+contexts:
+  - context:
+      cluster: sre-platform
+      user: sre-bot
+    name: sre-default
+current-context: sre-default
+              </pre>
             </div>
           </>
         );
       case 'snmp':
         return (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormRow label="Community String">
               <input
                 type="text"
                 value={(formData.target_config as any)?.community || ''}
                 onChange={(e) => handleTargetConfigChange('community', e.target.value)}
+                placeholder="例如：public"
                 className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
               />
             </FormRow>
@@ -233,6 +272,7 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
                 className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
               />
             </FormRow>
+            <p className="sm:col-span-2 text-xs text-slate-400">可輸入多個子網，以逗號分隔；如需限制 Port 範圍，可於 Exporter 覆寫中補充。</p>
           </div>
         );
       case 'static_range':
@@ -245,6 +285,7 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
               placeholder="例如：192.168.1.1/24"
               className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
             />
+            <p className="mt-1 text-xs text-slate-400">若需排除特定主機，可於匯入後使用標籤或忽略功能處理。</p>
           </FormRow>
         );
       case 'cloud_provider':
@@ -254,8 +295,10 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
               type="password"
               value={(formData.target_config as any)?.api_key || ''}
               onChange={(e) => handleTargetConfigChange('apiKey', e.target.value)}
+              placeholder="請貼上雲端供應商提供的 API Key"
               className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
             />
+            <p className="mt-1 text-xs text-slate-400">建議使用具有唯讀權限的 API 金鑰，以維持最小權限原則。</p>
           </FormRow>
         );
       default:
@@ -363,7 +406,7 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
       title={job ? '編輯自動掃描任務' : '新增自動掃描任務'}
       isOpen={isOpen}
       onClose={onClose}
-      width="w-1/2 max-w-2xl"
+      width="w-3/4 max-w-4xl"
       footer={
         <div className="flex justify-between w-full">
           <button
@@ -381,66 +424,135 @@ const AutoDiscoveryEditModal: React.FC<AutoDiscoveryEditModalProps> = ({ isOpen,
         </div>
       }
     >
-      <div className="space-y-6 max-h-[65vh] overflow-y-auto pr-2 -mr-4">
-        <div className="p-4 border border-slate-700 rounded-lg bg-slate-800/20 space-y-4">
-          <h3 className="text-lg font-semibold text-white">1. 基本資訊</h3>
-          <FormRow label="名稱 *">
-            <input
-              type="text"
-              value={formData.name || ''}
-              onChange={(e) => handleFieldChange('name', e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
-            />
-          </FormRow>
-          <div className="grid grid-cols-2 gap-4">
-            <FormRow label="掃描類型">
-              <select
-                value={(formData.kind as DiscoveryJobKind) || ''}
-                onChange={(e) => handleFieldChange('kind', e.target.value as DiscoveryJobKind)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
-                disabled={isLoadingOptions}
-              >
-                {isLoadingOptions && <option>載入中...</option>}
-                {(autoDiscoveryOptions?.job_kinds || ['K8s', 'SNMP']).map((kind) => (
-                  <option key={kind} value={kind}>
-                    {kind}
-                  </option>
-                ))}
-              </select>
-            </FormRow>
-            <FormRow label="掃描排程 (Cron)">
+      <div className="md:grid md:grid-cols-[220px,1fr] gap-6">
+        <nav className="hidden md:block" aria-label="自動掃描設定步驟">
+          <ol className="sticky top-0 space-y-3 rounded-xl border border-slate-700/60 bg-slate-900/40 p-4">
+            {sectionDefinitions.map((section, index) => (
+              <li key={section.id}>
+                <button
+                  type="button"
+                  onClick={() => handleSectionScroll(section.id)}
+                  className="w-full rounded-lg border border-transparent px-3 py-2 text-left transition-colors hover:border-sky-600/60 hover:bg-sky-900/30"
+                  aria-controls={section.id}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-sky-900/60 text-xs font-semibold text-sky-200">
+                      {index + 1}
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-white">{section.title}</p>
+                      <p className="mt-1 text-xs text-slate-400">{section.description}</p>
+                    </div>
+                  </div>
+                </button>
+              </li>
+            ))}
+          </ol>
+        </nav>
+
+        <div ref={scrollContainerRef} className="space-y-6 max-h-[65vh] overflow-y-auto pr-2 md:pr-4">
+          <section
+            id="discovery-basic"
+            ref={registerSectionRef('discovery-basic')}
+            className="space-y-4 rounded-lg border border-slate-700 bg-slate-800/20 p-4"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <h3 className="text-lg font-semibold text-white">1. 基本資訊</h3>
+              <span className="rounded-full bg-rose-900/40 px-3 py-1 text-xs font-semibold text-rose-200">必填</span>
+            </div>
+            <p className="text-sm text-slate-400">為任務命名並確認掃描週期，建議使用描述性的名稱（例如「K8s 集群每小時掃描」）。</p>
+            <FormRow label="名稱 *">
               <input
                 type="text"
-                value={formData.schedule || ''}
-                onChange={(e) => handleFieldChange('schedule', e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm font-mono"
+                value={formData.name || ''}
+                placeholder="例如：K8s 集群節點掃描"
+                onChange={(e) => handleFieldChange('name', e.target.value)}
+                className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm"
               />
             </FormRow>
-          </div>
-        </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <FormRow label="掃描類型">
+                <select
+                  value={(formData.kind as DiscoveryJobKind) || ''}
+                  onChange={(e) => handleFieldChange('kind', e.target.value as DiscoveryJobKind)}
+                  className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm"
+                  disabled={isLoadingOptions}
+                >
+                  {isLoadingOptions && <option>載入中...</option>}
+                  {(autoDiscoveryOptions?.job_kinds || []).map((kind) => (
+                    <option key={kind.value} value={kind.value}>
+                      {kind.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-slate-400">系統會依照掃描類型套用預設匯出模板，可於下方調整。</p>
+              </FormRow>
+              <FormRow label="掃描排程 (Cron)">
+                <input
+                  type="text"
+                  value={formData.schedule || ''}
+                  placeholder="0 2 * * *"
+                  onChange={(e) => handleFieldChange('schedule', e.target.value)}
+                  className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-mono"
+                  aria-describedby="discovery-cron-help"
+                />
+                <p id="discovery-cron-help" className="mt-1 text-xs text-slate-400">
+                  請輸入標準 5 欄位 Cron 表達式，例如 <code className="rounded bg-slate-900/60 px-1.5 py-0.5">0 * * * *</code>（每小時）或
+                  <code className="ml-1 rounded bg-slate-900/60 px-1.5 py-0.5">30 3 * * 1</code>（每週一 03:30）。
+                </p>
+              </FormRow>
+            </div>
+          </section>
 
-        <div className="p-4 border border-slate-700 rounded-lg bg-slate-800/20 space-y-4">
-          <h3 className="text-lg font-semibold text-white">2. 目標配置</h3>
-          <p className="text-sm text-slate-400 -mt-2">專注於 <strong>如何找到資源</strong>，填寫掃描所需的連線參數。</p>
-          {renderConfigFields()}
-        </div>
+          <section
+            id="discovery-target"
+            ref={registerSectionRef('discovery-target')}
+            className="space-y-4 rounded-lg border border-slate-700 bg-slate-800/20 p-4"
+          >
+            <h3 className="text-lg font-semibold text-white">2. 目標配置</h3>
+            <p className="text-sm text-slate-400">請提供掃描所需的目標資訊，不同掃描類型會要求不同欄位。</p>
+            {renderConfigFields()}
+          </section>
 
-        <div className="p-4 border border-slate-700 rounded-lg bg-slate-800/20 space-y-4">
-          <h3 className="text-lg font-semibold text-white">3. Exporter 綁定</h3>
-          <p className="text-sm text-slate-400 -mt-2">決定 <strong>如何持續監控</strong> 匯入的資源，系統會依掃描類型提供建議模板。</p>
-          {renderExporterBindingSection()}
-        </div>
+          <section
+            id="discovery-exporter"
+            ref={registerSectionRef('discovery-exporter')}
+            className="space-y-4 rounded-lg border border-slate-700 bg-slate-800/20 p-4"
+          >
+            <h3 className="text-lg font-semibold text-white">3. Exporter 綁定</h3>
+            <p className="text-sm text-slate-400">選擇指派給新資源的監控模板，必要時可覆寫 MIB 或 YAML 設定。</p>
+            <div className="space-y-4 rounded-lg border border-dashed border-slate-700/70 bg-slate-900/20 p-4">
+              {renderExporterBindingSection()}
+            </div>
+          </section>
 
-        <div className="p-4 border border-slate-700 rounded-lg bg-slate-800/20 space-y-4">
-          <h3 className="text-lg font-semibold text-white">4. 邊緣掃描</h3>
-          {renderEdgeGatewaySection()}
-        </div>
+          <section
+            id="discovery-edge"
+            ref={registerSectionRef('discovery-edge')}
+            className="space-y-4 rounded-lg border border-slate-700 bg-slate-800/20 p-4"
+          >
+            <h3 className="text-lg font-semibold text-white">4. 邊緣掃描</h3>
+            <p className="text-sm text-slate-400">若目標網段無法直接連線，可啟用 Edge Gateway 由近端節點執行掃描。</p>
+            {renderEdgeGatewaySection()}
+          </section>
 
-        <div className="p-4 border border-slate-700 rounded-lg bg-slate-800/20 space-y-4">
-          <h3 className="text-lg font-semibold text-white">5. 標籤與分類 (Metadata)</h3>
-          <FormRow label="標籤 (Tags)">
-            <KeyValueInput values={formData.tags || []} onChange={(tags) => handleFieldChange('tags', tags)} />
-          </FormRow>
+          <section
+            id="discovery-tags"
+            ref={registerSectionRef('discovery-tags')}
+            className="space-y-4 rounded-lg border border-slate-700 bg-slate-800/20 p-4"
+          >
+            <h3 className="text-lg font-semibold text-white">5. 標籤與分類 (Metadata)</h3>
+            <p className="text-sm text-slate-400">新增的資源會自動帶入這些標籤，協助後續篩選與自動化規則。</p>
+            <FormRow label="標籤 (Tags)">
+              <KeyValueInput
+                values={formData.tags || []}
+                onChange={(tags) => handleFieldChange('tags', tags)}
+                keyPlaceholder="選擇標籤鍵"
+                valuePlaceholder="輸入或選擇對應值"
+                addLabel="新增標籤條目"
+              />
+            </FormRow>
+          </section>
         </div>
       </div>
     </Modal>

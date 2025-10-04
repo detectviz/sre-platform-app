@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Role, TableColumn } from '../../../types';
-import Icon from '../../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../../components/Toolbar';
 import TableContainer from '../../../components/TableContainer';
 import RoleEditModal from '../../../components/RoleEditModal';
@@ -13,6 +12,10 @@ import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 import { showToast } from '../../../services/toast';
 import Pagination from '../../../components/Pagination';
 import UnifiedSearchModal from '../../../components/UnifiedSearchModal';
+import { useOptions } from '../../../contexts/OptionsContext';
+import StatusTag from '../../../components/StatusTag';
+import IconButton from '../../../components/IconButton';
+import { formatRelativeTime } from '../../../utils/time';
 
 const PAGE_IDENTIFIER = 'roles';
 
@@ -36,6 +39,19 @@ const RoleManagementPage: React.FC = () => {
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
     const { metadata: pageMetadata } = usePageMetadata();
+    const { options } = useOptions();
+    const roleDescriptors = useMemo(() => {
+        if (!options?.personnel?.role_descriptors) {
+            return new Map<string, { label: string; description?: string; helper_text?: string }>();
+        }
+        return new Map(
+            options.personnel.role_descriptors.map(descriptor => [
+                descriptor.value,
+                { label: descriptor.label, description: descriptor.description, helper_text: descriptor.helper_text }
+            ])
+        );
+    }, [options?.personnel?.role_descriptors]);
+
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
 
     const fetchRoles = useCallback(async () => {
@@ -107,7 +123,7 @@ const RoleManagementPage: React.FC = () => {
             }
             fetchRoles();
         } catch (err) {
-            alert('Failed to save role.');
+            showToast('儲存角色設定失敗，請稍後再試。', 'error');
         } finally {
             setIsModalOpen(false);
         }
@@ -124,7 +140,7 @@ const RoleManagementPage: React.FC = () => {
                 await api.del(`/iam/roles/${deletingRole.id}`);
                 fetchRoles();
             } catch (err) {
-                alert('Failed to delete role.');
+                showToast('刪除角色失敗，請稍後再試。', 'error');
             } finally {
                 setIsDeleteModalOpen(false);
                 setDeletingRole(null);
@@ -138,7 +154,7 @@ const RoleManagementPage: React.FC = () => {
             setSelectedIds([]);
             fetchRoles();
         } catch (err) {
-            alert('Failed to delete selected roles.');
+            showToast('批次刪除角色失敗，請稍後再試。', 'error');
         }
     };
 
@@ -166,26 +182,58 @@ const RoleManagementPage: React.FC = () => {
         <ToolbarButton icon="trash-2" text="刪除" danger onClick={handleBatchDelete} />
     );
 
+    const getRoleDescriptor = (role: Role) => {
+        return roleDescriptors.get(role.id) || roleDescriptors.get(role.name) || null;
+    };
+
     const renderCellContent = (role: Role, columnKey: string) => {
         switch (columnKey) {
             case 'enabled':
                 return (
-                    <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" checked={role.enabled} className="sr-only peer" onChange={() => handleToggleEnabled(role)} />
-                        <div className="w-11 h-6 bg-slate-700 rounded-full peer peer-focus:ring-4 peer-focus:ring-sky-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
+                    <label className="relative inline-flex items-center cursor-pointer" aria-label={role.enabled ? '停用角色' : '啟用角色'}>
+                        <input
+                            type="checkbox"
+                            checked={role.enabled}
+                            className="sr-only peer"
+                            onChange={() => handleToggleEnabled(role)}
+                        />
+                        <div className="w-12 h-6 rounded-full bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-sky-600 transition-colors peer-checked:bg-sky-600">
+                            <span className="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-[24px]"></span>
+                        </div>
                     </label>
                 );
             case 'name':
-                return (
-                    <>
-                        <div className="font-medium text-white">{role.name}</div>
-                        <p className="text-xs text-slate-400 font-normal">{role.description}</p>
-                    </>
-                );
+                {
+                    const descriptor = getRoleDescriptor(role);
+                    return (
+                        <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                                <span className="font-semibold text-white">{descriptor?.label || role.name}</span>
+                                {!role.enabled && <StatusTag label="已停用" tone="neutral" dense />}
+                            </div>
+                            <p className="text-xs leading-5 text-slate-400">
+                                {descriptor?.description || role.description || '尚未設定描述'}
+                            </p>
+                            {descriptor?.helper_text && (
+                                <p className="text-[11px] text-slate-500">{descriptor.helper_text}</p>
+                            )}
+                        </div>
+                    );
+                }
             case 'user_count':
-                return role.user_count;
+                return (
+                    <div className="flex flex-col">
+                        <span className="font-semibold text-white">{role.user_count}</span>
+                        <span className="text-xs text-slate-400">成員</span>
+                    </div>
+                );
             case 'created_at':
-                return role.created_at;
+                return (
+                    <div className="flex flex-col">
+                        <span className="font-medium text-white">{formatRelativeTime(role.updated_at)}</span>
+                        <span className="text-xs text-slate-500">更新於</span>
+                    </div>
+                );
             default:
                 return <span className="text-slate-500">--</span>;
         }
@@ -226,18 +274,33 @@ const RoleManagementPage: React.FC = () => {
                                 <TableLoader colSpan={visibleColumns.length + 2} />
                             ) : error ? (
                                 <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchRoles} />
+                            ) : roles.length === 0 ? (
+                                <tr>
+                                    <td colSpan={visibleColumns.length + 2} className="px-6 py-12 text-center text-slate-400">
+                                        <div className="space-y-3">
+                                            <p className="text-sm">尚未建立角色。請點擊右上角「新增角色」開始設定權限。</p>
+                                            <ToolbarButton icon="plus" text="新增角色" primary onClick={handleNewRole} />
+                                        </div>
+                                    </td>
+                                </tr>
                             ) : roles.map((role) => (
-                                <tr key={role.id} className={`border-b border-slate-800 ${selectedIds.includes(role.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
+                                <tr key={role.id} className={`border-b border-slate-800 transition-colors ${selectedIds.includes(role.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
                                     <td className="p-4 w-12">
-                                        <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
-                                            checked={selectedIds.includes(role.id)} onChange={(e) => handleSelectOne(e, role.id)} />
+                                        <input
+                                            type="checkbox"
+                                            className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
+                                            checked={selectedIds.includes(role.id)}
+                                            onChange={(e) => handleSelectOne(e, role.id)}
+                                        />
                                     </td>
                                     {visibleColumns.map(key => (
-                                        <td key={key} className="px-6 py-4">{renderCellContent(role, key)}</td>
+                                        <td key={key} className="px-6 py-4 align-top">{renderCellContent(role, key)}</td>
                                     ))}
                                     <td className="px-6 py-4 text-center">
-                                        <button onClick={() => handleEditRole(role)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯"><Icon name="edit-3" className="w-4 h-4" /></button>
-                                        <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(role); }} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除"><Icon name="trash-2" className="w-4 h-4" /></button>
+                                        <div className="flex items-center justify-center gap-2">
+                                            <IconButton icon="edit-3" label="編輯角色" tooltip="編輯角色" onClick={() => handleEditRole(role)} size="sm" />
+                                            <IconButton icon="trash-2" label="刪除角色" tooltip="刪除角色" tone="danger" onClick={() => handleDeleteClick(role)} size="sm" />
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

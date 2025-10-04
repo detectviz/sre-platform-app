@@ -19,6 +19,8 @@ import UnifiedSearchModal from '../../components/UnifiedSearchModal';
 import { exportToCsv } from '../../services/export';
 import ImportFromCsvModal from '../../components/ImportFromCsvModal';
 import { useContent } from '../../contexts/ContentContext';
+import StatusTag, { type StatusTagProps } from '../../components/StatusTag';
+import IconButton from '../../components/IconButton';
 
 const PAGE_IDENTIFIER = 'dashboards';
 
@@ -211,6 +213,18 @@ const DashboardListPage: React.FC = () => {
         });
     };
 
+    const typeToneMap: Record<string, StatusTagProps['tone']> = useMemo(() => ({
+        'built-in': 'info',
+        grafana: 'neutral',
+        external: 'warning',
+    }), []);
+
+    const typeLabelMap: Record<string, { label: string; tooltip: string }> = useMemo(() => ({
+        'built-in': { label: '內建儀表板', tooltip: 'Built-in dashboard' },
+        grafana: { label: 'Grafana 儀表板', tooltip: 'Linked from Grafana' },
+        external: { label: '外部來源', tooltip: 'Sourced from third-party system' },
+    }), []);
+
     const renderCellContent = (dashboard: Dashboard, columnKey: string) => {
         if (!pageContent) {
             return <span className="text-slate-500">--</span>;
@@ -219,24 +233,66 @@ const DashboardListPage: React.FC = () => {
             case 'name':
                 return (
                     <>
-                        <div className="flex items-center space-x-3 cursor-pointer">
-                            <div title={dashboard.type === 'built-in' ? pageContent.BUILT_IN_TOOLTIP : pageContent.GRAFANA_TOOLTIP}>
-                                <Icon name={dashboard.type === 'built-in' ? "layout-dashboard" : "area-chart"} className={`w-5 h-5 ${dashboard.type === 'built-in' ? 'text-sky-400' : 'text-green-400'}`} />
+                        <div className="flex items-start gap-2 cursor-pointer">
+                            <div
+                                className="mt-0.5"
+                                title={dashboard.type === 'built-in' ? pageContent.BUILT_IN_TOOLTIP : pageContent.GRAFANA_TOOLTIP}
+                            >
+                                <Icon
+                                    name={dashboard.type === 'built-in' ? 'layout-dashboard' : 'area-chart'}
+                                    className={`h-5 w-5 ${dashboard.type === 'built-in' ? 'text-sky-400' : 'text-emerald-400'}`}
+                                />
                             </div>
-                            <span className="truncate" title={dashboard.name}>{dashboard.name}</span>
-                            {defaultDashboard === dashboard.id && <span className="text-xs bg-sky-500 text-white px-2 py-0.5 rounded-full">{pageContent.HOME_BADGE}</span>}
+                            <div className="flex min-w-0 flex-col gap-1">
+                                <span className="truncate font-medium text-white" title={dashboard.name}>
+                                    {dashboard.name}
+                                </span>
+                                {dashboard.description && (
+                                    <span className="truncate text-xs text-slate-400" title={dashboard.description}>
+                                        {dashboard.description}
+                                    </span>
+                                )}
+                            </div>
+                            {defaultDashboard === dashboard.id && (
+                                <StatusTag
+                                    dense
+                                    tone="info"
+                                    label={pageContent.HOME_BADGE}
+                                    tooltip={pageContent.DEFAULT_DASHBOARD_TOOLTIP ?? '設為首頁儀表板'}
+                                />
+                            )}
                         </div>
-                        <div className="text-xs text-slate-400 pl-8">{dashboard.description}</div>
                     </>
                 );
             case 'type':
-                const typeLabel = dashboard.type === 'built-in' ? '內建' : dashboard.type === 'grafana' ? 'Grafana' : dashboard.type;
-                return <span className={`px-2 py-1 text-xs rounded-full ${dashboard.type === 'built-in' ? 'bg-cyan-900 text-cyan-300' : 'bg-green-900 text-green-300'}`}>{typeLabel}</span>;
+                {
+                    const typeMeta = typeLabelMap[dashboard.type] ?? {
+                        label: dashboard.type,
+                        tooltip: dashboard.type,
+                    };
+                    return (
+                        <StatusTag
+                            dense
+                            tone={typeToneMap[dashboard.type] ?? 'neutral'}
+                            label={typeMeta.label}
+                            tooltip={typeMeta.tooltip}
+                        />
+                    );
+                }
             case 'category': {
                 const categoryDescriptor = dashboardOptions?.dashboards?.categories.find(c => c.value === dashboard.category);
-                const pillClass = categoryDescriptor?.class_name || 'bg-slate-800/60 border border-slate-600 text-slate-200';
                 const label = categoryDescriptor?.label || dashboard.category;
-                return <span className={`px-2 py-1 text-xs font-semibold rounded-full ${pillClass}`}>{label}</span>;
+                const tooltip = dashboardOptions?.dashboards
+                    ? `${label}｜${dashboard.category}`
+                    : dashboard.category;
+                return (
+                    <StatusTag
+                        dense
+                        className={categoryDescriptor?.class_name}
+                        label={label}
+                        tooltip={tooltip}
+                    />
+                );
             }
             case 'owner':
                 return dashboard.owner;
@@ -335,16 +391,34 @@ const DashboardListPage: React.FC = () => {
                                             </td>
                                         );
                                     })}
-                                    <td className="px-6 py-4 text-center space-x-1 w-32" onClick={e => e.stopPropagation()}>
-                                        <button onClick={() => handleSetDefault(d.id)} className={`p-1.5 rounded-md ${defaultDashboard === d.id ? 'text-yellow-400 hover:bg-yellow-500/20' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`} title={pageContent.ACTIONS.SET_AS_HOME}>
-                                            <Icon name="star" className={`w-4 h-4 ${defaultDashboard === d.id ? 'fill-current' : ''}`} />
-                                        </button>
-                                        <button onClick={() => handleEditClick(d)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title={globalContent.EDIT}>
-                                            <Icon name="edit-3" className="w-4 h-4" />
-                                        </button>
-                                        <button onClick={() => handleDeleteClick(d)} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title={globalContent.DELETE}>
-                                            <Icon name="trash-2" className="w-4 h-4" />
-                                        </button>
+                                    <td className="px-6 py-4 text-center w-32" onClick={e => e.stopPropagation()}>
+                                        <div className="flex items-center justify-end gap-1.5">
+                                            <IconButton
+                                                icon={defaultDashboard === d.id ? 'star' : 'star'}
+                                                label={pageContent.ACTIONS.SET_AS_HOME}
+                                                onClick={() => handleSetDefault(d.id)}
+                                                tone={defaultDashboard === d.id ? 'primary' : 'default'}
+                                                className={defaultDashboard === d.id ? 'bg-sky-500/10 text-sky-200' : ''}
+                                                tooltip={
+                                                    defaultDashboard === d.id
+                                                        ? pageContent.DEFAULT_DASHBOARD_ACTIVE_TOOLTIP ?? '已設為首頁儀表板'
+                                                        : pageContent.ACTIONS.SET_AS_HOME
+                                                }
+                                            />
+                                            <IconButton
+                                                icon="edit-3"
+                                                label={globalContent.EDIT}
+                                                onClick={() => handleEditClick(d)}
+                                                tooltip={globalContent.EDIT}
+                                            />
+                                            <IconButton
+                                                icon="trash-2"
+                                                label={globalContent.DELETE}
+                                                tone="danger"
+                                                onClick={() => handleDeleteClick(d)}
+                                                tooltip={globalContent.DELETE}
+                                            />
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

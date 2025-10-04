@@ -170,7 +170,12 @@ const AlertRulePage: React.FC = () => {
             await api.post('/alert-rules/batch-actions', { action, ids: selectedIds });
             fetchRules();
         } catch (err) {
-            alert(`Failed to ${action} selected rules.`);
+            const actionLabels: Record<typeof action, string> = {
+                enable: '啟用',
+                disable: '停用',
+                delete: '刪除',
+            };
+            showToast(`批次${actionLabels[action]}失敗，請稍後再試。`, 'error');
         } finally {
             setSelectedIds([]);
         }
@@ -181,7 +186,7 @@ const AlertRulePage: React.FC = () => {
             await api.patch(`/alert-rules/${rule.id}`, { ...rule, enabled: !rule.enabled });
             fetchRules();
         } catch (err) {
-            alert('Failed to toggle rule status.');
+            showToast('切換規則狀態失敗，請稍後再試。', 'error');
         }
     };
 
@@ -211,7 +216,7 @@ const AlertRulePage: React.FC = () => {
             : rules;
 
         if (dataToExport.length === 0) {
-            alert("沒有可匯出的資料。");
+            showToast('沒有可匯出的資料。', 'warning');
             return;
         }
 

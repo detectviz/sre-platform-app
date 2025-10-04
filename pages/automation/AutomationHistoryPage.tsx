@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { AutomationExecution, AutomationPlaybook, AutomationHistoryFilters, TableColumn } from '../../types';
-import Icon from '../../components/Icon';
+import dayjs from 'dayjs';
+import { AutomationExecution, AutomationHistoryFilters, TableColumn } from '../../types';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
 import Pagination from '../../components/Pagination';
@@ -16,7 +16,9 @@ import UnifiedSearchModal from '../../components/UnifiedSearchModal';
 import ColumnSettingsModal from '../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
 import SortableHeader from '../../components/SortableHeader';
-import { formatDuration } from '../../utils/time';
+import { formatDuration, formatRelativeTime } from '../../utils/time';
+import IconButton from '../../components/IconButton';
+import StatusTag from '../../components/StatusTag';
 
 const PAGE_IDENTIFIER = 'automation_history';
 
@@ -35,6 +37,7 @@ const AutomationHistoryPage: React.FC = () => {
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'start_time', direction: 'desc' });
     const [selectedExecution, setSelectedExecution] = useState<AutomationExecution | null>(null);
+    const [statusQuickFilter, setStatusQuickFilter] = useState<string>('all');
 
     const { options, isLoading: isLoadingOptions } = useOptions();
     const executionOptions = options?.automation_executions;
@@ -158,22 +161,30 @@ const AutomationHistoryPage: React.FC = () => {
 
     const renderCellContent = (ex: AutomationExecution, columnKey: string) => {
         switch (columnKey) {
+            case 'script_name':
             case 'playbook_name':
                 return <span className="font-medium text-white">{ex.playbook_name}</span>;
+            case 'playbook_id':
+                return <span className="font-mono text-xs text-slate-400">{ex.playbook_id}</span>;
+            case 'id':
+            case 'execution_id':
+                return <span className="font-mono text-xs text-slate-400">{ex.id}</span>;
             case 'status':
                 return (
-                    <div className="flex items-center space-x-2">
-                        <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusPill(ex.status)}`}>
-                            {getStatusLabel(ex.status)}
-                        </span>
+                    <div className="flex items-center gap-2">
+                        <StatusTag
+                            label={getStatusLabel(ex.status)}
+                            className={getStatusPill(ex.status)}
+                            dense
+                            tooltip={`執行狀態：${getStatusLabel(ex.status)}`}
+                        />
                         {ex.status === 'failed' && (
-                            <button
-                                onClick={(e) => { e.stopPropagation(); handleRetry(ex.id); }}
-                                className="p-1 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white"
-                                title="重試"
-                            >
-                                <Icon name="refresh-cw" className="w-3 h-3" />
-                            </button>
+                            <IconButton
+                                icon="refresh-cw"
+                                label="重新嘗試"
+                                tooltip="重新嘗試執行"
+                                onClick={(event) => { event.stopPropagation(); handleRetry(ex.id); }}
+                            />
                         )}
                     </div>
                 );
@@ -185,8 +196,33 @@ const AutomationHistoryPage: React.FC = () => {
             }
             case 'triggered_by':
                 return ex.triggered_by;
-            case 'start_time':
-                return ex.start_time;
+            case 'start_time': {
+                const formatted = ex.start_time ? dayjs(ex.start_time).format('YYYY/MM/DD HH:mm') : '--';
+                const relative = formatRelativeTime(ex.start_time);
+                return (
+                    <div className="space-y-1">
+                        <span className="font-medium text-white">{formatted}</span>
+                        {relative && relative !== ex.start_time && (
+                            <span className="block text-xs text-slate-400">{relative}</span>
+                        )}
+                    </div>
+                );
+            }
+            case 'end_time': {
+                if (!ex.end_time) {
+                    return <span className="text-slate-500">尚未完成</span>;
+                }
+                const formatted = dayjs(ex.end_time).format('YYYY/MM/DD HH:mm');
+                const relative = formatRelativeTime(ex.end_time);
+                return (
+                    <div className="space-y-1">
+                        <span className="font-medium text-white">{formatted}</span>
+                        {relative && relative !== ex.end_time && (
+                            <span className="block text-xs text-slate-400">{relative}</span>
+                        )}
+                    </div>
+                );
+            }
             case 'duration_ms':
                 return formatDuration(ex.duration_ms);
             default:
@@ -203,6 +239,65 @@ const AutomationHistoryPage: React.FC = () => {
         </>
     );
 
+    const quickFilterOptions = useMemo(() => {
+        const statusDescriptors = executionOptions?.statuses ?? [];
+        const uniqueStatuses = new Map<string, string>();
+        statusDescriptors.forEach(descriptor => {
+            if (!uniqueStatuses.has(descriptor.value)) {
+                uniqueStatuses.set(descriptor.value, descriptor.label);
+            }
+        });
+        return [
+            { value: 'all', label: '全部' },
+            ...Array.from(uniqueStatuses.entries()).map(([value, label]) => ({ value, label })),
+        ];
+    }, [executionOptions?.statuses]);
+
+    useEffect(() => {
+        if (!quickFilterOptions.some(option => option.value === statusQuickFilter)) {
+            setStatusQuickFilter('all');
+        }
+    }, [quickFilterOptions, statusQuickFilter]);
+
+    useEffect(() => {
+        let shouldResetPage = false;
+        setFilters(prev => {
+            const next = { ...prev } as AutomationHistoryFilters;
+            if (statusQuickFilter === 'all') {
+                if (typeof prev.status === 'undefined') {
+                    return prev;
+                }
+                delete next.status;
+                shouldResetPage = true;
+                return next;
+            }
+            if (prev.status === statusQuickFilter) {
+                return prev;
+            }
+            next.status = statusQuickFilter as AutomationHistoryFilters['status'];
+            shouldResetPage = true;
+            return next;
+        });
+        if (shouldResetPage) {
+            setCurrentPage(1);
+        }
+    }, [statusQuickFilter]);
+
+    const drawerTitle = useMemo(() => {
+        if (!selectedExecution) {
+            return '執行日誌';
+        }
+        const formattedStart = selectedExecution.start_time
+            ? dayjs(selectedExecution.start_time).format('YYYY/MM/DD HH:mm')
+            : '未提供時間';
+        const relative = selectedExecution.start_time ? formatRelativeTime(selectedExecution.start_time) : '';
+        const segments = [`#${selectedExecution.id}`, formattedStart];
+        if (relative && relative !== selectedExecution.start_time) {
+            segments.push(relative);
+        }
+        return `執行日誌：${selectedExecution.playbook_name}（${segments.join(' · ')}）`;
+    }, [selectedExecution]);
+
     return (
         <div className="h-full flex flex-col">
             <Toolbar
@@ -211,6 +306,20 @@ const AutomationHistoryPage: React.FC = () => {
                 selectedCount={selectedIds.length}
                 onClearSelection={() => setSelectedIds([])}
             />
+
+            <div className="mt-3 mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-slate-700/70 bg-slate-900/40 px-3 py-2">
+                <span className="text-xs font-medium text-slate-300">快速篩選</span>
+                {quickFilterOptions.map(option => (
+                    <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setStatusQuickFilter(option.value)}
+                        className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${statusQuickFilter === option.value ? 'bg-sky-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+                    >
+                        {option.label}
+                    </button>
+                ))}
+            </div>
 
             <TableContainer>
                 <div className="flex-1 overflow-y-auto">
@@ -231,23 +340,41 @@ const AutomationHistoryPage: React.FC = () => {
                                     }
                                     return <SortableHeader key={key} label={col.label} sortKey={col.key} sortConfig={sortConfig} onSort={handleSort} />;
                                 })}
+                                <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
                         </thead>
                         <tbody>
                             {isLoading || isLoadingOptions ? (
-                                <TableLoader colSpan={visibleColumns.length + 1} />
+                                <TableLoader colSpan={visibleColumns.length + 2} />
                             ) : error ? (
-                                <TableError colSpan={visibleColumns.length + 1} message={error} onRetry={fetchExecutions} />
+                                <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchExecutions} />
                             ) : executions.map((ex) => (
-                                <tr key={ex.id} onClick={() => setSelectedExecution(ex)} className={`border-b border-slate-800 cursor-pointer ${selectedIds.includes(ex.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
+                                <tr
+                                    key={ex.id}
+                                    onClick={() => setSelectedExecution(ex)}
+                                    className={`border-b border-slate-800 cursor-pointer ${selectedIds.includes(ex.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}
+                                >
                                     <td className="p-4 w-12" onClick={e => e.stopPropagation()}>
-                                        <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded" checked={selectedIds.includes(ex.id)} onChange={(e) => handleSelectOne(e, ex.id)} />
+                                        <input
+                                            type="checkbox"
+                                            className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded"
+                                            checked={selectedIds.includes(ex.id)}
+                                            onChange={(e) => handleSelectOne(e, ex.id)}
+                                        />
                                     </td>
                                     {visibleColumns.map(key => (
                                         <td key={key} className="px-6 py-4">
                                             {renderCellContent(ex, key)}
                                         </td>
                                     ))}
+                                    <td className="px-6 py-4 text-center">
+                                        <IconButton
+                                            icon="external-link"
+                                            label="查看詳情"
+                                            tooltip="查看執行輸出"
+                                            onClick={(event) => { event.stopPropagation(); setSelectedExecution(ex); }}
+                                        />
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -259,7 +386,7 @@ const AutomationHistoryPage: React.FC = () => {
             <Drawer
                 isOpen={!!selectedExecution}
                 onClose={() => setSelectedExecution(null)}
-                title={`執行日誌: ${selectedExecution?.playbook_name}`}
+                title={drawerTitle}
                 width="w-3/5"
             >
                 {selectedExecution && <ExecutionLogDetail execution={selectedExecution} />}

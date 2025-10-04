@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { AutomationTrigger, TriggerType, AutomationPlaybook, AutomationTriggerFilters, TableColumn } from '../../types';
-import Icon from '../../components/Icon';
+import { AutomationTrigger, TriggerType, AutomationPlaybook, AutomationTriggerFilters, TableColumn, AutomationExecution } from '../../types';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
 import AutomationTriggerEditModal from '../../components/AutomationTriggerEditModal';
@@ -13,6 +12,10 @@ import { showToast } from '../../services/toast';
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
 import Pagination from '../../components/Pagination';
+import { useOptions } from '../../contexts/OptionsContext';
+import StatusTag from '../../components/StatusTag';
+import IconButton from '../../components/IconButton';
+import { formatRelativeTime } from '../../utils/time';
 
 const PAGE_IDENTIFIER = 'automation_triggers';
 
@@ -35,9 +38,26 @@ const AutomationTriggersPage: React.FC = () => {
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+    const [executionLookup, setExecutionLookup] = useState<Record<string, AutomationExecution | undefined>>({});
 
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
+    const { options } = useOptions();
+
+    const typeDescriptors = useMemo(() => options?.automation_triggers?.trigger_types ?? [], [options?.automation_triggers?.trigger_types]);
+    const statusDescriptors = useMemo(() => options?.automation_executions?.statuses ?? [], [options?.automation_executions?.statuses]);
+    const executionStatusMeta = useMemo(() => {
+        const map = new Map<string, { label: string; className?: string }>();
+        statusDescriptors.forEach(descriptor => map.set(descriptor.value, { label: descriptor.label, className: descriptor.class_name }));
+        return map;
+    }, [statusDescriptors]);
+
+    const ensureLastExecutionColumn = useCallback((columns: TableColumn[]): TableColumn[] => {
+        if (columns.some(column => column.key === 'last_execution')) {
+            return columns;
+        }
+        return [...columns, { key: 'last_execution', label: '上次執行結果' }];
+    }, []);
 
     const fetchTriggersAndPlaybooks = useCallback(async () => {
         if (!pageKey) return;
@@ -49,11 +69,14 @@ const AutomationTriggersPage: React.FC = () => {
                 page_size: pageSize,
                 ...filters,
             };
-            const [triggersRes, playbooksRes, columnConfigRes, allColumnsRes] = await Promise.all([
+            const [triggersRes, playbooksRes, columnConfigRes, allColumnsRes, executionsRes] = await Promise.all([
                 api.get<{ items: AutomationTrigger[], total: number }>('/automation/triggers', { params }),
                 api.get<{ items: AutomationPlaybook[], total: number }>('/automation/scripts'),
                 api.get<string[]>(`/settings/column-config/${pageKey}`),
-                api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
+                api.get<TableColumn[]>(`/pages/columns/${pageKey}`),
+                api.get<{ items: AutomationExecution[], total: number }>('/automation/executions', {
+                    params: { page: 1, page_size: 50, sort_by: 'start_time', sort_order: 'desc' }
+                })
             ]);
             setTriggers(triggersRes.data.items);
             setTotal(triggersRes.data.total);
@@ -61,17 +84,27 @@ const AutomationTriggersPage: React.FC = () => {
             if (allColumnsRes.data.length === 0) {
                 throw new Error('欄位定義缺失');
             }
-            setAllColumns(allColumnsRes.data);
-            const resolvedVisibleColumns = columnConfigRes.data.length > 0
+            const extendedColumns = ensureLastExecutionColumn(allColumnsRes.data);
+            setAllColumns(extendedColumns);
+            const resolvedVisibleColumns = (columnConfigRes.data.length > 0
                 ? columnConfigRes.data
-                : allColumnsRes.data.map(c => c.key);
+                : extendedColumns.map(c => c.key)).includes('last_execution')
+                ? (columnConfigRes.data.length > 0 ? columnConfigRes.data : extendedColumns.map(c => c.key))
+                : [...(columnConfigRes.data.length > 0 ? columnConfigRes.data : extendedColumns.map(c => c.key)), 'last_execution'];
             setVisibleColumns(resolvedVisibleColumns);
+            const executionSummary: Record<string, AutomationExecution> = {};
+            executionsRes.data.items.forEach(execution => {
+                if (!executionSummary[execution.playbook_id]) {
+                    executionSummary[execution.playbook_id] = execution;
+                }
+            });
+            setExecutionLookup(executionSummary);
         } catch (err) {
             setError('Failed to fetch triggers or playbooks.');
         } finally {
             setIsLoading(false);
         }
-    }, [filters, pageKey, currentPage, pageSize]);
+    }, [filters, pageKey, currentPage, pageSize, ensureLastExecutionColumn]);
 
     useEffect(() => {
         if (pageKey) {
@@ -118,7 +151,7 @@ const AutomationTriggersPage: React.FC = () => {
             }
             fetchTriggersAndPlaybooks();
         } catch (err) {
-            alert('Failed to save trigger.');
+            showToast('儲存自動化觸發器失敗，請稍後再試。', 'error');
         } finally {
             setIsModalOpen(false);
         }
@@ -135,7 +168,7 @@ const AutomationTriggersPage: React.FC = () => {
                 await api.del(`/automation/triggers/${deletingTrigger.id}`);
                 fetchTriggersAndPlaybooks();
             } catch (err) {
-                alert('Failed to delete trigger.');
+                showToast('刪除自動化觸發器失敗，請稍後再試。', 'error');
             } finally {
                 setIsDeleteModalOpen(false);
                 setDeletingTrigger(null);
@@ -148,7 +181,7 @@ const AutomationTriggersPage: React.FC = () => {
             await api.patch(`/automation/triggers/${trigger.id}`, { ...trigger, enabled: !trigger.enabled });
             fetchTriggersAndPlaybooks();
         } catch (err) {
-            alert('Failed to toggle trigger status.');
+            showToast('切換觸發器狀態失敗，請稍後再試。', 'error');
         }
     };
 
@@ -168,7 +201,12 @@ const AutomationTriggersPage: React.FC = () => {
             await api.post('/automation/triggers/batch-actions', { action, ids: selectedIds });
             fetchTriggersAndPlaybooks();
         } catch (err) {
-            alert(`Failed to ${action} selected triggers.`);
+            const actionLabels: Record<typeof action, string> = {
+                enable: '啟用',
+                disable: '停用',
+                delete: '刪除',
+            };
+            showToast(`批次${actionLabels[action]}失敗，請稍後再試。`, 'error');
         } finally {
             setSelectedIds([]);
         }
@@ -182,14 +220,6 @@ const AutomationTriggersPage: React.FC = () => {
         </>
     );
 
-    const getTriggerTypePill = (type: TriggerType) => {
-        switch (type) {
-            case 'schedule': return 'bg-blue-500/20 text-blue-300';
-            case 'webhook': return 'bg-purple-500/20 text-purple-300';
-            case 'event': return 'bg-amber-500/20 text-amber-300';
-        }
-    };
-
     const findPlaybookName = (playbook_id: string) => playbookNameMap.get(playbook_id) || 'Unknown Playbook';
 
     const renderCellContent = (trigger: AutomationTrigger, columnKey: string) => {
@@ -202,18 +232,55 @@ const AutomationTriggersPage: React.FC = () => {
                     </label>
                 );
             case 'name':
-                return <span className="font-medium text-white">{trigger.name}</span>;
-            case 'type':
-                const typeLabel = trigger.type === 'schedule' ? '排程' : trigger.type === 'webhook' ? 'Webhook' : trigger.type === 'event' ? '事件' : trigger.type;
                 return (
-                    <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getTriggerTypePill(trigger.type)}`}>
-                        {typeLabel}
-                    </span>
+                    <div className="space-y-1">
+                        <span className="font-medium text-white">{trigger.name}</span>
+                        {trigger.description && <p className="text-xs text-slate-400">{trigger.description}</p>}
+                    </div>
                 );
+            case 'type': {
+                const descriptor = typeDescriptors.find(descriptor => descriptor.value === trigger.type);
+                return (
+                    <StatusTag
+                        label={descriptor?.label || trigger.type}
+                        tone={trigger.type === 'schedule' ? 'info' : trigger.type === 'event' ? 'warning' : 'neutral'}
+                        dense
+                        tooltip={`觸發器類型：${descriptor?.label || trigger.type}`}
+                    />
+                );
+            }
             case 'target_playbook_id':
-                return findPlaybookName(trigger.target_playbook_id);
+                return (
+                    <div className="space-y-1">
+                        <span className="font-medium text-white">{findPlaybookName(trigger.target_playbook_id)}</span>
+                        <span className="block text-xs text-slate-400">{trigger.target_playbook_id}</span>
+                    </div>
+                );
             case 'last_triggered_at':
-                return trigger.last_triggered_at;
+                return (
+                    <div className="space-y-1">
+                        <span className="font-medium text-white">{formatRelativeTime(trigger.last_triggered_at)}</span>
+                        <span className="text-xs text-slate-400">{trigger.last_triggered_at}</span>
+                    </div>
+                );
+            case 'last_execution': {
+                const latestExecution = executionLookup[trigger.target_playbook_id];
+                if (!latestExecution) {
+                    return <span className="text-slate-500">尚未執行</span>;
+                }
+                const descriptor = executionStatusMeta.get(latestExecution.status);
+                return (
+                    <div className="space-y-1">
+                        <StatusTag
+                            label={descriptor?.label || latestExecution.status}
+                            className={descriptor?.className}
+                            dense
+                            tooltip={`上次執行狀態：${descriptor?.label || latestExecution.status}`}
+                        />
+                        <span className="text-xs text-slate-400">{formatRelativeTime(latestExecution.start_time)}</span>
+                    </div>
+                );
+            }
             default:
                 return <span className="text-slate-500">--</span>;
         }
@@ -262,9 +329,22 @@ const AutomationTriggersPage: React.FC = () => {
                                     {visibleColumns.map(key => (
                                         <td key={key} className="px-6 py-4">{renderCellContent(trigger, key)}</td>
                                     ))}
-                                    <td className="px-6 py-4 text-center space-x-1">
-                                        <button onClick={() => handleEditTrigger(trigger)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯"><Icon name="edit-3" className="w-4 h-4" /></button>
-                                        <button onClick={() => handleDeleteClick(trigger)} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除"><Icon name="trash-2" className="w-4 h-4" /></button>
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center justify-center gap-2">
+                                            <IconButton
+                                                icon="edit-3"
+                                                label="編輯觸發器"
+                                                tooltip="編輯觸發器"
+                                                onClick={() => handleEditTrigger(trigger)}
+                                            />
+                                            <IconButton
+                                                icon="trash-2"
+                                                label="刪除觸發器"
+                                                tooltip="刪除觸發器"
+                                                tone="danger"
+                                                onClick={() => handleDeleteClick(trigger)}
+                                            />
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

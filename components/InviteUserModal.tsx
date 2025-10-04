@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import FormRow from './FormRow';
 import Icon from './Icon';
+import SearchableSelect from './SearchableSelect';
 import { User, Role, Team } from '../types';
 import api from '../services/api';
 
@@ -40,10 +41,10 @@ const InviteUserModal: React.FC<InviteUserModalProps> = ({ isOpen, onClose, onIn
                 setRoles(roleItems);
                 setTeams(teamItems);
                 if (roleItems.length > 0) {
-                    setRole(roleItems[0].name as User['role']);
+                    setRole(prev => prev || (roleItems[0].name as User['role']));
                 }
                 if (teamItems.length > 0) {
-                    setTeam(teamItems[0].name);
+                    setTeam(prev => prev || teamItems[0].name);
                 }
             }).catch(err => { /* Failed to load roles/teams */ })
             .finally(() => setIsLoading(false));
@@ -89,7 +90,7 @@ const InviteUserModal: React.FC<InviteUserModalProps> = ({ isOpen, onClose, onIn
                 <FormRow label="姓名 (選填)">
                     <input type="text" value={name} onChange={e => setName(e.target.value)}
                            className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
-                           placeholder="使用者全名" />
+                           placeholder="請輸入使用者全名" />
                 </FormRow>
                 <FormRow label={
                     <div className="flex items-center">
@@ -101,16 +102,30 @@ const InviteUserModal: React.FC<InviteUserModalProps> = ({ isOpen, onClose, onIn
                         )}
                     </div>
                 }>
-                    <select value={role} onChange={e => setRole(e.target.value as User['role'])}
-                            className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoading}>
-                        {isLoading ? <option>載入中...</option> : roles.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
-                    </select>
+                    <SearchableSelect
+                        value={role}
+                        onChange={value => setRole(value as User['role'])}
+                        options={roles.map(r => ({
+                            value: r.name,
+                            label: r.description ? `${r.name}｜${r.description}` : r.name,
+                        }))}
+                        placeholder={isLoading ? '載入角色中…' : '搜尋或選擇角色'}
+                        disabled={isLoading || roles.length === 0}
+                    />
+                    <p className="mt-1 text-xs text-slate-400">選擇符合權限需求的角色，邀請後可於成員管理調整。</p>
                 </FormRow>
                 <FormRow label="團隊">
-                    <select value={team} onChange={e => setTeam(e.target.value)}
-                            className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoading}>
-                        {isLoading ? <option>載入中...</option> : teams.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
-                    </select>
+                    <SearchableSelect
+                        value={team}
+                        onChange={setTeam}
+                        options={teams.map(t => ({
+                            value: t.name,
+                            label: `${t.name}${t.description ? `｜${t.description}` : ''}`,
+                        }))}
+                        placeholder={isLoading ? '載入團隊中…' : '搜尋團隊或輸入關鍵字'}
+                        disabled={isLoading || teams.length === 0}
+                    />
+                    <p className="mt-1 text-xs text-slate-400">團隊決定了預設通知群組，可於稍後在成員資訊中變更。</p>
                 </FormRow>
             </div>
         </Modal>

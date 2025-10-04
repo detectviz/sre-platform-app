@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import Modal from './Modal';
 import FormRow from './FormRow';
 import Icon from './Icon';
 import { ResourceGroup, Resource, Team } from '../types';
 import api from '../services/api';
+import SearchableSelect, { SearchableSelectOption } from './SearchableSelect';
 
 interface ResourceGroupEditModalProps {
     isOpen: boolean;
@@ -18,13 +19,19 @@ interface ResourceListItemProps {
     iconName: string;
 }
 const ResourceListItem: React.FC<ResourceListItemProps> = ({ resource, onAction, iconName }) => (
-    <div className="flex items-center justify-between p-2 rounded-md hover:bg-slate-700/50 text-sm">
-        <div>
-            <p className="font-medium text-white">{resource.name}</p>
-            <p className="text-xs text-slate-400">{resource.type}</p>
+    <div className="flex items-center justify-between rounded-md px-3 py-2 text-sm hover:bg-slate-700/40">
+        <div className="max-w-[70%]">
+            <p className="truncate font-medium text-white" title={resource.name}>{resource.name}</p>
+            <p className="text-xs text-slate-400">{resource.type} · {resource.provider}</p>
         </div>
-        <button onClick={() => onAction(resource.id)} className="p-1 rounded-full text-slate-400 hover:bg-slate-600 hover:text-white">
-            <Icon name={iconName} className="w-4 h-4" />
+        <button
+            type="button"
+            onClick={() => onAction(resource.id)}
+            className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-600 hover:text-white"
+            aria-label={iconName === 'chevron-right' ? '加入群組' : '移出群組'}
+            title={iconName === 'chevron-right' ? '加入群組 Add to group' : '移出群組 Remove from group'}
+        >
+            <Icon name={iconName} className="h-4 w-4" />
         </button>
     </div>
 );
@@ -37,6 +44,8 @@ const ResourceGroupEditModal: React.FC<ResourceGroupEditModalProps> = ({ isOpen,
     const [allResources, setAllResources] = useState<Resource[]>([]);
     const [teams, setTeams] = useState<Team[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [availableQuery, setAvailableQuery] = useState('');
+    const [selectedQuery, setSelectedQuery] = useState('');
 
     useEffect(() => {
         if (isOpen) {
@@ -44,6 +53,8 @@ const ResourceGroupEditModal: React.FC<ResourceGroupEditModalProps> = ({ isOpen,
             setDescription(group?.description || '');
             setOwnerTeam(group?.owner_team || '');
             setSelectedIds(group?.member_ids || []);
+            setAvailableQuery('');
+            setSelectedQuery('');
 
             setIsLoading(true);
             Promise.all([
@@ -62,6 +73,10 @@ const ResourceGroupEditModal: React.FC<ResourceGroupEditModalProps> = ({ isOpen,
         }
     }, [isOpen, group]);
 
+    const teamOptions = useMemo<SearchableSelectOption[]>(() => (
+        teams.map(team => ({ value: team.name, label: team.name }))
+    ), [teams]);
+
     const handleSave = () => {
         const savedGroup: ResourceGroup = {
             id: group?.id || '',
@@ -79,6 +94,26 @@ const ResourceGroupEditModal: React.FC<ResourceGroupEditModalProps> = ({ isOpen,
     const availableResources = useMemo(() => allResources.filter(r => !selectedIds.includes(r.id)), [selectedIds, allResources]);
     const selectedResources = useMemo(() => allResources.filter(r => selectedIds.includes(r.id)), [selectedIds, allResources]);
 
+    const filteredAvailable = useMemo(() => {
+        if (!availableQuery) return availableResources;
+        const keyword = availableQuery.toLowerCase();
+        return availableResources.filter(resource => (
+            resource.name.toLowerCase().includes(keyword) ||
+            resource.type.toLowerCase().includes(keyword) ||
+            resource.provider.toLowerCase().includes(keyword)
+        ));
+    }, [availableQuery, availableResources]);
+
+    const filteredSelected = useMemo(() => {
+        if (!selectedQuery) return selectedResources;
+        const keyword = selectedQuery.toLowerCase();
+        return selectedResources.filter(resource => (
+            resource.name.toLowerCase().includes(keyword) ||
+            resource.type.toLowerCase().includes(keyword) ||
+            resource.provider.toLowerCase().includes(keyword)
+        ));
+    }, [selectedQuery, selectedResources]);
+
     return (
         <Modal
             title={group ? '編輯資源群組' : '新增資源群組'}
@@ -93,36 +128,107 @@ const ResourceGroupEditModal: React.FC<ResourceGroupEditModalProps> = ({ isOpen,
             }
         >
             <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     <FormRow label="群組名稱 *">
-                        <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+                        <input
+                            type="text"
+                            value={name}
+                            onChange={e => setName(e.target.value)}
+                            placeholder="例如：資料庫高風險群組"
+                            className="w-full rounded-md border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30"
+                        />
                     </FormRow>
                     <FormRow label="擁有團隊">
-                        <select value={owner_team} onChange={e => setOwnerTeam(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" disabled={isLoading}>
-                            {isLoading ? <option>載入中...</option> : teams.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
-                        </select>
+                        <SearchableSelect
+                            value={owner_team}
+                            onChange={setOwnerTeam}
+                            options={teamOptions}
+                            placeholder="輸入團隊名稱"
+                            disabled={isLoading}
+                        />
                     </FormRow>
                 </div>
                 <FormRow label="描述">
-                    <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"></textarea>
+                    <textarea
+                        value={description}
+                        onChange={e => setDescription(e.target.value)}
+                        rows={3}
+                        placeholder="補充此資源群組的用途或匯入準則。"
+                        className="w-full rounded-md border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30"
+                    ></textarea>
                 </FormRow>
 
                 <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">成員管理</label>
-                    <div className="grid grid-cols-2 gap-4 h-72">
-                        <div className="border border-slate-700 rounded-lg p-3 flex flex-col">
-                            <h3 className="font-semibold mb-2 text-white">可用的資源 ({availableResources.length})</h3>
-                            {isLoading ? <Icon name="loader-circle" className="animate-spin text-slate-400 mx-auto mt-4" /> : (
-                                <div className="space-y-1 overflow-y-auto flex-grow">
-                                    {availableResources.map(r => <ResourceListItem key={r.id} resource={r} onAction={(id) => setSelectedIds(ids => [...ids, id])} iconName="chevron-right" />)}
+                    <div className="mb-3 flex items-center justify-between text-xs text-slate-400">
+                        <span className="flex items-center gap-1"><Icon name="sparkles" className="h-4 w-4 text-slate-300" /> 點擊右側箭頭即可快速加入 / 移除資源。</span>
+                        <span>支援以名稱、類型或提供商搜尋。</span>
+                    </div>
+                    <div className="grid h-72 grid-cols-1 gap-4 md:grid-cols-2">
+                        <div className="flex flex-col rounded-lg border border-slate-700 bg-slate-900/40 p-3">
+                            <div className="mb-2 flex items-center justify-between">
+                                <h3 className="font-semibold text-white">可用的資源 ({filteredAvailable.length}/{availableResources.length})</h3>
+                                <div className="relative w-36">
+                                    <input
+                                        type="search"
+                                        value={availableQuery}
+                                        onChange={e => setAvailableQuery(e.target.value)}
+                                        placeholder="搜尋資源"
+                                        className="w-full rounded-md border border-slate-700 bg-slate-900/60 px-2 py-1 text-xs text-white placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30"
+                                    />
+                                </div>
+                            </div>
+                            {isLoading ? (
+                                <Icon name="loader-circle" className="mx-auto mt-6 h-5 w-5 animate-spin text-slate-400" />
+                            ) : (
+                                <div className="flex-grow space-y-1.5 overflow-y-auto">
+                                    {filteredAvailable.length === 0 ? (
+                                        <div className="rounded-md border border-dashed border-slate-700 bg-slate-900/50 p-4 text-center text-xs text-slate-400">
+                                            找不到符合搜尋的資源。
+                                        </div>
+                                    ) : (
+                                        filteredAvailable.map(resource => (
+                                            <ResourceListItem
+                                                key={resource.id}
+                                                resource={resource}
+                                                onAction={id => setSelectedIds(ids => [...ids, id])}
+                                                iconName="chevron-right"
+                                            />
+                                        ))
+                                    )}
                                 </div>
                             )}
                         </div>
-                        <div className="border border-slate-700 rounded-lg p-3 flex flex-col">
-                            <h3 className="font-semibold mb-2 text-white">已選擇的資源 ({selectedResources.length})</h3>
-                            {isLoading ? <Icon name="loader-circle" className="animate-spin text-slate-400 mx-auto mt-4" /> : (
-                                <div className="space-y-1 overflow-y-auto flex-grow">
-                                    {selectedResources.map(r => <ResourceListItem key={r.id} resource={r} onAction={(id) => setSelectedIds(ids => ids.filter(i => i !== id))} iconName="chevron-left" />)}
+                        <div className="flex flex-col rounded-lg border border-slate-700 bg-slate-900/40 p-3">
+                            <div className="mb-2 flex items-center justify-between">
+                                <h3 className="font-semibold text-white">已選擇的資源 ({filteredSelected.length}/{selectedResources.length})</h3>
+                                <div className="relative w-36">
+                                    <input
+                                        type="search"
+                                        value={selectedQuery}
+                                        onChange={e => setSelectedQuery(e.target.value)}
+                                        placeholder="搜尋已選資源"
+                                        className="w-full rounded-md border border-slate-700 bg-slate-900/60 px-2 py-1 text-xs text-white placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30"
+                                    />
+                                </div>
+                            </div>
+                            {isLoading ? (
+                                <Icon name="loader-circle" className="mx-auto mt-6 h-5 w-5 animate-spin text-slate-400" />
+                            ) : (
+                                <div className="flex-grow space-y-1.5 overflow-y-auto">
+                                    {filteredSelected.length === 0 ? (
+                                        <div className="rounded-md border border-dashed border-slate-700 bg-slate-900/50 p-4 text-center text-xs text-slate-400">
+                                            尚未選擇符合條件的資源。
+                                        </div>
+                                    ) : (
+                                        filteredSelected.map(resource => (
+                                            <ResourceListItem
+                                                key={resource.id}
+                                                resource={resource}
+                                                onAction={id => setSelectedIds(ids => ids.filter(i => i !== id))}
+                                                iconName="chevron-left"
+                                            />
+                                        ))
+                                    )}
                                 </div>
                             )}
                         </div>

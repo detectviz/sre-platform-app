@@ -3,7 +3,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Resource, ResourceFilters, TableColumn } from '../../types';
-import Icon from '../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
 import Drawer from '../../components/Drawer';
@@ -23,6 +22,8 @@ import { usePageMetadata } from '../../contexts/PageMetadataContext';
 import ResourceAnalysisModal from '../../components/ResourceAnalysisModal';
 import { useOptions } from '../../contexts/OptionsContext';
 import { formatRelativeTime } from '../../utils/time';
+import StatusTag from '../../components/StatusTag';
+import IconButton from '../../components/IconButton';
 
 const PAGE_IDENTIFIER = 'resources';
 
@@ -65,6 +66,20 @@ const ResourceListPage: React.FC = () => {
 
     const { options } = useOptions();
     const resourceOptions = options?.resources;
+
+    const statusDescriptors = useMemo(() => resourceOptions?.statuses ?? [], [resourceOptions?.statuses]);
+    const statusColorLookup = useMemo(() => {
+        const colors: Record<string, string> = {};
+        resourceOptions?.status_colors?.forEach(descriptor => {
+            colors[descriptor.value] = descriptor.color;
+        });
+        return colors;
+    }, [resourceOptions?.status_colors]);
+    const typeDescriptors = useMemo(() => resourceOptions?.types ?? [], [resourceOptions?.types]);
+
+    const englishFromValue = useCallback((value: string) => (
+        value.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())
+    ), []);
 
     const fetchResources = useCallback(async () => {
         if (!pageKey) return;
@@ -176,15 +191,6 @@ const ResourceListPage: React.FC = () => {
         }
     };
 
-    const getStatusPill = (status: Resource['status']) => {
-        switch (status) {
-            case 'healthy': return 'bg-green-500/20 text-green-400';
-            case 'warning': return 'bg-yellow-500/20 text-yellow-400';
-            case 'critical': return 'bg-red-500/20 text-red-400';
-            case 'offline': return 'bg-slate-500/20 text-slate-400';
-        }
-    };
-
     useEffect(() => {
         setSelectedIds([]);
     }, [currentPage, pageSize, filters]);
@@ -238,26 +244,43 @@ const ResourceListPage: React.FC = () => {
         });
     };
 
-    const getStatusLabel = (status: Resource['status']): string => {
-        if (!resourceOptions?.statuses) return status;
-        return resourceOptions.statuses.find(s => s.value === status)?.label || status;
-    };
-
     const renderCellContent = (res: Resource, columnKey: string) => {
         switch (columnKey) {
             case 'status':
+                const descriptor = statusDescriptors.find(item => item.value === res.status);
+                const statusColor = statusColorLookup[res.status] || '#38bdf8';
+                const readableLabel = descriptor?.label || res.status;
+                const tooltip = `${readableLabel} (${englishFromValue(res.status)})`;
                 return (
-                    <span className={`inline-flex items-center px-1.5 py-0.5 text-xs font-semibold rounded-full ${getStatusPill(res.status)}`}>
-                        <span className={`w-1.5 h-1.5 mr-1.5 rounded-full ${res.status === 'healthy' ? 'bg-green-400' : res.status === 'warning' ? 'bg-yellow-400' : res.status === 'critical' ? 'bg-red-400' : 'bg-slate-400'}`}></span>
-                        {getStatusLabel(res.status)}
-                    </span>
+                    <StatusTag
+                        dense
+                        className={descriptor?.class_name}
+                        tooltip={tooltip}
+                        label={(
+                            <span className="flex items-center gap-1.5">
+                                <span
+                                    className="h-1.5 w-1.5 rounded-full"
+                                    style={{ backgroundColor: statusColor }}
+                                />
+                                <span>{readableLabel}</span>
+                            </span>
+                        )}
+                    />
                 );
-            case 'name': return <span className="font-medium text-white">{res.name}</span>;
+            case 'name':
+                return <span className="font-medium text-white" title={`${res.name}`}>{res.name}</span>;
             case 'type': {
-                const typeDescriptor = resourceOptions?.types.find(t => t.value === res.type);
+                const typeDescriptor = typeDescriptors.find(t => t.value === res.type);
                 const pillClass = typeDescriptor?.class_name || 'bg-slate-800/60 border border-slate-600 text-slate-200';
                 const label = typeDescriptor?.label || res.type;
-                return <span className={`px-2 py-1 text-xs font-semibold rounded-full ${pillClass}`}>{label}</span>;
+                return (
+                    <span
+                        className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${pillClass}`}
+                        title={typeDescriptor ? `${label}` : undefined}
+                    >
+                        {label}
+                    </span>
+                );
             }
             case 'provider': return res.provider;
             case 'region': return res.region;
@@ -362,16 +385,28 @@ const ResourceListPage: React.FC = () => {
                                             </td>
                                         );
                                     })}
-                                    <td className="px-6 py-4 text-center space-x-1 w-32">
-                                        <button onClick={() => handleViewDetails(res.id)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="查看詳情">
-                                            <Icon name="eye" className="w-4 h-4" />
-                                        </button>
-                                        <button onClick={() => handleEditResource(res)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯">
-                                            <Icon name="edit-3" className="w-4 h-4" />
-                                        </button>
-                                        <button onClick={() => handleDeleteResource(res)} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除">
-                                            <Icon name="trash-2" className="w-4 h-4" />
-                                        </button>
+                                    <td className="px-6 py-4 text-center">
+                                        <div className="flex items-center justify-center gap-1.5">
+                                            <IconButton
+                                                icon="eye"
+                                                label="查看詳情"
+                                                tooltip="查看詳情 View details"
+                                                onClick={() => handleViewDetails(res.id)}
+                                            />
+                                            <IconButton
+                                                icon="edit-3"
+                                                label="編輯資源"
+                                                tooltip="編輯資源 Edit resource"
+                                                onClick={() => handleEditResource(res)}
+                                            />
+                                            <IconButton
+                                                icon="trash-2"
+                                                label="刪除資源"
+                                                tooltip="刪除資源 Delete resource"
+                                                onClick={() => handleDeleteResource(res)}
+                                                tone="danger"
+                                            />
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

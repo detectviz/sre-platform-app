@@ -3,6 +3,7 @@ import Modal from './Modal';
 import Icon from './Icon';
 import Wizard from './Wizard';
 import FormRow from './FormRow';
+import StatusTag, { type StatusTagProps } from './StatusTag';
 import { AlertRule, ConditionGroup, RuleCondition, AutomationSetting, ParameterDefinition, AutomationPlaybook, AlertRuleTemplate, ResourceType, MetricMetadata, ResourceGroup, Resource, TagDefinition, AlertRuleOptions } from '../types';
 import api from '../services/api';
 import { useUser } from '../contexts/UserContext';
@@ -18,6 +19,12 @@ interface AlertRuleEditModalProps {
     onSave: (rule: Partial<AlertRule>) => void;
     rule: AlertRule | null;
 }
+
+const ALERT_SEVERITY_TONE: Record<string, StatusTagProps['tone']> = {
+    critical: 'danger',
+    warning: 'warning',
+    info: 'info',
+};
 
 const Step0 = ({ selectedTemplate, setSelectedTemplate }: { selectedTemplate: AlertRuleTemplate | null, setSelectedTemplate: (template: AlertRuleTemplate | null) => void }) => {
     const [resourceTypes, setResourceTypes] = useState<ResourceType[]>([]);
@@ -475,21 +482,24 @@ const Step2 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
                                 {conditionsContent?.ADD_AND ?? '新增 AND 條件'}
                             </button>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                             <span className="text-sm text-slate-400">{conditionsContent?.EVENT_SEVERITY ?? '事件等級'}</span>
                             {isLoadingOptions ? (
-                                <div className="animate-pulse h-8 w-48 bg-slate-700 rounded-md"></div>
+                                <div className="h-8 w-48 animate-pulse rounded-full bg-slate-700" />
                             ) : (
                                 severities.map(level => {
                                     const isActive = group.severity === level.value;
+                                    const tone = ALERT_SEVERITY_TONE[level.value] ?? 'info';
                                     return (
                                         <button
                                             key={level.value}
                                             type="button"
                                             onClick={() => handleGroupChange(groupIndex, 'severity', level.value)}
-                                            className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide transition-colors ${isActive ? 'bg-sky-500/20 border-sky-400 text-sky-200' : 'bg-slate-900 border-slate-600 text-slate-400 hover:border-slate-500 hover:text-slate-100'}`}
+                                            className={`inline-flex items-center rounded-full border px-1.5 py-1 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${isActive ? 'border-sky-400 bg-sky-500/10 shadow-[0_0_0_1px_rgba(56,189,248,0.35)]' : 'border-transparent hover:border-slate-600 hover:bg-slate-800/60'}`}
+                                            aria-pressed={isActive}
+                                            aria-label={`${conditionsContent?.EVENT_SEVERITY ?? '事件等級'}：${level.label}`}
                                         >
-                                            {level.label}
+                                            <StatusTag label={level.label} tone={tone} dense />
                                         </button>
                                     );
                                 })
@@ -503,43 +513,77 @@ const Step2 = ({ formData, setFormData }: { formData: Partial<AlertRule>, setFor
                         const metricMeta = metricMetadata.find(m => m.id === cond.metric);
                         const unit = metricMeta?.unit;
                         return (
-                            <div key={condIndex} className="flex items-center space-x-3">
-                                <span className="text-slate-400 text-sm font-medium w-10 shrink-0">AND</span>
-                                <select
-                                    value={cond.metric}
-                                    onChange={e => handleConditionChange(groupIndex, condIndex, 'metric', e.target.value)}
-                                    className="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
-                                    disabled={isMetricLoading}
-                                >
-                                    {isMetricLoading ? (
-                                        <option>載入中...</option>
-                                    ) : (
-                                        <>
-                                            <option value="">{conditionsContent?.METRIC_PLACEHOLDER ?? '選擇指標...'}</option>
-                                            {metricMetadata.map(meta => (
-                                                <option key={meta.id} value={meta.id}>{meta.name} ({meta.id})</option>
-                                            ))}
-                                        </>
-                                    )}
-                                </select>
-                                <select value={cond.operator} onChange={e => handleConditionChange(groupIndex, condIndex, 'operator', e.target.value)} className="w-20 shrink-0 bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
-                                    <option value=">">&gt;</option><option value="<">&lt;</option><option value=">=">&gt;=</option><option value="<=">&lt;=</option>
-                                </select>
-                                <div className="relative w-32 shrink-0">
+                            <div key={condIndex} className="flex w-full flex-wrap items-center gap-3 rounded-lg bg-slate-900/40 px-3 py-2">
+                                <span className="inline-flex h-7 items-center justify-center rounded-full bg-slate-800 px-3 text-xs font-semibold text-slate-300">AND</span>
+                                <div className="min-w-[180px] flex-1">
+                                    <label className="sr-only" htmlFor={`condition-metric-${groupIndex}-${condIndex}`}>{conditionsContent?.METRIC_PLACEHOLDER ?? '選擇指標'}</label>
+                                    <select
+                                        id={`condition-metric-${groupIndex}-${condIndex}`}
+                                        value={cond.metric}
+                                        onChange={e => handleConditionChange(groupIndex, condIndex, 'metric', e.target.value)}
+                                        className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                                        disabled={isMetricLoading}
+                                    >
+                                        {isMetricLoading ? (
+                                            <option>載入中...</option>
+                                        ) : (
+                                            <>
+                                                <option value="">{conditionsContent?.METRIC_PLACEHOLDER ?? '選擇指標...'}</option>
+                                                {metricMetadata.map(meta => (
+                                                    <option key={meta.id} value={meta.id}>{meta.name} ({meta.id})</option>
+                                                ))}
+                                            </>
+                                        )}
+                                    </select>
+                                </div>
+                                <div className="min-w-[96px]">
+                                    <label className="sr-only" htmlFor={`condition-operator-${groupIndex}-${condIndex}`}>運算子</label>
+                                    <select
+                                        id={`condition-operator-${groupIndex}-${condIndex}`}
+                                        value={cond.operator}
+                                        onChange={e => handleConditionChange(groupIndex, condIndex, 'operator', e.target.value)}
+                                        className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                                    >
+                                        <option value=">">&gt;</option>
+                                        <option value="<">&lt;</option>
+                                        <option value=">=">&gt;=</option>
+                                        <option value="<=">&lt;=</option>
+                                    </select>
+                                </div>
+                                <div className="relative min-w-[128px]">
+                                    <label className="sr-only" htmlFor={`condition-threshold-${groupIndex}-${condIndex}`}>{conditionsContent?.THRESHOLD_PLACEHOLDER ?? '閾值'}</label>
                                     <input
+                                        id={`condition-threshold-${groupIndex}-${condIndex}`}
                                         type="number"
                                         value={cond.threshold}
                                         onChange={e => handleConditionChange(groupIndex, condIndex, 'threshold', parseFloat(e.target.value))}
-                                        className={`w-full bg-slate-800 border border-slate-700 rounded-md py-2 text-sm ${unit ? 'pl-3 pr-12' : 'px-3'}`}
+                                        className={`w-full rounded-md border border-slate-700 bg-slate-800 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 ${unit ? 'pl-3 pr-12' : 'px-3'}`}
                                         placeholder={conditionsContent?.THRESHOLD_PLACEHOLDER ?? '閾值'}
+                                        aria-describedby={unit ? `condition-threshold-unit-${groupIndex}-${condIndex}` : undefined}
                                     />
-                                    {unit && <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 text-xs pointer-events-none">{unit}</span>}
+                                    {unit && <span id={`condition-threshold-unit-${groupIndex}-${condIndex}`} className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-xs text-slate-400">{unit}</span>}
                                 </div>
-                                <div className="relative w-32 shrink-0">
-                                    <input type="number" value={cond.duration_minutes} onChange={e => handleConditionChange(groupIndex, condIndex, 'duration_minutes', parseInt(e.target.value))} className="w-full bg-slate-800 border border-slate-700 rounded-md pl-3 pr-14 py-2 text-sm" placeholder={conditionsContent?.DURATION_PLACEHOLDER ?? '持續時間'} />
-                                    <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 text-xs pointer-events-none">分鐘</span>
+                                <div className="relative min-w-[128px]">
+                                    <label className="sr-only" htmlFor={`condition-duration-${groupIndex}-${condIndex}`}>{conditionsContent?.DURATION_PLACEHOLDER ?? '持續時間'}</label>
+                                    <input
+                                        id={`condition-duration-${groupIndex}-${condIndex}`}
+                                        type="number"
+                                        value={cond.duration_minutes}
+                                        onChange={e => handleConditionChange(groupIndex, condIndex, 'duration_minutes', parseInt(e.target.value))}
+                                        className="w-full rounded-md border border-slate-700 bg-slate-800 py-2 pl-3 pr-14 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                                        placeholder={conditionsContent?.DURATION_PLACEHOLDER ?? '持續時間'}
+                                        min={1}
+                                    />
+                                    <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-xs text-slate-400">分鐘</span>
                                 </div>
-                                <button onClick={() => removeCondition(groupIndex, condIndex)} className="p-2 shrink-0 text-slate-400 hover:text-red-400 transition-colors"><Icon name="trash-2" className="w-4 h-4" /></button>
+                                <button
+                                    onClick={() => removeCondition(groupIndex, condIndex)}
+                                    className="rounded-full p-2 text-slate-400 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                                    type="button"
+                                    aria-label={conditionsContent?.REMOVE_CONDITION_LABEL ?? '移除此條件'}
+                                >
+                                    <Icon name="trash-2" className="h-4 w-4" />
+                                </button>
                             </div>
                         );
                     })}

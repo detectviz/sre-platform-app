@@ -10,6 +10,7 @@ import { showToast } from '../services/toast';
 import ImportResourceModal from './ImportResourceModal';
 import BatchTagModal from './BatchTagModal';
 import { useOptions } from '../contexts/OptionsContext';
+import StatusTag, { type StatusTagProps } from './StatusTag';
 
 interface DiscoveryJobResultDrawerProps {
   job: DiscoveryJob | null;
@@ -27,6 +28,20 @@ const DiscoveryJobResultDrawer: React.FC<DiscoveryJobResultDrawerProps> = ({ job
     const autoDiscoveryOptions = options?.auto_discovery;
     const exporter_templates = autoDiscoveryOptions?.exporter_templates || [];
     const edge_gateways = autoDiscoveryOptions?.edge_gateways || [];
+
+    const JOB_STATUS_META: Record<DiscoveryJob['status'], { label: string; tone: StatusTagProps['tone']; icon: string }> = {
+        pending: { label: '等待中', tone: 'neutral', icon: 'clock' },
+        running: { label: '執行中', tone: 'info', icon: 'loader-circle' },
+        success: { label: '成功', tone: 'success', icon: 'check-circle' },
+        failed: { label: '失敗', tone: 'danger', icon: 'x-circle' },
+        cancelled: { label: '已取消', tone: 'warning', icon: 'slash' },
+    };
+
+    const RESOURCE_STATUS_META: Record<DiscoveredResourceStatus, { label: string; tone: StatusTagProps['tone']; icon: string; tooltip?: string }> = {
+        new: { label: '新發現', tone: 'info', icon: 'sparkles', tooltip: '尚未匯入資源，可加入主資源清單。' },
+        imported: { label: '已匯入', tone: 'success', icon: 'check-circle', tooltip: '資源已存在於主資源清單。' },
+        ignored: { label: '已忽略', tone: 'neutral', icon: 'eye-off', tooltip: '資源已被忽略或列入黑名單。' },
+    };
 
     const fetchResults = useCallback(async () => {
         if (!job) return;
@@ -76,11 +91,16 @@ const DiscoveryJobResultDrawer: React.FC<DiscoveryJobResultDrawerProps> = ({ job
     const isIndeterminate = selectedIds.length > 0 && selectedIds.length < unmanagedResults.length;
 
     const getStatusIndicator = (status: DiscoveredResource['status']) => {
-        switch (status) {
-            case 'new': return <div className="flex items-center text-sky-400"><Icon name="sparkles" className="w-4 h-4 mr-2" /> 新發現</div>;
-            case 'imported': return <div className="flex items-center text-green-400"><Icon name="check-circle" className="w-4 h-4 mr-2" /> 已匯入</div>;
-            case 'ignored': return <div className="flex items-center text-slate-400"><Icon name="eye-off" className="w-4 h-4 mr-2" /> 已忽略</div>;
-        }
+        const meta = RESOURCE_STATUS_META[status];
+        return (
+            <StatusTag
+                label={meta.label}
+                tone={meta.tone}
+                icon={meta.icon}
+                dense
+                tooltip={meta.tooltip}
+            />
+        );
     };
     
     const handleOpenBatchTag = () => {
@@ -148,21 +168,32 @@ const DiscoveryJobResultDrawer: React.FC<DiscoveryJobResultDrawerProps> = ({ job
     const gatewayLabel = job.edge_gateway?.enabled
         ? edge_gateways.find((gw) => gw.id === job.edge_gateway?.gateway_id)?.name || job.edge_gateway?.gateway_id || '未指定'
         : '未啟用';
+    const jobStatusMeta = JOB_STATUS_META[job.status];
+    const kindDescriptor = autoDiscoveryOptions?.job_kinds.find((kind) => kind.value === job.kind);
+    const kindLabel = kindDescriptor?.label || job.kind;
 
     const selectedResources = results.filter(r => selectedIds.includes(r.id));
 
     return (
         <div className="h-full flex flex-col">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div className="bg-slate-800/40 border border-slate-700 rounded-lg p-4">
-                    <h4 className="text-xs uppercase text-slate-400">掃描類型</h4>
-                    <p className="mt-1 text-sm text-white font-medium">{job.kind}</p>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-4 mb-4">
+                <div className="rounded-lg border border-slate-700 bg-slate-800/40 p-4">
+                    <h4 className="text-xs uppercase text-slate-400">任務狀態</h4>
+                    <div className="mt-2">
+                        <StatusTag label={jobStatusMeta.label} tone={jobStatusMeta.tone} icon={jobStatusMeta.icon} tooltip={`目前狀態：${jobStatusMeta.label}`} />
+                    </div>
                 </div>
-                <div className="bg-slate-800/40 border border-slate-700 rounded-lg p-4">
+                <div className="rounded-lg border border-slate-700 bg-slate-800/40 p-4">
+                    <h4 className="text-xs uppercase text-slate-400">掃描類型</h4>
+                    <div className="mt-2">
+                        <StatusTag label={kindLabel} className={kindDescriptor?.class_name || ''} dense tooltip={`掃描類型：${kindLabel}`} />
+                    </div>
+                </div>
+                <div className="rounded-lg border border-slate-700 bg-slate-800/40 p-4">
                     <h4 className="text-xs uppercase text-slate-400">Exporter 模板</h4>
                     <p className="mt-1 text-sm text-white font-medium">{templateMeta?.name || job.exporter_binding?.template_id || '未設定'}</p>
                 </div>
-                <div className="bg-slate-800/40 border border-slate-700 rounded-lg p-4">
+                <div className="rounded-lg border border-slate-700 bg-slate-800/40 p-4">
                     <h4 className="text-xs uppercase text-slate-400">Edge Gateway</h4>
                     <p className="mt-1 text-sm text-white font-medium">{gatewayLabel}</p>
                 </div>
@@ -172,14 +203,23 @@ const DiscoveryJobResultDrawer: React.FC<DiscoveryJobResultDrawerProps> = ({ job
                 onClearSelection={() => setSelectedIds([])}
                 batchActions={batchActions}
             />
+            <p className="mb-3 text-xs text-slate-400">
+                可勾選多筆「新發現」資源進行匯入或批次標籤；已匯入 / 已忽略的項目會自動停用勾選。
+            </p>
             <TableContainer>
                 <div className="h-full overflow-y-auto">
                     <table className="w-full text-sm text-left text-slate-300">
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
                                 <th className="p-4 w-12">
-                                     <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
-                                           checked={isAllSelected} ref={el => { if(el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
+                                     <input
+                                         type="checkbox"
+                                         className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
+                                         checked={isAllSelected}
+                                         ref={el => { if(el) el.indeterminate = isIndeterminate; }}
+                                         onChange={handleSelectAll}
+                                         aria-label="全選新發現資源"
+                                     />
                                 </th>
                                 <th className="px-6 py-3">名稱 / IP</th>
                                 <th className="px-6 py-3">類型</th>
@@ -195,10 +235,13 @@ const DiscoveryJobResultDrawer: React.FC<DiscoveryJobResultDrawerProps> = ({ job
                             ) : results.map((res) => (
                                 <tr key={res.id} className={`border-b border-slate-800 ${selectedIds.includes(res.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
                                     <td className="p-4 w-12">
-                                        <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
-                                               checked={selectedIds.includes(res.id)} 
-                                               onChange={(e) => handleSelectOne(e, res.id)} 
-                                               disabled={res.status !== 'new'}
+                                        <input
+                                            type="checkbox"
+                                            className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
+                                            checked={selectedIds.includes(res.id)}
+                                            onChange={(e) => handleSelectOne(e, res.id)}
+                                            disabled={res.status !== 'new'}
+                                            aria-label={`選擇 ${res.name} 資源`}
                                         />
                                     </td>
                                     <td className="px-6 py-4">

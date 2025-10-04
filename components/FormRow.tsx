@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface FormRowProps {
-    label: string;
+    label: React.ReactNode;
     children?: React.ReactNode;
     className?: string;
     description?: string;

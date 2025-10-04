@@ -4,9 +4,12 @@ import EChartsReact from '../../components/EChartsReact';
 import api from '../../services/api';
 import { showToast } from '../../services/toast';
 import type { TimeRangePickerProps } from 'antd';
-import { DatePicker } from 'antd';
+import { DatePicker, Tooltip } from 'antd';
 import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
+import StatusTag, { type StatusTagProps } from '../../components/StatusTag';
+import SearchableSelect from '../../components/SearchableSelect';
+import IconButton from '../../components/IconButton';
 import {
     AlertRule,
     BacktestingResultsResponse,
@@ -44,18 +47,14 @@ type MinimalManualEvent = {
 };
 
 const rangePresets: TimeRangePickerProps['presets'] = [
-    { label: 'Last 7 Days', value: [dayjs().add(-7, 'd'), dayjs()] },
-    { label: 'Last 14 Days', value: [dayjs().add(-14, 'd'), dayjs()] },
-    { label: 'Last 30 Days', value: [dayjs().add(-30, 'd'), dayjs()] },
-    { label: 'Last 90 Days', value: [dayjs().add(-90, 'd'), dayjs()] },
+    { label: '過去 7 天', value: () => [dayjs().subtract(7, 'day'), dayjs()] },
+    { label: '過去 14 天', value: () => [dayjs().subtract(14, 'day'), dayjs()] },
+    { label: '過去 30 天', value: () => [dayjs().subtract(30, 'day'), dayjs()] },
+    { label: '過去 90 天', value: () => [dayjs().subtract(90, 'day'), dayjs()] },
 ];
 
 const BacktestingPage: React.FC = () => {
-    const defaultStart = useMemo(() => {
-        const date = new Date();
-        date.setDate(date.getDate() - 7);
-        return dayjs(date);
-    }, []);
+    const defaultStart = useMemo(() => dayjs().subtract(7, 'day'), []);
 
     const defaultEnd = useMemo(() => dayjs(), []);
 
@@ -71,9 +70,30 @@ const BacktestingPage: React.FC = () => {
 
     const [manualEvents, setManualEvents] = useState<MinimalManualEvent[]>([]);
     const [newEventLabel, setNewEventLabel] = useState('');
-    const [newEventStartTime, setNewEventStartTime] = useState('');
-    const [newEventEndTime, setNewEventEndTime] = useState('');
     const [isEventSectionExpanded, setIsEventSectionExpanded] = useState(false);
+
+    const timezoneLabel = useMemo(() => `UTC${dayjs().format('Z')}`, []);
+    const ruleOptions = useMemo(
+        () =>
+            availableRules.map(rule => ({
+                value: rule.id,
+                label: `${rule.name}｜${rule.conditions_summary}`,
+            })),
+        [availableRules],
+    );
+    const selectedRule = useMemo(
+        () => availableRules.find(rule => rule.id === selectedRuleId) || null,
+        [availableRules, selectedRuleId],
+    );
+
+    const severityToneMap: Record<AlertRule['severity'], { label: string; tone: StatusTagProps['tone']; icon: string }> = useMemo(
+        () => ({
+            critical: { label: '嚴重', tone: 'danger', icon: 'alert-octagon' },
+            warning: { label: '警告', tone: 'warning', icon: 'alert-triangle' },
+            info: { label: '資訊', tone: 'info', icon: 'info' },
+        }),
+        [],
+    );
 
     const handleAddManualEvent = useCallback(() => {
         if (!eventDateRange || !eventDateRange[0] || !eventDateRange[1]) {
@@ -163,8 +183,6 @@ const BacktestingPage: React.FC = () => {
     const handleEventDateRangeChange = useCallback((dates: [Dayjs, Dayjs] | null) => {
         if (dates) {
             setEventDateRange(dates);
-            setNewEventStartTime(toInputValue(dates[0]));
-            setNewEventEndTime(toInputValue(dates[1]));
         }
     }, []);
 
@@ -350,7 +368,7 @@ const BacktestingPage: React.FC = () => {
                     if (value === null || value === undefined || Number.isNaN(Number(value))) {
                         return '—';
                     }
-                    return Number(value).toFixed(2);
+                    return `${Number(value).toFixed(2)}%`;
                 },
             },
             legend: {
@@ -474,29 +492,27 @@ const BacktestingPage: React.FC = () => {
         if (!taskId) {
             return null;
         }
-        const statusMap: Record<BacktestingTaskStatus, { icon: string; label: string; color: string }> = {
-            queued: { icon: 'clock', label: '等待排程', color: 'text-slate-300' },
-            pending: { icon: 'clock', label: '準備中', color: 'text-slate-300' },
-            running: { icon: 'loader', label: '模擬執行中', color: 'text-sky-300' },
-            completed: { icon: 'check-circle-2', label: '模擬完成', color: 'text-emerald-300' },
-            failed: { icon: 'alert-triangle', label: '模擬失敗', color: 'text-rose-300' },
+        const statusMap: Record<BacktestingTaskStatus, { icon: string; label: string; tone: StatusTagProps['tone']; helper: string }> = {
+            queued: { icon: 'clock', label: '等待排程', tone: 'neutral', helper: '排程完成後會自動開始模擬。' },
+            pending: { icon: 'clock', label: '準備中', tone: 'neutral', helper: '正在建立模擬環境，請稍候。' },
+            running: { icon: 'loader', label: '模擬執行中', tone: 'info', helper: '狀態每 5 秒更新一次。' },
+            completed: { icon: 'check-circle-2', label: '模擬完成', tone: 'success', helper: '結果已產出，可於右側檢視。' },
+            failed: { icon: 'alert-triangle', label: '模擬失敗', tone: 'danger', helper: '請檢查設定或稍後再試。' },
         } as const;
-        const statusInfo = statusMap[taskStatus] || { icon: 'info', label: taskStatus, color: 'text-slate-300' };
+        const statusInfo = statusMap[taskStatus] || { icon: 'info', label: taskStatus, tone: 'neutral', helper: '' };
         return (
-            <div className={`flex items-center space-x-2 ${statusInfo.color}`}>
-                <Icon name={statusInfo.icon} className="w-4 h-4" />
-                <span className="text-sm">{statusInfo.label}</span>
-                <span className="text-xs text-slate-500">Task ID: {taskId}</span>
+            <div className="flex flex-wrap items-center gap-2 text-slate-400">
+                <StatusTag dense tone={statusInfo.tone} icon={statusInfo.icon} label={statusInfo.label} />
+                {statusInfo.helper && <span className="text-xs">{statusInfo.helper}</span>}
+                <span className="text-xs text-slate-500">任務 ID：{taskId}</span>
             </div>
         );
     };
 
     return (
         <div className="h-full flex flex-col space-y-4">
-            {taskId && taskStatus !== 'completed' && taskStatus !== 'failed' && (
-                <div className="flex justify-end">
-                    {renderStatus()}
-                </div>
+            {taskId && (
+                <div className="flex justify-end">{renderStatus()}</div>
             )}
 
             {error && (
@@ -510,23 +526,51 @@ const BacktestingPage: React.FC = () => {
                     <h2 className="text-lg font-semibold text-slate-100">設定回放任務</h2>
 
                     <div className="space-y-4">
-                        <div>
-                            <label className="text-sm font-medium text-slate-300">選擇告警規則</label>
-                            <select
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm font-medium text-slate-300">選擇告警規則</label>
+                                <span className="text-xs text-slate-500">系統時區：{timezoneLabel}</span>
+                            </div>
+                            <SearchableSelect
                                 value={selectedRuleId}
-                                onChange={e => handleSelectRule(e.target.value)}
-                                className="mt-1 w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                                onChange={handleSelectRule}
+                                options={ruleOptions}
                                 disabled={isLoadingRules}
-                            >
-                                <option value="" disabled>
-                                    {isLoadingRules ? '載入規則中...' : '選擇一個告警規則...'}
-                                </option>
-                                {!isLoadingRules && availableRules.map(rule => (
-                                    <option key={rule.id} value={rule.id}>
-                                        {rule.name} - {rule.conditions_summary}
-                                    </option>
-                                ))}
-                            </select>
+                                placeholder={isLoadingRules ? '告警規則載入中…' : '輸入名稱或條件關鍵字'}
+                                emptyMessage="沒有符合的告警規則"
+                            />
+                            <p className="text-xs text-slate-500 leading-relaxed">
+                                選擇後即可預覽規則描述、嚴重度與啟用狀態，並在下方設定回放區間。
+                            </p>
+                            {selectedRule && (
+                                <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-3 space-y-2">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <StatusTag
+                                            dense
+                                            icon={severityToneMap[selectedRule.severity].icon}
+                                            tone={severityToneMap[selectedRule.severity].tone}
+                                            label={`嚴重度｜${severityToneMap[selectedRule.severity].label}`}
+                                        />
+                                        <StatusTag
+                                            dense
+                                            icon={selectedRule.enabled ? 'check' : 'pause'}
+                                            tone={selectedRule.enabled ? 'success' : 'neutral'}
+                                            label={selectedRule.enabled ? '狀態｜已啟用' : '狀態｜未啟用'}
+                                        />
+                                        <span className="text-xs text-slate-500">
+                                            更新時間：{dayjs(selectedRule.updated_at).format('YYYY/MM/DD HH:mm')}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-slate-200 leading-relaxed">
+                                        {selectedRule.description || '此規則目前尚未提供描述。'}
+                                    </p>
+                                    <Tooltip title={selectedRule.conditions_summary || '—'} placement="top">
+                                        <p className="text-xs text-slate-500 truncate">
+                                            條件摘要：{selectedRule.conditions_summary || '—'}
+                                        </p>
+                                    </Tooltip>
+                                </div>
+                            )}
                         </div>
 
                         <div>
@@ -536,11 +580,12 @@ const BacktestingPage: React.FC = () => {
                                 onChange={handleDateRangeChange}
                                 presets={[
                                     {
-                                        label: <span aria-label="Current Time to End of Day">Now ~ EOD</span>,
+                                        label: <span aria-label="即刻到今日結束">即刻起 ~ 今日結束</span>,
                                         value: () => [dayjs(), dayjs().endOf('day')],
                                     },
                                     ...rangePresets,
                                 ]}
+                                placeholder={['開始時間', '結束時間']}
                                 showTime
                                 format="YYYY/MM/DD HH:mm"
                                 className="w-full"
@@ -562,16 +607,29 @@ const BacktestingPage: React.FC = () => {
                                 type="button"
                                 onClick={() => setIsEventSectionExpanded(!isEventSectionExpanded)}
                                 className="w-full flex items-center justify-between text-sm font-semibold text-slate-200 hover:text-slate-100 transition-colors"
+                                aria-expanded={isEventSectionExpanded}
+                                aria-controls="backtesting-event-panel"
                             >
-                                <span>實際事件比對</span>
+                                <span className="flex items-center gap-2">
+                                    <span>實際事件比對</span>
+                                    <StatusTag
+                                        dense
+                                        icon="calendar-check"
+                                        tone={manualEvents.length > 0 ? 'info' : 'neutral'}
+                                        label={`已標記 ${manualEvents.length} 筆`}
+                                    />
+                                </span>
                                 <Icon
-                                    name={isEventSectionExpanded ? "chevron-up" : "chevron-down"}
+                                    name={isEventSectionExpanded ? 'chevron-up' : 'chevron-down'}
                                     className="w-4 h-4"
                                 />
                             </button>
+                            <p className="mt-2 text-xs text-slate-500 leading-relaxed">
+                                透過加入實際事件時間段，可比對規則在當下是否有正確觸發，協助調整閾值與條件。
+                            </p>
 
                             {isEventSectionExpanded && (
-                                <div className="mt-3 space-y-3">
+                                <div id="backtesting-event-panel" className="mt-3 space-y-3">
                                     <div className="space-y-3">
                                         <div>
                                             <label className="text-xs font-medium text-slate-400">事件說明（選填）</label>
@@ -582,6 +640,7 @@ const BacktestingPage: React.FC = () => {
                                                 className="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
                                                 placeholder="例如：服務更新導致負載上升"
                                             />
+                                            <p className="mt-1 text-xs text-slate-500">建議使用 20 字以內的描述，方便列表辨識。</p>
                                         </div>
                                         <div>
                                             <label className="text-xs font-medium text-slate-400">時間段</label>
@@ -590,26 +649,28 @@ const BacktestingPage: React.FC = () => {
                                                 onChange={handleEventDateRangeChange}
                                                 presets={[
                                                     {
-                                                        label: <span aria-label="Current Time to End of Day">Now ~ EOD</span>,
+                                                        label: <span aria-label="即刻到今日結束">即刻起 ~ 今日結束</span>,
                                                         value: () => [dayjs(), dayjs().endOf('day')],
                                                     },
-                                                    { label: 'Last 1 Hour', value: [dayjs().add(-1, 'hour'), dayjs()] },
-                                                    { label: 'Last 6 Hours', value: [dayjs().add(-6, 'hour'), dayjs()] },
-                                                    { label: 'Last 24 Hours', value: [dayjs().add(-24, 'hour'), dayjs()] },
+                                                    { label: '過去 1 小時', value: () => [dayjs().subtract(1, 'hour'), dayjs()] },
+                                                    { label: '過去 6 小時', value: () => [dayjs().subtract(6, 'hour'), dayjs()] },
+                                                    { label: '過去 24 小時', value: () => [dayjs().subtract(24, 'hour'), dayjs()] },
                                                 ]}
+                                                placeholder={['開始時間', '結束時間']}
                                                 showTime
                                                 format="YYYY/MM/DD HH:mm"
                                                 className="w-full mt-1"
                                             />
+                                            <p className="mt-1 text-xs text-slate-500">請確認時間落在回放區間內，避免資料無法比對。</p>
                                         </div>
                                     </div>
                                     <button
                                         type="button"
                                         onClick={handleAddManualEvent}
-                                        className="w-full rounded-md bg-emerald-600 hover:bg-emerald-700 px-3 py-2 text-sm font-medium text-white flex items-center justify-center space-x-2 transition-colors"
+                                        className="w-full rounded-md bg-emerald-600 hover:bg-emerald-700 px-3 py-2 text-sm font-medium text-white flex items-center justify-center gap-2 transition-colors"
                                     >
                                         <Icon name="plus" className="w-4 h-4" />
-                                        <span>標記事件</span>
+                                        <span>新增標記事件</span>
                                     </button>
 
                                     <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
@@ -619,21 +680,23 @@ const BacktestingPage: React.FC = () => {
                                         {manualEvents.map((event, index) => (
                                             <div
                                                 key={`${event.start_time}-${event.label}-${index}`}
-                                                className="flex items-center justify-between rounded-md border border-slate-800 bg-slate-900/50 px-3 py-2 text-sm text-slate-200"
+                                                className="flex items-center justify-between gap-3 rounded-md border border-slate-800 bg-slate-900/50 px-3 py-2 text-sm text-slate-200"
                                             >
-                                                <div>
-                                                    <div className="font-medium text-slate-100">{event.label || '已標記事件'}</div>
-                                                    <div className="text-xs text-slate-400">
+                                                <div className="min-w-0">
+                                                    <p className="font-medium text-slate-100 truncate" title={event.label || '已標記事件'}>
+                                                        {event.label || '已標記事件'}
+                                                    </p>
+                                                    <p className="text-xs text-slate-400">
                                                         {formatDisplayTime(event.start_time)} ~ {formatDisplayTime(event.end_time)}
-                                                    </div>
+                                                    </p>
                                                 </div>
-                                                <button
-                                                    type="button"
+                                                <IconButton
+                                                    icon="trash-2"
+                                                    label="移除實際事件"
+                                                    tone="danger"
                                                     onClick={() => handleDeleteManualEvent(index)}
-                                                    className="rounded border border-rose-500/40 px-2 py-1 text-xs text-rose-200 hover:border-rose-400"
-                                                >
-                                                    刪除
-                                                </button>
+                                                    tooltip="移除此事件"
+                                                />
                                             </div>
                                         ))}
                                     </div>

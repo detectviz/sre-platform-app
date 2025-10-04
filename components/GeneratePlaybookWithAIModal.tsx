@@ -1,13 +1,11 @@
-
-
-
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import Modal from './Modal';
 import Icon from './Icon';
 import { ParameterDefinition, AutomationPlaybook } from '../types';
 import FormRow from './FormRow';
 import api from '../services/api';
 import { useContent } from '../contexts/ContentContext';
+import { useOptions } from '../contexts/OptionsContext';
 
 interface GeneratedPlaybook {
   type: AutomationPlaybook['type'];
@@ -29,6 +27,31 @@ const GeneratePlaybookWithAIModal: React.FC<GeneratePlaybookWithAIModalProps> = 
     const { content: pageContent } = useContent();
     const content = pageContent?.GENERATE_PLAYBOOK_WITH_AI_MODAL;
     const globalContent = pageContent?.GLOBAL;
+    const { options } = useOptions();
+    const scriptOptions = options?.automation_scripts;
+    const typeOptions = useMemo(() => scriptOptions?.playbook_types ?? [], [scriptOptions?.playbook_types]);
+    const [targetType, setTargetType] = useState<string>(() => typeOptions[0]?.value || 'shell');
+    const resultContainerRef = useRef<HTMLDivElement | null>(null);
+    const [showScrollHint, setShowScrollHint] = useState(false);
+    const scriptTypeHelper = content?.SCRIPT_TYPE_HELPER ?? 'AI 將依此語言生成腳本，可於套用後再次調整內容。';
+    const previewHintLabel = content?.RESULT_PREVIEW_HINT ?? '結果預覽提醒';
+    const previewDescription = content?.RESULT_PREVIEW_DESCRIPTION ?? 'AI 會產生腳本內容與參數，套用前請檢查並測試。';
+
+    useEffect(() => {
+        if (!resultContainerRef.current) {
+            setShowScrollHint(false);
+            return;
+        }
+        const { current } = resultContainerRef;
+        const shouldShow = current.scrollHeight > current.clientHeight + 8;
+        setShowScrollHint(shouldShow);
+    }, [result]);
+
+    const handleResultScroll = useCallback(() => {
+        if (!resultContainerRef.current) return;
+        const { scrollTop, scrollHeight, clientHeight } = resultContainerRef.current;
+        setShowScrollHint(scrollTop + clientHeight < scrollHeight - 8);
+    }, []);
 
     const handleGenerate = useCallback(async () => {
         if (!prompt || !content) return;
@@ -36,25 +59,33 @@ const GeneratePlaybookWithAIModal: React.FC<GeneratePlaybookWithAIModalProps> = 
         setResult(null);
         setError(null);
         try {
-            const { data } = await api.post<GeneratedPlaybook>('/ai/automation/generate-script', { prompt });
-            setResult(data);
+            const { data } = await api.post<GeneratedPlaybook>('/ai/automation/generate-script', { prompt, target_type: targetType });
+            setResult({ ...data, type: data.type || targetType });
         } catch (e) {
             console.error("AI Generation Error:", e);
             setError(content.ERROR_MESSAGE);
         } finally {
             setIsLoading(false);
         }
-    }, [prompt, content]);
-    
+    }, [prompt, content, targetType]);
+
     const handleApply = () => {
         if (result) {
-            onApply(result);
+            onApply({ ...result, type: targetType || result.type });
             onClose();
         }
     };
 
     const modalTitle = content?.TITLE ?? 'AI 助手生成腳本';
     const cancelLabel = globalContent?.CANCEL ?? '取消';
+    const generateLabel = isLoading ? content?.GENERATING_BUTTON ?? '生成中…' : content?.GENERATE_BUTTON ?? '生成腳本';
+
+    useEffect(() => {
+        if (!typeOptions.length) return;
+        if (!targetType) {
+            setTargetType(typeOptions[0].value);
+        }
+    }, [typeOptions, targetType]);
 
     if (!content || !globalContent) {
         return (
@@ -103,12 +134,43 @@ const GeneratePlaybookWithAIModal: React.FC<GeneratePlaybookWithAIModalProps> = 
                     />
                 </FormRow>
 
-                <button onClick={handleGenerate} disabled={isLoading || !prompt} className="w-full flex items-center justify-center text-sm font-medium text-white bg-purple-600 hover:bg-purple-500 rounded-md px-4 py-2 disabled:bg-slate-600 disabled:cursor-not-allowed">
-                    {isLoading ? <Icon name="loader-circle" className="w-5 h-5 animate-spin" /> : <><Icon name="brain-circuit" className="w-5 h-5 mr-2" /> {isLoading ? content.GENERATING_BUTTON : content.GENERATE_BUTTON}</>}
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <FormRow label={content.SCRIPT_TYPE_LABEL}>
+                        <select
+                            value={targetType}
+                            onChange={event => setTargetType(event.target.value)}
+                            className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm"
+                        >
+                            {typeOptions.map(option => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
+                        <p className="mt-1 text-xs text-slate-400">{scriptTypeHelper}</p>
+                    </FormRow>
+                    <FormRow label={previewHintLabel}>
+                        <p className="rounded-md border border-slate-700 bg-slate-900/60 px-3 py-2 text-xs text-slate-400">
+                            {previewDescription}
+                        </p>
+                    </FormRow>
+                </div>
+
+                <button
+                    onClick={handleGenerate}
+                    disabled={isLoading || !prompt}
+                    className="flex w-full items-center justify-center gap-2 rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500 disabled:cursor-not-allowed disabled:bg-slate-600"
+                >
+                    {isLoading ? (
+                        <Icon name="loader-circle" className="h-5 w-5 animate-spin" />
+                    ) : (
+                        <Icon name="brain-circuit" className="h-5 w-5" />
+                    )}
+                    <span>{generateLabel}</span>
                 </button>
 
                 {error && <div className="p-3 bg-red-900/50 border border-red-700 text-red-300 rounded-md text-sm">{error}</div>}
-                
+
                 {isLoading && (
                     <div className="flex flex-col items-center justify-center h-64">
                         <Icon name="loader-circle" className="w-12 h-12 text-purple-400 animate-spin" />
@@ -117,7 +179,11 @@ const GeneratePlaybookWithAIModal: React.FC<GeneratePlaybookWithAIModalProps> = 
                 )}
                 
                 {result && (
-                    <div className="flex-grow space-y-4 overflow-y-auto pt-4 border-t border-slate-700">
+                    <div
+                        ref={resultContainerRef}
+                        onScroll={handleResultScroll}
+                        className="relative flex-grow space-y-4 overflow-y-auto border-t border-slate-700 pt-4"
+                    >
                         <h3 className="text-lg font-semibold text-white">{content.RESULTS_TITLE}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <FormRow label={content.SCRIPT_TYPE_LABEL}>
@@ -140,6 +206,9 @@ const GeneratePlaybookWithAIModal: React.FC<GeneratePlaybookWithAIModalProps> = 
                                 </div>
                             ) : <p className="text-sm text-slate-400">{content.NO_PARAMETERS_DETECTED}</p>}
                         </FormRow>
+                        {showScrollHint && (
+                            <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-slate-950/95 to-transparent" />
+                        )}
                     </div>
                 )}
             </div>

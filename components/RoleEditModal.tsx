@@ -104,6 +104,9 @@ const RoleEditModal: React.FC<RoleEditModalProps> = ({ isOpen, onClose, onSave, 
         );
     }
 
+    const NAME_LIMIT = 50;
+    const DESCRIPTION_LIMIT = 200;
+
     return (
         <Modal
             title={modalTitle}
@@ -119,15 +122,40 @@ const RoleEditModal: React.FC<RoleEditModalProps> = ({ isOpen, onClose, onSave, 
         >
             <div className="space-y-4 max-h-[60vh] flex flex-col">
                 <FormRow label={`${content.ROLE_NAME} *`}>
-                    <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+                    <div className="space-y-1">
+                        <input
+                            type="text"
+                            value={name}
+                            maxLength={NAME_LIMIT}
+                            onChange={e => setName(e.target.value)}
+                            placeholder="請輸入角色名稱，例如：事件值班主管"
+                            className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                        />
+                        <div className="flex items-center justify-between text-[11px] text-slate-500">
+                            <span>名稱將顯示在權限分派與下拉選單中。</span>
+                            <span className={name.length > NAME_LIMIT * 0.8 ? 'text-amber-400' : ''}>{name.length}/{NAME_LIMIT}</span>
+                        </div>
+                    </div>
                 </FormRow>
                 <FormRow label={globalContent.DESCRIPTION}>
-                    <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"></textarea>
+                    <div className="space-y-1">
+                        <textarea
+                            value={description}
+                            maxLength={DESCRIPTION_LIMIT}
+                            onChange={e => setDescription(e.target.value)}
+                            rows={3}
+                            placeholder="描述此角色能執行的操作，協助團隊快速瞭解權限範圍。"
+                            className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                        />
+                        <div className="text-right text-[11px] text-slate-500">
+                            <span className={description.length > DESCRIPTION_LIMIT * 0.8 ? 'text-amber-400' : ''}>{description.length}/{DESCRIPTION_LIMIT}</span>
+                        </div>
+                    </div>
                 </FormRow>
 
                 <div className="flex-grow overflow-y-auto pr-2 -mr-4">
                     <h3 className="text-lg font-semibold text-white mb-2">{content.PERMISSION_SETTINGS}</h3>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         {availablePermissions.map(permModule => {
                             const rolePerm = permissions.find(p => p.module === permModule.module);
                             const allActions = permModule.actions.map(a => a.key);
@@ -136,27 +164,66 @@ const RoleEditModal: React.FC<RoleEditModalProps> = ({ isOpen, onClose, onSave, 
 
                             return (
                                 <div key={permModule.module} className="border border-slate-700 rounded-lg bg-slate-800/30">
-                                    <div className="flex items-center justify-between p-3 cursor-pointer hover:bg-slate-800/50" onClick={() => toggleModule(permModule.module)}>
+                                    <button
+                                        type="button"
+                                        className="w-full flex items-center justify-between p-3 text-left hover:bg-slate-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 rounded-t-lg"
+                                        onClick={() => toggleModule(permModule.module)}
+                                        aria-expanded={isOpen}
+                                    >
                                         <div>
                                             <p className="font-semibold text-white">{permModule.module}</p>
                                             <p className="text-xs text-slate-400">{permModule.description}</p>
                                         </div>
-                                        <Icon name={isOpen ? 'chevron-up' : 'chevron-down'} className="w-5 h-5" />
-                                    </div>
+                                        <Icon name={isOpen ? 'chevron-up' : 'chevron-down'} className="w-6 h-6 text-slate-300" />
+                                    </button>
                                     {isOpen && (
-                                        <div className="p-4 border-t border-slate-700">
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                                <label className="flex items-center space-x-2 p-2 rounded-md bg-slate-700/50 font-semibold">
-                                                    <input type="checkbox" checked={isAllSelected} onChange={e => handleSelectAll(permModule.module, allActions, e.target.checked)} className="form-checkbox h-4 w-4 rounded bg-slate-800 border-slate-600 text-sky-500" />
-                                                    <span>{content.SELECT_ALL}</span>
-                                                </label>
-                                                {permModule.actions.map(action => (
-                                                    <label key={action.key} className="flex items-center space-x-2 p-2 rounded-md hover:bg-slate-700/50">
-                                                        <input type="checkbox" checked={rolePerm?.actions.includes(action.key)} onChange={e => handlePermissionChange(permModule.module, action.key, e.target.checked)} className="form-checkbox h-4 w-4 rounded bg-slate-800 border-slate-600 text-sky-500" />
-                                                        <span>{action.label}</span>
-                                                    </label>
-                                                ))}
-                                            </div>
+                                        <div className="p-4 border-t border-slate-700 overflow-x-auto">
+                                            <table className="w-full min-w-[420px] text-sm text-left text-slate-200">
+                                                <thead className="bg-slate-900/60 text-xs uppercase text-slate-400">
+                                                    <tr>
+                                                        <th className="px-3 py-2 font-semibold">權限項目</th>
+                                                        {permModule.actions.map(action => (
+                                                            <th key={action.key} className="px-3 py-2 text-center font-semibold">{action.label}</th>
+                                                        ))}
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-800/80">
+                                                    <tr className="hover:bg-slate-800/40">
+                                                        <td className="px-3 py-2 font-medium text-slate-200">{content.SELECT_ALL}</td>
+                                                        {permModule.actions.map(action => (
+                                                            <td key={`${action.key}-all`} className="px-3 py-2 text-center">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    className="form-checkbox h-4 w-4 rounded bg-slate-800 border-slate-600 text-sky-500"
+                                                                    checked={!!isAllSelected}
+                                                                    onChange={e => handleSelectAll(permModule.module, allActions, e.target.checked)}
+                                                                    aria-label={`切換 ${permModule.module} 所有權限`}
+                                                                />
+                                                            </td>
+                                                        ))}
+                                                    </tr>
+                                                    {permModule.actions.map(action => (
+                                                        <tr key={action.key} className="hover:bg-slate-800/30">
+                                                            <td className="px-3 py-2 text-slate-200">{action.label}</td>
+                                                            {permModule.actions.map(innerAction => (
+                                                                <td key={`${action.key}-${innerAction.key}`} className="px-3 py-2 text-center">
+                                                                    {innerAction.key === action.key ? (
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            className="form-checkbox h-4 w-4 rounded bg-slate-800 border-slate-600 text-sky-500"
+                                                                            checked={rolePerm?.actions.includes(action.key) || false}
+                                                                            onChange={e => handlePermissionChange(permModule.module, action.key, e.target.checked)}
+                                                                            aria-label={`${permModule.module} - ${action.label}`}
+                                                                        />
+                                                                    ) : (
+                                                                        <span className="text-slate-700">—</span>
+                                                                    )}
+                                                                </td>
+                                                            ))}
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
                                         </div>
                                     )}
                                 </div>
