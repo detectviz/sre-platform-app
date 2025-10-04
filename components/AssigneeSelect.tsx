@@ -13,7 +13,7 @@ import StatusTag from './StatusTag';
 
 interface AssigneeSelectProps {
   users: User[];
-  value: string;
+  value?: string;
   onChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
@@ -46,14 +46,16 @@ const AssigneeSelect: React.FC<AssigneeSelectProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number>(-1);
 
+  const normalizedValue = typeof value === 'string' ? value : '';
+
   const selectedUser = useMemo(
-    () => users.find(user => user.id === value) || null,
-    [users, value]
+    () => users.find(user => user.id === normalizedValue) || null,
+    [users, normalizedValue]
   );
 
   const selectedIndex = useMemo(
-    () => users.findIndex(user => user.id === value),
-    [users, value]
+    () => users.findIndex(user => user.id === normalizedValue),
+    [users, normalizedValue]
   );
 
   const isDisabled = disabled || (!!loading && users.length === 0);
@@ -231,7 +233,7 @@ const AssigneeSelect: React.FC<AssigneeSelectProps> = ({
             >
               {users.map((user, index) => {
                 const isActiveOption = index === activeIndex;
-                const isSelected = user.id === value;
+                const isSelected = user.id === normalizedValue;
                 return (
                   <li
                     key={user.id}

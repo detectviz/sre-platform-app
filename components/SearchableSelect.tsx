@@ -7,7 +7,7 @@ export interface SearchableSelectOption {
 }
 
 interface SearchableSelectProps {
-  value: string;
+  value?: string;
   onChange: (value: string) => void;
   options: SearchableSelectOption[];
   placeholder?: string;
@@ -25,8 +25,13 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
 }) => {
   const selectId = useId();
 
-  const hasValue = useMemo(() => options.some(option => option.value === value), [options, value]);
-  const selectValue = hasValue ? value : '';
+  const normalizedValue = typeof value === 'string' ? value : '';
+
+  const hasValue = useMemo(
+    () => options.some(option => option.value === normalizedValue),
+    [options, normalizedValue]
+  );
+  const selectValue = hasValue ? normalizedValue : '';
   const isEmpty = options.length === 0;
 
   const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
