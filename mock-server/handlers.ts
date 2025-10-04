@@ -1,5 +1,5 @@
 import { DB, uuidv4 } from './db';
-import type { AlertRule, BacktestingResultsResponse, BacktestingRuleResult, ConnectionStatus, DiscoveryJob, Incident, NotificationStrategy, Resource, ResourceLink, ConfigVersion, TabConfigMap, TagDefinition, NotificationChannelType, RetryPolicy, DatasourceConnectionTestLog, TagBulkImportJob, UserPreferenceExportJob } from '../types';
+import type { AlertRule, BacktestingResultsResponse, BacktestingRuleResult, ConnectionStatus, DiscoveryJob, Incident, NotificationStrategy, Resource, ResourceLink, ConfigVersion, TabConfigMap, TagDefinition, NotificationChannelType, RetryPolicy, DatasourceConnectionTestLog, TagBulkImportJob, UserPreferenceExportJob, KpiDataEntry, KpiCardColor } from '../types';
 import { auditLogMiddleware } from './auditLog';
 
 type HttpMethod = 'get' | 'post' | 'put' | 'patch' | 'delete';
@@ -10,6 +10,9 @@ const INCIDENT_STATUS_LABELS: Record<Incident['status'], string> = {
     resolved: 'resolved',
     silenced: 'silenced',
 };
+
+const KPI_CARD_COLORS: KpiCardColor[] = ['default', 'primary', 'success', 'warning', 'error'];
+const KPI_TRENDS: Array<Exclude<KpiDataEntry['trend'], null>> = ['up', 'down'];
 
 /**
  * 根據儀表板類別返回預設的資源 ID 列表
@@ -90,10 +93,20 @@ const paginate = (array: any[], page: any, pageSize: any) => {
     };
 };
 
+const resolveValueByPath = (source: any, path: string) => {
+    if (!source || !path) {
+        return undefined;
+    }
+    if (!path.includes('.')) {
+        return source[path];
+    }
+    return path.split('.').reduce((acc: any, key: string) => (acc == null ? undefined : acc[key]), source);
+};
+
 const sortData = (data: any[], sortBy: string, sortOrder: 'asc' | 'desc') => {
     return [...data].sort((a, b) => {
-        const valA = a[sortBy];
-        const valB = b[sortBy];
+        const valA = resolveValueByPath(a, sortBy);
+        const valB = resolveValueByPath(b, sortBy);
 
         if (valA === undefined || valA === null) return 1;
         if (valB === undefined || valB === null) return -1;
@@ -3929,6 +3942,26 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 return paginate(versions, params?.page, params?.page_size);
             }
             case 'GET /kpi-data': {
+                return DB.kpi_data;
+            }
+            case 'PUT /kpi-data': {
+                if (!body || typeof body !== 'object') {
+                    throw { status: 400, message: 'KPI data payload must be an object.' };
+                }
+                const updates = body as Record<string, Partial<KpiDataEntry>>;
+                Object.entries(updates).forEach(([key, payload]) => {
+                    if (!payload) {
+                        return;
+                    }
+                    if (payload.color && !KPI_CARD_COLORS.includes(payload.color)) {
+                        throw { status: 400, message: `Invalid KPI card color for ${key}.` };
+                    }
+                    if (payload.trend && !KPI_TRENDS.includes(payload.trend)) {
+                        throw { status: 400, message: `Invalid trend direction for ${key}.` };
+                    }
+                    const current = DB.kpi_data[key] ?? { value: '—', color: 'default' };
+                    DB.kpi_data[key] = { ...current, ...payload };
+                });
                 return DB.kpi_data;
             }
             case 'GET /notifications': {

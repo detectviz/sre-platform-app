@@ -29,6 +29,32 @@ import useTableSorting from '../../hooks/useTableSorting';
 
 const PAGE_IDENTIFIER = 'resources';
 
+interface ResourceEventItem {
+    id: string;
+    title: string;
+    severity: 'info' | 'warning' | 'critical';
+    occurred_at: string;
+    summary: string;
+}
+
+const EVENT_SEVERITY_STYLES: Record<ResourceEventItem['severity'], { badge: string; dot: string; label: string }> = {
+    info: {
+        badge: 'bg-slate-200 text-slate-700 border border-slate-300 dark:bg-slate-800/60 dark:text-slate-200 dark:border-slate-700',
+        dot: 'bg-slate-400 dark:bg-slate-500',
+        label: '資訊',
+    },
+    warning: {
+        badge: 'bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-500/20 dark:text-amber-200 dark:border-amber-400/60',
+        dot: 'bg-amber-400 dark:bg-amber-300',
+        label: '警告',
+    },
+    critical: {
+        badge: 'bg-red-100 text-red-700 border border-red-200 dark:bg-red-500/20 dark:text-red-200 dark:border-red-500/60',
+        dot: 'bg-red-500 dark:bg-red-400',
+        label: '嚴重',
+    },
+};
+
 const ResourceListPage: React.FC = () => {
     const [resources, setResources] = useState<Resource[]>([]);
     const [allColumns, setAllColumns] = useState<TableColumn[]>([]);
@@ -60,6 +86,9 @@ const ResourceListPage: React.FC = () => {
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
     const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
     const [analyzingResources, setAnalyzingResources] = useState<Resource[]>([]);
+    const [isEventDrawerOpen, setIsEventDrawerOpen] = useState(false);
+    const [eventDrawerResource, setEventDrawerResource] = useState<Resource | null>(null);
+    const [eventDrawerItems, setEventDrawerItems] = useState<ResourceEventItem[]>([]);
 
     const { resource_id } = useParams<{ resource_id: string }>();
 
@@ -200,6 +229,140 @@ const ResourceListPage: React.FC = () => {
         setSelectedIds([]);
     }, [currentPage, pageSize, filters]);
 
+    const getColumnWidth = useCallback((columnKey: string) => {
+        switch (columnKey) {
+            case 'status':
+                return 'w-20';
+            case 'name':
+                return 'w-48';
+            case 'type':
+                return 'w-32';
+            case 'event_count':
+                return 'w-28';
+            case 'cpu_usage':
+            case 'memory_usage':
+                return 'w-40';
+            case 'provider':
+                return 'w-28';
+            case 'region':
+                return 'w-28';
+            case 'owner':
+                return 'w-32';
+            case 'last_check_in_at':
+                return 'w-40';
+            default:
+                return 'w-24';
+        }
+    }, []);
+
+    const getUtilizationTone = (value?: number) => {
+        if (value === undefined || value === null || Number.isNaN(value)) {
+            return {
+                barColor: '#64748b',
+                textClass: 'text-slate-500 dark:text-slate-500',
+            };
+        }
+        if (value >= 80) {
+            return {
+                barColor: '#f5222d',
+                textClass: 'text-red-600 dark:text-red-300',
+            };
+        }
+        if (value >= 60) {
+            return {
+                barColor: '#faad14',
+                textClass: 'text-amber-600 dark:text-amber-300',
+            };
+        }
+        return {
+            barColor: '#52c41a',
+            textClass: 'text-emerald-600 dark:text-emerald-300',
+        };
+    };
+
+    const renderUtilizationPill = (value: number | undefined, label: string) => {
+        if (value === undefined || value === null || Number.isNaN(value)) {
+            return <span className="text-slate-400 dark:text-slate-500">--</span>;
+        }
+        const normalized = Math.max(0, Math.min(100, value));
+        const tone = getUtilizationTone(normalized);
+        return (
+            <div className="flex w-full max-w-[9.5rem] items-center gap-2" title={`${label}: ${normalized.toFixed(1)}%`}>
+                <div className="relative h-2.5 grow overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-700/70">
+                    <div
+                        className="h-full rounded-full transition-all duration-300 ease-out"
+                        style={{ width: `${normalized}%`, backgroundColor: tone.barColor }}
+                    />
+                </div>
+                <span className={`min-w-[2.75rem] text-right text-xs font-semibold tabular-nums ${tone.textClass}`}>
+                    {normalized.toFixed(1)}%
+                </span>
+            </div>
+        );
+    };
+
+    const getEventCountTone = (count: number) => {
+        if (count >= 2) {
+            return {
+                className: 'bg-red-100 text-red-700 border border-red-200 dark:bg-red-500/20 dark:text-red-200 dark:border-red-500/60',
+                dotClass: 'bg-red-500 dark:bg-red-400',
+            };
+        }
+        if (count >= 1) {
+            return {
+                className: 'bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-500/20 dark:text-amber-200 dark:border-amber-400/60',
+                dotClass: 'bg-amber-400 dark:bg-amber-300',
+            };
+        }
+        return {
+            className: 'bg-slate-200 text-slate-700 border border-slate-300 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700',
+            dotClass: 'bg-slate-400 dark:bg-slate-500',
+        };
+    };
+
+    const generateMockEvents = useCallback((resource: Resource): ResourceEventItem[] => {
+        const total = resource.event_count ?? 0;
+        if (total <= 0) {
+            return [];
+        }
+        const length = Math.min(5, total);
+        return Array.from({ length }, (_, index) => {
+            const severity: ResourceEventItem['severity'] = (() => {
+                if (total >= 3) {
+                    if (index === 0) return 'critical';
+                    if (index <= 1) return 'warning';
+                    return 'info';
+                }
+                if (total === 2) {
+                    return index === 0 ? 'critical' : 'warning';
+                }
+                return 'warning';
+            })();
+            return {
+                id: `${resource.id}-evt-${index + 1}`,
+                title: severity === 'critical' ? '高優先級事件' : severity === 'warning' ? '警告事件' : '資訊事件',
+                severity,
+                occurred_at: new Date(Date.now() - (index + 1) * 45 * 60 * 1000).toISOString(),
+                summary: `${resource.name} 在最近 24 小時內產生 ${severity === 'critical' ? '嚴重' : severity === 'warning' ? '警告' : '資訊'}訊號，請檢視詳細監控趨勢。`,
+            };
+        });
+    }, []);
+
+    const handleOpenEventDrawer = (resource: Resource) => {
+        if ((resource.event_count ?? 0) === 0) {
+            return;
+        }
+        setEventDrawerResource(resource);
+        setEventDrawerItems(generateMockEvents(resource));
+        setIsEventDrawerOpen(true);
+    };
+
+    const handleCloseEventDrawer = () => {
+        setIsEventDrawerOpen(false);
+        setEventDrawerResource(null);
+        setEventDrawerItems([]);
+    };
+
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSelectedIds(e.target.checked ? resources.map(r => r.id) : []);
     };
@@ -242,10 +405,16 @@ const ResourceListPage: React.FC = () => {
             return;
         }
 
+        const normalized = dataToExport.map(resource => ({
+            ...resource,
+            metrics_cpu: resource.metrics?.cpu ?? '',
+            metrics_memory: resource.metrics?.memory ?? '',
+        }));
+
         exportToCsv({
             filename: `resources-${new Date().toISOString().split('T')[0]}.csv`,
-            headers: ['id', 'name', 'status', 'type', 'provider', 'region', 'owner', 'lastCheckIn'],
-            data: dataToExport,
+            headers: ['id', 'name', 'status', 'type', 'provider', 'region', 'owner', 'event_count', 'metrics_cpu', 'metrics_memory', 'last_check_in_at'],
+            data: normalized,
         });
     };
 
@@ -267,16 +436,21 @@ const ResourceListPage: React.FC = () => {
                                     className="h-1.5 w-1.5 rounded-full"
                                     style={{ backgroundColor: statusColor }}
                                 />
-                                <span>{readableLabel}</span>
+                                <span className="text-slate-900 dark:text-slate-100">{readableLabel}</span>
                             </span>
                         )}
                     />
                 );
             case 'name':
-                return <span className="font-medium text-white" title={`${res.name}`}>{res.name}</span>;
+                return (
+                    <span className="font-medium text-slate-900 dark:text-slate-100" title={res.name}>
+                        {res.name}
+                    </span>
+                );
             case 'type': {
                 const typeDescriptor = typeDescriptors.find(t => t.value === res.type);
-                const pillClass = typeDescriptor?.class_name || 'bg-slate-800/60 border border-slate-600 text-slate-200';
+                const pillClass = typeDescriptor?.class_name
+                    || 'bg-slate-200 text-slate-700 border border-slate-300 dark:bg-slate-800/60 dark:text-slate-200 dark:border-slate-700';
                 const label = typeDescriptor?.label || res.type;
                 return (
                     <span
@@ -287,12 +461,50 @@ const ResourceListPage: React.FC = () => {
                     </span>
                 );
             }
-            case 'provider': return res.provider;
-            case 'region': return res.region;
-            case 'owner': return res.owner;
-            case 'last_check_in_at': return formatRelativeTime(res.last_check_in_at);
+            case 'event_count': {
+                const eventCount = res.event_count ?? 0;
+                const tone = getEventCountTone(eventCount);
+                const isDisabled = eventCount === 0;
+                return (
+                    <button
+                        type="button"
+                        onClick={() => handleOpenEventDrawer(res)}
+                        disabled={isDisabled}
+                        className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold transition ${tone.className} ${isDisabled ? 'cursor-default opacity-60' : 'hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500/40 dark:focus-visible:ring-slate-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent'}`}
+                        title={eventCount === 0 ? '最近 24 小時內沒有事件' : `最近 24 小時內有 ${eventCount} 件事件`}
+                    >
+                        <span className={`h-2 w-2 rounded-full ${tone.dotClass}`} />
+                        <span>{eventCount}</span>
+                    </button>
+                );
+            }
+            case 'cpu_usage':
+                return renderUtilizationPill(res.metrics?.cpu, 'CPU 使用率');
+            case 'memory_usage':
+                return renderUtilizationPill(res.metrics?.memory, '記憶體使用率');
+            case 'provider':
+                return res.provider
+                    ? <span className="text-slate-600 dark:text-slate-300">{res.provider}</span>
+                    : <span className="text-slate-400 dark:text-slate-500">--</span>;
+            case 'region':
+                return res.region
+                    ? <span className="text-slate-600 dark:text-slate-300">{res.region}</span>
+                    : <span className="text-slate-400 dark:text-slate-500">--</span>;
+            case 'owner':
+                return res.owner
+                    ? <span className="text-slate-600 dark:text-slate-300">{res.owner}</span>
+                    : <span className="text-slate-400 dark:text-slate-500">--</span>;
+            case 'last_check_in_at':
+                return (
+                    <span
+                        className="text-slate-500 dark:text-slate-400"
+                        title={new Date(res.last_check_in_at).toLocaleString()}
+                    >
+                        {formatRelativeTime(res.last_check_in_at)}
+                    </span>
+                );
             default:
-                return <span className="text-slate-500">--</span>;
+                return <span className="text-slate-400 dark:text-slate-500">--</span>;
         }
     };
 
@@ -338,18 +550,6 @@ const ResourceListPage: React.FC = () => {
                                 </th>
                                 {visibleColumns.map(key => {
                                     const column = allColumns.find(c => c.key === key);
-                                    const getColumnWidth = (columnKey: string) => {
-                                        switch (columnKey) {
-                                            case 'status': return 'w-20'; // 狀態欄位較窄
-                                            case 'name': return 'w-48'; // 名稱欄位較寬
-                                            case 'type': return 'w-32'; // 類型欄位中等寬度
-                                            case 'provider': return 'w-24'; // 供應商欄位較窄
-                                            case 'region': return 'w-24'; // 地區欄位較窄
-                                            case 'owner': return 'w-28'; // 擁有者欄位中等寬度
-                                            case 'last_check_in_at': return 'w-32'; // 最後簽入欄位中等寬度
-                                            default: return 'w-24'; // 其他欄位預設寬度
-                                        }
-                                    };
                                     return (
                                         <SortableColumnHeaderCell
                                             key={key}
@@ -376,25 +576,11 @@ const ResourceListPage: React.FC = () => {
                                             className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded"
                                             checked={selectedIds.includes(res.id)} onChange={(e) => handleSelectOne(e, res.id)} />
                                     </td>
-                                    {visibleColumns.map(key => {
-                                        const getColumnWidth = (columnKey: string) => {
-                                            switch (columnKey) {
-                                                case 'status': return 'w-20'; // 狀態欄位較窄
-                                                case 'name': return 'w-48'; // 名稱欄位較寬
-                                                case 'type': return 'w-32'; // 類型欄位中等寬度
-                                                case 'provider': return 'w-24'; // 供應商欄位較窄
-                                                case 'region': return 'w-24'; // 地區欄位較窄
-                                                case 'owner': return 'w-28'; // 擁有者欄位中等寬度
-                                                case 'last_check_in_at': return 'w-32'; // 最後簽入欄位中等寬度
-                                                default: return 'w-24'; // 其他欄位預設寬度
-                                            }
-                                        };
-                                        return (
-                                            <td key={key} className={`px-6 py-4 ${getColumnWidth(key)}`}>
-                                                {renderCellContent(res, key)}
-                                            </td>
-                                        );
-                                    })}
+                                    {visibleColumns.map(key => (
+                                        <td key={key} className={`px-6 py-4 ${getColumnWidth(key)}`}>
+                                            {renderCellContent(res, key)}
+                                        </td>
+                                    ))}
                                     <td className="px-6 py-4 text-center">
                                         <div className="flex items-center justify-center gap-1.5">
                                             <IconButton
@@ -435,7 +621,7 @@ const ResourceListPage: React.FC = () => {
                 isOpen={!!resource_id}
                 onClose={handleCloseDrawer}
                 title={resources.find(res => res.id === resource_id)?.name || "載入中..."}
-                width="w-3/5"
+                width="w-full max-w-6xl"
             >
                 {resource_id && <ResourceDetailPage resource_id={resource_id} />}
             </Drawer>
@@ -487,6 +673,51 @@ const ResourceListPage: React.FC = () => {
                 templateHeaders={['id', 'name', 'status', 'type', 'provider', 'region', 'owner']}
                 templateFilename="resources-template.csv"
             />
+            <Drawer
+                isOpen={isEventDrawerOpen}
+                onClose={handleCloseEventDrawer}
+                title={eventDrawerResource ? `${eventDrawerResource.name} 事件清單` : '事件清單'}
+                width="w-full max-w-2xl"
+            >
+                {eventDrawerResource ? (
+                    eventDrawerItems.length > 0 ? (
+                        <div className="space-y-4">
+                            {eventDrawerItems.map(event => {
+                                const tone = EVENT_SEVERITY_STYLES[event.severity];
+                                return (
+                                    <div
+                                        key={event.id}
+                                        className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition dark:border-slate-700 dark:bg-slate-900"
+                                    >
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <span className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-semibold ${tone.badge}`}>
+                                                    <span className={`h-2 w-2 rounded-full ${tone.dot}`} />
+                                                    {tone.label}
+                                                </span>
+                                                <span
+                                                    className="text-xs text-slate-500 dark:text-slate-400"
+                                                    title={new Date(event.occurred_at).toLocaleString()}
+                                                >
+                                                    {formatRelativeTime(event.occurred_at)}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{event.title}</h4>
+                                                <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">{event.summary}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="rounded-lg border border-slate-200 bg-white p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                            最近 24 小時內沒有事件。
+                        </div>
+                    )
+                ) : null}
+            </Drawer>
             <ResourceAnalysisModal
                 isOpen={isAnalysisModalOpen}
                 onClose={() => setIsAnalysisModalOpen(false)}
