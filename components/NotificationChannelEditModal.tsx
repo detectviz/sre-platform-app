@@ -95,12 +95,13 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
     const [isTesting, setIsTesting] = useState(false);
     const { options, isLoading: isLoadingOptions } = useOptions();
     const channelOptions = options?.notification_channels;
+    const getDefaultType = () => channelOptions?.channel_types[0]?.value ?? 'email';
 
     useEffect(() => {
         if (isOpen) {
             setIsTokenVisible(false); // Reset token visibility on open
             if (!isLoadingOptions && channelOptions) {
-                const defaultType = channelOptions.channel_types[0]?.value || 'Email';
+                const defaultType = getDefaultType();
                 setFormData(channel || {
                     name: '',
                     type: defaultType,
@@ -174,8 +175,8 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
     };
 
     const renderDynamicFields = () => {
-        switch (formData.type) {
-            case 'Email':
+        switch (formData.type ?? getDefaultType()) {
+            case 'email':
                 return (
                     <>
                         <MultiEmailInput
@@ -201,7 +202,7 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
                         />
                     </>
                 );
-            case 'Webhook (通用)':
+            case 'webhook':
                 return (
                     <>
                         <FormRow label="Webhook URL *">
@@ -224,13 +225,13 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
                                 disabled={isLoadingOptions}
                             >
                                 {isLoadingOptions ? <option>載入中...</option> : channelOptions?.http_methods.map(method => (
-                                    <option key={method} value={method}>{method}</option>
+                                    <option key={method} value={method}>{method.toUpperCase()}</option>
                                 ))}
                             </select>
                         </FormRow>
                     </>
                 );
-            case 'Slack':
+            case 'slack':
                 return (
                     <>
                         <FormRow label="Incoming Webhook URL *">
@@ -259,7 +260,7 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
                         </FormRow>
                     </>
                 );
-            case 'LINE Notify':
+            case 'line':
                 return (
                     <FormRow label="存取權杖 (Access Token) *">
                         <div className="relative">
@@ -282,7 +283,7 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
                         <p className="mt-1 text-xs text-slate-500">請貼上 LINE Notify 取得的 Access Token，點擊右側圖示可顯示或隱藏內容。</p>
                     </FormRow>
                 );
-            case 'SMS':
+            case 'sms':
                 return (
                     <FormRow label="收件人手機號碼 *">
                         <div className="flex gap-2">
@@ -313,7 +314,7 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
                     </FormRow>
                 );
             default:
-                return <div className="p-4 text-center text-slate-400">此通知類型目前無額外設定。</div>;
+                return <div className="p-4 text-center text-slate-400">此管道類型目前無額外設定。</div>;
         }
     };
 

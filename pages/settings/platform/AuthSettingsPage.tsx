@@ -202,19 +202,6 @@ const AuthSettingsPage: React.FC = () => {
                     />
                 </FormRow>
 
-                <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-white">端點 URL</h3>
-                    <FormRow label="授權端點（Authorization Endpoint）">
-                        <ReadOnlyInput value={settings.auth_url} monospace />
-                    </FormRow>
-                    <FormRow label="令牌端點（Token Endpoint）">
-                        <ReadOnlyInput value={settings.token_url} monospace />
-                    </FormRow>
-                    <FormRow label="使用者資訊端點（UserInfo Endpoint）">
-                        <ReadOnlyInput value={settings.user_info_url} monospace />
-                    </FormRow>
-                </div>
-
                 <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
                     <h4 className="text-sm font-semibold text-white">安全建議</h4>
                     <ul className="mt-2 space-y-1.5 text-xs text-slate-400 list-disc list-inside">

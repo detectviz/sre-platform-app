@@ -22,6 +22,8 @@ import IconButton from '../../../components/IconButton';
 import Drawer from '../../../components/Drawer';
 import { formatRelativeTime } from '../../../utils/time';
 import QuickFilterBar, { QuickFilterOption } from '../../../components/QuickFilterBar';
+import SortableColumnHeaderCell from '../../../components/SortableColumnHeaderCell';
+import useTableSorting from '../../../hooks/useTableSorting';
 
 const PAGE_IDENTIFIER = 'personnel';
 
@@ -60,6 +62,8 @@ const PersonnelManagementPage: React.FC = () => {
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
 
+    const { sortConfig, sortParams, handleSort } = useTableSorting({ defaultSortKey: 'last_login_at', defaultSortDirection: 'desc' });
+
     const fetchUsers = useCallback(async () => {
         if (!pageKey) return;
         setIsLoading(true);
@@ -69,6 +73,7 @@ const PersonnelManagementPage: React.FC = () => {
                 page: currentPage,
                 page_size: pageSize,
                 ...filters,
+                ...sortParams,
             };
 
             const [usersRes, columnConfigRes, allColumnsRes] = await Promise.all([
@@ -94,7 +99,7 @@ const PersonnelManagementPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, filters, pageKey]);
+    }, [currentPage, pageSize, filters, pageKey, sortParams]);
 
     useEffect(() => {
         if (pageKey) {
@@ -347,9 +352,18 @@ const PersonnelManagementPage: React.FC = () => {
                                         onChange={handleSelectAll}
                                     />
                                 </th>
-                                {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
-                                ))}
+                                {visibleColumns.map(key => {
+                                    const column = allColumns.find(c => c.key === key);
+                                    return (
+                                        <SortableColumnHeaderCell
+                                            key={key}
+                                            column={column}
+                                            columnKey={key}
+                                            sortConfig={sortConfig}
+                                            onSort={handleSort}
+                                        />
+                                    );
+                                })}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
                         </thead>

@@ -24,6 +24,8 @@ import { useOptions } from '../../contexts/OptionsContext';
 import { formatRelativeTime } from '../../utils/time';
 import StatusTag from '../../components/StatusTag';
 import IconButton from '../../components/IconButton';
+import SortableColumnHeaderCell from '../../components/SortableColumnHeaderCell';
+import useTableSorting from '../../hooks/useTableSorting';
 
 const PAGE_IDENTIFIER = 'resources';
 
@@ -81,6 +83,8 @@ const ResourceListPage: React.FC = () => {
         value.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())
     ), []);
 
+    const { sortConfig, sortParams, handleSort } = useTableSorting();
+
     const fetchResources = useCallback(async () => {
         if (!pageKey) return;
         setIsLoading(true);
@@ -90,6 +94,7 @@ const ResourceListPage: React.FC = () => {
                 page: currentPage,
                 page_size: pageSize,
                 ...filters,
+                ...sortParams,
             };
             const [resourcesRes, columnConfigRes, allColumnsRes] = await Promise.all([
                 api.get<{ items: Resource[], total: number }>('/resources', { params }),
@@ -114,7 +119,7 @@ const ResourceListPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, filters, pageKey]);
+    }, [currentPage, pageSize, filters, pageKey, sortParams]);
 
     useEffect(() => {
         if (pageKey) {
@@ -333,8 +338,8 @@ const ResourceListPage: React.FC = () => {
                                 </th>
                                 {visibleColumns.map(key => {
                                     const column = allColumns.find(c => c.key === key);
-                                    const getColumnWidth = (key: string) => {
-                                        switch (key) {
+                                    const getColumnWidth = (columnKey: string) => {
+                                        switch (columnKey) {
                                             case 'status': return 'w-20'; // 狀態欄位較窄
                                             case 'name': return 'w-48'; // 名稱欄位較寬
                                             case 'type': return 'w-32'; // 類型欄位中等寬度
@@ -346,9 +351,14 @@ const ResourceListPage: React.FC = () => {
                                         }
                                     };
                                     return (
-                                        <th key={key} scope="col" className={`px-6 py-3 ${getColumnWidth(key)}`}>
-                                            {column?.label || key}
-                                        </th>
+                                        <SortableColumnHeaderCell
+                                            key={key}
+                                            column={column}
+                                            columnKey={key}
+                                            sortConfig={sortConfig}
+                                            onSort={handleSort}
+                                            className={getColumnWidth(key)}
+                                        />
                                     );
                                 })}
                                 <th scope="col" className="px-6 py-3 text-center w-32">操作</th>
@@ -367,8 +377,8 @@ const ResourceListPage: React.FC = () => {
                                             checked={selectedIds.includes(res.id)} onChange={(e) => handleSelectOne(e, res.id)} />
                                     </td>
                                     {visibleColumns.map(key => {
-                                        const getColumnWidth = (key: string) => {
-                                            switch (key) {
+                                        const getColumnWidth = (columnKey: string) => {
+                                            switch (columnKey) {
                                                 case 'status': return 'w-20'; // 狀態欄位較窄
                                                 case 'name': return 'w-48'; // 名稱欄位較寬
                                                 case 'type': return 'w-32'; // 類型欄位中等寬度

@@ -12,9 +12,25 @@ interface SortableHeaderProps {
 const SortableHeader: React.FC<SortableHeaderProps> = ({ label, sortKey, sortConfig, onSort, className = '' }) => {
   const isSorted = sortConfig?.key === sortKey;
   const direction = isSorted ? sortConfig.direction : null;
+  const ariaSort = isSorted ? (direction === 'asc' ? 'ascending' : 'descending') : 'none';
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTableCellElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onSort(sortKey);
+    }
+  };
 
   return (
-    <th scope="col" className={`px-6 py-3 cursor-pointer select-none group ${className}`} onClick={() => onSort(sortKey)}>
+    <th
+      scope="col"
+      aria-sort={ariaSort}
+      tabIndex={0}
+      role="button"
+      className={`px-6 py-3 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 group ${className}`.trim()}
+      onClick={() => onSort(sortKey)}
+      onKeyDown={handleKeyDown}
+    >
       <div className="flex items-center">
         {label}
         {isSorted ? (

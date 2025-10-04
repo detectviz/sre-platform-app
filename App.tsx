@@ -3,7 +3,7 @@
 
 
 import React, { useEffect, useState } from 'react';
-import { HashRouter, Routes, Route, useLocation, Navigate, Outlet } from 'react-router-dom';
+import { HashRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import AppLayout from './layouts/AppLayout';
 import PageWithTabsLayout from './layouts/PageWithTabsLayout';
 import SREWarRoomPage from './pages/SREWarRoomPage';
@@ -18,7 +18,6 @@ import ResourceTopologyPage from './pages/resources/ResourceTopologyPage';
 import ResourceDetailPage from './pages/resources/ResourceDetailPage';
 import AutomationPlaybooksPage from './pages/automation/AutomationPlaybooksPage';
 import AutomationHistoryPage from './pages/automation/AutomationHistoryPage';
-import AnalysisOverviewPage from './pages/analysis/AnalysisOverviewPage';
 import PersonnelManagementPage from './pages/settings/identity-access/PersonnelManagementPage';
 import TeamManagementPage from './pages/settings/identity-access/TeamManagementPage';
 import RoleManagementPage from './pages/settings/identity-access/RoleManagementPage';
@@ -171,7 +170,7 @@ const AppRoutes: React.FC = () => {
           </Route>
 
           <Route path="analyzing" element={<PageWithTabsLayout title={pageLayouts.analysis.title} description={pageLayouts.analysis.description} kpi_page_name={pageLayouts.analysis.kpi_page_name} tabs={tabConfigs?.analysis || []} />}>
-            <Route index element={<AnalysisOverviewPage />} />
+            <Route index element={<Navigate to="/analyzing/logs" replace />} />
             <Route path="logs" element={<LogExplorerPage />} />
             <Route path="capacity" element={<CapacityPlanningPage />} />
             <Route path="backtesting" element={<BacktestingPage />} />

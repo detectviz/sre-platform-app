@@ -21,6 +21,8 @@ import ImportFromCsvModal from '../../components/ImportFromCsvModal';
 import { useContent } from '../../contexts/ContentContext';
 import StatusTag, { type StatusTagProps } from '../../components/StatusTag';
 import IconButton from '../../components/IconButton';
+import SortableColumnHeaderCell from '../../components/SortableColumnHeaderCell';
+import useTableSorting from '../../hooks/useTableSorting';
 
 const PAGE_IDENTIFIER = 'dashboards';
 
@@ -57,6 +59,8 @@ const DashboardListPage: React.FC = () => {
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
 
+    const { sortConfig, sortParams, handleSort } = useTableSorting({ defaultSortKey: 'updated_at', defaultSortDirection: 'desc' });
+
     const fetchDashboards = useCallback(async () => {
         if (!pageKey || !pageContent) return;
         setIsLoading(true);
@@ -65,7 +69,8 @@ const DashboardListPage: React.FC = () => {
             const params: any = {
                 page: currentPage,
                 page_size: pageSize,
-                ...filters
+                ...filters,
+                ...sortParams,
             };
 
             const [dashboardsRes, columnsRes, allColumnsRes] = await Promise.all([
@@ -84,7 +89,7 @@ const DashboardListPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, filters, pageKey, pageContent]);
+    }, [currentPage, pageSize, filters, pageKey, pageContent, sortParams]);
 
     useEffect(() => {
         if (pageKey && pageContent) {
@@ -344,8 +349,8 @@ const DashboardListPage: React.FC = () => {
                                 </th>
                                 {visibleColumns.map(key => {
                                     const column = allColumns.find(c => c.key === key);
-                                    const getColumnWidth = (key: string) => {
-                                        switch (key) {
+                                    const getColumnWidth = (columnKey: string) => {
+                                        switch (columnKey) {
                                             case 'name': return 'w-72'; // 儀表板名稱欄位較寬（增加空間）
                                             case 'type': return 'w-24'; // 類型欄位稍寬
                                             case 'category': return 'w-36'; // 分類欄位中等寬度（增加空間）
@@ -355,9 +360,14 @@ const DashboardListPage: React.FC = () => {
                                         }
                                     };
                                     return (
-                                        <th key={key} scope="col" className={`px-6 py-3 ${getColumnWidth(key)}`}>
-                                            {column?.label || key}
-                                        </th>
+                                        <SortableColumnHeaderCell
+                                            key={key}
+                                            column={column}
+                                            columnKey={key}
+                                            sortConfig={sortConfig}
+                                            onSort={handleSort}
+                                            className={getColumnWidth(key)}
+                                        />
                                     );
                                 })}
                                 <th scope="col" className="px-6 py-3 text-center w-32">{globalContent.OPERATIONS}</th>

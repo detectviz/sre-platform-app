@@ -16,6 +16,8 @@ import { useOptions } from '../../contexts/OptionsContext';
 import StatusTag from '../../components/StatusTag';
 import IconButton from '../../components/IconButton';
 import { formatRelativeTime } from '../../utils/time';
+import SortableColumnHeaderCell from '../../components/SortableColumnHeaderCell';
+import useTableSorting from '../../hooks/useTableSorting';
 
 const PAGE_IDENTIFIER = 'automation_playbooks';
 
@@ -62,6 +64,8 @@ const AutomationPlaybooksPage: React.FC = () => {
 
 
 
+    const { sortConfig, sortParams, handleSort } = useTableSorting({ defaultSortKey: 'updated_at', defaultSortDirection: 'desc' });
+
     const fetchPlaybooks = useCallback(async () => {
         if (!pageKey) return;
         setIsLoading(true);
@@ -70,6 +74,7 @@ const AutomationPlaybooksPage: React.FC = () => {
             const params = {
                 page: currentPage,
                 page_size: pageSize,
+                ...sortParams,
             };
 
             const [playbooksRes, columnConfigRes, allColumnsRes] = await Promise.all([
@@ -92,7 +97,7 @@ const AutomationPlaybooksPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [pageKey, currentPage, pageSize]);
+    }, [pageKey, currentPage, pageSize, sortParams]);
 
     useEffect(() => {
         if (pageKey) {
@@ -277,9 +282,18 @@ const AutomationPlaybooksPage: React.FC = () => {
                                     <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
                                         checked={isAllSelected} ref={el => { if (el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
-                                {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
-                                ))}
+                                {visibleColumns.map(key => {
+                                    const column = allColumns.find(c => c.key === key);
+                                    return (
+                                        <SortableColumnHeaderCell
+                                            key={key}
+                                            column={column}
+                                            columnKey={key}
+                                            sortConfig={sortConfig}
+                                            onSort={handleSort}
+                                        />
+                                    );
+                                })}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
                         </thead>

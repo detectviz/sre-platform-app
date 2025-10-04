@@ -18,6 +18,8 @@ import { usePageMetadata } from '../../contexts/PageMetadataContext';
 import RuleAnalysisModal from '../../components/RuleAnalysisModal';
 import { useOptions } from '../../contexts/OptionsContext';
 import StatusTag from '../../components/StatusTag';
+import SortableColumnHeaderCell from '../../components/SortableColumnHeaderCell';
+import useTableSorting from '../../hooks/useTableSorting';
 
 const PAGE_IDENTIFIER = 'alert_rules';
 
@@ -51,6 +53,8 @@ const AlertRulePage: React.FC = () => {
     const { options } = useOptions();
     const alertRuleOptions = options?.alert_rules;
 
+    const { sortConfig, sortParams, handleSort } = useTableSorting({ defaultSortKey: 'updated_at', defaultSortDirection: 'desc' });
+
     const fetchRules = useCallback(async () => {
         if (!pageKey) return;
         setIsLoading(true);
@@ -60,6 +64,7 @@ const AlertRulePage: React.FC = () => {
                 page: currentPage,
                 page_size: pageSize,
                 ...filters,
+                ...sortParams,
             };
 
             const [rulesRes, columnConfigRes, allColumnsRes] = await Promise.all([
@@ -82,7 +87,7 @@ const AlertRulePage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [filters, pageKey, currentPage, pageSize]);
+    }, [filters, pageKey, currentPage, pageSize, sortParams]);
 
     useEffect(() => {
         if (pageKey) {
@@ -338,9 +343,18 @@ const AlertRulePage: React.FC = () => {
                                         onChange={handleSelectAll}
                                     />
                                 </th>
-                                {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
-                                ))}
+                                {visibleColumns.map(key => {
+                                    const column = allColumns.find(c => c.key === key);
+                                    return (
+                                        <SortableColumnHeaderCell
+                                            key={key}
+                                            column={column}
+                                            columnKey={key}
+                                            sortConfig={sortConfig}
+                                            onSort={handleSort}
+                                        />
+                                    );
+                                })}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
                         </thead>

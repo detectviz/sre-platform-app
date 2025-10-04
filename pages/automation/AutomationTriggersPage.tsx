@@ -16,6 +16,8 @@ import { useOptions } from '../../contexts/OptionsContext';
 import StatusTag from '../../components/StatusTag';
 import IconButton from '../../components/IconButton';
 import { formatRelativeTime } from '../../utils/time';
+import SortableColumnHeaderCell from '../../components/SortableColumnHeaderCell';
+import useTableSorting from '../../hooks/useTableSorting';
 
 const PAGE_IDENTIFIER = 'automation_triggers';
 
@@ -59,6 +61,8 @@ const AutomationTriggersPage: React.FC = () => {
         return [...columns, { key: 'last_execution', label: '上次執行結果' }];
     }, []);
 
+    const { sortConfig, sortParams, handleSort } = useTableSorting({ defaultSortKey: 'last_triggered_at', defaultSortDirection: 'desc' });
+
     const fetchTriggersAndPlaybooks = useCallback(async () => {
         if (!pageKey) return;
         setIsLoading(true);
@@ -68,6 +72,7 @@ const AutomationTriggersPage: React.FC = () => {
                 page: currentPage,
                 page_size: pageSize,
                 ...filters,
+                ...sortParams,
             };
             const [triggersRes, playbooksRes, columnConfigRes, allColumnsRes, executionsRes] = await Promise.all([
                 api.get<{ items: AutomationTrigger[], total: number }>('/automation/triggers', { params }),
@@ -104,7 +109,7 @@ const AutomationTriggersPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [filters, pageKey, currentPage, pageSize, ensureLastExecutionColumn]);
+    }, [filters, pageKey, currentPage, pageSize, ensureLastExecutionColumn, sortParams]);
 
     useEffect(() => {
         if (pageKey) {
@@ -309,9 +314,18 @@ const AutomationTriggersPage: React.FC = () => {
                                     <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
                                         checked={isAllSelected} ref={el => { if (el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
-                                {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
-                                ))}
+                                {visibleColumns.map(key => {
+                                    const column = allColumns.find(c => c.key === key);
+                                    return (
+                                        <SortableColumnHeaderCell
+                                            key={key}
+                                            column={column}
+                                            columnKey={key}
+                                            sortConfig={sortConfig}
+                                            onSort={handleSort}
+                                        />
+                                    );
+                                })}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
                         </thead>

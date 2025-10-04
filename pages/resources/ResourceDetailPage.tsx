@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import dayjs from 'dayjs';
 import { Link, useNavigate } from 'react-router-dom';
 import { Resource, Incident, MetricsData, IncidentSeverity } from '../../types';
 import Icon from '../../components/Icon';
@@ -123,25 +124,52 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resource_id }) 
   }, []);
 
   const getMetricOption = useCallback((title: string, data: [string, number][] | undefined, color: string) => ({
-    tooltip: { trigger: 'axis' },
-    xAxis: { type: 'time', splitLine: { show: false } },
-    yAxis: { type: 'value', min: 0, max: 100, axisLabel: { formatter: '{value}%' } },
+    tooltip: {
+      trigger: 'axis',
+      valueFormatter: (value: number | string) => `${value}%`,
+      borderColor: '#1e293b',
+      backgroundColor: '#0f172a',
+      textStyle: { color: '#e2e8f0' },
+    },
+    xAxis: {
+      type: 'time',
+      splitLine: { show: false },
+      boundaryGap: false,
+      axisLine: { lineStyle: { color: '#334155' } },
+      axisTick: { lineStyle: { color: '#475569' } },
+      axisLabel: {
+        color: '#cbd5f5',
+        fontSize: 11,
+        hideOverlap: true,
+        formatter: (value: number | string) => dayjs(value).format('HH:mm'),
+        margin: 12,
+      },
+    },
+    yAxis: {
+      type: 'value',
+      min: 0,
+      max: 100,
+      axisLine: { show: false },
+      splitLine: { lineStyle: { color: '#1e293b' } },
+      axisLabel: { formatter: '{value}%', color: '#cbd5f5', fontSize: 11 },
+    },
     series: [{
       name: title,
       type: 'line',
+      smooth: true,
       showSymbol: false,
       data: data || [],
-      lineStyle: { color },
+      lineStyle: { color, width: 2 },
       areaStyle: {
         color: typeof window !== 'undefined' && (window as any).echarts
           ? new (window as any).echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: toRgba(color, 0.3) },
+            { offset: 0, color: toRgba(color, 0.28) },
             { offset: 1, color: toRgba(color, 0) },
           ])
-          : color,
+          : toRgba(color, 0.18),
       },
     }],
-    grid: { left: '10%', right: '5%', top: '15%', bottom: '15%' },
+    grid: { left: 48, right: 20, top: 32, bottom: 36, containLabel: true },
   }), [toRgba]);
 
   const cpuOption = useMemo(
