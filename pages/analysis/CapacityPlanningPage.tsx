@@ -245,8 +245,8 @@ const CapacityPlanningPage: React.FC = () => {
                             <p className="mt-3 text-xs text-slate-400">橙色實線為預測趨勢，陰影區域對應信賴區間。</p>
                         </div>
                     </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div className="glass-card rounded-xl p-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        <div className="lg:col-span-1 glass-card rounded-xl p-6">
                             <h2 className="text-xl font-bold mb-4">{content?.AI_SUGGESTIONS_TITLE ?? 'AI 優化建議'}</h2>
                             <div className="space-y-4 max-h-[200px] overflow-y-auto pr-1">
                                 {data.suggestions.map(s => {
@@ -292,7 +292,7 @@ const CapacityPlanningPage: React.FC = () => {
                                 })}
                             </div>
                         </div>
-                        <div className="glass-card rounded-xl p-6 flex flex-col">
+                        <div className="lg:col-span-3 glass-card rounded-xl p-6 flex flex-col">
                             <h2 className="text-xl font-bold mb-4">{content?.DETAILED_ANALYSIS_TITLE ?? '詳細分析'}</h2>
                             <div className="flex-grow overflow-y-auto">
                                 <table className="w-full text-sm text-left text-slate-300">

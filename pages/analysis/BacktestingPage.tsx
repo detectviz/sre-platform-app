@@ -435,7 +435,7 @@ const BacktestingPage: React.FC = () => {
             legend: {
                 data: legendItems,
                 textStyle: { color: '#374151' },
-                top: 10,
+                bottom: 10,
                 icon: 'roundRect',
                 itemStyle: {
                     borderWidth: 0,
@@ -445,7 +445,7 @@ const BacktestingPage: React.FC = () => {
                 left: 60,
                 right: 40,
                 top: 50,
-                bottom: 70,
+                bottom: 80, // 為下方圖例留出更多空間
                 containLabel: false,
             },
             xAxis: {
@@ -492,9 +492,9 @@ const BacktestingPage: React.FC = () => {
                     },
                     markArea: markAreaData.length > 0
                         ? {
-                              silent: true,
-                              data: markAreaData,
-                          }
+                            silent: true,
+                            data: markAreaData,
+                        }
                         : undefined,
                 },
                 {
@@ -527,17 +527,17 @@ const BacktestingPage: React.FC = () => {
                 },
                 ...(markAreaData.length > 0
                     ? [
-                          {
-                              name: '標記事件時間段',
-                              type: 'line' as const,
-                              data: [],
-                              showSymbol: false,
-                              lineStyle: {
-                                  color: 'rgba(16, 185, 129, 0.5)',
-                                  width: 0,
-                              },
-                          },
-                      ]
+                        {
+                            name: '標記事件時間段',
+                            type: 'line' as const,
+                            data: [],
+                            showSymbol: false,
+                            lineStyle: {
+                                color: 'rgba(16, 185, 129, 0.5)',
+                                width: 0,
+                            },
+                        },
+                    ]
                     : []),
             ],
         };
@@ -583,7 +583,7 @@ const BacktestingPage: React.FC = () => {
                     <div className="space-y-4">
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                            <label className="text-sm font-medium text-slate-300">選擇告警規則</label>
+                                <label className="text-sm font-medium text-slate-300">選擇告警規則</label>
                                 <span className="text-xs text-slate-500">系統時區：{timezoneLabel}</span>
                             </div>
                             <SearchableSelect
@@ -615,7 +615,7 @@ const BacktestingPage: React.FC = () => {
                                         <span className="text-xs text-slate-500">
                                             更新時間：{dayjs(selectedRule.updated_at).format('YYYY/MM/DD HH:mm')}
                                         </span>
-                            </div>
+                                    </div>
                                     <p className="text-sm text-slate-200 leading-relaxed">
                                         {selectedRule.description || '此規則目前尚未提供描述。'}
                                     </p>
@@ -624,9 +624,9 @@ const BacktestingPage: React.FC = () => {
                                             條件摘要：{selectedRule.conditions_summary || '—'}
                                         </p>
                                     </Tooltip>
-                            </div>
+                                </div>
                             )}
-                    </div>
+                        </div>
 
                         <div>
                             <label className="text-sm font-medium text-slate-300 mb-2 block">選擇時間段</label>
@@ -696,8 +696,8 @@ const BacktestingPage: React.FC = () => {
                                                 placeholder="例如：服務更新導致負載上升"
                                             />
                                             <p className="mt-1 text-xs text-slate-500">建議使用 20 字以內的描述，方便列表辨識。</p>
-                        </div>
-                                    <div>
+                                        </div>
+                                        <div>
                                             <label className="text-xs font-medium text-slate-400">時間段</label>
                                             <DatePicker.RangePicker
                                                 value={eventDateRange}
@@ -771,16 +771,16 @@ const BacktestingPage: React.FC = () => {
                         </div>
                     )}
 
-                        {!results && (
-                            <div className="flex flex-col items-center justify-center text-slate-500 py-12 space-y-3">
-                                <Icon name="line-chart" className="w-10 h-10" />
-                                <p className="text-sm">尚未執行回放或結果尚未產出。</p>
-                                <p className="text-xs">選擇規則與時間範圍後點擊「執行回放」。</p>
-                            </div>
-                        )}
+                    {!results && (
+                        <div className="flex flex-col items-center justify-center text-slate-500 py-12 space-y-3">
+                            <Icon name="line-chart" className="w-10 h-10" />
+                            <p className="text-sm">尚未執行回放或結果尚未產出。</p>
+                            <p className="text-xs">選擇規則與時間範圍後點擊「執行回放」。</p>
+                        </div>
+                    )}
 
-                        {results && activeRule && (
-                            <>
+                    {results && activeRule && (
+                        <>
                             {/* 圖表區域 */}
                             {chartOption ? (
                                 <div className="h-80 bg-gray-200 border border-slate-700 rounded-md p-4">
@@ -845,7 +845,7 @@ const BacktestingPage: React.FC = () => {
                                 <p className="text-xs text-slate-500 mt-2 text-center">
                                     進階指標將在未來版本中提供更詳細的告警效能分析
                                 </p>
-                                    </div>
+                            </div>
 
                             {/* 觸發時間點詳情 */}
                             <div className="border-t border-slate-800 pt-4">
@@ -853,21 +853,21 @@ const BacktestingPage: React.FC = () => {
                                 {activeRule.trigger_points.length === 0 ? (
                                     <p className="text-center text-slate-500 py-4">此時間範圍內未觸發任何告警。</p>
                                 ) : (
-                                        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                                            {activeRule.trigger_points.map(point => (
+                                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                        {activeRule.trigger_points.map(point => (
                                             <div
                                                 key={`${point.timestamp}-${point.value}`}
                                                 className="flex items-center justify-between rounded-md border border-slate-800 bg-slate-900/40 px-3 py-2 text-sm"
                                             >
                                                 <span className="text-slate-300">{formatDisplayTime(point.timestamp)}</span>
                                                 <span className="font-bold text-slate-300">{point.value}%</span>
-                                                    </div>
-                                                ))}
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
                             </div>
-                            </>
-                        )}
+                        </>
+                    )}
                 </div>
             </div>
         </div>

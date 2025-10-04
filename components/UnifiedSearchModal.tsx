@@ -11,6 +11,12 @@ import api from '../services/api';
 import { useOptions } from '../contexts/OptionsContext';
 import { useContent } from '../contexts/ContentContext';
 
+export interface DatasourceFilters {
+  keyword?: string;
+  type?: string;
+  status?: string;
+}
+
 export interface IncidentFilters {
   keyword?: string;
   status?: IncidentStatus;
@@ -33,10 +39,10 @@ export interface SilenceRuleFilters {
   enabled?: boolean;
 }
 
-type Filters = IncidentFilters | AlertRuleFilters | SilenceRuleFilters | ResourceFilters | TagManagementFilters | AuditLogFilters | DashboardFilters | AutomationHistoryFilters | PersonnelFilters | ResourceGroupFilters | AutomationTriggerFilters | NotificationStrategyFilters | NotificationChannelFilters | NotificationHistoryFilters | LogExplorerFilters;
+type Filters = DatasourceFilters | IncidentFilters | AlertRuleFilters | SilenceRuleFilters | ResourceFilters | TagManagementFilters | AuditLogFilters | DashboardFilters | AutomationHistoryFilters | PersonnelFilters | ResourceGroupFilters | AutomationTriggerFilters | NotificationStrategyFilters | NotificationChannelFilters | NotificationHistoryFilters | LogExplorerFilters;
 
 interface UnifiedSearchModalProps {
-  page: 'incidents' | 'alert-rules' | 'silence-rules' | 'resources' | 'tag-management' | 'audit-logs' | 'dashboards' | 'automation-history' | 'personnel' | 'resource-groups' | 'automation-triggers' | 'notification-strategies' | 'notification-channels' | 'notification-history' | 'teams' | 'roles' | 'logs';
+  page: 'datasources' | 'incidents' | 'alert-rules' | 'silence-rules' | 'resources' | 'tag-management' | 'audit-logs' | 'dashboards' | 'automation-history' | 'personnel' | 'resource-groups' | 'automation-triggers' | 'notification-strategies' | 'notification-channels' | 'notification-history' | 'teams' | 'roles' | 'logs';
   isOpen: boolean;
   onClose: () => void;
   onSearch: (filters: Filters) => void;
@@ -164,6 +170,33 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
         <select value={(filters as SilenceRuleFilters).enabled === undefined ? '' : String((filters as SilenceRuleFilters).enabled)} onChange={e => setFilters(prev => ({ ...(prev as SilenceRuleFilters), enabled: e.target.value === '' ? undefined : e.target.value === 'true' }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
           <option value="">{globalContent.ALL}</option>
           {options?.silence_rules.statuses.map(opt => <option key={String(opt.value)} value={String(opt.value)}>{opt.label}</option>)}
+        </select>
+      </FormRow>
+    </>
+  );
+
+  const renderDatasourceFilters = () => (
+    <>
+      <FormRow label={globalContent.TYPE}>
+        <select
+          value={(filters as DatasourceFilters).type || ''}
+          onChange={e => setFilters(prev => ({ ...(prev as DatasourceFilters), type: e.target.value }))}
+          className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
+        >
+          <option value="">{content.ALL_TYPES}</option>
+          {options?.datasources.types.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+        </select>
+      </FormRow>
+      <FormRow label={globalContent.STATUS}>
+        <select
+          value={(filters as DatasourceFilters).status || ''}
+          onChange={e => setFilters(prev => ({ ...(prev as DatasourceFilters), status: e.target.value }))}
+          className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
+        >
+          <option value="">{content.ALL_STATUSES}</option>
+          <option value="ok">連線正常</option>
+          <option value="pending">測試中</option>
+          <option value="error">連線失敗</option>
         </select>
       </FormRow>
     </>
@@ -366,6 +399,7 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
           </div>
         ) : (
           <>
+            {page === 'datasources' && renderDatasourceFilters()}
             {page === 'incidents' && renderIncidentFilters()}
             {page === 'alert-rules' && renderAlertRuleFilters()}
             {page === 'silence-rules' && renderSilenceRuleFilters()}

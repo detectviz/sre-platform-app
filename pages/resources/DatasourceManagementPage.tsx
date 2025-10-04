@@ -23,6 +23,7 @@ import SearchableSelect from '../../components/SearchableSelect';
 import QuickFilterBar, { type QuickFilterOption } from '../../components/QuickFilterBar';
 import FormRow from '../../components/FormRow';
 import SearchInput from '../../components/SearchInput';
+import UnifiedSearchModal from '../../components/UnifiedSearchModal';
 import { DATASOURCE_STATUS_META } from '../../utils/datasource';
 import SortableHeader from '../../components/SortableHeader';
 import useTableSorting from '../../hooks/useTableSorting';
@@ -45,6 +46,7 @@ const DatasourceManagementPage: React.FC = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingDatasource, setDeletingDatasource] = useState<Datasource | null>(null);
   const [testingDatasourceId, setTestingDatasourceId] = useState<string | null>(null);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
   const { options } = useOptions();
   const datasourceOptions = options?.datasources;
@@ -194,6 +196,27 @@ const DatasourceManagementPage: React.FC = () => {
     });
   };
 
+  const handleUnifiedSearch = (newFilters: any) => {
+    // 將統一搜尋的篩選條件轉換為資料源篩選格式
+    const datasourceFilters: DatasourceFilters = {};
+
+    if (newFilters.keyword) {
+      datasourceFilters.keyword = newFilters.keyword;
+      setSearchTerm(newFilters.keyword);
+    }
+
+    if (newFilters.type) {
+      datasourceFilters.type = newFilters.type;
+    }
+
+    if (newFilters.status && newFilters.status !== 'all') {
+      datasourceFilters.status = newFilters.status as ConnectionStatus;
+    }
+
+    setFilters(datasourceFilters);
+    setIsSearchModalOpen(false);
+  };
+
   const handleResetFilters = () => {
     setSearchTerm('');
     setFilters({});
@@ -289,59 +312,26 @@ const DatasourceManagementPage: React.FC = () => {
         </div>
       )}
 
-      <div className="space-y-3 rounded-xl border border-slate-700/70 bg-slate-900/40 p-4">
-        <div className="grid gap-3 md:grid-cols-[minmax(0,360px)_minmax(0,260px)]">
-          <FormRow
-            className="flex flex-col gap-2"
-            label={<span>快速搜尋</span>}
-            description="輸入名稱、連線 URL 或標籤關鍵字進行模糊搜尋。"
+      {hasAppliedFilters && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-700/70 bg-slate-900/40 px-3 py-2">
+          <span className="text-xs text-slate-400">篩選條件：</span>
+          {appliedFilters.map(filter => (
+            <StatusTag key={filter.key} dense tone="neutral" label={filter.label} />
+          ))}
+          <button
+            type="button"
+            onClick={handleResetFilters}
+            className="text-xs font-medium text-sky-300 transition hover:text-sky-200"
           >
-            <SearchInput
-              value={searchTerm}
-              onChange={setSearchTerm}
-              placeholder="輸入名稱、URL 或標籤"
-              ariaLabel="搜尋資料來源"
-              className="w-full"
-            />
-          </FormRow>
-          <FormRow
-            className="flex flex-col gap-2"
-            label={(
-              <div className="flex items-center justify-between">
-                <span>資料來源類型</span>
-                {filters.type && (
-                  <button
-                    type="button"
-                    onClick={() => handleTypeFilterChange('')}
-                    className="text-[11px] font-medium text-sky-300 transition hover:text-sky-200"
-                  >
-                    清除
-                  </button>
-                )}
-              </div>
-            )}
-            description="依據來源型別快速縮小結果範圍。"
-          >
-            <SearchableSelect
-              value={filters.type || ''}
-              onChange={handleTypeFilterChange}
-              options={(datasourceOptions?.types || []).map(option => ({ value: option.value, label: option.label }))}
-              placeholder="輸入關鍵字搜尋類型"
-              emptyMessage="沒有符合的資料來源類型"
-            />
-          </FormRow>
+            清除全部
+          </button>
         </div>
-
-        <QuickFilterBar
-          label="連線狀態"
-          options={statusFilterOptions}
-          mode="single"
-          value={statusFilterValue}
-          onChange={handleStatusFilterChange}
-        />
-      </div>
+      )}
 
       <Toolbar
+        leftActions={(
+          <ToolbarButton icon="search" text="搜尋和篩選" onClick={() => setIsSearchModalOpen(true)} />
+        )}
         rightActions={(
           <>
             <ToolbarButton icon="refresh-cw" text="重新整理" onClick={fetchDatasources} disabled={isLoading} />
@@ -356,44 +346,51 @@ const DatasourceManagementPage: React.FC = () => {
             <thead className="sticky top-0 z-10 bg-slate-900/70 text-xs uppercase tracking-wider text-slate-400">
               <tr>
                 <SortableHeader
-                  label="名稱與標籤"
+                  label="名稱"
                   sortKey="name"
                   sortConfig={sortConfig}
                   onSort={handleSort}
-                  className="font-semibold"
+                  className="font-semibold w-52"
                 />
                 <SortableHeader
-                  label="類型 / 驗證"
+                  label="類型"
                   sortKey="type"
                   sortConfig={sortConfig}
                   onSort={handleSort}
-                  className="font-semibold"
+                  className="font-semibold w-28"
                 />
                 <SortableHeader
-                  label="連線狀態"
-                  sortKey="status"
+                  label="連線位址"
+                  sortKey="url"
                   sortConfig={sortConfig}
                   onSort={handleSort}
-                  className="font-semibold"
+                  className="font-semibold w-60"
                 />
                 <SortableHeader
-                  label="建立 / 更新時間"
+                  label="更新時間"
                   sortKey="updated_at"
                   sortConfig={sortConfig}
                   onSort={handleSort}
-                  className="font-semibold"
+                  className="font-semibold w-44"
                 />
-                <th className="px-6 py-3 text-center font-semibold">操作</th>
+                <SortableHeader
+                  label="狀態"
+                  sortKey="status"
+                  sortConfig={sortConfig}
+                  onSort={handleSort}
+                  className="font-semibold w-28"
+                />
+                <th className="px-6 py-3 text-center font-semibold w-36">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
               {isLoading ? (
-                <TableLoader colSpan={5} />
+                <TableLoader colSpan={6} />
               ) : error ? (
-                <TableError colSpan={5} message={error} onRetry={fetchDatasources} />
+                <TableError colSpan={6} message={error} onRetry={fetchDatasources} />
               ) : hasNoData ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-20 text-center text-slate-400">
+                  <td colSpan={6} className="px-6 py-20 text-center text-slate-400">
                     <div className="mx-auto flex max-w-md flex-col items-center gap-3">
                       <Icon name="database" className="h-10 w-10 text-slate-500" />
                       <p className="text-base font-semibold text-slate-200">尚未建立任何資料來源</p>
@@ -408,90 +405,62 @@ const DatasourceManagementPage: React.FC = () => {
                   const statusMeta = DATASOURCE_STATUS_META[ds.status];
                   return (
                     <tr key={ds.id} className="hover:bg-slate-800/40">
-                      <td className="px-6 py-4 align-top">
+                      <td className="px-6 py-4 align-top w-52">
                         <div className="flex flex-col gap-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-base font-semibold text-white">{ds.name}</span>
-                            <IconButton
-                              icon="copy"
-                              label={`複製 ${ds.name} URL`}
-                              tooltip="複製 URL"
-                              onClick={() => {
-                                if (typeof navigator !== 'undefined' && navigator?.clipboard?.writeText) {
-                                  navigator.clipboard
-                                    .writeText(ds.url)
-                                    .then(() => {
-                                      showToast('已複製連線 URL。', 'success');
-                                    })
-                                    .catch(() => {
-                                      showToast('複製失敗，請手動選取。', 'error');
-                                    });
-                                } else {
-                                  showToast('瀏覽器不支援快速複製，請手動選取 URL。', 'warning');
-                                }
-                              }}
-                              tone="primary"
-                            />
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-slate-400">
-                            <Icon name="link" className="h-3.5 w-3.5" />
-                            <span className="truncate" title={ds.url}>{ds.url}</span>
-                          </div>
-                          {ds.tags && ds.tags.length > 0 ? (
-                            <div className="flex flex-wrap gap-1.5 pt-1">
-                              {ds.tags.map(tag => (
-                                <span
-                                  key={tag.id}
-                                  className="rounded-full bg-slate-800/80 px-2 py-1 text-[11px] font-medium text-slate-200"
-                                >
-                                  {tag.key} = {tag.value}
-                                </span>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-xs text-slate-500">尚未設定標籤</span>
-                          )}
+                          <span className="text-sm font-semibold text-white">{ds.name}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 align-top">
-                        <div className="flex flex-col gap-2">
+                      <td className="px-6 py-4 align-top w-28">
+                        <div className="w-fit">
                           <StatusTag
                             label={typeMeta?.label || ds.type}
                             className={typeMeta?.className}
                             dense
                             tooltip="資料來源類型"
                           />
-                          <span className="text-xs text-slate-400">驗證方式：{authLabel}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 align-top">
-                        <div className="flex flex-col gap-2">
+                      <td className="px-6 py-4 align-top w-60">
+                        <div className="flex items-center gap-2 text-slate-400">
+                          <span className="truncate flex-1" title={ds.url}>{ds.url}</span>
+                          <IconButton
+                            icon="copy"
+                            label={`複製 ${ds.name} 連線位址`}
+                            tooltip="複製連線位址"
+                            onClick={() => {
+                              if (typeof navigator !== 'undefined' && navigator?.clipboard?.writeText) {
+                                navigator.clipboard
+                                  .writeText(ds.url)
+                                  .then(() => {
+                                    showToast('已複製連線位址。', 'success');
+                                  })
+                                  .catch(() => {
+                                    showToast('複製失敗，請手動選取。', 'error');
+                                  });
+                              } else {
+                                showToast('瀏覽器不支援快速複製，請手動選取連線位址。', 'warning');
+                              }
+                            }}
+                            tone="neutral"
+                            size="sm"
+                          />
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 align-top w-44 text-slate-300">
+                        <span title={ds.updated_at}>{ds.updated_at}</span>
+                      </td>
+                      <td className="px-6 py-4 align-top w-28">
+                        <div className="w-fit">
                           <StatusTag
                             label={statusMeta.label}
                             tone={statusMeta.tone}
-                            icon={statusMeta.icon}
                             dense
                             tooltip={statusMeta.description}
                           />
-                          <span className="text-xs text-slate-500">最近測試結果會即時反映於此。</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 align-top text-xs text-slate-300">
-                        <div className="flex flex-col gap-1.5">
-                          <span title={ds.created_at}>建立：{formatDateTime(ds.created_at)}</span>
-                          <span title={ds.updated_at}>更新：{formatDateTime(ds.updated_at)}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 align-top">
+                      <td className="px-6 py-4 align-top w-36">
                         <div className="flex items-center justify-center gap-2">
-                          <IconButton
-                            icon="plug-zap"
-                            label={`測試 ${ds.name} 連線`}
-                            tooltip="測試連線"
-                            onClick={() => handleTestConnection(ds)}
-                            tone="primary"
-                            isLoading={testingDatasourceId === ds.id}
-                          />
                           <IconButton
                             icon="edit-3"
                             label={`編輯 ${ds.name}`}
@@ -570,6 +539,18 @@ const DatasourceManagementPage: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      <UnifiedSearchModal
+        page="datasources"
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+        onSearch={handleUnifiedSearch}
+        initialFilters={{
+          keyword: searchTerm,
+          type: filters.type,
+          status: filters.status || 'all',
+        }}
+      />
     </div>
   );
 };
