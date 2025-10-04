@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import ContextualKPICard from './ContextualKPICard';
+import KpiCard from './KpiCard';
 import Icon from './Icon';
-import { LayoutWidget } from '../types';
+import { LayoutWidget, KpiDataEntry } from '../types';
 import api from '../services/api';
 
 interface PageKPIsProps {
@@ -9,12 +9,7 @@ interface PageKPIsProps {
   widget_ids?: string[];
 }
 
-interface KpiDataItem {
-  value: string;
-  description: string;
-  icon: string;
-  icon_bg_color: string;
-}
+type KpiDataItem = KpiDataEntry;
 
 interface LayoutsData {
   [key: string]: {
@@ -93,9 +88,9 @@ const PageKPIs: React.FC<PageKPIsProps> = ({ pageName, widget_ids: explicit_widg
 
   const getWidgetById = (id: string): LayoutWidget | undefined => widgets.find(w => w.id === id);
 
-  const renderDescription = (descriptionText: string): React.ReactNode => {
+  const renderDescription = (descriptionText?: string): React.ReactNode => {
     if (typeof descriptionText !== 'string' || !descriptionText) {
-      return descriptionText; // Return original value if not a processable string
+      return descriptionText ?? null;
     }
 
     const localizedText = descriptionText
@@ -141,13 +136,15 @@ const PageKPIs: React.FC<PageKPIsProps> = ({ pageName, widget_ids: explicit_widg
         }
 
         return (
-          <ContextualKPICard
+          <KpiCard
             key={id}
             title={widget.name}
             value={data.value}
+            unit={data.unit}
             description={renderDescription(data.description)}
-            icon={data.icon}
-            icon_bg_color={data.icon_bg_color}
+            color={data.color}
+            trend={data.trend ?? null}
+            change={data.change}
           />
         );
       })}

@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import Icon from '../../components/Icon';
 import api from '../../services/api';
-import { LayoutWidget, Dashboard, DashboardTemplate, DashboardLayoutItem } from '../../types';
-import ContextualKPICard from '../../components/ContextualKPICard';
+import { LayoutWidget, Dashboard, DashboardTemplate, DashboardLayoutItem, KpiDataEntry } from '../../types';
+import KpiCard from '../../components/KpiCard';
 import Modal from '../../components/Modal';
 import { showToast } from '../../services/toast';
 import { useUser } from '../../contexts/UserContext';
@@ -45,7 +45,7 @@ const DashboardEditorPage: React.FC = () => {
     const [interactionState, setInteractionState] = useState<InteractionState>(null);
 
     const [allWidgets, setAllWidgets] = useState<LayoutWidget[]>([]);
-    const [kpi_data, setKpiData] = useState<Record<string, any>>({});
+    const [kpi_data, setKpiData] = useState<Record<string, KpiDataEntry>>({});
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -66,7 +66,7 @@ const DashboardEditorPage: React.FC = () => {
         try {
             const [widgetsRes, kpiDataRes] = await Promise.all([
                 api.get<LayoutWidget[]>('/settings/widgets'),
-                api.get<Record<string, any>>('/kpi-data'),
+                api.get<Record<string, KpiDataEntry>>('/kpi-data'),
             ]);
             const allFetchedWidgets = widgetsRes.data;
             setAllWidgets(allFetchedWidgets);
@@ -298,9 +298,9 @@ const DashboardEditorPage: React.FC = () => {
         }
     };
 
-    const renderDescription = (descriptionText: string) => {
+    const renderDescription = (descriptionText?: string) => {
         if (typeof descriptionText !== 'string' || !descriptionText) {
-            return descriptionText;
+            return descriptionText ?? null;
         }
 
         const parts = descriptionText.split(/(↑\d+(\.\d+)?%|↓\d+(\.\d+)?%|\d+ 嚴重)/g).filter(Boolean);
@@ -414,12 +414,14 @@ const DashboardEditorPage: React.FC = () => {
                                     tooltip={pageContent.REMOVE_WIDGET_TITLE}
                                 />
                             </div>
-                            <ContextualKPICard
+                            <KpiCard
                                 title={widget.name}
                                 value={data.value}
+                                unit={data.unit}
                                 description={renderDescription(data.description)}
-                                icon={data.icon}
-                                icon_bg_color={data.icon_bg_color}
+                                color={data.color}
+                                trend={data.trend ?? null}
+                                change={data.change}
                             />
                             <div
                                 onMouseDown={(e) => handleInteractionStart(e, 'resize', item)}

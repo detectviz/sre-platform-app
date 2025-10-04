@@ -227,9 +227,9 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resource_id }) 
   );
 
   return (
-    <div className="flex h-full flex-col space-y-6">
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-lg shadow-slate-950/40">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    <div className="grid auto-rows-min gap-6 xl:grid-cols-12">
+      <section className="xl:col-span-5 rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-lg shadow-slate-950/40">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-xl font-semibold text-white">{resource.name}</h2>
@@ -275,7 +275,26 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resource_id }) 
           </div>
         </div>
 
-        <dl className="mt-6 grid gap-4 md:grid-cols-2">
+        <div className="mt-6 space-y-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">標籤</p>
+          {resource.tags && resource.tags.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {resource.tags.map(tag => renderTag(tag.key, tag.value))}
+            </div>
+          ) : (
+            <p className="text-xs text-slate-500">尚未設定任何標籤，可在編輯資源時補充環境或負責人資訊。</p>
+          )}
+        </div>
+      </section>
+
+      <section className="xl:col-span-7 rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-lg shadow-slate-950/40">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h3 className="text-base font-semibold text-white">關鍵屬性</h3>
+            <p className="text-xs text-slate-500">快速檢視資源的部署、負責人與最近更新狀態。</p>
+          </div>
+        </div>
+        <dl className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <InfoItem label="提供商" value={resource.provider} helper="資料來源供應商" />
           <InfoItem label="部署區域" value={resource.region} helper="依照雲端或機房區域分類" />
           <InfoItem label="擁有者" value={resource.owner} helper="主要負責的團隊或成員" />
@@ -283,41 +302,28 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resource_id }) 
           <InfoItem label="建立時間" value={createdDisplay} />
           <InfoItem label="最近更新" value={updatedDisplay} />
         </dl>
+      </section>
 
-        <div className="mt-6">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">標籤</p>
-          {resource.tags && resource.tags.length > 0 ? (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {resource.tags.map(tag => renderTag(tag.key, tag.value))}
-            </div>
-          ) : (
-            <p className="mt-2 text-xs text-slate-500">尚未設定任何標籤，可在編輯資源時補充環境或負責人資訊。</p>
-          )}
+      <section className="xl:col-span-6 rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-lg shadow-slate-950/40">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-base font-semibold text-white">CPU 使用率（最近 30 分鐘）</h3>
+          <span className="text-xs text-slate-500">單位：百分比</span>
+        </div>
+        <div className="mt-4 h-52" aria-label="CPU 使用率折線圖">
+          <EChartsReact option={cpuOption} />
+        </div>
+      </section>
+      <section className="xl:col-span-6 rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-lg shadow-slate-950/40">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-base font-semibold text-white">記憶體使用率（最近 30 分鐘）</h3>
+          <span className="text-xs text-slate-500">單位：百分比</span>
+        </div>
+        <div className="mt-4 h-52" aria-label="記憶體使用率折線圖">
+          <EChartsReact option={memoryOption} />
         </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-lg shadow-slate-950/40">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="text-base font-semibold text-white">CPU 使用率（最近 30 分鐘）</h3>
-            <span className="text-xs text-slate-500">單位：百分比</span>
-          </div>
-          <div className="mt-4 h-56" aria-label="CPU 使用率折線圖">
-            <EChartsReact option={cpuOption} />
-          </div>
-        </div>
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-lg shadow-slate-950/40">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="text-base font-semibold text-white">記憶體使用率（最近 30 分鐘）</h3>
-            <span className="text-xs text-slate-500">單位：百分比</span>
-          </div>
-          <div className="mt-4 h-56" aria-label="記憶體使用率折線圖">
-            <EChartsReact option={memoryOption} />
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-lg shadow-slate-950/40">
+      <section className="xl:col-span-12 rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-lg shadow-slate-950/40">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-base font-semibold text-white">相關事件（最近 3 筆）</h3>

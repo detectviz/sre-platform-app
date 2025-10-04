@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { LayoutWidget } from '../../../types';
+import { Segmented, theme } from 'antd';
+import { LayoutWidget, KpiDataEntry, KpiCardColor } from '../../../types';
 import Icon from '../../../components/Icon';
 import Modal from '../../../components/Modal';
 import api from '../../../services/api';
@@ -7,6 +8,7 @@ import { showToast } from '../../../services/toast';
 import { useContent } from '../../../contexts/ContentContext';
 import StatusTag from '../../../components/StatusTag';
 import { formatTimestamp } from '../../../utils/time';
+import KpiCard, { getKpiCardPalette } from '../../../components/KpiCard';
 
 interface ListItemProps {
     widget: LayoutWidget;
@@ -15,16 +17,63 @@ interface ListItemProps {
     onMoveUp?: () => void;
     onMoveDown?: () => void;
     isSelectedList?: boolean;
+    onSelect?: (widget: LayoutWidget) => void;
+    isActive?: boolean;
 }
-const ListItem: React.FC<ListItemProps> = ({ widget, onAction, actionIcon, onMoveUp, onMoveDown, isSelectedList = false }) => {
+
+const KPI_CARD_COLOR_LABELS: Record<KpiCardColor, string> = {
+    default: '預設',
+    primary: '主要',
+    success: '成功',
+    warning: '警示',
+    error: '錯誤',
+};
+const ListItem: React.FC<ListItemProps> = ({ widget, onAction, actionIcon, onMoveUp, onMoveDown, isSelectedList = false, onSelect, isActive = false }) => {
     const handleMove = useCallback((moveFn?: () => void) => () => {
         if (moveFn) {
             moveFn();
         }
     }, []);
 
+    const handleSelect = useCallback(() => {
+        if (onSelect) {
+            onSelect(widget);
+        }
+    }, [onSelect, widget]);
+
+    const handleActionClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+        event.stopPropagation();
+        onAction();
+    }, [onAction]);
+
+    const handleMoveClick = useCallback((event: React.MouseEvent<HTMLButtonElement>, moveFn?: () => void) => {
+        event.stopPropagation();
+        if (moveFn) {
+            moveFn();
+        }
+    }, []);
+
     return (
-        <div className={`flex items-center justify-between rounded-lg border border-slate-800/70 bg-slate-900/60 px-3 py-2.5 transition-colors ${isSelectedList ? 'shadow-sm shadow-slate-900/40' : 'hover:border-slate-700/80 hover:bg-slate-800/60'}`}>
+        <div
+            role="button"
+            tabIndex={0}
+            onClick={handleSelect}
+            onKeyDown={(event) => {
+                if ((event.key === 'Enter' || event.key === ' ') && onSelect) {
+                    event.preventDefault();
+                    onSelect(widget);
+                }
+            }}
+            className={`flex items-center justify-between rounded-lg border px-3 py-2.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50 ${
+                isSelectedList
+                    ? 'shadow-sm shadow-slate-900/40'
+                    : 'hover:border-slate-700/80 hover:bg-slate-800/60'
+            } ${
+                isActive
+                    ? 'border-sky-500/60 bg-sky-500/15 ring-1 ring-sky-500/30'
+                    : 'border-slate-800/70 bg-slate-900/60'
+            } cursor-pointer`}
+        >
             <div className="flex items-start gap-3">
                 <span className="mt-1 text-slate-500">
                     <Icon name={isSelectedList ? 'grip-vertical' : 'layout-dashboard'} className="w-4 h-4" />
@@ -42,7 +91,7 @@ const ListItem: React.FC<ListItemProps> = ({ widget, onAction, actionIcon, onMov
                 {isSelectedList && (
                     <>
                         <button
-                            onClick={handleMove(onMoveUp)}
+                            onClick={(event) => handleMoveClick(event, onMoveUp)}
                             disabled={!onMoveUp}
                             className="p-1.5 rounded-md text-slate-300 hover:text-white hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
                             title="上移"
@@ -50,7 +99,7 @@ const ListItem: React.FC<ListItemProps> = ({ widget, onAction, actionIcon, onMov
                             <Icon name="arrow-up" className="w-4 h-4" />
                         </button>
                         <button
-                            onClick={handleMove(onMoveDown)}
+                            onClick={(event) => handleMoveClick(event, onMoveDown)}
                             disabled={!onMoveDown}
                             className="p-1.5 rounded-md text-slate-300 hover:text-white hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
                             title="下移"
@@ -60,7 +109,7 @@ const ListItem: React.FC<ListItemProps> = ({ widget, onAction, actionIcon, onMov
                     </>
                 )}
                 <button
-                    onClick={onAction}
+                    onClick={handleActionClick}
                     className="p-1.5 rounded-md text-slate-300 hover:text-white hover:bg-slate-700"
                     title={isSelectedList ? '移除卡片' : '加入卡片'}
                 >
@@ -77,18 +126,25 @@ interface DualListSelectorProps {
     available: LayoutWidget[];
     selected: LayoutWidget[];
     onChange: (newSelected: LayoutWidget[]) => void;
+    activeWidgetId?: string | null;
+    onActiveWidgetChange?: (widgetId: string | null) => void;
 }
 
-const DualListSelector: React.FC<DualListSelectorProps> = ({ available, selected, onChange }) => {
+const DualListSelector: React.FC<DualListSelectorProps> = ({ available, selected, onChange, activeWidgetId, onActiveWidgetChange }) => {
     const { content } = useContent();
     const pageContent = content?.LAYOUT_SETTINGS;
 
     const handleAdd = (widget: LayoutWidget) => {
         onChange([...selected, widget]);
+        onActiveWidgetChange?.(widget.id);
     };
 
     const handleRemove = (widget: LayoutWidget) => {
-        onChange(selected.filter(w => w.id !== widget.id));
+        const newSelected = selected.filter(w => w.id !== widget.id);
+        onChange(newSelected);
+        if (activeWidgetId === widget.id) {
+            onActiveWidgetChange?.(newSelected[0]?.id ?? null);
+        }
     };
 
     const move = (index: number, direction: 'up' | 'down') => {
@@ -151,6 +207,8 @@ const DualListSelector: React.FC<DualListSelectorProps> = ({ available, selected
                                 onMoveUp={i > 0 ? () => move(i, 'up') : undefined}
                                 onMoveDown={i < selected.length - 1 ? () => move(i, 'down') : undefined}
                                 isSelectedList={true}
+                                onSelect={() => onActiveWidgetChange?.(w.id)}
+                                isActive={activeWidgetId === w.id}
                             />
                         ))}
                     </div>
@@ -285,26 +343,59 @@ const AccordionItem: React.FC<AccordionItemProps> = ({ pageName, layouts, handle
 const LayoutSettingsPage: React.FC = () => {
     const [layouts, setLayouts] = useState<LayoutsData>({});
     const [allWidgets, setAllWidgets] = useState<LayoutWidget[]>([]);
+    const [kpiData, setKpiData] = useState<Record<string, KpiDataEntry>>({});
+    const [draftKpiData, setDraftKpiData] = useState<Record<string, KpiDataEntry>>({});
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPage, setEditingPage] = useState<string | null>(null);
     const [modalWidgets, setModalWidgets] = useState<LayoutWidget[]>([]);
+    const [activeWidgetId, setActiveWidgetId] = useState<string | null>(null);
     const { content } = useContent();
     const pageContent = content?.LAYOUT_SETTINGS;
     const globalContent = content?.GLOBAL;
+    const { token } = theme.useToken();
+    const colorLabelOverrides = (pageContent?.KPI_CARD_COLOR_LABELS as Partial<Record<KpiCardColor, string>> | undefined) ?? undefined;
+    const kpiColorOptions = useMemo(() => {
+        const tones: KpiCardColor[] = ['default', 'primary', 'success', 'warning', 'error'];
+        return tones.map((tone) => {
+            const palette = getKpiCardPalette(token, tone);
+            const labelText = colorLabelOverrides?.[tone] ?? KPI_CARD_COLOR_LABELS[tone];
+            return {
+                label: (
+                    <div className="flex items-center gap-2">
+                        <span
+                            className="inline-flex h-3 w-6 rounded-full border"
+                            style={{
+                                background: palette.background,
+                                borderColor: tone === 'default' ? token.colorBorderSecondary ?? token.colorBorder : 'rgba(255, 255, 255, 0.55)',
+                            }}
+                        />
+                        <span className="text-xs font-medium" style={{ color: token.colorTextSecondary }}>{labelText}</span>
+                    </div>
+                ),
+                value: tone,
+            };
+        });
+    }, [colorLabelOverrides, token]);
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
-            const [layoutsRes, widgetsRes] = await Promise.all([
+            const [layoutsRes, widgetsRes, kpiDataRes] = await Promise.all([
                 api.get<LayoutsData>('/settings/layouts'),
-                api.get<LayoutWidget[]>('/settings/widgets')
+                api.get<LayoutWidget[]>('/settings/widgets'),
+                api.get<Record<string, KpiDataEntry>>('/kpi-data')
             ]);
             setLayouts(layoutsRes.data);
             setAllWidgets(widgetsRes.data);
+            setKpiData(kpiDataRes.data);
+            const clonedKpiData = Object.fromEntries(
+                Object.entries(kpiDataRes.data).map(([key, value]) => [key, { ...value }])
+            ) as Record<string, KpiDataEntry>;
+            setDraftKpiData(clonedKpiData);
         } catch (err) {
             setError(pageContent?.FETCH_ERROR || '無法獲取版面配置資料。');
         } finally {
@@ -318,6 +409,23 @@ const LayoutSettingsPage: React.FC = () => {
         }
     }, [fetchData, pageContent]);
 
+    useEffect(() => {
+        if (!isModalOpen) {
+            return;
+        }
+        const hasActive = activeWidgetId && modalWidgets.some(widget => widget.id === activeWidgetId);
+        if (!hasActive) {
+            setActiveWidgetId(modalWidgets[0]?.id ?? null);
+        }
+    }, [activeWidgetId, modalWidgets, isModalOpen]);
+
+    const activeWidget = useMemo(
+        () => modalWidgets.find(widget => widget.id === activeWidgetId) ?? null,
+        [modalWidgets, activeWidgetId]
+    );
+    const activeKpiEntry = activeWidgetId ? draftKpiData[activeWidgetId] ?? kpiData[activeWidgetId] ?? null : null;
+    const resolvedActiveColor: KpiCardColor = activeKpiEntry?.color ?? 'default';
+
     const getWidgetById = (id: string) => allWidgets.find(w => w.id === id);
 
     const handleEditClick = (pageName: string) => {
@@ -325,8 +433,21 @@ const LayoutSettingsPage: React.FC = () => {
         const widget_ids = layouts[pageName]?.widget_ids || [];
         const selected = widget_ids.map(id => getWidgetById(id)).filter(Boolean) as LayoutWidget[];
         setModalWidgets(selected);
+        setActiveWidgetId(selected[0]?.id ?? null);
+        const cloned = Object.fromEntries(
+            Object.entries(kpiData).map(([key, value]) => [key, { ...value }])
+        ) as Record<string, KpiDataEntry>;
+        setDraftKpiData(cloned);
         setIsModalOpen(true);
     };
+
+    const handleColorChange = useCallback((widgetId: string, tone: KpiCardColor) => {
+        setDraftKpiData((prev) => {
+            const existing = prev[widgetId] ?? kpiData[widgetId];
+            const nextEntry: KpiDataEntry = existing ? { ...existing, color: tone } : { value: '—', color: tone };
+            return { ...prev, [widgetId]: nextEntry };
+        });
+    }, [kpiData]);
 
     const handleSaveLayout = async () => {
         if (editingPage) {
@@ -335,8 +456,18 @@ const LayoutSettingsPage: React.FC = () => {
             const updatedLayouts = { ...layouts, [editingPage]: { ...currentLayoutConfig, widget_ids: newSelectedIds } };
 
             try {
-                const { data: savedLayouts } = await api.put<LayoutsData>('/settings/layouts', updatedLayouts);
+                const [layoutsResponse, kpiResponse] = await Promise.all([
+                    api.put<LayoutsData>('/settings/layouts', updatedLayouts),
+                    api.put<Record<string, KpiDataEntry>>('/kpi-data', draftKpiData)
+                ]);
+                const savedLayouts = layoutsResponse.data;
+                const savedKpiData = kpiResponse.data;
                 setLayouts(savedLayouts);
+                setKpiData(savedKpiData);
+                const cloned = Object.fromEntries(
+                    Object.entries(savedKpiData).map(([key, value]) => [key, { ...value }])
+                ) as Record<string, KpiDataEntry>;
+                setDraftKpiData(cloned);
                 // Also update localStorage for immediate UI feedback on other pages via PageKPIs
                 localStorage.setItem('sre-platform-layouts', JSON.stringify(savedLayouts));
                 window.dispatchEvent(new Event('storage'));
@@ -403,11 +534,51 @@ const LayoutSettingsPage: React.FC = () => {
                 }
             >
                 {editingPage && (
-                    <DualListSelector
-                        available={availableWidgetsForModal}
-                        selected={modalWidgets}
-                        onChange={setModalWidgets}
-                    />
+                    <div className="flex flex-col gap-6 lg:flex-row">
+                        <div className="lg:flex-[1.7]">
+                            <DualListSelector
+                                available={availableWidgetsForModal}
+                                selected={modalWidgets}
+                                onChange={setModalWidgets}
+                                activeWidgetId={activeWidgetId}
+                                onActiveWidgetChange={setActiveWidgetId}
+                            />
+                        </div>
+                        <div className="lg:flex-1">
+                            {activeWidget ? (
+                                <div className="flex h-full flex-col gap-4 rounded-xl border border-slate-800 bg-slate-900/70 p-4">
+                                    <div className="space-y-1">
+                                        <p className="text-sm font-semibold text-white">{activeWidget.name}</p>
+                                        <p className="text-xs text-slate-400 leading-relaxed">{activeWidget.description}</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">背景樣式</p>
+                                        <Segmented
+                                            block
+                                            options={kpiColorOptions}
+                                            value={resolvedActiveColor}
+                                            onChange={(value) => handleColorChange(activeWidget.id, value as KpiCardColor)}
+                                        />
+                                    </div>
+                                    <div className="flex-1 rounded-lg bg-slate-950/40 p-3">
+                                        <KpiCard
+                                            title={activeWidget.name}
+                                            value={activeKpiEntry?.value ?? '—'}
+                                            unit={activeKpiEntry?.unit}
+                                            description={activeKpiEntry?.description}
+                                            color={resolvedActiveColor}
+                                            trend={activeKpiEntry?.trend ?? null}
+                                            change={activeKpiEntry?.change}
+                                        />
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex min-h-[220px] items-center justify-center rounded-xl border border-dashed border-slate-700 bg-slate-900/40 p-6 text-sm text-slate-400">
+                                    請從左側列表選擇要調整的 KPI 卡片。
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 )}
             </Modal>
         </div>
