@@ -19,6 +19,7 @@ import SortableHeader from '../../components/SortableHeader';
 import { formatDuration, formatRelativeTime } from '../../utils/time';
 import IconButton from '../../components/IconButton';
 import StatusTag from '../../components/StatusTag';
+import QuickFilterBar, { QuickFilterOption } from '../../components/QuickFilterBar';
 
 const PAGE_IDENTIFIER = 'automation_history';
 
@@ -239,7 +240,7 @@ const AutomationHistoryPage: React.FC = () => {
         </>
     );
 
-    const quickFilterOptions = useMemo(() => {
+    const quickFilterOptions: QuickFilterOption[] = useMemo(() => {
         const statusDescriptors = executionOptions?.statuses ?? [];
         const uniqueStatuses = new Map<string, string>();
         statusDescriptors.forEach(descriptor => {
@@ -307,18 +308,13 @@ const AutomationHistoryPage: React.FC = () => {
                 onClearSelection={() => setSelectedIds([])}
             />
 
-            <div className="mt-3 mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-slate-700/70 bg-slate-900/40 px-3 py-2">
-                <span className="text-xs font-medium text-slate-300">快速篩選</span>
-                {quickFilterOptions.map(option => (
-                    <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => setStatusQuickFilter(option.value)}
-                        className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${statusQuickFilter === option.value ? 'bg-sky-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
-                    >
-                        {option.label}
-                    </button>
-                ))}
+            <div className="mt-3 mb-4">
+                <QuickFilterBar
+                    options={quickFilterOptions}
+                    mode="single"
+                    value={[statusQuickFilter]}
+                    onChange={(values) => setStatusQuickFilter(values[0] ?? 'all')}
+                />
             </div>
 
             <TableContainer>

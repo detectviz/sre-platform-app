@@ -21,8 +21,12 @@ import StatusTag from '../../../components/StatusTag';
 import IconButton from '../../../components/IconButton';
 import Drawer from '../../../components/Drawer';
 import { formatRelativeTime } from '../../../utils/time';
+import QuickFilterBar, { QuickFilterOption } from '../../../components/QuickFilterBar';
 
 const PAGE_IDENTIFIER = 'personnel';
+
+type StatusFilterValue = 'all' | User['status'];
+type PersonnelFilterState = PersonnelFilters & { status?: User['status'] };
 
 const PersonnelManagementPage: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
@@ -31,10 +35,10 @@ const PersonnelManagementPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [totalUsers, setTotalUsers] = useState(0);
 
-    const [filters, setFilters] = useState<PersonnelFilters>({});
+    const [filters, setFilters] = useState<PersonnelFilterState>({});
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
-    const [statusFilter, setStatusFilter] = useState<'active' | 'invited' | 'inactive' | 'all'>('all');
+    const [statusFilter, setStatusFilter] = useState<StatusFilterValue>('all');
 
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -48,6 +52,8 @@ const PersonnelManagementPage: React.FC = () => {
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+
+    const filterStatus = filters.status;
 
     const { options } = useOptions();
 
@@ -97,11 +103,36 @@ const PersonnelManagementPage: React.FC = () => {
     }, [fetchUsers, pageKey]);
 
     useEffect(() => {
-        setFilters(prev => ({
-            ...prev,
-            status: statusFilter === 'all' ? undefined : statusFilter,
-        }));
-        setCurrentPage(1);
+        const nextStatus = (filterStatus ?? 'all') as StatusFilterValue;
+        setStatusFilter(prev => (prev === nextStatus ? prev : nextStatus));
+    }, [filterStatus]);
+
+    useEffect(() => {
+        if (!statusQuickFilterOptions.some(option => option.value === statusFilter)) {
+            setStatusFilter('all');
+        }
+    }, [statusQuickFilterOptions, statusFilter]);
+
+    useEffect(() => {
+        let shouldResetPage = false;
+        setFilters(prev => {
+            if (statusFilter === 'all') {
+                if (typeof prev.status === 'undefined') {
+                    return prev;
+                }
+                const { status: _removed, ...rest } = prev;
+                shouldResetPage = true;
+                return rest as PersonnelFilterState;
+            }
+            if (prev.status === statusFilter) {
+                return prev;
+            }
+            shouldResetPage = true;
+            return { ...prev, status: statusFilter };
+        });
+        if (shouldResetPage) {
+            setCurrentPage(1);
+        }
     }, [statusFilter]);
 
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
@@ -133,12 +164,19 @@ const PersonnelManagementPage: React.FC = () => {
         }, {} as Record<User['status'], string>);
     }, [options?.personnel?.statuses]);
 
-    const statusLabelMap: Record<'active' | 'invited' | 'inactive' | 'all', string> = {
-        all: '全部',
-        active: '活躍',
-        invited: '已邀請',
-        inactive: '非活躍',
-    };
+    const statusQuickFilterOptions: QuickFilterOption[] = useMemo(() => {
+        const descriptors = options?.personnel?.statuses ?? [];
+        const unique = new Map<string, string>();
+        descriptors.forEach(descriptor => {
+            if (!unique.has(descriptor.value)) {
+                unique.set(descriptor.value, descriptor.label);
+            }
+        });
+        return [
+            { value: 'all', label: '全部' },
+            ...Array.from(unique.entries()).map(([value, label]) => ({ value, label })),
+        ];
+    }, [options?.personnel?.statuses]);
 
     const handleInvite = async (details: { email: string; name?: string; role: User['role']; team: string }) => {
         try {
@@ -278,19 +316,13 @@ const PersonnelManagementPage: React.FC = () => {
     return (
         <div className="h-full flex flex-col">
             <div className="px-6 py-3">
-                <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-400">狀態</span>
-                    {(['all', 'active', 'invited', 'inactive'] as const).map(option => (
-                        <button
-                            key={option}
-                            type="button"
-                            onClick={() => setStatusFilter(option)}
-                            className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${statusFilter === option ? 'bg-sky-700/60 border-sky-500 text-white' : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:bg-slate-800/80'}`}
-                        >
-                            {statusLabelMap[option]}
-                        </button>
-                    ))}
-                </div>
+                <QuickFilterBar
+                    label="狀態"
+                    options={statusQuickFilterOptions}
+                    mode="single"
+                    value={[statusFilter]}
+                    onChange={(values) => setStatusFilter((values[0] as StatusFilterValue) ?? 'all')}
+                />
             </div>
             <Toolbar
                 leftActions={leftActions}
@@ -410,7 +442,7 @@ const PersonnelManagementPage: React.FC = () => {
                 isOpen={isSearchModalOpen}
                 onClose={() => setIsSearchModalOpen(false)}
                 onSearch={(newFilters) => {
-                    setFilters(newFilters as PersonnelFilters);
+                    setFilters(newFilters as PersonnelFilterState);
                     setIsSearchModalOpen(false);
                     setCurrentPage(1);
                 }}

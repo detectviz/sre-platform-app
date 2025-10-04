@@ -20,6 +20,7 @@ import StatusTag, { StatusTagProps } from '../../../components/StatusTag';
 import IconButton from '../../../components/IconButton';
 import { useOptions } from '../../../contexts/OptionsContext';
 import { TAG_SCOPE_OPTIONS } from '../../../tag-registry';
+import QuickFilterBar, { QuickFilterOption } from '../../../components/QuickFilterBar';
 
 const PAGE_IDENTIFIER = 'tag_management';
 
@@ -68,6 +69,14 @@ const TagManagementPage: React.FC = () => {
         }
         return fallbackKindOptions;
     }, [tagManagementOptions, fallbackKindOptions]);
+    const scopeFilterOptions = useMemo<QuickFilterOption[]>(() => [
+        { value: 'all', label: '全部' },
+        ...scopeOptions.map(scope => ({ value: scope.value, label: scope.label, tooltip: scope.description })),
+    ], [scopeOptions]);
+    const kindFilterOptions = useMemo<QuickFilterOption[]>(() => [
+        { value: 'all', label: '全部' },
+        ...kindOptions.map(kind => ({ value: kind.value, label: kind.label, tooltip: (kind as { description?: string }).description })),
+    ], [kindOptions]);
     const scopeLabelMap = useMemo(() => {
         const map = new Map<string, string>();
         scopeOptions.forEach(scope => map.set(scope.value, scope.label));
@@ -457,6 +466,76 @@ const TagManagementPage: React.FC = () => {
                     </button>
                 </div>
             )}
+
+            <div className="mb-4 space-y-3">
+                <QuickFilterBar
+                    label="範圍"
+                    options={scopeFilterOptions}
+                    mode="single"
+                    value={[filters.scope ?? 'all']}
+                    onChange={(values) => {
+                        const selected = values[0];
+                        setFilters(prev => {
+                            if (!selected || selected === 'all') {
+                                if (typeof prev.scope === 'undefined') {
+                                    return prev;
+                                }
+                                const nextFilters = { ...prev };
+                                delete nextFilters.scope;
+                                return nextFilters;
+                            }
+                            if (prev.scope === selected) {
+                                return prev;
+                            }
+                            return { ...prev, scope: selected as TagManagementFilters['scope'] };
+                        });
+                    }}
+                    showSearch
+                    placeholder="搜尋標籤鍵或說明"
+                    onSearch={(keyword) => {
+                        const normalized = keyword.trim();
+                        setFilters(prev => {
+                            const nextFilters = { ...prev };
+                            if (normalized) {
+                                if (prev.keyword === normalized) {
+                                    return prev;
+                                }
+                                nextFilters.keyword = normalized;
+                                return nextFilters;
+                            }
+                            if (!prev.keyword) {
+                                return prev;
+                            }
+                            delete nextFilters.keyword;
+                            return nextFilters;
+                        });
+                    }}
+                    searchValue={filters.keyword ?? ''}
+                />
+                <QuickFilterBar
+                    label="型別"
+                    options={kindFilterOptions}
+                    mode="single"
+                    value={[filters.kind ?? 'all']}
+                    onChange={(values) => {
+                        const selected = values[0];
+                        setFilters(prev => {
+                            if (!selected || selected === 'all') {
+                                if (typeof prev.kind === 'undefined') {
+                                    return prev;
+                                }
+                                const nextFilters = { ...prev };
+                                delete nextFilters.kind;
+                                return nextFilters;
+                            }
+                            if (prev.kind === selected) {
+                                return prev;
+                            }
+                            return { ...prev, kind: selected as TagManagementFilters['kind'] };
+                        });
+                    }}
+                />
+            </div>
 
             <Toolbar
                 leftActions={leftActions}
