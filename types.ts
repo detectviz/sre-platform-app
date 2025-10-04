@@ -1547,4 +1547,6 @@ export interface AllOptions {
 export interface TableColumn {
   key: string;
   label: string;
+  sortable?: boolean;
+  sort_key?: string;
 }

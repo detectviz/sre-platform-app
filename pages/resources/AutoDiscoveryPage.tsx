@@ -14,6 +14,8 @@ import DiscoveryJobResultDrawer from '../../components/DiscoveryJobResultDrawer'
 import { useOptions } from '../../contexts/OptionsContext';
 import StatusTag, { type StatusTagProps } from '../../components/StatusTag';
 import IconButton from '../../components/IconButton';
+import SortableHeader from '../../components/SortableHeader';
+import useTableSorting from '../../hooks/useTableSorting';
 
 const AutoDiscoveryPage: React.FC = () => {
     const [jobs, setJobs] = useState<DiscoveryJob[]>([]);
@@ -33,6 +35,8 @@ const AutoDiscoveryPage: React.FC = () => {
     const [deletingJob, setDeletingJob] = useState<DiscoveryJob | null>(null);
     const [viewingResultsForJob, setViewingResultsForJob] = useState<DiscoveryJob | null>(null);
 
+    const { sortConfig, sortParams, handleSort } = useTableSorting({ defaultSortKey: 'last_run_at', defaultSortDirection: 'desc' });
+
     const fetchJobs = useCallback(async () => {
         setIsLoading(true);
         setError(null);
@@ -41,6 +45,7 @@ const AutoDiscoveryPage: React.FC = () => {
                 page: currentPage,
                 page_size: pageSize,
                 ...filters,
+                ...sortParams,
             };
 
             const { data } = await api.get<{ items: DiscoveryJob[], total: number }>('/resources/discovery-jobs', { params });
@@ -51,7 +56,7 @@ const AutoDiscoveryPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [filters, currentPage, pageSize]);
+    }, [filters, currentPage, pageSize, sortParams]);
 
     useEffect(() => {
         fetchJobs();
@@ -193,11 +198,36 @@ const AutoDiscoveryPage: React.FC = () => {
                     <table className="w-full text-sm text-left text-slate-300">
                         <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
                             <tr>
-                                <th className="px-6 py-3">名稱</th>
-                                <th className="px-6 py-3">掃描類型</th>
-                                <th className="px-6 py-3">排程</th>
-                                <th className="px-6 py-3">最後執行</th>
-                                <th className="px-6 py-3">狀態</th>
+                                <SortableHeader
+                                    label="名稱"
+                                    sortKey="name"
+                                    sortConfig={sortConfig}
+                                    onSort={handleSort}
+                                />
+                                <SortableHeader
+                                    label="掃描類型"
+                                    sortKey="kind"
+                                    sortConfig={sortConfig}
+                                    onSort={handleSort}
+                                />
+                                <SortableHeader
+                                    label="排程"
+                                    sortKey="schedule"
+                                    sortConfig={sortConfig}
+                                    onSort={handleSort}
+                                />
+                                <SortableHeader
+                                    label="最後執行"
+                                    sortKey="last_run_at"
+                                    sortConfig={sortConfig}
+                                    onSort={handleSort}
+                                />
+                                <SortableHeader
+                                    label="狀態"
+                                    sortKey="status"
+                                    sortConfig={sortConfig}
+                                    onSort={handleSort}
+                                />
                                 <th className="px-6 py-3 text-center">操作</th>
                             </tr>
                         </thead>

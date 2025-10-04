@@ -17,6 +17,8 @@ import { showToast } from '../../../services/toast';
 import StatusTag from '../../../components/StatusTag';
 import IconButton from '../../../components/IconButton';
 import { formatRelativeTime } from '../../../utils/time';
+import SortableColumnHeaderCell from '../../../components/SortableColumnHeaderCell';
+import useTableSorting from '../../../hooks/useTableSorting';
 
 type IconConfig = Record<NotificationChannelType | 'Default', { icon: string; color: string; }>;
 
@@ -48,6 +50,8 @@ const NotificationChannelPage: React.FC = () => {
     const notificationChannelOptions = options?.notification_channels;
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
 
+    const { sortConfig, sortParams, handleSort } = useTableSorting({ defaultSortKey: 'last_tested_at', defaultSortDirection: 'desc' });
+
     const fetchChannels = useCallback(async () => {
         if (!pageKey) return;
         setIsLoading(true);
@@ -57,6 +61,7 @@ const NotificationChannelPage: React.FC = () => {
                 page: currentPage,
                 page_size: pageSize,
                 ...filters,
+                ...sortParams,
             };
 
             const [channelsRes, iconsRes, columnConfigRes, allColumnsRes] = await Promise.all([
@@ -81,7 +86,7 @@ const NotificationChannelPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [filters, pageKey, currentPage, pageSize]);
+    }, [filters, pageKey, currentPage, pageSize, sortParams]);
 
     useEffect(() => {
         if (pageKey) {
@@ -308,9 +313,18 @@ const NotificationChannelPage: React.FC = () => {
                                     <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
                                         checked={isAllSelected} ref={el => { if (el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
-                                {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
-                                ))}
+                                {visibleColumns.map(key => {
+                                    const column = allColumns.find(c => c.key === key);
+                                    return (
+                                        <SortableColumnHeaderCell
+                                            key={key}
+                                            column={column}
+                                            columnKey={key}
+                                            sortConfig={sortConfig}
+                                            onSort={handleSort}
+                                        />
+                                    );
+                                })}
                                 <th scope="col" className="px-6 py-3 text-center">操作</th>
                             </tr>
                         </thead>

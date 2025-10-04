@@ -25,6 +25,8 @@ import UserAvatar from '../../components/UserAvatar';
 import ImportFromCsvModal from '../../components/ImportFromCsvModal';
 import { TagList } from '../../components/TagList';
 import StatusTag from '../../components/StatusTag';
+import SortableColumnHeaderCell from '../../components/SortableColumnHeaderCell';
+import useTableSorting from '../../hooks/useTableSorting';
 
 
 const PAGE_IDENTIFIER = 'incidents';
@@ -63,6 +65,8 @@ const IncidentListPage: React.FC = () => {
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
 
+    const { sortConfig, sortParams, handleSort } = useTableSorting({ defaultSortKey: 'occurred_at', defaultSortDirection: 'desc' });
+
     const fetchIncidents = useCallback(async () => {
         if (!pageKey) return;
         setIsLoading(true);
@@ -72,6 +76,7 @@ const IncidentListPage: React.FC = () => {
                 page: currentPage,
                 page_size: pageSize,
                 ...filters,
+                ...sortParams,
             };
             const [incidentsRes, columnConfigRes, allColumnsRes, usersRes] = await Promise.all([
                 api.get<{ items: Incident[], total: number }>('/incidents', { params }),
@@ -96,7 +101,7 @@ const IncidentListPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, filters, pageKey]);
+    }, [currentPage, pageSize, filters, pageKey, sortParams]);
 
     useEffect(() => {
         if (pageKey) {
@@ -363,9 +368,18 @@ const IncidentListPage: React.FC = () => {
                                     <th scope="col" className="p-4 w-12">
                                         <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded" checked={isAllSelected} ref={el => { if (el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                     </th>
-                                    {visibleColumns.map(key => (
-                                        <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
-                                    ))}
+                                    {visibleColumns.map(key => {
+                                        const column = allColumns.find(c => c.key === key);
+                                        return (
+                                            <SortableColumnHeaderCell
+                                                key={key}
+                                                column={column}
+                                                columnKey={key}
+                                                sortConfig={sortConfig}
+                                                onSort={handleSort}
+                                            />
+                                        );
+                                    })}
                                     <th scope="col" className="px-6 py-3 text-center">操作</th>
                                 </tr>
                             </thead>

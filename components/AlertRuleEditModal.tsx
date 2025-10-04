@@ -133,6 +133,50 @@ const Step0 = ({ selectedTemplate, setSelectedTemplate }: { selectedTemplate: Al
                                     ? { name: '全部類型', icon: 'layout-grid' }
                                     : resourceTypeMap.get(tpl.resource_type);
                                 const isSelected = selectedTemplate?.id === tpl.id;
+                                const previewSections: { key: string; label: string; content: React.ReactNode }[] = [];
+
+                                if (tpl.preview.conditions && tpl.preview.conditions.length > 0) {
+                                    previewSections.push({
+                                        key: 'conditions',
+                                        label: templatesContent?.PREVIEW_CONDITIONS ?? '觸發條件摘要',
+                                        content: (
+                                            <div className="flex flex-wrap gap-2">
+                                                {tpl.preview.conditions.map(condition => (
+                                                    <span
+                                                        key={condition}
+                                                        className="inline-flex items-center rounded-full border border-slate-600 bg-slate-900 px-2.5 py-1 text-[11px] font-medium text-slate-200"
+                                                    >
+                                                        {condition}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        ),
+                                    });
+                                }
+
+                                if (tpl.preview.notification) {
+                                    previewSections.push({
+                                        key: 'notification',
+                                        label: templatesContent?.PREVIEW_NOTIFICATION ?? '通知樣板',
+                                        content: (
+                                            <code className="block rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-left font-mono text-[11px] leading-5 text-slate-100 whitespace-pre-wrap break-words">
+                                                {tpl.preview.notification}
+                                            </code>
+                                        ),
+                                    });
+                                }
+
+                                if (tpl.preview.automation) {
+                                    previewSections.push({
+                                        key: 'automation',
+                                        label: templatesContent?.PREVIEW_AUTOMATION ?? '自動化流程',
+                                        content: (
+                                            <span className="inline-flex items-center rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-[11px] text-slate-200">
+                                                {tpl.preview.automation}
+                                            </span>
+                                        ),
+                                    });
+                                }
 
                                 return (
                                     <button
@@ -145,7 +189,7 @@ const Step0 = ({ selectedTemplate, setSelectedTemplate }: { selectedTemplate: Al
                                             : 'border-slate-700/80 bg-slate-900/40 hover:border-slate-500 hover:bg-slate-800/50'
                                             }`}
                                     >
-                                        <div className="flex items-start justify-between gap-3">
+                                        <div className="flex items-start justify-between gap-4">
                                             <div className="space-y-2">
                                                 <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-slate-400">
                                                     <Icon name={resourceMeta?.icon ?? 'layout-grid'} className="h-3.5 w-3.5" />
@@ -174,36 +218,16 @@ const Step0 = ({ selectedTemplate, setSelectedTemplate }: { selectedTemplate: Al
                                             )}
                                         </div>
 
-                                        <div className="space-y-2 text-xs">
-                                            {tpl.preview.conditions && tpl.preview.conditions.length > 0 && (
-                                                <div className="flex items-start gap-3">
-                                                    <span className="mt-1 w-24 shrink-0 text-slate-500">{templatesContent?.PREVIEW_CONDITIONS ?? '觸發條件摘要'}</span>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {tpl.preview.conditions.map(condition => (
-                                                            <span key={condition} className="inline-flex items-center rounded-full border border-slate-600 bg-slate-900 px-2.5 py-1 text-[11px] font-medium text-slate-200">
-                                                                {condition}
-                                                            </span>
-                                                        ))}
+                                        {previewSections.length > 0 && (
+                                            <div className="space-y-3 text-xs">
+                                                {previewSections.map(section => (
+                                                    <div key={section.key} className="grid grid-cols-[auto,1fr] items-start gap-x-3 gap-y-2">
+                                                        <span className="mt-0.5 inline-flex h-5 items-center text-slate-500">{section.label}</span>
+                                                        <div className="space-y-2 text-slate-200">{section.content}</div>
                                                     </div>
-                                                </div>
-                                            )}
-                                            {tpl.preview.notification && (
-                                                <div className="flex items-start gap-3">
-                                                    <span className="mt-1 w-24 shrink-0 text-slate-500">{templatesContent?.PREVIEW_NOTIFICATION ?? '通知樣板'}</span>
-                                                    <code className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] text-slate-100">
-                                                        {tpl.preview.notification}
-                                                    </code>
-                                                </div>
-                                            )}
-                                            {tpl.preview.automation && (
-                                                <div className="flex items-start gap-3">
-                                                    <span className="mt-1 w-24 shrink-0 text-slate-500">{templatesContent?.PREVIEW_AUTOMATION ?? '自動化流程'}</span>
-                                                    <span className="inline-flex items-center rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] text-slate-200">
-                                                        {tpl.preview.automation}
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </button>
                                 );
                             })}

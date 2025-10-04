@@ -18,6 +18,8 @@ import { showToast } from '../../services/toast';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
 import { useOptions } from '../../contexts/OptionsContext';
 import RuleAnalysisModal from '../../components/RuleAnalysisModal';
+import SortableColumnHeaderCell from '../../components/SortableColumnHeaderCell';
+import useTableSorting from '../../hooks/useTableSorting';
 
 const PAGE_IDENTIFIER = 'silence_rules';
 
@@ -61,6 +63,8 @@ const SilenceRulePage: React.FC = () => {
     ];
     const extendOptions = [...extendPresets, { label: '自訂', value: -1 }];
 
+    const { sortConfig, sortParams, handleSort } = useTableSorting({ defaultSortKey: 'created_at', defaultSortDirection: 'desc' });
+
     const fetchRules = useCallback(async () => {
         if (!pageKey) return;
         setIsLoading(true);
@@ -70,6 +74,7 @@ const SilenceRulePage: React.FC = () => {
                 page: currentPage,
                 page_size: pageSize,
                 ...filters,
+                ...sortParams,
             };
 
             const [rulesRes, columnConfigRes, allColumnsRes] = await Promise.all([
@@ -92,7 +97,7 @@ const SilenceRulePage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [filters, pageKey, currentPage, pageSize]);
+    }, [filters, pageKey, currentPage, pageSize, sortParams]);
 
     useEffect(() => {
         if (pageKey) {
@@ -390,9 +395,19 @@ const SilenceRulePage: React.FC = () => {
                                     <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
                                         checked={isAllSelected} ref={el => { if (el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
                                 </th>
-                                {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-5 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
-                                ))}
+                                {visibleColumns.map(key => {
+                                    const column = allColumns.find(c => c.key === key);
+                                    return (
+                                        <SortableColumnHeaderCell
+                                            key={key}
+                                            column={column}
+                                            columnKey={key}
+                                            sortConfig={sortConfig}
+                                            onSort={handleSort}
+                                            className="px-5"
+                                        />
+                                    );
+                                })}
                                 <th scope="col" className="px-5 py-3 text-center">操作</th>
                             </tr>
                         </thead>
@@ -419,14 +434,6 @@ const SilenceRulePage: React.FC = () => {
                                                 aria-label="延長靜音"
                                             >
                                                 <Icon name="clock" className="h-4 w-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleToggleEnable(rule)}
-                                                className="rounded-md px-2 py-1 text-slate-300 transition-colors hover:bg-slate-700 hover:text-white"
-                                                title={rule.enabled ? '停用靜音規則' : '啟用靜音規則'}
-                                                aria-label={rule.enabled ? '停用靜音規則' : '啟用靜音規則'}
-                                            >
-                                                <Icon name={rule.enabled ? 'pause-circle' : 'play-circle'} className="h-4 w-4" />
                                             </button>
                                             <button onClick={() => handleEditRule(rule)} className="rounded-md px-2 py-1 text-slate-300 transition-colors hover:bg-slate-700 hover:text-white" title="編輯" aria-label="編輯靜音規則">
                                                 <Icon name="edit-3" className="h-4 w-4" />

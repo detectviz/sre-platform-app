@@ -17,6 +17,7 @@ import { useOptions } from '../../../contexts/OptionsContext';
 import StatusTag from '../../../components/StatusTag';
 import JsonPreview from '../../../components/JsonPreview';
 import { formatRelativeTime } from '../../../utils/time';
+import useTableSorting from '../../../hooks/useTableSorting';
 
 const PAGE_IDENTIFIER = 'audit_logs';
 
@@ -34,7 +35,6 @@ const AuditLogsPage: React.FC = () => {
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
-    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'timestamp', direction: 'desc' });
     
     const { metadata: pageMetadata } = usePageMetadata();
     const { options } = useOptions();
@@ -67,6 +67,8 @@ const AuditLogsPage: React.FC = () => {
 
     const getActionLabel = (action: string) => actionLabelMap[action] || action;
 
+    const { sortConfig, sortParams, handleSort } = useTableSorting({ defaultSortKey: 'timestamp', defaultSortDirection: 'desc' });
+
     const fetchAuditLogs = useCallback(async () => {
         if (!pageKey) return;
         setIsLoading(true);
@@ -75,12 +77,9 @@ const AuditLogsPage: React.FC = () => {
             const params: any = {
                 page: currentPage,
                 page_size: pageSize,
-                ...filters
+                ...filters,
+                ...sortParams
             };
-             if (sortConfig) {
-                params.sort_by = sortConfig.key;
-                params.sort_order = sortConfig.direction;
-            }
             const [logsRes, columnConfigRes, allColumnsRes] = await Promise.all([
                 api.get<{ items: AuditLog[], total: number }>('/iam/audit-logs', { params }),
                 api.get<string[]>(`/settings/column-config/${pageKey}`),
@@ -101,7 +100,7 @@ const AuditLogsPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, filters, pageKey, sortConfig]);
+    }, [currentPage, pageSize, filters, pageKey, sortParams]);
 
     useEffect(() => {
         if (pageKey) {
@@ -109,14 +108,6 @@ const AuditLogsPage: React.FC = () => {
         }
     }, [fetchAuditLogs, pageKey]);
     
-    const handleSort = (key: string) => {
-        let direction: 'asc' | 'desc' = 'asc';
-        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
-            direction = 'desc';
-        }
-        setSortConfig({ key, direction });
-    };
-
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
         if (!pageKey) {
             showToast('無法儲存欄位設定：頁面設定遺失。', 'error');

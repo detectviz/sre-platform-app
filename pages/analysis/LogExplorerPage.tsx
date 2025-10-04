@@ -15,11 +15,7 @@ import UnifiedSearchModal from '../../components/UnifiedSearchModal';
 import { useChartTheme } from '../../contexts/ChartThemeContext';
 import { useLogOptions } from '../../hooks/useLogOptions';
 
-const SERIES_META: Record<'error' | 'warning' | 'info', { label: string; color: string }> = {
-    error: { label: '錯誤', color: '#a78bfa' },
-    warning: { label: '警告', color: '#38bdf8' },
-    info: { label: '資訊', color: '#34d399' },
-};
+type SeriesMeta = Record<'error' | 'warning' | 'info', { label: string; color: string }>;
 
 const LogExplorerPage: React.FC = () => {
     const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -49,6 +45,12 @@ const LogExplorerPage: React.FC = () => {
     const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
 
     const { theme: chartTheme } = useChartTheme();
+
+    const seriesMeta = useMemo<SeriesMeta>(() => ({
+        error: { label: '錯誤', color: chartTheme.log_levels?.error ?? '#ef4444' },
+        warning: { label: '警告', color: chartTheme.log_levels?.warning ?? '#facc15' },
+        info: { label: '資訊', color: chartTheme.log_levels?.info ?? '#3b82f6' },
+    }), [chartTheme.log_levels]);
 
 
     const fetchData = useCallback((isLiveUpdate = false) => {
@@ -129,7 +131,6 @@ const LogExplorerPage: React.FC = () => {
                 const header = `<div class="font-semibold mb-1">${first.axisValueLabel}</div>`;
                 const rows = params
                     .map(series => {
-                        const meta = Object.values(SERIES_META).find(item => item.label === series.seriesName);
                         return `<div style="display:flex;justify-content:space-between;gap:12px;">
                             <span>${series.marker} ${series.seriesName}</span>
                             <span>${series.data}</span>
@@ -139,7 +140,7 @@ const LogExplorerPage: React.FC = () => {
                 return `${header}${rows}`;
             },
         },
-        legend: { data: Object.values(SERIES_META).map(item => item.label), textStyle: { color: chartTheme.text.primary } },
+        legend: { data: Object.values(seriesMeta).map(item => item.label), textStyle: { color: chartTheme.text.primary } },
         grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
         xAxis: {
             type: 'category',
@@ -153,11 +154,11 @@ const LogExplorerPage: React.FC = () => {
             splitLine: { lineStyle: { color: chartTheme.grid.split_line } },
         },
         series: [
-            { name: SERIES_META.error.label, type: 'bar', stack: 'total', data: histogramData.error, color: SERIES_META.error.color },
-            { name: SERIES_META.warning.label, type: 'bar', stack: 'total', data: histogramData.warning, color: SERIES_META.warning.color },
-            { name: SERIES_META.info.label, type: 'bar', stack: 'total', data: histogramData.info, color: SERIES_META.info.color }
+            { name: seriesMeta.error.label, type: 'bar', stack: 'total', data: histogramData.error, color: seriesMeta.error.color },
+            { name: seriesMeta.warning.label, type: 'bar', stack: 'total', data: histogramData.warning, color: seriesMeta.warning.color },
+            { name: seriesMeta.info.label, type: 'bar', stack: 'total', data: histogramData.info, color: seriesMeta.info.color }
         ]
-    }), [chartTheme, histogramData]);
+    }), [chartTheme, histogramData, seriesMeta]);
 
     const toggleExpand = (id: string) => {
         setExpandedLogId(prevId => (prevId === id ? null : id));
@@ -244,7 +245,7 @@ const LogExplorerPage: React.FC = () => {
                 <div className="flex items-center justify-between px-2 py-1">
                     <p className="text-xs text-slate-400">圖表顏色代表不同的日誌等級與事件數。</p>
                     <div className="flex items-center gap-3 text-xs text-slate-300">
-                        {Object.values(SERIES_META).map(meta => (
+                        {Object.values(seriesMeta).map(meta => (
                             <div key={meta.label} className="flex items-center gap-2">
                                 <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: meta.color }} />
                                 <span>{meta.label}</span>

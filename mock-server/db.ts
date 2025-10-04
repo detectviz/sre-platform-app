@@ -160,6 +160,8 @@ const PAGE_CONTENT = {
         TITLE: '通知中心',
         MARK_ALL_AS_READ: '全部標示為已讀',
         NO_NOTIFICATIONS: '沒有新的通知',
+        EMPTY_STATE_TITLE: '通知中心沒有新的通知',
+        EMPTY_STATE_DESCRIPTION: '保持關注重要告警與事件，當有新的通知時會立即顯示於此。',
         VIEW_DETAILS: '查看詳情',
         MARK_AS_READ_TOOLTIP: '標示為已讀',
         TIME_UNITS: {
@@ -2718,7 +2720,6 @@ const MOCK_TAB_CONFIGS: TabConfigMap = {
         { label: '範本市集', path: '/dashboards/templates', icon: 'album' },
     ],
     analysis: [
-        { label: '分析總覽', path: '/analyzing', icon: 'bar-chart-2' },
         { label: '日誌探索', path: '/analyzing/logs', icon: 'search' },
         { label: '容量規劃', path: '/analyzing/capacity', icon: 'bar-chart-big' },
         { label: '歷史數據回放', path: '/analyzing/backtesting', icon: 'history' },

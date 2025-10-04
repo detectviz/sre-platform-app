@@ -21,6 +21,8 @@ import IconButton from '../../../components/IconButton';
 import { useOptions } from '../../../contexts/OptionsContext';
 import { TAG_SCOPE_OPTIONS } from '../../../tag-registry';
 import QuickFilterBar, { QuickFilterOption } from '../../../components/QuickFilterBar';
+import SortableColumnHeaderCell from '../../../components/SortableColumnHeaderCell';
+import useTableSorting from '../../../hooks/useTableSorting';
 
 const PAGE_IDENTIFIER = 'tag_management';
 
@@ -89,6 +91,8 @@ const TagManagementPage: React.FC = () => {
     }, [kindOptions]);
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
 
+    const { sortConfig, sortParams, handleSort } = useTableSorting({ defaultSortKey: 'updated_at', defaultSortDirection: 'desc' });
+
     const fetchTags = useCallback(async () => {
         if (!pageKey) return;
         setIsLoading(true);
@@ -98,6 +102,7 @@ const TagManagementPage: React.FC = () => {
                 page: currentPage,
                 page_size: pageSize,
                 ...filters,
+                ...sortParams,
             };
             const [tagsRes, columnConfigRes, allColumnsRes] = await Promise.all([
                 api.get<{ items: TagDefinition[], total: number }>('/settings/tags', { params }),
@@ -119,7 +124,7 @@ const TagManagementPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [pageKey, currentPage, pageSize, filters]);
+    }, [pageKey, currentPage, pageSize, filters, sortParams]);
 
     useEffect(() => {
         if (pageKey) {
@@ -558,9 +563,18 @@ const TagManagementPage: React.FC = () => {
                                         onChange={handleSelectAll}
                                     />
                                 </th>
-                                {visibleColumns.map(key => (
-                                    <th key={key} scope="col" className="px-6 py-3">{allColumns.find(c => c.key === key)?.label || key}</th>
-                                ))}
+                                {visibleColumns.map(key => {
+                                    const column = allColumns.find(c => c.key === key);
+                                    return (
+                                        <SortableColumnHeaderCell
+                                            key={key}
+                                            column={column}
+                                            columnKey={key}
+                                            sortConfig={sortConfig}
+                                            onSort={handleSort}
+                                        />
+                                    );
+                                })}
                                 <th scope="col" className="px-6 py-3 text-right">操作</th>
                             </tr>
                         </thead>

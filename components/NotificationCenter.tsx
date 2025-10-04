@@ -6,6 +6,18 @@ import api from '../services/api';
 import { showToast } from '../services/toast';
 import { useContentSection } from '../contexts/ContentContext';
 
+type NotificationListApiResponse = NotificationItem[] | { items?: NotificationItem[] };
+
+const extractNotifications = (payload: NotificationListApiResponse | null | undefined): NotificationItem[] => {
+    if (Array.isArray(payload)) {
+        return payload;
+    }
+    if (payload && Array.isArray(payload.items)) {
+        return payload.items;
+    }
+    return [];
+};
+
 const NotificationCenter: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -42,10 +54,10 @@ const NotificationCenter: React.FC = () => {
             setIsLoading(true);
         }
         Promise.all([
-            api.get<NotificationItem[]>('/notifications'),
+            api.get<NotificationListApiResponse>('/notifications'),
             api.get<NotificationOptions>('/notifications/options')
         ]).then(([notificationsRes, optionsRes]) => {
-            setNotifications(Array.isArray(notificationsRes.data) ? notificationsRes.data : []);
+            setNotifications(extractNotifications(notificationsRes.data));
             setOptions(optionsRes.data);
         }).catch(err => {
             console.error("Failed to fetch notifications", err);
@@ -197,7 +209,17 @@ const NotificationCenter: React.FC = () => {
                         {isLoading ? (
                             <div className="flex items-center justify-center p-8"><Icon name="loader-circle" className="w-6 h-6 animate-spin text-slate-400" /></div>
                         ) : !Array.isArray(notifications) || notifications.length === 0 ? (
-                            <div className="text-center p-8 text-slate-400">{content.NO_NOTIFICATIONS}</div>
+                            <div className="flex flex-col items-center justify-center gap-3 p-8 text-center">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-700/50 text-slate-300">
+                                    <Icon name="bell-off" className="h-6 w-6" />
+                                </div>
+                                <p className="text-sm font-semibold text-slate-100">
+                                    {content.EMPTY_STATE_TITLE ?? content.TITLE}
+                                </p>
+                                <p className="text-xs leading-relaxed text-slate-400">
+                                    {content.EMPTY_STATE_DESCRIPTION ?? content.NO_NOTIFICATIONS}
+                                </p>
+                            </div>
                         ) : (
                             <div className="divide-y divide-slate-700/30">
                                 {notifications.map(n => {

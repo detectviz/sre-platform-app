@@ -20,6 +20,7 @@ import { formatDuration, formatRelativeTime } from '../../utils/time';
 import IconButton from '../../components/IconButton';
 import StatusTag from '../../components/StatusTag';
 import QuickFilterBar, { QuickFilterOption } from '../../components/QuickFilterBar';
+import useTableSorting from '../../hooks/useTableSorting';
 
 const PAGE_IDENTIFIER = 'automation_history';
 
@@ -36,7 +37,6 @@ const AutomationHistoryPage: React.FC = () => {
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
-    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'start_time', direction: 'desc' });
     const [selectedExecution, setSelectedExecution] = useState<AutomationExecution | null>(null);
     const [statusQuickFilter, setStatusQuickFilter] = useState<string>('all');
 
@@ -45,6 +45,8 @@ const AutomationHistoryPage: React.FC = () => {
 
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
+
+    const { sortConfig, sortParams, handleSort } = useTableSorting({ defaultSortKey: 'start_time', defaultSortDirection: 'desc' });
 
     const fetchExecutions = useCallback(async () => {
         if (!pageKey) return;
@@ -56,10 +58,7 @@ const AutomationHistoryPage: React.FC = () => {
                 page_size: pageSize,
                 ...filters
             };
-            if (sortConfig) {
-                params.sort_by = sortConfig.key;
-                params.sort_order = sortConfig.direction;
-            }
+            Object.assign(params, sortParams);
             const [executionsRes, columnConfigRes, allColumnsRes] = await Promise.all([
                 api.get<{ items: AutomationExecution[], total: number }>('/automation/executions', { params }),
                 api.get<string[]>(`/settings/column-config/${pageKey}`),
@@ -80,21 +79,13 @@ const AutomationHistoryPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, pageSize, filters, pageKey, sortConfig]);
+    }, [currentPage, pageSize, filters, pageKey, sortParams]);
 
     useEffect(() => {
         if (pageKey) {
             fetchExecutions();
         }
     }, [fetchExecutions, pageKey]);
-
-    const handleSort = (key: string) => {
-        let direction: 'asc' | 'desc' = 'asc';
-        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
-            direction = 'desc';
-        }
-        setSortConfig({ key, direction });
-    };
 
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
         if (!pageKey) {
