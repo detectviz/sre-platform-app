@@ -241,7 +241,7 @@ const ResourceListPage: React.FC = () => {
                 return 'w-28';
             case 'cpu_usage':
             case 'memory_usage':
-                return 'w-60';
+                return 'w-40';
             case 'provider':
                 return 'w-28';
             case 'region':
@@ -287,14 +287,14 @@ const ResourceListPage: React.FC = () => {
         const normalized = Math.max(0, Math.min(100, value));
         const tone = getUtilizationTone(normalized);
         return (
-            <div className="flex items-center gap-3" title={`${label}: ${normalized.toFixed(1)}%`}>
-                <div className="relative h-2.5 flex-1 overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-700/70">
+            <div className="flex w-full max-w-[9.5rem] items-center gap-2" title={`${label}: ${normalized.toFixed(1)}%`}>
+                <div className="relative h-2.5 grow overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-700/70">
                     <div
                         className="h-full rounded-full transition-all duration-300 ease-out"
                         style={{ width: `${normalized}%`, backgroundColor: tone.barColor }}
                     />
                 </div>
-                <span className={`min-w-[3.5rem] text-xs font-semibold tabular-nums ${tone.textClass}`}>
+                <span className={`min-w-[2.75rem] text-right text-xs font-semibold tabular-nums ${tone.textClass}`}>
                     {normalized.toFixed(1)}%
                 </span>
             </div>

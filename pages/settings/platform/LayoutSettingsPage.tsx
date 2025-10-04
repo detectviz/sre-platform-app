@@ -364,15 +364,17 @@ const LayoutSettingsPage: React.FC = () => {
             const labelText = colorLabelOverrides?.[tone] ?? KPI_CARD_COLOR_LABELS[tone];
             return {
                 label: (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                         <span
-                            className="inline-flex h-3 w-6 rounded-full border"
+                            className="tone-swatch"
                             style={{
                                 background: palette.background,
-                                borderColor: tone === 'default' ? token.colorBorderSecondary ?? token.colorBorder : 'rgba(255, 255, 255, 0.55)',
+                                borderColor: palette.swatchBorder ?? token.colorBorderSecondary ?? token.colorBorder,
                             }}
                         />
-                        <span className="text-xs font-medium" style={{ color: token.colorTextSecondary }}>{labelText}</span>
+                        <span className="text-xs font-medium tracking-wide" style={{ color: token.colorTextSecondary }}>
+                            {labelText}
+                        </span>
                     </div>
                 ),
                 value: tone,
@@ -525,7 +527,7 @@ const LayoutSettingsPage: React.FC = () => {
                 title={pageContent.EDIT_MODAL_TITLE?.replace('{pageName}', editingPage || '') || '編輯 KPI 卡片'}
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                width="w-full max-w-4xl"
+                width="w-full max-w-5xl"
                 footer={
                     <div className="flex justify-end gap-2">
                         <button onClick={() => setIsModalOpen(false)} className="rounded-md border border-slate-700 bg-slate-800/80 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-700/80">{globalContent.CANCEL}</button>
@@ -534,8 +536,8 @@ const LayoutSettingsPage: React.FC = () => {
                 }
             >
                 {editingPage && (
-                    <div className="flex flex-col gap-6 lg:flex-row">
-                        <div className="lg:flex-[1.7]">
+                    <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+                        <div className="space-y-4">
                             <DualListSelector
                                 available={availableWidgetsForModal}
                                 selected={modalWidgets}
@@ -544,23 +546,35 @@ const LayoutSettingsPage: React.FC = () => {
                                 onActiveWidgetChange={setActiveWidgetId}
                             />
                         </div>
-                        <div className="lg:flex-1">
+                        <div className="flex h-full flex-col gap-4">
                             {activeWidget ? (
-                                <div className="flex h-full flex-col gap-4 rounded-xl border border-slate-800 bg-slate-900/70 p-4">
-                                    <div className="space-y-1">
+                                <div className="flex h-full flex-col gap-5 rounded-2xl border border-slate-800/80 bg-slate-900/70 p-5 shadow-lg shadow-slate-950/30">
+                                    <div>
                                         <p className="text-sm font-semibold text-white">{activeWidget.name}</p>
-                                        <p className="text-xs text-slate-400 leading-relaxed">{activeWidget.description}</p>
+                                        <p className="mt-1 text-xs leading-relaxed text-slate-400">{activeWidget.description}</p>
                                     </div>
-                                    <div className="space-y-2">
-                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">背景樣式</p>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">背景樣式</p>
+                                            <span className="text-[11px] text-slate-500">即時套用至預覽</span>
+                                        </div>
                                         <Segmented
                                             block
+                                            size="large"
+                                            className="kpi-tone-segmented rounded-xl bg-slate-950/40 p-1.5"
                                             options={kpiColorOptions}
                                             value={resolvedActiveColor}
                                             onChange={(value) => handleColorChange(activeWidget.id, value as KpiCardColor)}
                                         />
                                     </div>
-                                    <div className="flex-1 rounded-lg bg-slate-950/40 p-3">
+                                    <div
+                                        className="flex-1 rounded-2xl border border-slate-800/70 bg-slate-950/40 p-4"
+                                        style={{ boxShadow: `inset 0 1px 0 0 rgba(148, 163, 184, 0.08)` }}
+                                    >
+                                        <div className="mb-3 flex items-center justify-between">
+                                            <p className="text-xs font-medium text-slate-400">預覽</p>
+                                            <span className="text-[11px] text-slate-500">{pageContent.PREVIEW_HINT ?? '顯示選定卡片的實際樣式'}</span>
+                                        </div>
                                         <KpiCard
                                             title={activeWidget.name}
                                             value={activeKpiEntry?.value ?? '—'}
@@ -570,6 +584,9 @@ const LayoutSettingsPage: React.FC = () => {
                                             trend={activeKpiEntry?.trend ?? null}
                                             change={activeKpiEntry?.change}
                                         />
+                                    </div>
+                                    <div className="rounded-xl border border-dashed border-slate-700/70 bg-slate-950/40 p-3 text-[11px] text-slate-500">
+                                        {pageContent.COLOR_HELPER_TEXT ?? '建議依據指標狀態選擇對應顏色，例如警示類型使用 Warning、失敗使用 Error。'}
                                     </div>
                                 </div>
                             ) : (
