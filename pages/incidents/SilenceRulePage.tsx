@@ -7,6 +7,7 @@ import UnifiedSearchModal, { SilenceRuleFilters } from '../../components/Unified
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
 import Modal from '../../components/Modal';
+import Pagination from '../../components/Pagination';
 import api from '../../services/api';
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
@@ -25,6 +26,9 @@ const SilenceRulePage: React.FC = () => {
     const [allColumns, setAllColumns] = useState<TableColumn[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [total, setTotal] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
@@ -62,8 +66,14 @@ const SilenceRulePage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
+            const params = {
+                page: currentPage,
+                page_size: pageSize,
+                ...filters,
+            };
+
             const [rulesRes, columnConfigRes, allColumnsRes] = await Promise.all([
-                api.get<{ items: SilenceRule[], total: number }>('/silence-rules', { params: filters }),
+                api.get<{ items: SilenceRule[], total: number }>('/silence-rules', { params }),
                 api.get<string[]>(`/settings/column-config/${pageKey}`),
                 api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
@@ -71,6 +81,7 @@ const SilenceRulePage: React.FC = () => {
                 throw new Error('欄位定義缺失');
             }
             setRules(rulesRes.data.items);
+            setTotal(rulesRes.data.total);
             setAllColumns(allColumnsRes.data);
             const resolvedVisibleColumns = columnConfigRes.data.length > 0
                 ? columnConfigRes.data
@@ -81,7 +92,7 @@ const SilenceRulePage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [filters, pageKey]);
+    }, [filters, pageKey, currentPage, pageSize]);
 
     useEffect(() => {
         if (pageKey) {
@@ -127,6 +138,7 @@ const SilenceRulePage: React.FC = () => {
             } else {
                 const { data: createdRule } = await api.post<SilenceRule>('/silence-rules', savedRule);
                 showToast(`規則 "${createdRule.name}" 已成功新增。`, 'success');
+                setCurrentPage(1); // Reset to first page when adding new item
             }
             fetchRules();
         } catch (err) {
@@ -197,6 +209,10 @@ const SilenceRulePage: React.FC = () => {
             try {
                 await api.del(`/silence-rules/${deletingRule.id}`);
                 showToast(`規則 "${deletingRule.name}" 已成功刪除。`, 'success');
+                // Reset to first page if current page becomes empty
+                if (rules.length === 1 && currentPage > 1) {
+                    setCurrentPage(1);
+                }
                 fetchRules();
             } catch (err) {
                 showToast('刪除規則失敗。', 'error');
@@ -425,6 +441,13 @@ const SilenceRulePage: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
+                <Pagination
+                    total={total}
+                    page={currentPage}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={setPageSize}
+                />
             </TableContainer>
             {isModalOpen && <SilenceRuleEditModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSaveRule} rule={editingRule} />}
             <UnifiedSearchModal

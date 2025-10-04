@@ -5,6 +5,7 @@ import Toolbar, { ToolbarButton } from '../../../components/Toolbar';
 import TableContainer from '../../../components/TableContainer';
 import NotificationChannelEditModal from '../../../components/NotificationChannelEditModal';
 import Modal from '../../../components/Modal';
+import Pagination from '../../../components/Pagination';
 import api from '../../../services/api';
 import TableLoader from '../../../components/TableLoader';
 import TableError from '../../../components/TableError';
@@ -28,6 +29,9 @@ const NotificationChannelPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [iconConfig, setIconConfig] = useState<IconConfig | null>(null);
+    const [total, setTotal] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingChannel, setEditingChannel] = useState<NotificationChannel | null>(null);
@@ -49,13 +53,20 @@ const NotificationChannelPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
+            const params = {
+                page: currentPage,
+                page_size: pageSize,
+                ...filters,
+            };
+
             const [channelsRes, iconsRes, columnConfigRes, allColumnsRes] = await Promise.all([
-                api.get<{ items: NotificationChannel[], total: number }>('/settings/notification-channels', { params: filters }),
+                api.get<{ items: NotificationChannel[], total: number }>('/settings/notification-channels', { params }),
                 api.get<IconConfig>('/ui/icons-config'),
                 api.get<string[]>(`/settings/column-config/${pageKey}`),
                 api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
             setChannels(channelsRes.data.items);
+            setTotal(channelsRes.data.total);
             setIconConfig(iconsRes.data);
             if (allColumnsRes.data.length === 0) {
                 throw new Error('欄位定義缺失');
@@ -70,7 +81,7 @@ const NotificationChannelPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [filters, pageKey]);
+    }, [filters, pageKey, currentPage, pageSize]);
 
     useEffect(() => {
         if (pageKey) {
@@ -118,6 +129,7 @@ const NotificationChannelPage: React.FC = () => {
                 await api.patch(`/settings/notification-channels/${channel.id}`, channel);
             } else {
                 await api.post('/settings/notification-channels', channel);
+                setCurrentPage(1); // Reset to first page when adding new item
             }
             fetchChannels();
         } catch (err) {
@@ -136,6 +148,10 @@ const NotificationChannelPage: React.FC = () => {
         if (deletingChannel) {
             try {
                 await api.del(`/settings/notification-channels/${deletingChannel.id}`);
+                // Reset to first page if current page becomes empty
+                if (channels.length === 1 && currentPage > 1) {
+                    setCurrentPage(1);
+                }
                 fetchChannels();
             } catch (err) {
                 showToast('刪除通知管道失敗，請稍後再試。', 'error');
@@ -333,6 +349,13 @@ const NotificationChannelPage: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
+                <Pagination
+                    total={total}
+                    page={currentPage}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={setPageSize}
+                />
             </TableContainer>
             {isModalOpen &&
                 <NotificationChannelEditModal

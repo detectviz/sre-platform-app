@@ -42,8 +42,8 @@ const PersonalInfoPage: React.FC = () => {
     setError(null);
     try {
       const [userRes, authRes] = await Promise.all([
-          api.get<User>('/me'),
-          api.get<AuthSettings>('/settings/auth')
+        api.get<User>('/me'),
+        api.get<AuthSettings>('/settings/auth')
       ]);
       setCurrentUser(userRes.data);
       setAuthSettings(authRes.data);
@@ -80,7 +80,7 @@ const PersonalInfoPage: React.FC = () => {
   const updatedDisplay = `${formatTimestamp(currentUser.updated_at, { showSeconds: false })}（${formatRelativeFromNow(currentUser.updated_at)}）`;
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="max-w-5xl space-y-6">
       <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-lg shadow-slate-950/30">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div className="flex items-start gap-4">

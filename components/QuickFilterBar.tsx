@@ -1,13 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Input, theme, Tooltip } from 'antd';
-import type { SearchProps } from 'antd/es/input/Search';
-import styles from './QuickFilterBar.module.css';
+import React, { useCallback, useEffect, useState } from 'react';
 
 export interface QuickFilterOption {
     label: string;             // 顯示文字
     value: string;             // 篩選值
     count?: number;            // 可選統計數
-    color?: string;            // 可選主題色（覆寫預設主色）
     icon?: React.ReactNode;    // 可選圖示
     tooltip?: string;          // 額外補充說明
 }
@@ -19,14 +15,9 @@ export interface QuickFilterBarProps {
     defaultValue?: string[];              // 非受控預設值
     onChange?: (value: string[]) => void; // 值變更事件
     showCount?: boolean;                  // 是否顯示統計
-    showSearch?: boolean;                 // 是否顯示搜尋框
-    onSearch?: (keyword: string) => void; // 搜尋文字變更事件
-    placeholder?: string;                 // 搜尋框佔位文字
     label?: React.ReactNode;              // 左側標籤文字
     className?: string;                   // 自訂樣式
-    searchProps?: SearchProps;            // 轉傳給搜尋框的額外屬性
     emptyText?: string;                   // 空狀態顯示文字
-    searchValue?: string;                 // 搜尋框外部受控值
 }
 
 const QuickFilterBar: React.FC<QuickFilterBarProps> = ({
@@ -36,20 +27,12 @@ const QuickFilterBar: React.FC<QuickFilterBarProps> = ({
     defaultValue,
     onChange,
     showCount = true,
-    showSearch = false,
-    onSearch,
-    placeholder = '輸入關鍵字',
-    label = '快速篩選',
-    className,
-    searchProps,
+    label,
+    className = '',
     emptyText = '目前沒有可用的篩選項目',
-    searchValue,
 }) => {
-    const { token } = theme.useToken();
-
     // 是否由外部控制 value
     const isControlled = typeof value !== 'undefined';
-    const isSearchControlled = typeof searchValue !== 'undefined';
 
     // 內部狀態支援非受控模式
     const [internalValue, setInternalValue] = useState<string[]>(() => {
@@ -62,20 +45,12 @@ const QuickFilterBar: React.FC<QuickFilterBarProps> = ({
         return [];
     });
 
-    const [keyword, setKeyword] = useState(() => searchValue ?? '');
-
     // 受控模式同步內部狀態
     useEffect(() => {
         if (isControlled) {
             setInternalValue(value ?? []);
         }
     }, [isControlled, value]);
-
-    useEffect(() => {
-        if (isSearchControlled) {
-            setKeyword(searchValue ?? '');
-        }
-    }, [isSearchControlled, searchValue]);
 
     const selectedValues = isControlled ? (value ?? []) : internalValue;
 
@@ -105,106 +80,53 @@ const QuickFilterBar: React.FC<QuickFilterBarProps> = ({
         handleUpdate(next);
     }, [handleUpdate, mode, selectedValues]);
 
-    const handleSearchChange = useCallback((nextKeyword: string) => {
-        if (!isSearchControlled) {
-            setKeyword(nextKeyword);
-        }
-        onSearch?.(nextKeyword);
-    }, [isSearchControlled, onSearch]);
-
-    const { onChange: searchOnChange, onSearch: searchOnSearch, ...restSearchProps } = searchProps ?? {};
-
-    // 按鈕基礎樣式
-    const baseButtonStyle = useMemo(() => ({
-        backgroundColor: token.colorBgElevated,
-        borderColor: token.colorBorder,
-        color: token.colorTextSecondary,
-    }), [token.colorBgElevated, token.colorBorder, token.colorTextSecondary]);
-
     return (
-        <div
-            className={[styles.container, className].filter(Boolean).join(' ')}
-            style={{ backgroundColor: 'transparent' }}
-        >
-            <div className={styles.options}>
-                {label && (
-                    <span
-                        className={styles.label}
-                        style={{ color: token.colorTextSecondary }}
-                    >
-                        {label}
-                    </span>
-                )}
+        <div className={`flex items-center gap-3 flex-wrap w-full px-4 py-3 bg-slate-900/30 border border-slate-700/50 rounded-lg ${className}`}>
+            {label && (
+                <span className="text-xs font-medium text-slate-400 tracking-wide uppercase">
+                    {label}
+                </span>
+            )}
+
+            <div className="flex items-center flex-wrap gap-2 flex-1 min-h-[36px]">
                 {options.length === 0 ? (
-                    <span
-                        className={styles.emptyText}
-                        style={{ color: token.colorTextQuaternary }}
-                    >
+                    <span className="text-xs text-slate-500 inline-flex items-center">
                         {emptyText}
                     </span>
                 ) : (
                     options.map(option => {
                         const isSelected = selectedValues.includes(option.value);
-                        const activeColor = option.color || token.colorPrimary;
-                        const buttonStyle = isSelected
-                            ? {
-                                backgroundColor: activeColor,
-                                borderColor: activeColor,
-                                color: token.colorTextLightSolid,
-                            }
-                            : baseButtonStyle;
-                        const content = (
-                            <Button
+                        return (
+                            <button
                                 key={option.value}
-                                size="small"
-                                shape="round"
+                                type="button"
                                 aria-pressed={isSelected}
-                                className={styles.optionButton}
-                                style={buttonStyle}
+                                className={`
+                                    inline-flex items-center gap-1 px-2.5 py-1
+                                    rounded-full text-[11px] font-medium
+                                    transition-all duration-150 ease-in-out
+                                    focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-950
+                                    active:translate-y-[1px]
+                                    ${isSelected
+                                        ? 'bg-sky-600 text-white border border-sky-500 hover:bg-sky-500'
+                                        : 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 hover:border-slate-600'
+                                    }
+                                `}
                                 onClick={() => handleOptionClick(option.value)}
+                                title={option.tooltip}
                             >
                                 {option.icon}
                                 <span>{option.label}</span>
                                 {showCount && typeof option.count === 'number' && (
-                                    <span
-                                        className={styles.count}
-                                        style={{ color: isSelected ? token.colorTextLightSolid : token.colorTextSecondary }}
-                                    >
+                                    <span className={`text-[10px] ${isSelected ? 'opacity-90' : 'opacity-75'}`}>
                                         {option.count}
                                     </span>
                                 )}
-                            </Button>
+                            </button>
                         );
-                        if (option.tooltip) {
-                            return (
-                                <Tooltip key={option.value} title={option.tooltip}>
-                                    {content}
-                                </Tooltip>
-                            );
-                        }
-                        return content;
                     })
                 )}
             </div>
-            {showSearch && (
-                <div className={styles.trailing}>
-                    <Input.Search
-                        allowClear
-                        className={styles.search}
-                        value={keyword}
-                        placeholder={placeholder}
-                        onChange={(event) => {
-                            handleSearchChange(event.target.value);
-                            searchOnChange?.(event);
-                        }}
-                        onSearch={(nextValue, event, info) => {
-                            handleSearchChange(nextValue);
-                            searchOnSearch?.(nextValue, event, info);
-                        }}
-                        {...restSearchProps}
-                    />
-                </div>
-            )}
         </div>
     );
 };

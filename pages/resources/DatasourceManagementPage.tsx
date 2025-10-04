@@ -10,6 +10,7 @@ import Icon from '../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
 import Modal from '../../components/Modal';
+import Pagination from '../../components/Pagination';
 import api from '../../services/api';
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
@@ -35,6 +36,9 @@ const DatasourceManagementPage: React.FC = () => {
   const [datasources, setDatasources] = useState<Datasource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [total, setTotal] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [filters, setFilters] = useState<DatasourceFilters>({});
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -81,15 +85,22 @@ const DatasourceManagementPage: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const { data } = await api.get<{ items: Datasource[]; total: number }>('/resources/datasources', { params: filters });
+      const params = {
+        page: currentPage,
+        page_size: pageSize,
+        ...filters,
+      };
+
+      const { data } = await api.get<{ items: Datasource[]; total: number }>('/resources/datasources', { params });
       setDatasources(data.items);
+      setTotal(data.total);
     } catch (err) {
       console.error(err);
       setError('無法取得資料來源列表。');
     } finally {
       setIsLoading(false);
     }
-  }, [filters]);
+  }, [filters, currentPage, pageSize]);
 
   useEffect(() => {
     fetchDatasources();
@@ -150,6 +161,10 @@ const DatasourceManagementPage: React.FC = () => {
     try {
       await api.del(`/resources/datasources/${deletingDatasource.id}`);
       showToast(`已刪除資料來源「${deletingDatasource.name}」。`, 'success');
+      // Reset to first page if current page becomes empty
+      if (datasources.length === 1 && currentPage > 1) {
+        setCurrentPage(1);
+      }
       fetchDatasources();
     } catch (err) {
       console.error(err);
@@ -168,6 +183,7 @@ const DatasourceManagementPage: React.FC = () => {
       } else {
         await api.post('/resources/datasources', payload);
         showToast('資料來源已建立。', 'success');
+        setCurrentPage(1); // Reset to first page when adding new item
       }
       fetchDatasources();
     } catch (err) {
@@ -257,9 +273,8 @@ const DatasourceManagementPage: React.FC = () => {
                       key={option.label}
                       type="button"
                       onClick={() => handleStatusFilterChange(option.value)}
-                      className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 ${
-                        isActive ? 'bg-sky-600/20 text-sky-200' : 'text-slate-300 hover:text-white'
-                      }`}
+                      className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 ${isActive ? 'bg-sky-600/20 text-sky-200' : 'text-slate-300 hover:text-white'
+                        }`}
                       aria-pressed={isActive}
                     >
                       <Icon name={option.icon} className="h-3.5 w-3.5" />
@@ -419,6 +434,13 @@ const DatasourceManagementPage: React.FC = () => {
             </tbody>
           </table>
         </div>
+        <Pagination
+          total={total}
+          page={currentPage}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+        />
       </TableContainer>
 
       {isEditModalOpen && (

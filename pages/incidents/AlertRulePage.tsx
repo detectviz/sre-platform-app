@@ -6,6 +6,7 @@ import UnifiedSearchModal, { AlertRuleFilters } from '../../components/UnifiedSe
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
 import Modal from '../../components/Modal';
+import Pagination from '../../components/Pagination';
 import api from '../../services/api';
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
@@ -25,6 +26,9 @@ const AlertRulePage: React.FC = () => {
     const [allColumns, setAllColumns] = useState<TableColumn[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [total, setTotal] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
@@ -52,8 +56,14 @@ const AlertRulePage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
+            const params = {
+                page: currentPage,
+                page_size: pageSize,
+                ...filters,
+            };
+
             const [rulesRes, columnConfigRes, allColumnsRes] = await Promise.all([
-                api.get<{ items: AlertRule[], total: number }>('/alert-rules', { params: filters }),
+                api.get<{ items: AlertRule[], total: number }>('/alert-rules', { params }),
                 api.get<string[]>(`/settings/column-config/${pageKey}`),
                 api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
@@ -61,6 +71,7 @@ const AlertRulePage: React.FC = () => {
                 throw new Error('欄位定義缺失');
             }
             setRules(rulesRes.data.items);
+            setTotal(rulesRes.data.total);
             setAllColumns(allColumnsRes.data);
             const resolvedVisibleColumns = columnConfigRes.data.length > 0
                 ? columnConfigRes.data
@@ -71,7 +82,7 @@ const AlertRulePage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [filters, pageKey]);
+    }, [filters, pageKey, currentPage, pageSize]);
 
     useEffect(() => {
         if (pageKey) {
@@ -124,6 +135,7 @@ const AlertRulePage: React.FC = () => {
             } else {
                 const { data: createdRule } = await api.post<AlertRule>('/alert-rules', savedRule);
                 showToast(`規則 "${createdRule.name}" 已成功新增。`, 'success');
+                setCurrentPage(1); // Reset to first page when adding new item
             }
             fetchRules();
         } catch (err) {
@@ -144,6 +156,10 @@ const AlertRulePage: React.FC = () => {
             try {
                 await api.del(`/alert-rules/${deletingRule.id}`);
                 showToast(`規則 "${deletingRule.name}" 已成功刪除。`, 'success');
+                // Reset to first page if current page becomes empty
+                if (rules.length === 1 && currentPage > 1) {
+                    setCurrentPage(1);
+                }
                 fetchRules();
             } catch (err) {
                 showToast('刪除規則失敗。', 'error');
@@ -355,6 +371,13 @@ const AlertRulePage: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
+                <Pagination
+                    total={total}
+                    page={currentPage}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={setPageSize}
+                />
             </TableContainer>
             {isEditModalOpen && <AlertRuleEditModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} onSave={handleSaveRule} rule={editingRule} />}
             <UnifiedSearchModal

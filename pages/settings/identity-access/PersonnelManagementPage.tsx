@@ -107,11 +107,6 @@ const PersonnelManagementPage: React.FC = () => {
         setStatusFilter(prev => (prev === nextStatus ? prev : nextStatus));
     }, [filterStatus]);
 
-    useEffect(() => {
-        if (!statusQuickFilterOptions.some(option => option.value === statusFilter)) {
-            setStatusFilter('all');
-        }
-    }, [statusQuickFilterOptions, statusFilter]);
 
     useEffect(() => {
         let shouldResetPage = false;
@@ -315,15 +310,6 @@ const PersonnelManagementPage: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col">
-            <div className="px-6 py-3">
-                <QuickFilterBar
-                    label="狀態"
-                    options={statusQuickFilterOptions}
-                    mode="single"
-                    value={[statusFilter]}
-                    onChange={(values) => setStatusFilter((values[0] as StatusFilterValue) ?? 'all')}
-                />
-            </div>
             <Toolbar
                 leftActions={leftActions}
                 rightActions={
@@ -338,6 +324,15 @@ const PersonnelManagementPage: React.FC = () => {
                 onClearSelection={() => setSelectedIds([])}
                 batchActions={batchActions}
             />
+
+            <div className="mt-3 mb-4">
+                <QuickFilterBar
+                    options={statusQuickFilterOptions}
+                    mode="single"
+                    value={[statusFilter]}
+                    onChange={(values) => setStatusFilter((values[0] as StatusFilterValue) ?? 'all')}
+                />
+            </div>
 
             <TableContainer>
                 <div className="flex-1 overflow-y-auto">

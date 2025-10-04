@@ -5,6 +5,7 @@ import RunPlaybookModal from '../../components/RunPlaybookModal';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import AutomationPlaybookEditModal from '../../components/AutomationPlaybookEditModal';
 import Modal from '../../components/Modal';
+import Pagination from '../../components/Pagination';
 import api from '../../services/api';
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
@@ -23,6 +24,9 @@ const AutomationPlaybooksPage: React.FC = () => {
     const [allColumns, setAllColumns] = useState<TableColumn[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [total, setTotal] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     const [isRunModalOpen, setIsRunModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -63,8 +67,13 @@ const AutomationPlaybooksPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
+            const params = {
+                page: currentPage,
+                page_size: pageSize,
+            };
+
             const [playbooksRes, columnConfigRes, allColumnsRes] = await Promise.all([
-                api.get<{ items: AutomationPlaybook[], total: number }>('/automation/scripts'),
+                api.get<{ items: AutomationPlaybook[], total: number }>('/automation/scripts', { params }),
                 api.get<string[]>(`/settings/column-config/${pageKey}`),
                 api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
@@ -72,6 +81,7 @@ const AutomationPlaybooksPage: React.FC = () => {
                 throw new Error('欄位定義缺失');
             }
             setPlaybooks(playbooksRes.data.items);
+            setTotal(playbooksRes.data.total);
             setAllColumns(allColumnsRes.data);
             const resolvedVisibleColumns = columnConfigRes.data.length > 0
                 ? columnConfigRes.data
@@ -82,7 +92,7 @@ const AutomationPlaybooksPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [pageKey]);
+    }, [pageKey, currentPage, pageSize]);
 
     useEffect(() => {
         if (pageKey) {
@@ -129,6 +139,7 @@ const AutomationPlaybooksPage: React.FC = () => {
                 await api.post('/automation/scripts', playbookData);
             }
             setIsEditModalOpen(false);
+            setCurrentPage(1); // Reset to first page when adding new item
             fetchPlaybooks();
         } catch (err) {
             showToast('儲存自動化手冊失敗，請稍後再試。', 'error');
@@ -146,6 +157,10 @@ const AutomationPlaybooksPage: React.FC = () => {
                 await api.del(`/automation/scripts/${deletingPlaybook.id}`);
                 setIsDeleteModalOpen(false);
                 setDeletingPlaybook(null);
+                // Reset to first page if current page becomes empty
+                if (playbooks.length === 1 && currentPage > 1) {
+                    setCurrentPage(1);
+                }
                 fetchPlaybooks();
             } catch (err) {
                 showToast('刪除自動化手冊失敗，請稍後再試。', 'error');
@@ -311,6 +326,13 @@ const AutomationPlaybooksPage: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
+                <Pagination
+                    total={total}
+                    page={currentPage}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={setPageSize}
+                />
             </TableContainer>
             <RunPlaybookModal
                 isOpen={isRunModalOpen}

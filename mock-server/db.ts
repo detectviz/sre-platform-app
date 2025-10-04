@@ -2709,12 +2709,12 @@ const MOCK_TAB_CONFIGS: TabConfigMap = {
     resources: [
         { label: '資源列表', path: '/resources/list', icon: 'database' },
         { label: '資源群組', path: '/resources/groups', icon: 'layout-grid' },
-        { label: 'Datasource 管理', path: '/resources/datasources', icon: 'database-zap' },
+        { label: '資料源管理', path: '/resources/datasources', icon: 'database-zap' },
         { label: '自動掃描', path: '/resources/discovery', icon: 'scan-search' },
         { label: '拓撲視圖', path: '/resources/topology', icon: 'share-2' },
     ],
     dashboards: [
-        { label: '儀表板', path: '/dashboards', icon: 'layout-dashboard' },
+        { label: '儀表板列表', path: '/dashboards', icon: 'layout-dashboard' },
         { label: '範本市集', path: '/dashboards/templates', icon: 'album' },
     ],
     analysis: [
@@ -2748,7 +2748,7 @@ const MOCK_TAB_CONFIGS: TabConfigMap = {
         { label: 'License', path: '/settings/platform-settings/license', icon: 'award' },
     ],
     profile: [
-        { label: '個人資訊', path: '/profile', icon: 'user' },
+        { label: '基本資訊', path: '/profile', icon: 'user' },
         { label: '安全設定', path: '/profile/security', icon: 'lock' },
         { label: '偏好設定', path: '/profile/preferences', icon: 'sliders-horizontal' },
     ]

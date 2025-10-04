@@ -21,7 +21,7 @@ const ResourceTopologyPage: React.FC = () => {
 
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    
+
     const [layout, setLayout] = useState('force');
     const [filterType, setFilterType] = useState('all');
     const navigate = useNavigate();
@@ -36,7 +36,7 @@ const ResourceTopologyPage: React.FC = () => {
     }>({ visible: false, x: 0, y: 0, nodeData: null });
 
     const contextMenuRef = useRef<HTMLDivElement>(null);
-    
+
     const statusColorMap = useMemo(() => {
         if (!options?.resources.status_colors) return {};
         return options.resources.status_colors.reduce((acc, curr) => {
@@ -156,15 +156,24 @@ const ResourceTopologyPage: React.FC = () => {
         const legendLabels = categories.map(category => category.name);
 
         return {
+            backgroundColor: 'transparent',
             tooltip: {},
             legend: [{
                 data: legendLabels,
                 textStyle: { color: chartTheme.text.primary },
-                orient: 'vertical',
-                left: 'left',
-                top: 'center',
-                itemGap: 15,
+                orient: 'horizontal',
+                left: 'center',
+                top: 20,
+                itemGap: 20,
+                padding: [10, 20, 10, 20],
             }],
+            grid: {
+                left: 30,
+                right: 30,
+                top: 80, // 為圖例留出更多空間
+                bottom: 30,
+                containLabel: true,
+            },
             animationDurationUpdate: 1500,
             animationEasingUpdate: 'quinticInOut',
             series: [{
@@ -219,10 +228,10 @@ const ResourceTopologyPage: React.FC = () => {
 
     const handleMenuAction = (action: 'details' | 'incidents' | 'automation') => {
         if (!contextMenu.nodeData) return;
-        
+
         const resource_id = contextMenu.nodeData.id;
-        
-        switch(action) {
+
+        switch (action) {
             case 'details':
                 navigate(`/resources/list/${resource_id}`);
                 break;
@@ -293,7 +302,7 @@ const ResourceTopologyPage: React.FC = () => {
                         <Icon name="loader-circle" className="w-8 h-8 animate-spin mr-2" /> 載入拓撲資料中...
                     </div>
                 ) : error ? (
-                     <div className="flex flex-col items-center justify-center h-full text-red-400">
+                    <div className="flex flex-col items-center justify-center h-full text-red-400">
                         <Icon name="alert-circle" className="w-12 h-12 mb-4" />
                         <h2 className="text-xl font-bold">{error}</h2>
                         <button onClick={fetchTopology} className="mt-4 px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md">
@@ -303,7 +312,7 @@ const ResourceTopologyPage: React.FC = () => {
                 ) : (
                     <EChartsReact option={chartOption} onEvents={echartsEvents} />
                 )}
-                 {contextMenu.visible && (
+                {contextMenu.visible && (
                     <div
                         ref={contextMenuRef}
                         className="absolute z-50 glass-card rounded-lg p-2 w-52 shadow-2xl animate-fade-in-down"

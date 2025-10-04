@@ -6,6 +6,7 @@ import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
 import ResourceGroupEditModal from '../../components/ResourceGroupEditModal';
 import Modal from '../../components/Modal';
+import Pagination from '../../components/Pagination';
 import api from '../../services/api';
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
@@ -26,6 +27,9 @@ const ResourceGroupPage: React.FC = () => {
     const [allColumns, setAllColumns] = useState<TableColumn[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [total, setTotal] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingGroup, setEditingGroup] = useState<ResourceGroup | null>(null);
@@ -75,8 +79,14 @@ const ResourceGroupPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
+            const params = {
+                page: currentPage,
+                page_size: pageSize,
+                ...filters,
+            };
+
             const [groupsRes, columnConfigRes, allColumnsRes] = await Promise.all([
-                api.get<{ items: ResourceGroup[], total: number }>('/resource-groups', { params: filters }),
+                api.get<{ items: ResourceGroup[], total: number }>('/resource-groups', { params }),
                 api.get<string[]>(`/settings/column-config/${pageKey}`),
                 api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
@@ -86,6 +96,7 @@ const ResourceGroupPage: React.FC = () => {
             }
 
             setGroups(groupsRes.data.items);
+            setTotal(groupsRes.data.total);
             setAllColumns(allColumnsRes.data);
             const resolvedVisibleColumns = columnConfigRes.data.length > 0
                 ? columnConfigRes.data
@@ -97,7 +108,7 @@ const ResourceGroupPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [filters, pageKey]);
+    }, [filters, pageKey, currentPage, pageSize]);
 
     useEffect(() => {
         if (pageKey) {
@@ -141,6 +152,7 @@ const ResourceGroupPage: React.FC = () => {
                 await api.put(`/resource-groups/${editingGroup.id}`, payload);
             } else {
                 await api.post('/resource-groups', payload);
+                setCurrentPage(1); // Reset to first page when adding new item
             }
             fetchGroups();
         } catch (err) {
@@ -191,6 +203,10 @@ const ResourceGroupPage: React.FC = () => {
         if (deletingGroup) {
             try {
                 await api.del(`/resource-groups/${deletingGroup.id}`);
+                // Reset to first page if current page becomes empty
+                if (groups.length === 1 && currentPage > 1) {
+                    setCurrentPage(1);
+                }
                 fetchGroups();
             } catch (err) {
                 showToast('刪除資源群組失敗，請稍後再試。', 'error');
@@ -314,6 +330,13 @@ const ResourceGroupPage: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
+                <Pagination
+                    total={total}
+                    page={currentPage}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={setPageSize}
+                />
             </TableContainer>
 
             {isModalOpen && (

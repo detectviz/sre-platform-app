@@ -6,7 +6,6 @@ import { UserPreferences, Dashboard, PreferenceOptions, UserPreferenceExportResp
 import api from '../../services/api';
 import Icon from '../../components/Icon';
 import { showToast } from '../../services/toast';
-import { formatTimestamp } from '../../utils/time';
 
 const EDITABLE_FIELDS: Array<keyof UserPreferences> = ['theme', 'language', 'timezone', 'default_page'];
 
@@ -193,30 +192,10 @@ const PreferenceSettingsPage: React.FC = () => {
     return <div className="py-10 text-center text-red-400">{error || '無法載入設定。'}</div>;
   }
 
-  const exportRelative = preferences.last_exported_at
-    ? formatRelativeFromNow(preferences.last_exported_at) || '剛剛'
-    : '尚未匯出';
-  const exportTooltip = preferences.last_exported_at
-    ? `${formatTimestamp(preferences.last_exported_at, { showSeconds: false })} · 格式 ${
-        preferences.last_export_format?.toUpperCase() ?? 'JSON'
-      }`
-    : '尚未匯出偏好設定';
   const hasDashboards = dashboardOptions.length > 0;
 
   return (
-    <div className="max-w-3xl space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold text-white">個人偏好設定</h1>
-          <p className="text-sm text-slate-400">調整語系、主題與預設儀表板，系統將在所有登入裝置同步套用。</p>
-        </div>
-        <StatusTag
-          label={preferences.last_exported_at ? `上次匯出：${exportRelative}` : '尚未匯出'}
-          tone={preferences.last_exported_at ? 'info' : 'neutral'}
-          icon="download"
-          tooltip={exportTooltip}
-        />
-      </div>
+    <div className="max-w-5xl space-y-6">
 
       <div className="space-y-8 rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-lg shadow-slate-950/30">
         <section className="space-y-4">
@@ -288,20 +267,7 @@ const PreferenceSettingsPage: React.FC = () => {
           </div>
         </section>
 
-        <div className="flex flex-col gap-4 border-t border-slate-800/60 pt-6 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-1 text-xs text-slate-400">
-            <div className="flex items-center gap-2 text-slate-300">
-              <Icon name="info" className="h-4 w-4 text-slate-500" />
-              <span>偏好設定會自動套用至您的所有工作階段與儀表板檢視。</span>
-            </div>
-            {preferences.last_exported_at && (
-              <p className="text-slate-500">
-                最新匯出：
-                {formatTimestamp(preferences.last_exported_at, { showSeconds: false })}
-                （{preferences.last_export_format?.toUpperCase() ?? 'JSON'}）
-              </p>
-            )}
-          </div>
+        <div className="flex flex-col gap-4 border-t border-slate-800/60 pt-6 md:flex-row md:items-center md:justify-end">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
             <button
               type="button"

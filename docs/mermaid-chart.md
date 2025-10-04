@@ -26,7 +26,7 @@ flowchart TD
     end
 
     subgraph Governance["Platform Governance Layer"]
-        C1[Datasource 管理]
+        C1[資料源管理]
         C2[自動掃描 - Discovery]
         C3[資源清單 & 標籤治理]
         C4[血緣追蹤 - Lineage]

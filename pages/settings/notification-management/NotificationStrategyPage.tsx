@@ -4,6 +4,7 @@ import Toolbar, { ToolbarButton } from '../../../components/Toolbar';
 import TableContainer from '../../../components/TableContainer';
 import NotificationStrategyEditModal from '../../../components/NotificationStrategyEditModal';
 import Modal from '../../../components/Modal';
+import Pagination from '../../../components/Pagination';
 import api from '../../../services/api';
 import TableLoader from '../../../components/TableLoader';
 import TableError from '../../../components/TableError';
@@ -24,6 +25,9 @@ const NotificationStrategyPage: React.FC = () => {
     const [allColumns, setAllColumns] = useState<TableColumn[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [total, setTotal] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingStrategy, setEditingStrategy] = useState<NotificationStrategy | null>(null);
@@ -46,12 +50,19 @@ const NotificationStrategyPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
+            const params = {
+                page: currentPage,
+                page_size: pageSize,
+                ...filters,
+            };
+
             const [strategiesRes, columnConfigRes, allColumnsRes] = await Promise.all([
-                api.get<{ items: NotificationStrategy[], total: number }>('/settings/notification-strategies', { params: filters }),
+                api.get<{ items: NotificationStrategy[], total: number }>('/settings/notification-strategies', { params }),
                 api.get<string[]>(`/settings/column-config/${pageKey}`),
                 api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
             setStrategies(strategiesRes.data.items);
+            setTotal(strategiesRes.data.total);
             if (allColumnsRes.data.length === 0) {
                 throw new Error('欄位定義缺失');
             }
@@ -65,7 +76,7 @@ const NotificationStrategyPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [filters, pageKey]);
+    }, [filters, pageKey, currentPage, pageSize]);
 
     useEffect(() => {
         if (pageKey) {
@@ -114,6 +125,7 @@ const NotificationStrategyPage: React.FC = () => {
                 await api.patch(`/settings/notification-strategies/${editingStrategy.id}`, strategyDataFromModal);
             } else {
                 await api.post('/settings/notification-strategies', strategyDataFromModal);
+                setCurrentPage(1); // Reset to first page when adding new item
             }
             fetchStrategies();
         } catch (err) {
@@ -133,6 +145,10 @@ const NotificationStrategyPage: React.FC = () => {
         if (deletingStrategy) {
             try {
                 await api.del(`/settings/notification-strategies/${deletingStrategy.id}`);
+                // Reset to first page if current page becomes empty
+                if (strategies.length === 1 && currentPage > 1) {
+                    setCurrentPage(1);
+                }
                 fetchStrategies();
             } catch (err) {
                 showToast('刪除通知策略失敗，請稍後再試。', 'error');
@@ -370,6 +386,13 @@ const NotificationStrategyPage: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
+                <Pagination
+                    total={total}
+                    page={currentPage}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={setPageSize}
+                />
             </TableContainer>
             {isModalOpen && (
                 <NotificationStrategyEditModal

@@ -208,6 +208,7 @@ const AnalysisOverviewPage: React.FC = () => {
         const { critical, warning, healthy } = chartTheme.health_gauge;
         const tickColor = chartTheme.text.primary;
         return {
+            backgroundColor: 'transparent',
             series: [{
                 type: 'gauge',
                 radius: '90%',
@@ -234,6 +235,7 @@ const AnalysisOverviewPage: React.FC = () => {
 
 
     const eventCorrelationOption = useMemo(() => ({
+        backgroundColor: 'transparent',
         tooltip: {
             trigger: 'item',
             formatter: (params: any) => {

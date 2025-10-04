@@ -258,7 +258,7 @@ function shouldSilenceIncident(incident: Incident): boolean {
 **狀態**: 部分支援
 
 **已實現**:
-- ✅ Datasource 管理 (VictoriaMetrics, Prometheus, etc.)
+- ✅ 資料源管理 (VictoriaMetrics, Prometheus, etc.)
 - ✅ 連線測試: `POST /resources/datasources/test`
 - ✅ 指標查詢 Mock: `GET /resources/{id}/metrics`
 

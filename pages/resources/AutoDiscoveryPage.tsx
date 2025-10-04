@@ -3,6 +3,7 @@ import { DiscoveryJob, DiscoveryJobFilters } from '../../types';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
 import Modal from '../../components/Modal';
+import Pagination from '../../components/Pagination';
 import api from '../../services/api';
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
@@ -18,6 +19,9 @@ const AutoDiscoveryPage: React.FC = () => {
     const [jobs, setJobs] = useState<DiscoveryJob[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [total, setTotal] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
     const [filters, setFilters] = useState<DiscoveryJobFilters>({});
 
     const { options } = useOptions();
@@ -33,14 +37,21 @@ const AutoDiscoveryPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const { data } = await api.get<{ items: DiscoveryJob[], total: number }>('/resources/discovery-jobs', { params: filters });
+            const params = {
+                page: currentPage,
+                page_size: pageSize,
+                ...filters,
+            };
+
+            const { data } = await api.get<{ items: DiscoveryJob[], total: number }>('/resources/discovery-jobs', { params });
             setJobs(data.items);
+            setTotal(data.total);
         } catch (err) {
             setError('無法獲取自動掃描任務列表。');
         } finally {
             setIsLoading(false);
         }
-    }, [filters]);
+    }, [filters, currentPage, pageSize]);
 
     useEffect(() => {
         fetchJobs();
@@ -66,6 +77,10 @@ const AutoDiscoveryPage: React.FC = () => {
             try {
                 await api.del(`/resources/discovery-jobs/${deletingJob.id}`);
                 showToast(`掃描任務 "${deletingJob.name}" 已成功刪除。`, 'success');
+                // Reset to first page if current page becomes empty
+                if (jobs.length === 1 && currentPage > 1) {
+                    setCurrentPage(1);
+                }
                 fetchJobs();
             } catch (err) {
                 showToast('刪除掃描任務失敗。', 'error');
@@ -84,6 +99,7 @@ const AutoDiscoveryPage: React.FC = () => {
             } else {
                 await api.post('/resources/discovery-jobs', job);
                 showToast('掃描任務已成功新增。', 'success');
+                setCurrentPage(1); // Reset to first page when adding new item
             }
             fetchJobs();
         } catch (err) {
@@ -237,6 +253,13 @@ const AutoDiscoveryPage: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
+                <Pagination
+                    total={total}
+                    page={currentPage}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={setPageSize}
+                />
             </TableContainer>
             {isEditModalOpen && (
                 <AutoDiscoveryEditModal
