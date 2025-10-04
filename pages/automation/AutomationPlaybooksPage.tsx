@@ -14,7 +14,6 @@ import { showToast } from '../../services/toast';
 import { useOptions } from '../../contexts/OptionsContext';
 import StatusTag from '../../components/StatusTag';
 import IconButton from '../../components/IconButton';
-import ContextualKPICard from '../../components/ContextualKPICard';
 import { formatRelativeTime } from '../../utils/time';
 
 const PAGE_IDENTIFIER = 'automation_playbooks';
@@ -34,9 +33,6 @@ const AutomationPlaybooksPage: React.FC = () => {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
-    const [kpiData, setKpiData] = useState<Record<string, any> | null>(null);
-    const [isLoadingMetrics, setIsLoadingMetrics] = useState(true);
-    const [metricError, setMetricError] = useState<string | null>(null);
 
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
@@ -60,82 +56,7 @@ const AutomationPlaybooksPage: React.FC = () => {
 
     const numberFormatter = useMemo(() => new Intl.NumberFormat('zh-Hant'), []);
 
-    useEffect(() => {
-        let mounted = true;
-        const fetchMetrics = async () => {
-            setIsLoadingMetrics(true);
-            setMetricError(null);
-            try {
-                const { data } = await api.get<Record<string, any>>('/kpi-data');
-                if (mounted) {
-                    setKpiData(data);
-                }
-            } catch (err) {
-                if (mounted) {
-                    setMetricError('無法載入自動化指標，請稍後再試。');
-                }
-            } finally {
-                if (mounted) {
-                    setIsLoadingMetrics(false);
-                }
-            }
-        };
-        fetchMetrics();
-        return () => {
-            mounted = false;
-        };
-    }, []);
 
-    const localizeMetricDescription = useCallback((key: string, description: string) => {
-        if (!description) {
-            return '--';
-        }
-        const trendMatch = description.match(/^(↑|↓)([\d.]+)% vs (yesterday|last week|last month)/i);
-        if (trendMatch) {
-            const direction = trendMatch[1] === '↑' ? '增加' : '下降';
-            const value = trendMatch[2];
-            const period = trendMatch[3].toLowerCase();
-            const localizedPeriod = period === 'yesterday' ? '昨日' : period === 'last week' ? '上週' : '上月';
-            return `較${localizedPeriod}${direction} ${value}%`;
-        }
-        const failureMatch = description.match(/(\d+)\s+failures?/i);
-        if (failureMatch) {
-            return `失敗 ${failureMatch[1]} 次`;
-        }
-        const savedMatch = description.match(/Saved\s+(\d+)\s*(hours?|minutes?)\s+of\s+toil/i);
-        if (savedMatch) {
-            const amount = savedMatch[1];
-            const unit = savedMatch[2].toLowerCase().startsWith('hour') ? '小時' : '分鐘';
-            return `節省 ${amount} ${unit}人工作業`; 
-        }
-        if (key === 'automation_suppressed_alerts' && description) {
-            return description.replace('toil', '人工作業');
-        }
-        return description;
-    }, []);
-
-    const automationMetricCards = useMemo(() => {
-        if (!kpiData) return [];
-        const metricTitles: Record<string, string> = {
-            automation_runs_today: '今日運行次數',
-            automation_success_rate: '自動化成功率',
-            automation_suppressed_alerts: '避免觸發的告警',
-        };
-        return ['automation_runs_today', 'automation_success_rate', 'automation_suppressed_alerts']
-            .map((key) => {
-                const metric = kpiData[key];
-                if (!metric) return null;
-                return {
-                    key,
-                    title: metricTitles[key] || key,
-                    value: metric.value,
-                    description: localizeMetricDescription(key, metric.description),
-                    icon: metric.icon,
-                    icon_bg_color: metric.icon_bg_color,
-                };
-            })
-            .filter(Boolean) as Array<{ key: string; title: string; value: string; description: string; icon: string; icon_bg_color: string }>;
-    }, [kpiData, localizeMetricDescription]);
 
     const fetchPlaybooks = useCallback(async () => {
         if (!pageKey) return;
@@ -321,35 +242,6 @@ const AutomationPlaybooksPage: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col">
-            {(!isLoadingMetrics || metricError || automationMetricCards.length > 0) && (
-                <div className="mb-4">
-                    {metricError ? (
-                        <div className="rounded-lg border border-amber-600/60 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-                            {metricError}
-                        </div>
-                    ) : (
-                        <div className="grid gap-4 md:grid-cols-3">
-                            {(isLoadingMetrics ? [1, 2, 3] : automationMetricCards).map((card, index) => (
-                                typeof card === 'number' ? (
-                                    <div
-                                        key={`metric-skeleton-${index}`}
-                                        className="glass-card h-[104px] w-full animate-pulse rounded-xl bg-slate-900/60"
-                                    />
-                                ) : (
-                                    <ContextualKPICard
-                                        key={card.key}
-                                        title={card.title}
-                                        value={card.value}
-                                        description={card.description}
-                                        icon={card.icon}
-                                        icon_bg_color={card.icon_bg_color}
-                                    />
-                                )
-                            ))}
-                        </div>
-                    )}
-                </div>
-            )}
             <Toolbar
                 rightActions={
                     <>

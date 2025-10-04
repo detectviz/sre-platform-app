@@ -42,7 +42,7 @@ tags:
   - name: Automation
     description: 自動化 (Automation playbooks, executions, and triggers)
   - name: IAM
-    description: 身份與存取管理 (Identity and access management for users, teams, and roles)
+    description: 身份與存取 (Identity and access management for users, teams, and roles)
   - name: Notifications
     description: 通知管理 (Notification channels, strategies, and delivery history)
   - name: Analysis

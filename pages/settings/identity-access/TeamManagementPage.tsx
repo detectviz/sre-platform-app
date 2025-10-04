@@ -86,9 +86,6 @@ const TeamManagementPage: React.FC = () => {
 
     const userMap = useMemo(() => new Map(users.map(u => [u.id, u])), [users]);
     const findUserById = (id: string): User | undefined => userMap.get(id);
-    const totalMembers = useMemo(() => teams.reduce((sum, team) => sum + team.member_ids.length, 0), [teams]);
-    const ownerlessTeams = useMemo(() => teams.filter(team => !team.owner_id).length, [teams]);
-    const averageMembers = useMemo(() => teams.length > 0 ? totalMembers / teams.length : 0, [teams, totalMembers]);
 
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
         if (!pageKey) {
@@ -226,25 +223,6 @@ const TeamManagementPage: React.FC = () => {
                 onClearSelection={() => setSelectedIds([])}
                 batchActions={batchActions}
             />
-
-            <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="rounded-lg border border-slate-700/60 bg-slate-900/60 p-4">
-                    <p className="text-sm text-slate-400">團隊數量</p>
-                    <p className="mt-2 text-2xl font-semibold text-white">{teams.length}</p>
-                </div>
-                <div className="rounded-lg border border-slate-700/60 bg-slate-900/60 p-4">
-                    <p className="text-sm text-slate-400">總成員數</p>
-                    <p className="mt-2 text-2xl font-semibold text-white">{totalMembers}</p>
-                </div>
-                <div className="rounded-lg border border-slate-700/60 bg-slate-900/60 p-4">
-                    <p className="text-sm text-slate-400">平均成員</p>
-                    <p className="mt-2 text-2xl font-semibold text-white">{averageMembers.toFixed(1)}</p>
-                </div>
-                <div className="rounded-lg border border-slate-700/60 bg-slate-900/60 p-4">
-                    <p className="text-sm text-slate-400">未指派擁有者</p>
-                    <p className={`mt-2 text-2xl font-semibold ${ownerlessTeams > 0 ? 'text-amber-300' : 'text-white'}`}>{ownerlessTeams}</p>
-                </div>
-            </div>
 
             <TableContainer>
                 <div className="flex-1 overflow-y-auto">

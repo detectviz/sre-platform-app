@@ -395,9 +395,9 @@ const PAGE_CONTENT = {
             kpi_page_name: '自動化'
         },
         iam: {
-            title: '身份與存取管理',
+            title: '身份與存取',
             description: '統一管理身份認證、存取權限和組織架構配置',
-            kpi_page_name: '身份與存取管理'
+            kpi_page_name: '身份與存取'
         },
         notification: {
             title: '通知',
@@ -1878,9 +1878,9 @@ const LAYOUT_WIDGETS: LayoutWidget[] = [
     { id: 'automation_suppressed_alerts', name: '已抑制告警', description: '因自動化成功執行而抑制的告警數。', supported_pages: ['自動化'] },
 
     // IAM
-    { id: 'iam_total_users', name: '使用者總數', description: '平台中的總使用者帳號數。', supported_pages: ['身份與存取管理'] },
-    { id: 'iam_active_users', name: '活躍使用者', description: '過去 7 天内有登入活動的使用者。', supported_pages: ['身份與存取管理'] },
-    { id: 'iam_login_failures', name: '登入失敗 (24H)', description: '過去 24 小時內的登入失敗次數。', supported_pages: ['身份與存取管理'] },
+    { id: 'iam_total_users', name: '使用者總數', description: '平台中的總使用者帳號數。', supported_pages: ['身份與存取'] },
+    { id: 'iam_active_users', name: '活躍使用者', description: '過去 7 天内有登入活動的使用者。', supported_pages: ['身份與存取'] },
+    { id: 'iam_login_failures', name: '登入失敗 (24H)', description: '過去 24 小時內的登入失敗次數。', supported_pages: ['身份與存取'] },
 
     // Notification Management
     { id: 'notification_sent_today', name: '今日已發送', description: '今日透過所有管道發送的通知總數。', supported_pages: ['通知'] },
@@ -1906,7 +1906,7 @@ const DEFAULT_LAYOUTS: Record<string, { widget_ids: string[]; updated_at: string
     "儀表板": { widget_ids: ['dashboard_total_count', 'dashboard_custom_count', 'dashboard_grafana_count'], updated_at: '2025-09-24T10:30:00Z', updated_by: 'Admin User' },
     "智慧排查": { widget_ids: ['analysis_critical_anomalies', 'analysis_log_volume', 'analysis_trace_errors'], updated_at: '2025-09-24T10:30:00Z', updated_by: 'Admin User' },
     "自動化": { widget_ids: ['automation_runs_today', 'automation_success_rate', 'automation_suppressed_alerts'], updated_at: '2025-09-24T10:30:00Z', updated_by: 'Admin User' },
-    "身份與存取管理": { widget_ids: ['iam_total_users', 'iam_active_users', 'iam_login_failures'], updated_at: '2025-09-24T10:30:00Z', updated_by: 'Admin User' },
+    "身份與存取": { widget_ids: ['iam_total_users', 'iam_active_users', 'iam_login_failures'], updated_at: '2025-09-24T10:30:00Z', updated_by: 'Admin User' },
     "通知": { widget_ids: ['notification_sent_today', 'notification_failure_rate', 'notification_channels'], updated_at: '2025-09-24T10:30:00Z', updated_by: 'Admin User' },
     "平台": { widget_ids: ['platform_tags_defined', 'platform_auth_provider', 'platform_mail_status'], updated_at: '2025-09-24T10:30:00Z', updated_by: 'Admin User' },
     "profile": { widget_ids: ['profile_login_count_7d', 'profile_last_password_change', 'profile_mfa_status'], updated_at: '2025-09-24T10:30:00Z', updated_by: 'Admin User' },

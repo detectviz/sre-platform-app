@@ -17,7 +17,6 @@ import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 import UserAvatar from '../../../components/UserAvatar';
 import UnifiedSearchModal from '../../../components/UnifiedSearchModal';
 import { useOptions } from '../../../contexts/OptionsContext';
-import PageKPIs from '../../../components/PageKPIs';
 import StatusTag from '../../../components/StatusTag';
 import IconButton from '../../../components/IconButton';
 import Drawer from '../../../components/Drawer';
@@ -35,6 +34,7 @@ const PersonnelManagementPage: React.FC = () => {
     const [filters, setFilters] = useState<PersonnelFilters>({});
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
+    const [statusFilter, setStatusFilter] = useState<'active' | 'invited' | 'inactive' | 'all'>('all');
 
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -96,6 +96,14 @@ const PersonnelManagementPage: React.FC = () => {
         }
     }, [fetchUsers, pageKey]);
 
+    useEffect(() => {
+        setFilters(prev => ({
+            ...prev,
+            status: statusFilter === 'all' ? undefined : statusFilter,
+        }));
+        setCurrentPage(1);
+    }, [statusFilter]);
+
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
         if (!pageKey) {
             showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
@@ -125,18 +133,12 @@ const PersonnelManagementPage: React.FC = () => {
         }, {} as Record<User['status'], string>);
     }, [options?.personnel?.statuses]);
 
-    const statusSummaries = useMemo(() => {
-        const descriptors = options?.personnel?.statuses ?? [];
-        return descriptors.map(descriptor => {
-            const count = users.filter(user => user.status === descriptor.value).length;
-            return {
-                key: descriptor.value,
-                label: descriptor.label,
-                count,
-                className: descriptor.class_name,
-            };
-        });
-    }, [options?.personnel?.statuses, users]);
+    const statusLabelMap: Record<'active' | 'invited' | 'inactive' | 'all', string> = {
+        all: '全部',
+        active: '活躍',
+        invited: '已邀請',
+        inactive: '非活躍',
+    };
 
     const handleInvite = async (details: { email: string; name?: string; role: User['role']; team: string }) => {
         try {
@@ -275,20 +277,21 @@ const PersonnelManagementPage: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col">
-            <PageKPIs pageName="身份與存取管理" />
-            {statusSummaries.length > 0 && (
-                <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    {statusSummaries.map(summary => (
-                        <div key={summary.key} className="rounded-lg border border-slate-700/60 bg-slate-900/60 p-4">
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm text-slate-400">{summary.label}</span>
-                                <StatusTag label={summary.label} className={summary.className} dense />
-                            </div>
-                            <p className="mt-2 text-2xl font-semibold text-white">{summary.count}</p>
-                        </div>
+            <div className="px-6 py-3">
+                <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400">狀態</span>
+                    {(['all', 'active', 'invited', 'inactive'] as const).map(option => (
+                        <button
+                            key={option}
+                            type="button"
+                            onClick={() => setStatusFilter(option)}
+                            className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${statusFilter === option ? 'bg-sky-700/60 border-sky-500 text-white' : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:bg-slate-800/80'}`}
+                        >
+                            {statusLabelMap[option]}
+                        </button>
                     ))}
                 </div>
-            )}
+            </div>
             <Toolbar
                 leftActions={leftActions}
                 rightActions={

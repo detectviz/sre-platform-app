@@ -78,7 +78,6 @@ const TagManagementPage: React.FC = () => {
         kindOptions.forEach(kind => map.set(kind.value, kind.label));
         return map;
     }, [kindOptions]);
-    const numberFormatter = useMemo(() => new Intl.NumberFormat('zh-TW'), []);
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
 
     const fetchTags = useCallback(async () => {
@@ -124,52 +123,6 @@ const TagManagementPage: React.FC = () => {
         setSelectedIds([]);
     }, [filters]);
 
-    const summaryCards = useMemo(() => {
-        const requiredCount = tags.filter(tag => tag.required).length;
-        const enumCount = tags.filter(tag => tag.kind === 'enum').length;
-        const readonlyCount = tags.filter(tag => tag.readonly).length;
-        const uniqueScopes = new Set((tags || []).flatMap(tag => tag.scopes || []));
-        const percentOfPage = (count: number) => (tags.length > 0 ? Math.round((count / tags.length) * 100) : 0);
-
-        return [
-            {
-                key: 'total',
-                title: '標籤總數',
-                value: totalTags,
-                badge: uniqueScopes.size > 0 ? `${uniqueScopes.size} 種範圍` : '尚無範圍',
-                tone: 'info' as StatusTagProps['tone'],
-                icon: 'tags',
-                description: `共 ${numberFormatter.format(totalTags)} 個已定義標籤，列表目前顯示 ${numberFormatter.format(tags.length)} 項。`,
-            },
-            {
-                key: 'required',
-                title: '必填標籤',
-                value: requiredCount,
-                badge: `${percentOfPage(requiredCount)}%`,
-                tone: 'danger' as StatusTagProps['tone'],
-                icon: 'shield-check',
-                description: '需強制填寫的標籤，保存資源或事件時不可缺少。',
-            },
-            {
-                key: 'enum',
-                title: '列舉型標籤',
-                value: enumCount,
-                badge: `${percentOfPage(enumCount)}%`,
-                tone: 'success' as StatusTagProps['tone'],
-                icon: 'list',
-                description: '支援預設值與搜尋，可透過「管理標籤值」維護選項。',
-            },
-            {
-                key: 'readonly',
-                title: '唯讀標籤',
-                value: readonlyCount,
-                badge: readonlyCount > 0 ? `${readonlyCount} 項` : '可編輯',
-                tone: 'warning' as StatusTagProps['tone'],
-                icon: 'lock',
-                description: '由系統依據其他實體自動帶入，使用者無法直接編輯。',
-            },
-        ];
-    }, [numberFormatter, tags, totalTags]);
 
     const filterBadges = useMemo(() => {
         const chips: string[] = [];
@@ -262,7 +215,7 @@ const TagManagementPage: React.FC = () => {
 
     const handleManageValues = (tag: TagDefinition) => {
         if (tag.kind !== 'enum') {
-            showToast('僅列舉型標籤支援預設值管理。', 'info');
+            showToast('僅列舉型標籤支援預設值管理。', 'warning');
             return;
         }
         setManagingTag(tag);
@@ -493,58 +446,6 @@ const TagManagementPage: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col">
-            <div className="space-y-4 mb-4">
-                <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4">
-                    {isLoading && tags.length === 0 ? (
-                        Array.from({ length: 4 }).map((_, index) => (
-                            <div key={index} className="h-28 rounded-xl border border-slate-800 bg-slate-900/40 p-4 animate-pulse">
-                                <div className="h-4 w-20 bg-slate-700/60 rounded" />
-                                <div className="mt-4 h-6 w-24 bg-slate-700/50 rounded" />
-                                <div className="mt-3 h-3 w-full bg-slate-800/60 rounded" />
-                            </div>
-                        ))
-                    ) : (
-                        summaryCards.map(card => (
-                            <div key={card.key} className="rounded-xl border border-slate-700/80 bg-slate-900/50 p-4">
-                                <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                        <p className="text-xs text-slate-400">{card.title}</p>
-                                        <p className="mt-2 text-2xl font-semibold text-white">{numberFormatter.format(card.value)}</p>
-                                    </div>
-                                    <StatusTag dense tone={card.tone} icon={card.icon} label={card.badge} />
-                                </div>
-                                <p className="mt-3 text-xs text-slate-400 leading-relaxed">{card.description}</p>
-                            </div>
-                        ))
-                    )}
-                </div>
-                {tagManagementOptions?.governance_notes && (
-                    <div className="rounded-lg border border-slate-700/70 bg-slate-900/50 px-4 py-3 text-sm text-slate-300">
-                        <div className="flex items-start gap-3">
-                            <Icon name="book-open-check" className="w-5 h-5 text-sky-300 mt-0.5" />
-                            <div>
-                                <h3 className="text-sm font-semibold text-sky-200">治理規範</h3>
-                                <p className="mt-1 text-xs leading-relaxed text-slate-300">{tagManagementOptions.governance_notes}</p>
-                            </div>
-                        </div>
-                    </div>
-                )}
-                <div className="rounded-lg border border-amber-700/40 bg-amber-950/25 px-4 py-4">
-                    <div className="flex items-start gap-3">
-                        <Icon name="shield-alert" className="w-5 h-5 text-amber-300 flex-shrink-0 mt-0.5" />
-                        <div className="space-y-2">
-                            <h3 className="text-sm font-semibold text-amber-200">標籤管理（Platform Admin 專用）</h3>
-                            <p className="text-xs text-slate-200 leading-relaxed">
-                                此頁面用於定義組織的<strong>標籤管理</strong>，包括標籤鍵、適用範圍及存取權限。這些定義會影響整個系統中標籤的使用方式，使用者在建立資源或事件時會依據此處設定套用標籤。
-                            </p>
-                            <p className="text-xs text-amber-300 flex items-center">
-                                <Icon name="alert-triangle" className="w-3.5 h-3.5 mr-1.5" />
-                                變更標籤定義可能影響現有資源的標籤驗證與查詢功能，操作前請先確認影響範圍。
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
             {hasFilters && (
                 <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-slate-700/70 bg-slate-900/40 px-3 py-2">
                     <span className="text-xs text-slate-400">篩選條件：</span>

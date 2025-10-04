@@ -3519,6 +3519,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                             ? body.allowed_values
                             : [],
                         usage_count: 0,
+                        kind: body.kind || (Array.isArray(body.allowed_values) && body.allowed_values.length > 0 ? 'enum' : 'text'),
                     };
 
                     DB.tag_definitions.push(newTag);
@@ -3708,6 +3709,7 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                         description: body?.description ?? '',
                         system: Boolean(body?.system),
                         key: body?.key,
+                        kind: body?.kind || (Array.isArray(body?.allowed_values) && body.allowed_values.length > 0 ? 'enum' : 'text'),
                     } as TagDefinition;
 
                     if (!payload.key) {
