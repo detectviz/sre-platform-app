@@ -203,11 +203,35 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
       <FormRow label={content.TAG_MANAGEMENT.SCOPE}>
         <select
           value={(filters as TagManagementFilters).scope || ''}
-          onChange={e => setFilters(prev => ({ ...(prev as TagManagementFilters), scope: e.target.value as TagManagementFilters['scope'] }))}
+          onChange={e => {
+            const value = e.target.value;
+            setFilters(prev => ({
+              ...(prev as TagManagementFilters),
+              scope: value ? (value as TagManagementFilters['scope']) : undefined,
+            }));
+          }}
           className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
         >
           <option value="">{content.TAG_MANAGEMENT.ALL_SCOPES}</option>
           {options?.tag_management.scopes.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+        </select>
+      </FormRow>
+      <FormRow label={content.TAG_MANAGEMENT.KIND}>
+        <select
+          value={(filters as TagManagementFilters).kind || ''}
+          onChange={e => {
+            const value = e.target.value;
+            setFilters(prev => ({
+              ...(prev as TagManagementFilters),
+              kind: value ? (value as TagManagementFilters['kind']) : undefined,
+            }));
+          }}
+          className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
+        >
+          <option value="">{content.TAG_MANAGEMENT.ALL_KINDS}</option>
+          {(options?.tag_management.kinds || []).map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
         </select>
       </FormRow>
     </>

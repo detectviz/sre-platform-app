@@ -11,9 +11,11 @@ interface MultiEmailInputProps {
     value: string; // Comma-separated string
     onChange: (value: string) => void;
     label: string;
+    placeholder?: string;
+    helperText?: string;
 }
 
-const MultiEmailInput: React.FC<MultiEmailInputProps> = ({ value, onChange, label }) => {
+const MultiEmailInput: React.FC<MultiEmailInputProps> = ({ value, onChange, label, placeholder, helperText }) => {
     const emails = value ? value.split(',').filter(e => e.trim() !== '') : [];
     const [inputValue, setInputValue] = useState('');
 
@@ -71,9 +73,10 @@ const MultiEmailInput: React.FC<MultiEmailInputProps> = ({ value, onChange, labe
                     onBlur={addEmail}
                     onPaste={handlePaste}
                     className="flex-grow bg-transparent focus:outline-none text-sm p-1"
-                    placeholder={emails.length === 0 ? '輸入電子郵件...' : ''}
+                    placeholder={emails.length === 0 ? (placeholder || '輸入電子郵件，按 Enter 新增') : ''}
                 />
             </div>
+            {helperText && <p className="mt-1 text-xs text-slate-500">{helperText}</p>}
         </FormRow>
     );
 };
@@ -179,16 +182,22 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
                             label="收件人 (To) *"
                             value={formData.config?.to || ''}
                             onChange={value => handleConfigChange('to', value)}
+                            placeholder="user@example.com, admin@company.com"
+                            helperText="使用逗號或 Enter 分隔多個收件人。"
                         />
                         <MultiEmailInput
                             label="副本 (CC)"
                             value={formData.config?.cc || ''}
                             onChange={value => handleConfigChange('cc', value)}
+                            placeholder="cc@example.com"
+                            helperText="選填，可通知額外關係人。"
                         />
                         <MultiEmailInput
                             label="密件副本 (BCC)"
                             value={formData.config?.bcc || ''}
                             onChange={value => handleConfigChange('bcc', value)}
+                            placeholder="bcc@example.com"
+                            helperText="選填，收件人將看不到彼此的地址。"
                         />
                     </>
                 );
@@ -196,7 +205,16 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
                 return (
                     <>
                         <FormRow label="Webhook URL *">
-                            <input type="url" value={formData.config?.webhook_url || ''} onChange={e => handleConfigChange('webhook_url', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+                            <div className="space-y-1">
+                                <input
+                                    type="url"
+                                    value={formData.config?.webhook_url || ''}
+                                    onChange={e => handleConfigChange('webhook_url', e.target.value)}
+                                    placeholder="https://example.com/hooks/incident"
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-sky-500"
+                                />
+                                <p className="text-xs text-slate-500">請貼上可接受 POST 請求的完整 URL，系統將以 JSON 形式送出通知。</p>
+                            </div>
                         </FormRow>
                         <FormRow label="HTTP 方法 (Method)">
                             <select
@@ -216,10 +234,28 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
                 return (
                     <>
                         <FormRow label="Incoming Webhook URL *">
-                            <input type="url" value={formData.config?.webhook_url || ''} onChange={e => handleConfigChange('webhook_url', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+                            <div className="space-y-1">
+                                <input
+                                    type="url"
+                                    value={formData.config?.webhook_url || ''}
+                                    onChange={e => handleConfigChange('webhook_url', e.target.value)}
+                                    placeholder="請貼上來自 Slack 的 Webhook URL"
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-sky-500"
+                                />
+                                <p className="text-xs text-slate-500">可於 Slack App 設定頁面取得 URL，系統將依此傳送通知訊息。</p>
+                            </div>
                         </FormRow>
                         <FormRow label="提及對象 (Mention)">
-                            <input type="text" value={formData.config?.mention || ''} onChange={e => handleConfigChange('mention', e.target.value)} placeholder="@channel, @here, or user_id" className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+                            <div className="space-y-1">
+                                <input
+                                    type="text"
+                                    value={formData.config?.mention || ''}
+                                    onChange={e => handleConfigChange('mention', e.target.value)}
+                                    placeholder="@username, #channel"
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-sky-500"
+                                />
+                                <p className="text-xs text-slate-500">使用 Slack 支援的提及格式，可加入多個對象並以逗號分隔。</p>
+                            </div>
                         </FormRow>
                     </>
                 );
@@ -237,17 +273,43 @@ const NotificationChannelEditModal: React.FC<NotificationChannelEditModalProps> 
                                 type="button"
                                 onClick={() => setIsTokenVisible(!isTokenVisible)}
                                 className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-white"
-                                aria-label={isTokenVisible ? "Hide token" : "Show token"}
+                                aria-label={isTokenVisible ? "隱藏 Token" : "顯示 Token"}
+                                title={isTokenVisible ? '隱藏 Token' : '顯示 Token'}
                             >
                                 <Icon name={isTokenVisible ? 'eye' : 'eye-off'} className="w-5 h-5" />
                             </button>
                         </div>
+                        <p className="mt-1 text-xs text-slate-500">請貼上 LINE Notify 取得的 Access Token，點擊右側圖示可顯示或隱藏內容。</p>
                     </FormRow>
                 );
             case 'SMS':
                 return (
                     <FormRow label="收件人手機號碼 *">
-                        <input type="tel" value={formData.config?.phone_number || ''} onChange={e => handleConfigChange('phone_number', e.target.value)} placeholder="例如: +886912345678" className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+                        <div className="flex gap-2">
+                            <select
+                                value={formData.config?.country_code || '+886'}
+                                onChange={e => handleConfigChange('country_code', e.target.value)}
+                                className="bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm"
+                            >
+                                <option value="+886">+886 台灣</option>
+                                <option value="+81">+81 日本</option>
+                                <option value="+82">+82 韓國</option>
+                                <option value="+1">+1 美國/加拿大</option>
+                            </select>
+                            <input
+                                type="tel"
+                                value={formData.config?.phone_number || ''}
+                                onChange={e => handleConfigChange('phone_number', e.target.value)}
+                                onBlur={e => {
+                                    if (e.target.value && !/^\d{6,15}$/.test(e.target.value.replace(/[^\d]/g, ''))) {
+                                        showToast('請輸入不含特殊符號的國際號碼，例如：912345678。', 'error');
+                                    }
+                                }}
+                                placeholder="例如: 912345678"
+                                className="flex-1 bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-sky-500"
+                            />
+                        </div>
+                        <p className="mt-1 text-xs text-slate-500">系統會自動帶入國碼，號碼僅需輸入本地段落。</p>
                     </FormRow>
                 );
             default:

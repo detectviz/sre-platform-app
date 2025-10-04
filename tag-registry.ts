@@ -1,4 +1,4 @@
-import { TagDefinition, TagRegistryEntry, TagScope } from './types';
+import { TagDefinition, TagRegistryEntry, TagScope, TagKind } from './types';
 
 // 預設可寫入標籤的角色清單
 const DEFAULT_WRITABLE_ROLES = ['platform_admin', 'sre_lead'];
@@ -29,13 +29,13 @@ const ALL_SCOPES = TAG_SCOPE_OPTIONS.map(option => option.value);
 
 const CORE_TAGS: TagRegistryEntry[] = [
   // 基礎分類標籤
-  { key: 'env', description: '部署環境。', scopes: ALL_SCOPES, required: true, writable_roles: DEFAULT_WRITABLE_ROLES },
-  { key: 'service', description: '所屬服務名稱。', scopes: ALL_SCOPES, required: false, writable_roles: DEFAULT_WRITABLE_ROLES },
+  { key: 'env', description: '部署環境。', scopes: ALL_SCOPES, required: true, writable_roles: DEFAULT_WRITABLE_ROLES, kind: 'enum' },
+  { key: 'service', description: '所屬服務名稱。', scopes: ALL_SCOPES, required: false, writable_roles: DEFAULT_WRITABLE_ROLES, kind: 'enum' },
 
   // 事件核心屬性（系統依賴這些標籤）
-  { key: 'status', description: '事件狀態。', scopes: ['incident', 'notification_policy', 'automation'], required: true, writable_roles: DEFAULT_WRITABLE_ROLES },
-  { key: 'severity', description: '事件嚴重度。', scopes: ['incident', 'notification_policy', 'automation'], required: true, writable_roles: DEFAULT_WRITABLE_ROLES },
-  { key: 'impact', description: '事件影響層級。', scopes: ['incident', 'notification_policy', 'automation'], required: true, writable_roles: DEFAULT_WRITABLE_ROLES },
+  { key: 'status', description: '事件狀態。', scopes: ['incident', 'notification_policy', 'automation'], required: true, writable_roles: DEFAULT_WRITABLE_ROLES, kind: 'enum' },
+  { key: 'severity', description: '事件嚴重度。', scopes: ['incident', 'notification_policy', 'automation'], required: true, writable_roles: DEFAULT_WRITABLE_ROLES, kind: 'enum' },
+  { key: 'impact', description: '事件影響層級。', scopes: ['incident', 'notification_policy', 'automation'], required: true, writable_roles: DEFAULT_WRITABLE_ROLES, kind: 'enum' },
 ];
 
 // ============================================================================
@@ -44,15 +44,15 @@ const CORE_TAGS: TagRegistryEntry[] = [
 
 const EXTENDED_TAGS: TagRegistryEntry[] = [
   // 資源標識
-  { key: 'resource_type', description: '資源種類。', scopes: ['resource', 'incident'], required: false, writable_roles: DEFAULT_WRITABLE_ROLES },
-  { key: 'cluster', description: '叢集名稱。', scopes: ['resource', 'incident'], required: false, writable_roles: DEFAULT_WRITABLE_ROLES },
+  { key: 'resource_type', description: '資源種類。', scopes: ['resource', 'incident'], required: false, writable_roles: DEFAULT_WRITABLE_ROLES, kind: 'enum' },
+  { key: 'cluster', description: '叢集名稱。', scopes: ['resource', 'incident'], required: false, writable_roles: DEFAULT_WRITABLE_ROLES, kind: 'enum' },
 
   // 監控相關
-  { key: 'datasource_type', description: '資料來源類型。', scopes: ['datasource', 'incident'], required: false, writable_roles: DEFAULT_WRITABLE_ROLES },
+  { key: 'datasource_type', description: '資料來源類型。', scopes: ['datasource', 'incident'], required: false, writable_roles: DEFAULT_WRITABLE_ROLES, kind: 'enum' },
 
   // 組織相關（自動從關聯實體填充，唯讀）
-  { key: 'team', description: '所屬團隊名稱（自動填充，不可編輯）。', scopes: ['resource', 'incident', 'dashboard', 'alert_rule'], required: false, writable_roles: [], readonly: true, link_to_entity: 'team' },
-  { key: 'owner', description: '負責人姓名（自動填充，不可編輯）。', scopes: ['resource', 'incident', 'dashboard', 'alert_rule'], required: false, writable_roles: [], readonly: true, link_to_entity: 'personnel' },
+  { key: 'team', description: '所屬團隊名稱（自動填充，不可編輯）。', scopes: ['resource', 'incident', 'dashboard', 'alert_rule'], required: false, writable_roles: [], readonly: true, link_to_entity: 'team', kind: 'reference' },
+  { key: 'owner', description: '負責人姓名（自動填充，不可編輯）。', scopes: ['resource', 'incident', 'dashboard', 'alert_rule'], required: false, writable_roles: [], readonly: true, link_to_entity: 'personnel', kind: 'reference' },
 ];
 
 // ============================================================================
@@ -67,6 +67,8 @@ const registry: TagRegistryEntry[] = [
 // ============================================================================
 // 輔助函數
 // ============================================================================
+
+const DEFAULT_KIND_FALLBACK: TagKind = 'text';
 
 const createTagDefinition = (entry: TagRegistryEntry): TagDefinition => {
   // 為系統標籤設置預設的 allowed_values
@@ -120,11 +122,16 @@ const createTagDefinition = (entry: TagRegistryEntry): TagDefinition => {
     ],
   };
 
+  const resolvedKind: TagKind = entry.kind
+    ? entry.kind
+    : (defaultAllowedValues[entry.key] ? 'enum' : DEFAULT_KIND_FALLBACK);
+
   return {
     id: `tag-${entry.key}`,
     ...entry,
     allowed_values: defaultAllowedValues[entry.key] || [], // 使用預設值或空陣列
     usage_count: 0,
+    kind: resolvedKind,
   };
 };
 

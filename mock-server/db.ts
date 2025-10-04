@@ -182,20 +182,47 @@ const PAGE_CONTENT = {
     DASHBOARD_VIEWER: {
         THEME_LABEL: '主題',
         TV_MODE_LABEL: 'TV 模式',
-        REFRESH_LABEL: '刷新',
-        TIME_LABEL: '時間',
+        REFRESH_LABEL: '重新整理頻率',
+        TIME_LABEL: '時間範圍',
         THEME: '主題',
         THEME_DARK: '深色',
         THEME_LIGHT: '淺色',
         TV_MODE: 'TV 模式',
-        TV_MODE_OFF: 'Off',
-        TV_MODE_ON: 'TV',
-        REFRESH: '刷新',
-        REFRESH_OFF: 'Off',
+        TV_MODE_OFF: '關閉',
+        TV_MODE_ON: '開啟',
+        REFRESH: '重新整理',
+        REFRESH_OFF: '關閉',
         TIME: '時間',
-        ZOOM_IN: 'Zoom In',
-        SHARE_DASHBOARD: 'Share Dashboard',
-        GRAFANA_URL_NOT_CONFIGURED: 'Grafana URL not configured.',
+        ZOOM_IN: '放大檢視',
+        SHARE_DASHBOARD: '分享儀表板',
+        GRAFANA_URL_NOT_CONFIGURED: '尚未設定 Grafana URL，請先完成整合。',
+        OPTIONS_ERROR: '無法載入 Grafana 選項。',
+    },
+    DASHBOARD_VIEW_PAGE: {
+        BACK_TO_LIST: '返回儀表板列表',
+        REFRESH_LABEL: '重新載入資料',
+        OPEN_IN_GRAFANA: '於 Grafana 開啟',
+        METADATA_TITLE: '儀表板資訊',
+        OWNER_LABEL: '擁有者',
+        CATEGORY_LABEL: '分類',
+        TYPE_LABEL: '類型',
+        UPDATED_AT_LABEL: '最後更新',
+        RESOURCE_COUNT_LABEL: '關聯資源',
+        RESOURCE_COUNT_BADGE: '{count} 個資源',
+        DESCRIPTION_LABEL: '描述',
+        EMPTY_DESCRIPTION: '尚未提供描述。',
+        EMPTY_VALUE: '—',
+        ERROR_TITLE: '無法載入儀表板',
+        ERROR_NO_ID: '未提供儀表板識別碼，請回到列表重新選取。',
+        ERROR_NOT_FOUND: '找不到對應的儀表板，可能已被移除或權限不足。',
+        ERROR_LOAD: '無法載入儀表板資料，請稍後再試一次。',
+        RETRY_LABEL: '重新嘗試',
+        RETURN_TO_LIST: '返回列表',
+        LAST_UPDATED_PREFIX: '最後更新',
+        TYPE_BUILT_IN: '內建儀表板',
+        TYPE_GRAFANA: 'Grafana 儀表板',
+        TYPE_CUSTOM: '自訂儀表板',
+        RESOURCE_BADGE_TOOLTIP: '此儀表板綁定 {count} 筆資源',
     },
     COMMAND_PALETTE: {
         TITLE: 'Command Palette',
@@ -395,8 +422,25 @@ const PAGE_CONTENT = {
         KEY_ANOMALY: '關鍵異常',
         RECOMMENDED_ACTION: '建議操作',
         SERVICE_HEALTH_TITLE: '服務健康度總覽',
+        SERVICE_HEALTH_DESCRIPTION: '依照區域與服務顯示即時健康度熱圖。',
         RESOURCE_GROUP_STATUS_TITLE: '資源群組狀態',
+        RESOURCE_GROUP_DESCRIPTION: '掌握各資源群組的健康狀態分佈與趨勢。',
         GENERATE_BRIEFING_ERROR: '無法生成 AI 簡報。請檢查 API 金鑰或稍後再試。',
+        SERVICE_HEALTH_ERROR: '無法載入服務健康度資料。',
+        RESOURCE_GROUP_ERROR: '無法載入資源群組狀態資料。',
+        REFRESH_TOOLTIP: '重新整理資料',
+        REFRESH_BRIEFING_TOOLTIP: '重新生成簡報',
+        SERVICE_HEALTH_EMPTY_TITLE: '尚無健康度資料',
+        SERVICE_HEALTH_EMPTY_DESCRIPTION: '稍後再試或調整觀測範圍。',
+        SERVICE_HEALTH_MONITORED_LABEL: '監控服務 {count} 項',
+        SERVICE_HEALTH_RANGE_LABEL: '觀測範圍',
+        RESOURCE_GROUP_EMPTY_TITLE: '尚無群組狀態資料',
+        RESOURCE_GROUP_EMPTY_DESCRIPTION: '暫無資源群組統計，請稍後再試。',
+        RESOURCE_GROUP_RANGE_LABEL: '彙整區間',
+        RESOURCE_GROUP_MONITORED_LABEL: '群組 {count} 個',
+        SUMMARY_LABEL: '摘要',
+        LAST_UPDATED_LABEL: '資料更新',
+        TIMEZONE_LABEL: '時區',
     },
     INFRA_INSIGHTS: {
         TITLE: '基礎設施洞察',
@@ -1770,14 +1814,29 @@ const MOCK_LOG_TIME_OPTIONS: { label: string, value: string }[] = [
 const MOCK_MAIL_SETTINGS: MailSettings = { smtp_server: 'smtp.example.com', port: 587, username: 'noreply@sre.platform', sender_name: 'SRE Platform', sender_email: 'noreply@sre.platform', encryption: 'tls' };
 const MOCK_GRAFANA_SETTINGS: GrafanaSettings = { enabled: true, url: DEFAULT_GRAFANA_BASE_URL, api_key: 'glsa_xxxxxxxxxxxxxxxxxxxxxxxx', org_id: 1 };
 const MOCK_GRAFANA_OPTIONS: GrafanaOptions = {
-    time_options: [{ label: 'Last 6 hours', value: 'from=now-6h&to=now' }, { label: 'Last 24 hours', value: 'from=now-24h&to=now' }],
-    refresh_options: [{ label: '1m', value: '1m' }, { label: '5m', value: '5m' }],
-    tv_mode_options: [{ label: 'Off', value: 'off' }, { label: 'On', value: 'on' }],
-    theme_options: [{ label: '深色', value: 'dark' }, { label: '淺色', value: 'light' }],
+    time_options: [
+        { label: '最近 6 小時', value: 'from=now-6h&to=now' },
+        { label: '最近 24 小時', value: 'from=now-24h&to=now' },
+        { label: '最近 7 天', value: 'from=now-7d&to=now' },
+    ],
+    refresh_options: [
+        { label: '關閉', value: '' },
+        { label: '每 1 分鐘', value: '1m' },
+        { label: '每 5 分鐘', value: '5m' },
+        { label: '每 15 分鐘', value: '15m' },
+    ],
+    tv_mode_options: [
+        { label: '關閉', value: 'off' },
+        { label: '全螢幕 TV 模式', value: 'on' },
+    ],
+    theme_options: [
+        { label: '深色', value: 'dark' },
+        { label: '淺色', value: 'light' },
+    ],
     theme_label: '主題',
     tv_mode_label: 'TV 模式',
-    refresh_label: '刷新',
-    time_label: '時間',
+    refresh_label: '重新整理頻率',
+    time_label: '時間範圍',
 };
 const MOCK_AUTH_SETTINGS: AuthSettings = { provider: 'keycloak', enabled: true, client_id: 'sre-platform-client', client_secret: '...', realm: 'sre', auth_url: '...', token_url: '...', user_info_url: '...', idp_admin_url: DEFAULT_IDP_ADMIN_URL };
 const LAYOUT_WIDGETS: LayoutWidget[] = [
@@ -2290,6 +2349,19 @@ const MOCK_SERVICE_HEALTH_DATA = {
     ],
     x_axis_labels: ['us-east-1', 'us-west-2', 'eu-central-1', 'ap-northeast-1'],
     y_axis_labels: ['API Gateway', 'RDS Database', 'EKS Cluster', 'Kubernetes'],
+    metadata: {
+        refreshed_at: '2025-10-12T01:20:00+08:00',
+        timezone: 'UTC+8',
+        sampling_window: '過去 1 小時',
+        coverage: 16,
+        summary: 'API Gateway 在 us-east-1 的成功率略有下降，建議關注對應資源。',
+        status_tone: 'warning',
+        status_counts: {
+            healthy: 14,
+            warning: 2,
+            critical: 0,
+        },
+    },
 };
 
 const MOCK_RESOURCE_GROUP_STATUS_DATA: ResourceGroupStatusData = {
@@ -2299,6 +2371,18 @@ const MOCK_RESOURCE_GROUP_STATUS_DATA: ResourceGroupStatusData = {
         { key: 'warning', label: '警告', data: [1, 0, 1, 2, 3] },
         { key: 'critical', label: '嚴重', data: [0, 1, 0, 0, 1] },
     ],
+    metadata: {
+        refreshed_at: '2025-10-12T01:18:00+08:00',
+        timezone: 'UTC+8',
+        summary: '核心資料庫存在 1 項嚴重告警，請優先處理以避免服務中斷。',
+        groups_total: 5,
+        status_counts: {
+            healthy: 57,
+            warning: 7,
+            critical: 2,
+        },
+        status_tone: 'danger',
+    },
 };
 
 const MOCK_ANALYSIS_OVERVIEW_DATA = {
@@ -2886,6 +2970,12 @@ const MOCK_INFRA_INSIGHTS_OPTIONS: InfraInsightsOptions = {
 
 const MOCK_TAG_MANAGEMENT_OPTIONS: TagManagementOptions = {
     scopes: TAG_SCOPE_OPTIONS,
+    kinds: [
+        { value: 'enum', label: '列舉 (Enum)', description: '使用者需從預先定義的值域中選擇。' },
+        { value: 'text', label: '文字 (Text)', description: '允許自由輸入並支援欄位驗證。' },
+        { value: 'boolean', label: '布林 (Boolean)', description: '以是/否形式呈現，適用於開關設定。' },
+        { value: 'reference', label: '參考 (Reference)', description: '由系統依據其他實體自動帶入，不可編輯。' },
+    ],
     writable_roles: ['platform_admin', 'sre_lead', 'compliance_officer'],
     governance_notes: '標籤鍵須符合治理規範：鍵名使用小寫與底線、枚舉值需在登錄處定義、不得於頁面臨時建立新鍵。',
 };
@@ -2983,6 +3073,7 @@ const MOCK_DATASOURCES: Datasource[] = [
         type: 'prometheus',
         status: 'ok',
         created_at: '2025-09-01T12:30:00Z',
+        updated_at: '2025-09-14T03:45:00Z',
         url: 'http://prometheus-a.internal:9090',
         auth_method: 'none',
         tags: [{ id: 'tag-1', key: 'env', value: 'production' }]
@@ -2993,6 +3084,7 @@ const MOCK_DATASOURCES: Datasource[] = [
         type: 'victoriametrics',
         status: 'error',
         created_at: '2025-09-10T09:22:00Z',
+        updated_at: '2025-09-15T07:18:00Z',
         url: 'http://vm-cluster-1.internal:8428',
         auth_method: 'token',
         tags: [{ id: 'tag-2', key: 'env', value: 'production' }, { id: 'tag-3', key: 'cluster', value: '1' }]
@@ -3003,6 +3095,7 @@ const MOCK_DATASOURCES: Datasource[] = [
         type: 'grafana',
         status: 'pending',
         created_at: '2025-09-11T15:00:00Z',
+        updated_at: '2025-09-13T09:05:00Z',
         url: 'http://grafana.internal',
         auth_method: 'keycloak_integration',
         tags: []

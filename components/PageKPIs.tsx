@@ -98,8 +98,17 @@ const PageKPIs: React.FC<PageKPIsProps> = ({ pageName, widget_ids: explicit_widg
       return descriptionText; // Return original value if not a processable string
     }
 
+    const localizedText = descriptionText
+      .replace(/From (\d+) unique IPs/i, (_, count: string) => `來自 ${count} 個獨立 IP`)
+      .replace(/Saved (\d+) hours of toil/i, (_, hours: string) => `節省 ${hours} 小時人力`)
+      .replace(/↑(\d+) new users this month/i, (_, value: string) => `↑本月新增 ${value} 位使用者`)
+      .replace(/(\d+) new users this month/i, (_, value: string) => `本月新增 ${value} 位使用者`)
+      .replace(/active rate/i, '活躍率')
+      .replace(/critical alerts?/i, '重大告警')
+      .replace(/Email, Slack, Webhook/i, 'Email、Slack、Webhook');
+
     // The regex captures groups, which can result in `undefined` or empty strings in the parts array. Filter them out.
-    const parts = descriptionText.split(/(↑\d+(\.\d+)?%|↓\d+(\.\d+)?%|\d+ 嚴重)/g).filter(Boolean);
+    const parts = localizedText.split(/(↑\d+(\.\d+)?%|↓\d+(\.\d+)?%|\d+ 嚴重)/g).filter(Boolean);
 
     return parts.map((part, index) => {
       if (part.startsWith('↑')) {

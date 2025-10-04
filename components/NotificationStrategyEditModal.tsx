@@ -7,10 +7,12 @@ import Modal from './Modal';
 import Icon from './Icon';
 import Wizard from './Wizard';
 import FormRow from './FormRow';
-import { NotificationStrategy, Team, NotificationChannel, NotificationStrategyOptions, ResourceGroup, TagDefinition } from '../types';
+import StatusTag from './StatusTag';
+import { NotificationStrategy, Team, NotificationChannel, NotificationStrategyOptions, ResourceGroup } from '../types';
 import api from '../services/api';
 import { useOptions } from '../contexts/OptionsContext';
 import { showToast } from '../services/toast';
+import { formatRelativeTime } from '../utils/time';
 
 interface StrategyCondition {
     key: string;
@@ -70,14 +72,19 @@ const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps
                 const initialData: Partial<NotificationStrategy> = strategy
                     ? {
                         ...strategy,
+                        description: strategy.description || '',
                         severity_levels: strategy.severity_levels?.length ? strategy.severity_levels : defaultSeverityLevels,
                         impact_levels: strategy.impact_levels?.length ? strategy.impact_levels : defaultImpactLevels,
+                        channel_ids: strategy.channel_ids || [],
+                        channel_count: strategy.channel_ids?.length ?? strategy.channel_count ?? 0,
                     }
                     : {
                         name: '',
+                        description: '',
                         enabled: true,
                         trigger_condition: strategyOptions.default_condition,
-                        channel_count: 1,
+                        channel_count: 0,
+                        channel_ids: [],
                         severity_levels: defaultSeverityLevels,
                         impact_levels: defaultImpactLevels,
                     };
@@ -122,8 +129,13 @@ const NotificationStrategyEditModal: React.FC<NotificationStrategyEditModalProps
             ? formData.impact_levels
             : strategyOptions?.impact_levels ?? [];
 
+        const channel_ids = Array.isArray(formData.channel_ids) ? formData.channel_ids : [];
+
         onSave({
             ...formData,
+            description: formData.description || '',
+            channel_ids,
+            channel_count: channel_ids.length,
             severity_levels: severity_levels,
             impact_levels: impact_levels,
             trigger_condition: finalCondition
@@ -189,6 +201,9 @@ const Step1: React.FC<{
     const [resourceGroups, setResourceGroups] = useState<ResourceGroup[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    const NAME_LIMIT = 50;
+    const DESCRIPTION_LIMIT = 200;
+
     useEffect(() => {
         api.get<{ items: ResourceGroup[], total: number }>('/resource-groups')
             .then(res => setResourceGroups(res.data.items))
@@ -196,10 +211,42 @@ const Step1: React.FC<{
             .finally(() => setIsLoading(false));
     }, []);
 
+    const removeGroup = (groupName: string) => {
+        setSelectedGroups(selectedGroups.filter(g => g !== groupName));
+    };
+
     return (
-        <div className="space-y-4 px-4">
+        <div className="space-y-5 px-4">
             <FormRow label="策略名稱 *">
-                <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm" />
+                <div className="space-y-1">
+                    <input
+                        type="text"
+                        value={formData.name || ''}
+                        maxLength={NAME_LIMIT}
+                        onChange={e => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="輸入策略標題，例如：重大告警高優先通知"
+                        className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-sky-500"
+                    />
+                    <div className="flex items-center justify-between text-[11px] text-slate-500">
+                        <span>此名稱將顯示於策略列表與通知歷史。</span>
+                        <span className={(formData.name?.length || 0) > NAME_LIMIT * 0.8 ? 'text-amber-400' : ''}>{formData.name?.length || 0}/{NAME_LIMIT}</span>
+                    </div>
+                </div>
+            </FormRow>
+            <FormRow label="策略描述">
+                <div className="space-y-1">
+                    <textarea
+                        value={formData.description || ''}
+                        maxLength={DESCRIPTION_LIMIT}
+                        onChange={e => setFormData({ ...formData, description: e.target.value })}
+                        rows={3}
+                        placeholder="說明觸發情境，協助其他成員理解策略目的。"
+                        className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-sky-500"
+                    />
+                    <div className="text-right text-[11px] text-slate-500">
+                        <span className={(formData.description?.length || 0) > DESCRIPTION_LIMIT * 0.8 ? 'text-amber-400' : ''}>{formData.description?.length || 0}/{DESCRIPTION_LIMIT}</span>
+                    </div>
+                </div>
             </FormRow>
             <FormRow label="涵蓋嚴重度 *">
                 <MultiSelectDropdown
@@ -208,6 +255,7 @@ const Step1: React.FC<{
                     onSelectedChange={(values) => setFormData({ ...formData, severity_levels: values as NotificationStrategy['severity_levels'] })}
                     placeholder={options ? '選擇至少一個嚴重度...' : '載入中...'}
                 />
+                <p className="mt-1 text-xs text-slate-500">選取後，系統將只針對指定嚴重度推播通知。</p>
             </FormRow>
             <FormRow label="涵蓋影響範圍 *">
                 <MultiSelectDropdown
@@ -216,6 +264,7 @@ const Step1: React.FC<{
                     onSelectedChange={(values) => setFormData({ ...formData, impact_levels: values as NotificationStrategy['impact_levels'] })}
                     placeholder={options ? '選擇至少一個影響層級...' : '載入中...'}
                 />
+                <p className="mt-1 text-xs text-slate-500">可依服務影響程度調整通知對象，避免過度打擾。</p>
             </FormRow>
             <FormRow label="資源群組 *">
                 <MultiSelectDropdown
@@ -224,6 +273,20 @@ const Step1: React.FC<{
                     onSelectedChange={setSelectedGroups}
                     placeholder={isLoading ? "載入中..." : "選擇一個或多個資源群組..."}
                 />
+                <div className="mt-2 flex flex-wrap gap-2">
+                    {selectedGroups.length === 0 ? (
+                        <span className="text-xs text-slate-500">尚未選取群組，預設為套用至全部資源。</span>
+                    ) : (
+                        selectedGroups.map(group => (
+                            <span key={group} className="inline-flex items-center gap-2 bg-slate-800/60 border border-slate-600 rounded-full px-3 py-1 text-xs text-slate-200">
+                                {group}
+                                <button type="button" onClick={() => removeGroup(group)} className="text-slate-400 hover:text-white">
+                                    <Icon name="x" className="w-3.5 h-3.5" />
+                                </button>
+                            </span>
+                        ))
+                    )}
+                </div>
             </FormRow>
         </div>
     );
@@ -263,6 +326,27 @@ const Step2: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Fu
         }
     }, [selectedGroups, allGroups]);
 
+    const selectedChannelIds = Array.isArray(formData.channel_ids) ? (formData.channel_ids as string[]) : [];
+
+    const toggleChannel = (channelId: string, checked: boolean) => {
+        const nextIds = checked
+            ? [...new Set([...selectedChannelIds, channelId])]
+            : selectedChannelIds.filter(id => id !== channelId);
+        setFormData({ ...formData, channel_ids: nextIds, channel_count: nextIds.length });
+    };
+
+    const channelStatusTone = (status: NotificationChannel['last_test_result']) => {
+        switch (status) {
+            case 'success':
+                return 'success';
+            case 'failed':
+                return 'danger';
+            case 'not_tested':
+            default:
+                return 'neutral';
+        }
+    };
+
     return (
         <div className="space-y-4 px-4">
             {suggestedTeam && (
@@ -272,19 +356,45 @@ const Step2: React.FC<{ formData: Partial<NotificationStrategy>, setFormData: Fu
                 </div>
             )}
             <FormRow label="接收團隊">
-                <select className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
+                <select
+                    className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-sky-500"
+                    value={formData.team_id || ''}
+                    onChange={e => setFormData({ ...formData, team_id: e.target.value })}
+                >
+                    <option value="">不指定（使用預設團隊）</option>
                     {teams.map(team => <option key={team.id} value={team.id}>{team.name}</option>)}
                 </select>
+                <p className="mt-1 text-xs text-slate-500">團隊將收到此策略下所有通知，可另行於通知管道設定細部成員。</p>
             </FormRow>
             <FormRow label="通知管道">
                 <div className="space-y-2">
                     {channels.map(channel => (
-                        <label key={channel.id} className="flex items-center space-x-3 p-3 bg-slate-800/50 rounded-md hover:bg-slate-800/70 cursor-pointer transition-colors">
-                            <input type="checkbox" className="form-checkbox h-4 w-4 rounded bg-slate-800 border-slate-600 text-sky-500 shrink-0" />
-                            <span className="text-sm">{channel.name} ({channel.type})</span>
+                        <label key={channel.id} className="flex items-start justify-between gap-4 p-3 bg-slate-800/60 rounded-lg hover:bg-slate-800/80 cursor-pointer transition-colors">
+                            <div className="flex items-start gap-3">
+                                <input
+                                    type="checkbox"
+                                    className="mt-1 form-checkbox h-4 w-4 rounded bg-slate-800 border-slate-600 text-sky-500"
+                                    checked={selectedChannelIds.includes(channel.id)}
+                                    onChange={e => toggleChannel(channel.id, e.target.checked)}
+                                />
+                                <div>
+                                    <p className="text-sm font-medium text-white">{channel.name}</p>
+                                    <p className="text-xs text-slate-500">類型：{channel.type}</p>
+                                    <p className="text-xs text-slate-500 mt-1">最近測試：{channel.last_tested_at ? formatRelativeTime(channel.last_tested_at) : '尚未測試'}</p>
+                                </div>
+                            </div>
+                            <StatusTag
+                                label={channel.last_test_result === 'success' ? '測試成功' : channel.last_test_result === 'failed' ? '測試失敗' : '尚未測試'}
+                                tone={channelStatusTone(channel.last_test_result)}
+                                dense
+                            />
                         </label>
                     ))}
+                    {channels.length === 0 && (
+                        <p className="text-xs text-slate-500">尚未設定可用的通知管道，請先在「通知管道」頁面建立。</p>
+                    )}
                 </div>
+                <p className="mt-2 text-xs text-slate-500">已選擇 {selectedChannelIds.length} 個管道。</p>
             </FormRow>
         </div>
     );
@@ -299,6 +409,26 @@ const Step3: React.FC<{
     const allConditionKeys = useMemo(() => {
         if (!options) return [];
         return [...Object.keys(options.condition_keys), ...options.tag_keys];
+    }, [options]);
+
+    const quickPresets = useMemo(() => {
+        if (!options) return [];
+        const presets: { label: string; key: string; value: string }[] = [];
+        const severityKey = Object.keys(options.condition_keys || {}).find(key => key.toLowerCase().includes('severity'));
+        if (severityKey) {
+            const values = options.condition_keys[severityKey];
+            if (values && values.length > 0) {
+                presets.push({ label: `嚴重度 = ${values[values.length - 1]}`, key: severityKey, value: values[values.length - 1] });
+            }
+        }
+        const serviceKey = options.tag_keys?.find(key => key.toLowerCase().includes('service'));
+        if (serviceKey) {
+            const values = options.tag_values?.[serviceKey];
+            if (values && values.length > 0) {
+                presets.push({ label: `服務 = ${values[0]}`, key: serviceKey, value: values[0] });
+            }
+        }
+        return presets;
     }, [options]);
 
     const handleConditionChange = (index: number, field: keyof StrategyCondition, value: string) => {
@@ -330,6 +460,10 @@ const Step3: React.FC<{
         setAdditionalConditions(additionalConditions.filter((_, i) => i !== index));
     };
 
+    const applyPreset = (presetKey: string, presetValue: string) => {
+        setAdditionalConditions([...additionalConditions, { key: presetKey, operator: '=', value: presetValue }]);
+    };
+
     const renderValueInput = (condition: StrategyCondition, index: number) => {
         const commonProps = {
             value: condition.value,
@@ -357,6 +491,20 @@ const Step3: React.FC<{
         <div className="space-y-4 px-4">
             <h3 className="text-lg font-semibold text-white">附加條件 (可選)</h3>
             <p className="text-sm text-slate-400 -mt-2">定義符合所有以下條件的事件才會觸發此策略。</p>
+            {quickPresets.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                    {quickPresets.map(preset => (
+                        <button
+                            key={`${preset.key}-${preset.value}`}
+                            type="button"
+                            onClick={() => applyPreset(preset.key, preset.value)}
+                            className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-full bg-slate-800/60 border border-slate-600 hover:bg-slate-800/80"
+                        >
+                            <Icon name="plus" className="w-3.5 h-3.5" /> {preset.label}
+                        </button>
+                    ))}
+                </div>
+            )}
             <div className="p-4 border border-slate-700 rounded-lg space-y-3 bg-slate-800/20">
                 {additionalConditions.map((cond, index) => (
                     <div key={index} className="flex items-center space-x-2">
@@ -374,6 +522,7 @@ const Step3: React.FC<{
                     </div>
                 ))}
                 <button onClick={addCondition} className="text-sm text-sky-400 hover:text-sky-300 flex items-center"><Icon name="plus" className="w-4 h-4 mr-1" /> 新增 AND 條件</button>
+                <p className="text-xs text-slate-500">目前共設定 {additionalConditions.filter(cond => cond.key && cond.value).length} 個有效條件。</p>
             </div>
         </div>
     );

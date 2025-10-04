@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import EChartsReact from '../../components/EChartsReact';
 import { Resource, TopologyOptions } from '../../types';
 import Icon from '../../components/Icon';
+import StatusTag from '../../components/StatusTag';
 import api from '../../services/api';
 import { useOptions } from '../../contexts/OptionsContext';
 import { useChartTheme } from '../../contexts/ChartThemeContext';
@@ -44,6 +45,23 @@ const ResourceTopologyPage: React.FC = () => {
         }, {} as Record<Resource['status'], string>);
     }, [options]);
 
+    const statusDescriptors = options?.resources.statuses || [];
+    const typeDescriptors = options?.resources.types || [];
+
+    const typeLabelMap = useMemo(() => {
+        return typeDescriptors.reduce((acc, curr) => {
+            acc[curr.value] = curr.label;
+            return acc;
+        }, {} as Record<string, string>);
+    }, [typeDescriptors]);
+
+    const statusLabelMap = useMemo(() => {
+        return statusDescriptors.reduce((acc, curr) => {
+            acc[curr.value] = curr.label;
+            return acc;
+        }, {} as Record<Resource['status'], string>);
+    }, [statusDescriptors]);
+
     const fetchTopology = useCallback(async () => {
         setIsLoading(true);
         setError(null);
@@ -61,11 +79,18 @@ const ResourceTopologyPage: React.FC = () => {
         fetchTopology();
     }, [fetchTopology]);
 
+    const layoutOptions = topologyOptions?.layouts?.length
+        ? topologyOptions.layouts
+        : [
+            { value: 'force', label: '力導向' },
+            { value: 'circular', label: '環狀' },
+        ];
+
     useEffect(() => {
-        if (topologyOptions?.layouts.length && !layout) {
-            setLayout(topologyOptions.layouts[0].value);
+        if (!layout && layoutOptions.length > 0) {
+            setLayout(layoutOptions[0].value);
         }
-    }, [topologyOptions, layout]);
+    }, [layoutOptions, layout]);
 
 
     useEffect(() => {
@@ -80,6 +105,15 @@ const ResourceTopologyPage: React.FC = () => {
         };
     }, [contextMenu.visible]);
 
+    const resourceTypeOptions = useMemo(() => {
+        const uniqueTypes = new Set<string>();
+        topologyData.nodes.forEach(res => uniqueTypes.add(res.type));
+        return [
+            { value: 'all', label: '全部類型' },
+            ...Array.from(uniqueTypes).map(value => ({ value, label: typeLabelMap[value] || value })),
+        ];
+    }, [topologyData.nodes, typeLabelMap]);
+
     const chartOption = useMemo(() => {
         const filteredNodesData = topologyData.nodes.filter(res => filterType === 'all' || res.type === filterType);
         const nodeIds = new Set(filteredNodesData.map(n => n.id));
@@ -89,7 +123,7 @@ const ResourceTopologyPage: React.FC = () => {
             id: res.id,
             name: res.name,
             symbolSize: 40,
-            category: res.type,
+            category: typeLabelMap[res.type] || res.type,
             itemStyle: {
                 color: statusColorMap[res.status] || chartTheme.topology.edge,
                 borderColor: chartTheme.topology.node_border,
@@ -101,7 +135,12 @@ const ResourceTopologyPage: React.FC = () => {
                 color: chartTheme.topology.node_label,
             },
             tooltip: {
-                formatter: `{b}<br/>Type: ${res.type}<br/>Status: ${res.status}<br/>Owner: ${res.owner}`
+                formatter: () => {
+                    const typeLabel = typeLabelMap[res.type] || res.type;
+                    const statusLabel = statusLabelMap[res.status] || res.status;
+                    const ownerLabel = res.owner || '—';
+                    return `${res.name}<br/>類型：${typeLabel}<br/>狀態：${statusLabel}<br/>擁有者：${ownerLabel}`;
+                }
             }
         }));
 
@@ -113,12 +152,13 @@ const ResourceTopologyPage: React.FC = () => {
             }
         }));
 
-        const categories = Array.from(new Set(filteredNodesData.map(res => res.type))).map(type => ({ name: type }));
+        const categories = Array.from(new Set(filteredNodesData.map(res => typeLabelMap[res.type] || res.type))).map(name => ({ name }));
+        const legendLabels = categories.map(category => category.name);
 
         return {
             tooltip: {},
             legend: [{
-                data: categories.map(a => a.name),
+                data: legendLabels,
                 textStyle: { color: chartTheme.text.primary },
                 orient: 'vertical',
                 left: 'left',
@@ -196,32 +236,55 @@ const ResourceTopologyPage: React.FC = () => {
         setContextMenu(prev => ({ ...prev, visible: false }));
     };
 
-    const resourceTypes = ['all', ...Array.from(new Set(topologyData.nodes.map(res => res.type)))];
-
     return (
         <div className="h-full flex flex-col">
-            <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center space-x-2 p-2 glass-card rounded-lg">
-                    <label className="text-sm font-medium flex items-center">
-                        版型
-                        <span className="ml-1 text-slate-400 cursor-help" title="選擇拓撲圖的布局方式，如力導向圖、圓形布局等">
-                            <Icon name="info" className="w-3.5 h-3.5" />
-                        </span>
-                        :
-                    </label>
-                    <select value={layout} onChange={e => setLayout(e.target.value)} className="bg-slate-800 border-slate-700 rounded-md px-2 py-1 text-sm">
-                        {topologyOptions?.layouts.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                    </select>
-                    <label className="text-sm font-medium ml-4 flex items-center">
-                        類型
-                        <span className="ml-1 text-slate-400 cursor-help" title="依資源類型篩選顯示的節點">
-                            <Icon name="info" className="w-3.5 h-3.5" />
-                        </span>
-                        :
-                    </label>
-                    <select value={filterType} onChange={e => setFilterType(e.target.value)} className="bg-slate-800 border-slate-700 rounded-md px-2 py-1 text-sm">
-                        {resourceTypes.map(type => <option key={type} value={type}>{type}</option>)}
-                    </select>
+            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="glass-card flex flex-wrap items-center gap-4 rounded-lg px-4 py-3">
+                    <div className="flex items-center gap-2">
+                        <label className="text-sm font-medium text-slate-200" htmlFor="topology-layout-select">
+                            佈局模式
+                        </label>
+                        <select
+                            id="topology-layout-select"
+                            value={layout}
+                            onChange={e => setLayout(e.target.value)}
+                            className="w-40 rounded-md border border-slate-700 bg-slate-900/60 px-3 py-1.5 text-sm text-white"
+                            aria-label="選擇拓撲佈局模式"
+                        >
+                            {layoutOptions.map(opt => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                        </select>
+                        <Icon name="info" className="h-4 w-4 text-slate-400" title="選擇拓撲圖的佈局方式，如力導向或同心圓" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <label className="text-sm font-medium text-slate-200" htmlFor="topology-type-select">
+                            篩選類型
+                        </label>
+                        <select
+                            id="topology-type-select"
+                            value={filterType}
+                            onChange={e => setFilterType(e.target.value)}
+                            className="w-44 rounded-md border border-slate-700 bg-slate-900/60 px-3 py-1.5 text-sm text-white"
+                            aria-label="依資源類型篩選節點"
+                        >
+                            {resourceTypeOptions.map(option => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                            ))}
+                        </select>
+                        <Icon name="filter" className="h-4 w-4 text-slate-400" title="顯示指定類型的節點" />
+                    </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                    {statusDescriptors.map(descriptor => (
+                        <StatusTag
+                            key={descriptor.value}
+                            label={descriptor.label}
+                            className={descriptor.class_name}
+                            dense
+                            tooltip={`狀態：${descriptor.label}`}
+                        />
+                    ))}
                 </div>
             </div>
             <div className="flex-grow glass-card rounded-xl relative">

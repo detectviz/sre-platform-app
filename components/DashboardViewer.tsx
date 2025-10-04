@@ -3,6 +3,7 @@ import { Dashboard } from '../types';
 import Dropdown from './Dropdown';
 import { useOptions } from '../contexts/OptionsContext';
 import { useContent } from '../contexts/ContentContext';
+import Icon from './Icon';
 
 interface DashboardViewerProps {
   dashboard: Dashboard;
@@ -13,6 +14,10 @@ const DashboardViewer: React.FC<DashboardViewerProps> = ({ dashboard }) => {
     const { content } = useContent();
     const grafanaOptions = options?.grafana;
     const pageContent = content?.DASHBOARD_VIEWER;
+    const grafanaUrl = useMemo(() => {
+        const legacy = (dashboard as unknown as { grafanaUrl?: string | null | undefined }).grafanaUrl;
+        return dashboard.grafana_url ?? legacy ?? '';
+    }, [dashboard]);
 
     const [theme, setTheme] = useState('dark');
     const [tvMode, setTvMode] = useState('off');
@@ -35,9 +40,9 @@ const DashboardViewer: React.FC<DashboardViewerProps> = ({ dashboard }) => {
     }, [grafanaOptions]);
 
     const embedUrl = useMemo(() => {
-        if (!dashboard.grafanaUrl) return '';
-        
-        const url = new URL(dashboard.grafanaUrl);
+        if (!grafanaUrl) return '';
+
+        const url = new URL(grafanaUrl);
         const params = new URLSearchParams(url.search);
 
         params.set('orgId', '1');
@@ -62,33 +67,42 @@ const DashboardViewer: React.FC<DashboardViewerProps> = ({ dashboard }) => {
         url.pathname = url.pathname.replace('/d-solo/', '/d/');
 
         return url.toString();
-    }, [dashboard, theme, tvMode, refresh, timeRange]);
+    }, [grafanaUrl, theme, tvMode, refresh, timeRange]);
 
     return (
-        <div className="h-full flex flex-col">
-            <div className="relative z-10 flex flex-wrap items-center justify-between gap-4 mb-4 glass-card p-3 rounded-lg">
+        <div className="flex h-full flex-col space-y-4">
+            <div className="glass-card relative z-10 flex flex-wrap items-center justify-between gap-4 rounded-xl p-4">
                 {isLoadingOptions || !pageContent ? (
-                    <div className="w-full h-10 animate-pulse bg-slate-700/50 rounded-md" />
+                    <div className="h-12 w-full animate-pulse rounded-md bg-slate-700/50" />
                 ) : error ? (
-                    <div className="w-full text-center text-red-400 p-2">{error}</div>
+                    <div className="w-full rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-center text-sm text-rose-200">
+                        {pageContent?.OPTIONS_ERROR ?? error}
+                    </div>
                 ) : grafanaOptions && (
                     <>
-                        <div className="flex items-center space-x-4">
-                            <Dropdown label={grafanaOptions.theme_label} options={grafanaOptions.theme_options || []} value={theme} onChange={setTheme} minWidth="w-24" />
-                            <Dropdown label={grafanaOptions.tv_mode_label} options={grafanaOptions.tv_mode_options || []} value={tvMode} onChange={setTvMode} minWidth="w-24" />
-                            <Dropdown label={grafanaOptions.refresh_label} options={grafanaOptions.refresh_options || []} value={refresh} onChange={setRefresh} minWidth="w-24" />
+                        <div className="flex flex-wrap items-center gap-4">
+                            <Dropdown label={grafanaOptions.theme_label} options={grafanaOptions.theme_options || []} value={theme} onChange={setTheme} minWidth="w-28" />
+                            <Dropdown label={grafanaOptions.tv_mode_label} options={grafanaOptions.tv_mode_options || []} value={tvMode} onChange={setTvMode} minWidth="w-32" />
+                            <Dropdown label={grafanaOptions.refresh_label} options={grafanaOptions.refresh_options || []} value={refresh} onChange={setRefresh} minWidth="w-36" />
                         </div>
-                        <div className="flex items-center space-x-4">
-                            <Dropdown label={grafanaOptions.time_label} options={grafanaOptions.time_options || []} value={timeRange} onChange={setTimeRange} minWidth="w-40" />
+                        <div className="flex flex-wrap items-center gap-4">
+                            <Dropdown label={grafanaOptions.time_label} options={grafanaOptions.time_options || []} value={timeRange} onChange={setTimeRange} minWidth="w-48" />
                         </div>
                     </>
                 )}
             </div>
-            <div className="flex-grow glass-card rounded-xl p-2">
+            <div className="glass-card flex-grow rounded-xl p-2">
                 {embedUrl ? (
-                    <iframe src={embedUrl} className="w-full h-full border-0 rounded-lg" title={dashboard.name}></iframe>
+                    <iframe src={embedUrl} className="h-full w-full rounded-lg border-0" title={dashboard.name}></iframe>
                 ) : (
-                    <div className="flex items-center justify-center h-full"><p className="text-slate-400">{pageContent.GRAFANA_URL_NOT_CONFIGURED}</p></div>
+                    <div className="flex h-full flex-col items-center justify-center gap-3 text-center text-slate-300">
+                        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-800/70 text-slate-200">
+                            <Icon name="monitor-off" className="h-5 w-5" />
+                        </span>
+                        <p className="max-w-xs text-sm leading-6">
+                            {pageContent?.GRAFANA_URL_NOT_CONFIGURED ?? '尚未設定 Grafana URL，請先完成整合。'}
+                        </p>
+                    </div>
                 )}
             </div>
         </div>

@@ -1,3 +1,5 @@
+import { showToast } from './toast';
+
 interface CsvExportOptions {
     filename?: string;
     headers?: string[];
@@ -6,9 +8,7 @@ interface CsvExportOptions {
 
 export const exportToCsv = ({ filename = 'export.csv', headers, data }: CsvExportOptions) => {
     if (!data || data.length === 0) {
-        // Using alert for simplicity as this is not a React component.
-        // In a real app, a more sophisticated notification system would be used.
-        alert("No data to export.");
+        showToast('沒有可匯出的資料。', 'warning');
         return;
     }
 

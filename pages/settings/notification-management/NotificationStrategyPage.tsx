@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { NotificationStrategy, NotificationStrategyFilters, TableColumn } from '../../../types';
-import Icon from '../../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../../components/Toolbar';
 import TableContainer from '../../../components/TableContainer';
 import NotificationStrategyEditModal from '../../../components/NotificationStrategyEditModal';
@@ -13,6 +12,9 @@ import ColumnSettingsModal from '../../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 import { showToast } from '../../../services/toast';
 import { useOptions } from '../../../contexts/OptionsContext';
+import StatusTag from '../../../components/StatusTag';
+import IconButton from '../../../components/IconButton';
+import { formatRelativeTime } from '../../../utils/time';
 
 const PAGE_IDENTIFIER = 'notification_strategies';
 
@@ -101,7 +103,7 @@ const NotificationStrategyPage: React.FC = () => {
         const { id, ...rest } = strategy;
         setEditingStrategy({
             ...rest,
-            name: `Copy of ${strategy.name}`,
+            name: `策略複本 - ${strategy.name}`,
         } as NotificationStrategy);
         setIsModalOpen(true);
     };
@@ -115,7 +117,7 @@ const NotificationStrategyPage: React.FC = () => {
             }
             fetchStrategies();
         } catch (err) {
-            alert('Failed to save strategy.');
+            showToast('儲存通知策略失敗，請稍後再試。', 'error');
         } finally {
             setIsModalOpen(false);
             setEditingStrategy(null);
@@ -133,7 +135,7 @@ const NotificationStrategyPage: React.FC = () => {
                 await api.del(`/settings/notification-strategies/${deletingStrategy.id}`);
                 fetchStrategies();
             } catch (err) {
-                alert('Failed to delete strategy.');
+                showToast('刪除通知策略失敗，請稍後再試。', 'error');
             } finally {
                 setIsDeleteModalOpen(false);
                 setDeletingStrategy(null);
@@ -146,7 +148,7 @@ const NotificationStrategyPage: React.FC = () => {
             await api.patch(`/settings/notification-strategies/${strategy.id}`, { ...strategy, enabled: !strategy.enabled });
             fetchStrategies();
         } catch (err) {
-            alert('Failed to toggle strategy status.');
+            showToast('切換通知策略狀態失敗，請稍後再試。', 'error');
         }
     };
 
@@ -166,7 +168,12 @@ const NotificationStrategyPage: React.FC = () => {
             await api.post('/settings/notification-strategies/batch-actions', { action, ids: selectedIds });
             fetchStrategies();
         } catch (err) {
-            alert(`Failed to ${action} selected strategies.`);
+            const actionLabels: Record<typeof action, string> = {
+                enable: '啟用',
+                disable: '停用',
+                delete: '刪除',
+            };
+            showToast(`批次${actionLabels[action]}失敗，請稍後再試。`, 'error');
         } finally {
             setSelectedIds([]);
         }
@@ -212,20 +219,18 @@ const NotificationStrategyPage: React.FC = () => {
         parts.forEach((part, index) => {
             if (part.toUpperCase() === 'AND' || part.toUpperCase() === 'OR') {
                 elements.push(
-                    <span key={`op-${index}`} className="text-xs text-slate-400 mx-1">
+                    <span key={`op-${index}`} className="text-[11px] text-slate-400 mx-1">
                         {part.toUpperCase()}
                     </span>
                 );
             } else if (part.trim()) {
                 elements.push(
-                    <span key={`cond-${index}`} className="inline-flex items-center px-2 py-1 text-xs font-medium bg-sky-900/50 text-sky-300 rounded-md border border-sky-700/50">
-                        {part.trim()}
-                    </span>
+                    <StatusTag key={`cond-${index}`} label={part.trim()} tone="info" dense />
                 );
             }
         });
 
-        return <div className="flex flex-wrap items-center gap-1">{elements}</div>;
+        return <div className="flex flex-wrap items-center gap-1.5">{elements}</div>;
     };
 
     const renderCellContent = (strategy: NotificationStrategy, columnKey: string) => {
@@ -239,7 +244,12 @@ const NotificationStrategyPage: React.FC = () => {
                 );
             case 'name': return <span className="font-medium text-white">{strategy.name}</span>;
             case 'trigger_condition': return renderConditionTags(strategy.trigger_condition);
-            case 'channel_count': return strategy.channel_count;
+            case 'description':
+                return strategy.description ? (
+                    <p className="text-sm text-slate-300 leading-6 max-w-xs">{strategy.description}</p>
+                ) : <span className="text-slate-500">未提供描述</span>;
+            case 'channel_count':
+                return <StatusTag label={`${strategy.channel_count} 個管道`} tone="neutral" dense />;
             case 'severity_levels':
                 return (
                     <div className="flex flex-wrap gap-1">
@@ -260,8 +270,36 @@ const NotificationStrategyPage: React.FC = () => {
                         ))}
                     </div>
                 );
-            case 'creator': return strategy.creator;
-            case 'updated_at': return strategy.updated_at;
+            case 'last_triggered_status':
+                return strategy.last_triggered_status ? (
+                    <StatusTag
+                        label={strategy.last_triggered_status === 'sent' ? '已送達' : strategy.last_triggered_status === 'failed' ? '失敗' : '處理中'}
+                        tone={strategy.last_triggered_status === 'sent' ? 'success' : strategy.last_triggered_status === 'failed' ? 'danger' : 'info'}
+                        dense
+                        tooltip={strategy.last_triggered_summary}
+                    />
+                ) : <span className="text-slate-500">尚未觸發</span>;
+            case 'last_triggered_at':
+                return strategy.last_triggered_at ? (
+                    <div className="flex flex-col">
+                        <span className="font-medium text-white">{formatRelativeTime(strategy.last_triggered_at)}</span>
+                        <span className="text-xs text-slate-500">{strategy.last_triggered_at}</span>
+                    </div>
+                ) : <span className="text-slate-500">尚未觸發</span>;
+            case 'creator':
+                return (
+                    <div className="flex flex-col">
+                        <span className="font-medium text-white">{strategy.creator}</span>
+                        <span className="text-xs text-slate-500">建立者</span>
+                    </div>
+                );
+            case 'updated_at':
+                return (
+                    <div className="flex flex-col">
+                        <span className="font-medium text-white">{formatRelativeTime(strategy.updated_at)}</span>
+                        <span className="text-xs text-slate-500">{strategy.updated_at}</span>
+                    </div>
+                );
             default:
                 return <span className="text-slate-500">-</span>;
         }
@@ -302,6 +340,15 @@ const NotificationStrategyPage: React.FC = () => {
                                 <TableLoader colSpan={visibleColumns.length + 2} />
                             ) : error ? (
                                 <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchStrategies} />
+                            ) : strategies.length === 0 ? (
+                                <tr>
+                                    <td colSpan={visibleColumns.length + 2} className="px-6 py-12 text-center text-slate-400">
+                                        <div className="space-y-3">
+                                            <p className="text-sm">目前尚未建立任何通知策略，點擊「新增策略」即可建立第一個範本。</p>
+                                            <ToolbarButton icon="plus" text="新增策略" primary onClick={handleNewStrategy} />
+                                        </div>
+                                    </td>
+                                </tr>
                             ) : strategies.map((strategy) => (
                                 <tr key={strategy.id} className={`border-b border-slate-800 ${selectedIds.includes(strategy.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
                                     <td className="p-4 w-12">
@@ -309,12 +356,14 @@ const NotificationStrategyPage: React.FC = () => {
                                             checked={selectedIds.includes(strategy.id)} onChange={(e) => handleSelectOne(e, strategy.id)} />
                                     </td>
                                     {visibleColumns.map(key => (
-                                        <td key={key} className="px-6 py-4">{renderCellContent(strategy, key)}</td>
+                                        <td key={key} className="px-6 py-4 align-top">{renderCellContent(strategy, key)}</td>
                                     ))}
-                                    <td className="px-6 py-4 text-center space-x-1">
-                                        <button onClick={() => handleEditStrategy(strategy)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯"><Icon name="edit-3" className="w-4 h-4" /></button>
-                                        <button onClick={() => handleDuplicateStrategy(strategy)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="複製"><Icon name="copy" className="w-4 h-4" /></button>
-                                        <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(strategy); }} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除"><Icon name="trash-2" className="w-4 h-4" /></button>
+                                    <td className="px-6 py-4 text-center">
+                                        <div className="flex items-center justify-center gap-2">
+                                            <IconButton icon="edit-3" label="編輯策略" tooltip="編輯策略" onClick={() => handleEditStrategy(strategy)} size="sm" />
+                                            <IconButton icon="copy" label="複製策略" tooltip="複製策略" onClick={() => handleDuplicateStrategy(strategy)} size="sm" />
+                                            <IconButton icon="trash-2" label="刪除策略" tooltip="刪除策略" tone="danger" onClick={() => handleDeleteClick(strategy)} size="sm" />
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

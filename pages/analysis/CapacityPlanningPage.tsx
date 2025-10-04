@@ -4,6 +4,7 @@ import Icon from '../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import Dropdown from '../../components/Dropdown';
 import { exportToCsv } from '../../services/export';
+import { showToast } from '../../services/toast';
 import { CapacityPlanningData } from '../../types';
 import api from '../../services/api';
 import { useChartTheme } from '../../contexts/ChartThemeContext';
@@ -15,6 +16,7 @@ const CapacityPlanningPage: React.FC = () => {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [timeRange, setTimeRange] = useState('');
+    const [expandedSuggestionMap, setExpandedSuggestionMap] = useState<Record<string, boolean>>({});
 
     const { theme: chartTheme } = useChartTheme();
     const content = useContentSection('CAPACITY_PLANNING');
@@ -77,6 +79,8 @@ const CapacityPlanningPage: React.FC = () => {
         [content],
     );
 
+    const forecastAccent = '#f59e0b';
+
     const trendOption = useMemo(
         () => ({
             tooltip: { trigger: 'axis' },
@@ -102,14 +106,14 @@ const CapacityPlanningPage: React.FC = () => {
             },
             series: [
                 { name: series_labels.cpu, type: 'line', data: data?.trends.cpu.historical, showSymbol: false, lineStyle: { color: chartTheme.capacity_planning.cpu } },
-                { name: series_labels.cpu_forecast, type: 'line', data: data?.trends.cpu.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: chartTheme.capacity_planning.cpu } },
+                { name: series_labels.cpu_forecast, type: 'line', data: data?.trends.cpu.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: forecastAccent, width: 2 }, emphasis: { focus: 'series' } },
                 { name: series_labels.memory, type: 'line', data: data?.trends.memory.historical, showSymbol: false, lineStyle: { color: chartTheme.capacity_planning.memory } },
-                { name: series_labels.memory_forecast, type: 'line', data: data?.trends.memory.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: chartTheme.capacity_planning.memory } },
+                { name: series_labels.memory_forecast, type: 'line', data: data?.trends.memory.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: toRgba(chartTheme.capacity_planning.memory, 0.85) }, emphasis: { focus: 'series' } },
                 { name: series_labels.storage, type: 'line', data: data?.trends.storage.historical, showSymbol: false, lineStyle: { color: chartTheme.capacity_planning.storage } },
-                { name: series_labels.storage_forecast, type: 'line', data: data?.trends.storage.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: chartTheme.capacity_planning.storage } },
+                { name: series_labels.storage_forecast, type: 'line', data: data?.trends.storage.forecast, showSymbol: false, lineStyle: { type: 'dashed', color: toRgba(chartTheme.capacity_planning.storage, 0.85) }, emphasis: { focus: 'series' } },
             ],
         }),
-        [chartTheme, data, series_labels],
+        [chartTheme, data, series_labels, toRgba, forecastAccent],
     );
 
     const forecast_model_legend = useMemo(
@@ -134,7 +138,7 @@ const CapacityPlanningPage: React.FC = () => {
                 splitLine: { lineStyle: { color: chartTheme.grid.split_line } },
             },
             series: [
-                { name: forecast_model_legend.prediction, type: 'line', data: data?.forecast_model.prediction, showSymbol: false, lineStyle: { color: chartTheme.capacity_planning.forecast } },
+                { name: forecast_model_legend.prediction, type: 'line', data: data?.forecast_model.prediction, showSymbol: false, lineStyle: { color: forecastAccent, width: 3 } },
                 { name: forecast_model_legend.confidence_band, type: 'line', data: data?.forecast_model.confidence_band[0], lineStyle: { opacity: 0 }, stack: 'confidence-band', symbol: 'none' },
                 {
                     name: forecast_model_legend.confidence_band,
@@ -143,18 +147,18 @@ const CapacityPlanningPage: React.FC = () => {
                         ? data.forecast_model.confidence_band[1].map((point, i) => [point[0], point[1] - data.forecast_model.confidence_band[0][i][1]])
                         : [],
                     lineStyle: { opacity: 0 },
-                    areaStyle: { color: toRgba(chartTheme.capacity_planning.forecast, 0.2) },
+                    areaStyle: { color: toRgba(forecastAccent, 0.25) },
                     stack: 'confidence-band',
                     symbol: 'none',
                 },
             ],
         }),
-        [chartTheme, data, toRgba, forecast_model_legend],
+        [chartTheme, data, toRgba, forecast_model_legend, forecastAccent],
     );
 
     const handleExport = () => {
         if (!data?.resource_analysis || data.resource_analysis.length === 0) {
-            alert(content?.EXPORT_EMPTY_WARNING ?? '沒有可匯出的資料。');
+            showToast(content?.EXPORT_EMPTY_WARNING ?? '沒有可匯出的資料。', 'warning');
             return;
         }
         exportToCsv({
@@ -170,6 +174,10 @@ const CapacityPlanningPage: React.FC = () => {
             })),
         });
     };
+
+    const toggleSuggestion = useCallback((id: string) => {
+        setExpandedSuggestionMap(prev => ({ ...prev, [id]: !prev[id] }));
+    }, []);
 
     if (isLoading) {
         return (
@@ -227,31 +235,61 @@ const CapacityPlanningPage: React.FC = () => {
                             <div className="h-80">
                                 <EChartsReact option={trendOption} />
                             </div>
+                            <p className="mt-3 text-xs text-slate-400">實線呈現歷史數據，虛線使用高對比色標示預測趨勢。</p>
                         </div>
                         <div className="lg:col-span-2 glass-card rounded-xl p-6">
                             <h2 className="text-xl font-bold mb-4">{content?.FORECAST_CHART_TITLE ?? 'CPU 容量預測模型'}</h2>
                             <div className="h-80">
                                 <EChartsReact option={forecastModelOption} />
                             </div>
+                            <p className="mt-3 text-xs text-slate-400">橙色實線為預測趨勢，陰影區域對應信賴區間。</p>
                         </div>
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div className="glass-card rounded-xl p-6">
                             <h2 className="text-xl font-bold mb-4">{content?.AI_SUGGESTIONS_TITLE ?? 'AI 優化建議'}</h2>
-                            <div className="space-y-4">
-                                {data.suggestions.map(s => (
-                                    <div key={s.id} className="p-3 bg-slate-800/50 rounded-lg">
-                                        <div className="flex justify-between items-start">
-                                            <h3 className="font-semibold text-white">{s.title}</h3>
-                                            <div className="flex space-x-2 text-xs">
-                                                <span className="px-2 py-0.5 bg-red-500/30 text-red-300 rounded-full">{`${content?.IMPACT ?? '影響'}: ${s.impact}`}</span>
-                                                <span className="px-2 py-0.5 bg-yellow-500/30 text-yellow-300 rounded-full">{`${content?.EFFORT ?? '投入'}: ${s.effort}`}</span>
+                            <div className="space-y-4 max-h-[200px] overflow-y-auto pr-1">
+                                {data.suggestions.map(s => {
+                                    const isExpanded = !!expandedSuggestionMap[s.id];
+                                    const showToggle = s.details.length > 90;
+                                    return (
+                                        <div key={s.id} className="p-3 bg-slate-800/50 rounded-lg">
+                                            <div className="flex justify-between items-start gap-3">
+                                                <h3 className="font-semibold text-white">{s.title}</h3>
+                                                <div className="flex space-x-2 text-xs shrink-0">
+                                                    <span className="px-2 py-0.5 bg-red-500/30 text-red-300 rounded-full">{`${content?.IMPACT ?? '影響'}: ${s.impact}`}</span>
+                                                    <span className="px-2 py-0.5 bg-yellow-500/30 text-yellow-300 rounded-full">{`${content?.EFFORT ?? '投入'}: ${s.effort}`}</span>
+                                                </div>
                                             </div>
+                                            <p
+                                                className="text-sm text-slate-400 mt-1 leading-relaxed"
+                                                style={
+                                                    isExpanded
+                                                        ? undefined
+                                                        : {
+                                                            display: '-webkit-box',
+                                                            WebkitBoxOrient: 'vertical',
+                                                            WebkitLineClamp: 3,
+                                                            overflow: 'hidden',
+                                                        }
+                                                }
+                                            >
+                                                {s.details}
+                                            </p>
+                                            <p className="text-xs text-slate-500 mt-2">{`${content?.SUGGESTION_DETECTED_AT_LABEL ?? '建議產生時間'}: ${new Date(s.detected_at).toLocaleString()}`}</p>
+                                            {showToggle && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleSuggestion(s.id)}
+                                                    className="mt-2 text-xs text-sky-400 hover:text-sky-300 inline-flex items-center gap-1"
+                                                >
+                                                    <Icon name={isExpanded ? 'chevron-up' : 'chevron-down'} className="w-3 h-3" />
+                                                    <span>{isExpanded ? '收合詳情' : '展開詳情'}</span>
+                                                </button>
+                                            )}
                                         </div>
-                                        <p className="text-sm text-slate-400 mt-1">{s.details}</p>
-                                        <p className="text-xs text-slate-500 mt-2">{`${content?.SUGGESTION_DETECTED_AT_LABEL ?? '建議產生時間'}: ${new Date(s.detected_at).toLocaleString()}`}</p>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                         <div className="glass-card rounded-xl p-6 flex flex-col">

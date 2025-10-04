@@ -1,6 +1,4 @@
-
-
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import Icon from '../../components/Icon';
 import api from '../../services/api';
@@ -11,6 +9,8 @@ import { showToast } from '../../services/toast';
 import { useUser } from '../../contexts/UserContext';
 import { useOptions } from '../../contexts/OptionsContext';
 import { useContent } from '../../contexts/ContentContext';
+import IconButton from '../../components/IconButton';
+import StatusTag from '../../components/StatusTag';
 
 const COLS = 12;
 const ROW_HEIGHT = 80;
@@ -50,6 +50,8 @@ const DashboardEditorPage: React.FC = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [defaultCategory, setDefaultCategory] = useState<string | null>(null);
+    const [widgetSearch, setWidgetSearch] = useState('');
+    const [selectedWidgetContext, setSelectedWidgetContext] = useState<'all' | string>('all');
 
     useEffect(() => {
         if (options?.dashboards?.categories?.length) {
@@ -105,7 +107,37 @@ const DashboardEditorPage: React.FC = () => {
         }
     }, [fetchAllData, isLoadingOptions, pageContent]);
 
-    const availableWidgets = allWidgets.filter(w => !widgets.some(sw => sw.id === w.id));
+    useEffect(() => {
+        if (!isAddWidgetModalOpen) {
+            setWidgetSearch('');
+            setSelectedWidgetContext('all');
+        }
+    }, [isAddWidgetModalOpen]);
+
+    const availableWidgets = useMemo(
+        () => allWidgets.filter(w => !widgets.some(sw => sw.id === w.id)),
+        [allWidgets, widgets]
+    );
+
+    const widgetContextOptions = useMemo(() => {
+        const contexts = new Set<string>();
+        availableWidgets.forEach(widget => {
+            widget.supported_pages.forEach(page => contexts.add(page));
+        });
+        return Array.from(contexts).sort();
+    }, [availableWidgets]);
+
+    const filteredWidgets = useMemo(() => {
+        return availableWidgets.filter(widget => {
+            const matchesKeyword = widgetSearch.trim().length === 0
+                || widget.name.toLowerCase().includes(widgetSearch.toLowerCase())
+                || widget.description.toLowerCase().includes(widgetSearch.toLowerCase())
+                || widget.id.toLowerCase().includes(widgetSearch.toLowerCase());
+            const matchesContext = selectedWidgetContext === 'all'
+                || widget.supported_pages.includes(selectedWidgetContext);
+            return matchesKeyword && matchesContext;
+        });
+    }, [availableWidgets, widgetSearch, selectedWidgetContext]);
 
     const findEmptySpace = (w: number, h: number): { x: number, y: number } => {
         let y = 0, x = 0;
@@ -313,7 +345,27 @@ const DashboardEditorPage: React.FC = () => {
             <div ref={gridRef} className="flex-grow glass-card rounded-xl p-4 overflow-auto relative">
                 {(isLoading || (isLoadingOptions && !isEditMode)) && <div className="h-full flex flex-col items-center justify-center text-slate-500"><Icon name="loader-circle" className="w-12 h-12 animate-spin" /></div>}
                 {error && <div className="h-full flex flex-col items-center justify-center text-red-400"><Icon name="alert-circle" className="w-12 h-12 mb-4" /><p className="font-semibold">{error}</p></div>}
-                {!isLoading && !isLoadingOptions && !error && widgets.length === 0 && <div className="h-full flex flex-col items-center justify-center text-slate-500"><Icon name="layout-dashboard" className="w-24 h-24 mb-4" /><h2 className="text-xl font-bold text-slate-300">{pageContent.EMPTY_STATE_TITLE}</h2><p className="mt-2">{pageContent.EMPTY_STATE_MESSAGE}</p></div>}
+                {!isLoading && !isLoadingOptions && !error && widgets.length === 0 && (
+                    <div className="flex h-full flex-col items-center justify-center gap-5 text-center text-slate-300">
+                        <div className="flex h-24 w-24 items-center justify-center rounded-full bg-sky-500/10 text-sky-300">
+                            <Icon name="layout-dashboard" className="h-12 w-12" />
+                        </div>
+                        <div className="space-y-3">
+                            <h2 className="text-xl font-semibold">{pageContent.EMPTY_STATE_TITLE}</h2>
+                            <p className="mx-auto max-w-sm text-sm leading-6 text-slate-400">
+                                {pageContent.EMPTY_STATE_MESSAGE}
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setIsAddWidgetModalOpen(true)}
+                            className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-sky-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70"
+                        >
+                            <Icon name="plus" className="h-4 w-4" />
+                            {pageContent.ADD_WIDGET}
+                        </button>
+                    </div>
+                )}
 
                 {!isLoading && !isLoadingOptions && !error && gridRef.current && layout.map(item => {
                     const widget = widgets.find(w => w.id === item.i);
@@ -338,14 +390,43 @@ const DashboardEditorPage: React.FC = () => {
                     }
 
                     return (
-                        <div key={item.i}
+                        <div
+                            key={item.i}
                             onMouseDown={(e) => handleInteractionStart(e, 'drag', item)}
-                            className={`absolute transition-all duration-200 ease-in-out group ${isInteracting ? 'z-20 shadow-2xl opacity-80' : 'z-10'}`}
-                            style={{ top, left, width, height }}>
-                            <ContextualKPICard title={widget.name} value={data.value} description={renderDescription(data.description)} icon={data.icon} icon_bg_color={data.icon_bg_color} />
-                            <button onClick={(e) => { e.stopPropagation(); removeWidget(widget.id); }} className="absolute top-2 right-2 p-1 bg-red-600/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity" title={pageContent.REMOVE_WIDGET_TITLE}><Icon name="x" className="w-4 h-4" /></button>
-                            <div onMouseDown={(e) => handleInteractionStart(e, 'resize', item)} className="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Icon name="move-down-right" className="w-4 h-4 text-slate-400 absolute bottom-1 right-1" />
+                            className={`group absolute transition-all duration-200 ease-in-out ${isInteracting ? 'z-20 shadow-2xl opacity-90' : 'z-10'}`}
+                            style={{ top, left, width, height }}
+                        >
+                            <div className="pointer-events-none absolute inset-0 rounded-xl border border-slate-700/50" />
+                            <div className="pointer-events-none absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-slate-900/70 px-2 py-1 text-[11px] font-medium text-slate-300 shadow-sm">
+                                <Icon name="grip-vertical" className="h-3.5 w-3.5" />
+                                <span>拖曳調整</span>
+                            </div>
+                            <div
+                                className="absolute right-2 top-2 flex items-center gap-2"
+                                onClick={(event) => event.stopPropagation()}
+                                onMouseDown={(event) => event.stopPropagation()}
+                            >
+                                <IconButton
+                                    icon="x"
+                                    label={pageContent.REMOVE_WIDGET_TITLE}
+                                    tone="danger"
+                                    onClick={() => removeWidget(widget.id)}
+                                    tooltip={pageContent.REMOVE_WIDGET_TITLE}
+                                />
+                            </div>
+                            <ContextualKPICard
+                                title={widget.name}
+                                value={data.value}
+                                description={renderDescription(data.description)}
+                                icon={data.icon}
+                                icon_bg_color={data.icon_bg_color}
+                            />
+                            <div
+                                onMouseDown={(e) => handleInteractionStart(e, 'resize', item)}
+                                className="absolute bottom-2 right-2 flex h-6 w-6 cursor-se-resize items-center justify-center rounded-md bg-slate-900/80 text-slate-400 opacity-0 transition-opacity group-hover:opacity-100"
+                            >
+                                <Icon name="move" className="h-3.5 w-3.5" />
+                                <span className="sr-only">調整大小</span>
                             </div>
                         </div>
                     );
@@ -364,15 +445,93 @@ const DashboardEditorPage: React.FC = () => {
 
             </div>
 
-            <Modal title={pageContent.ADD_WIDGET_MODAL_TITLE} isOpen={isAddWidgetModalOpen} onClose={() => setIsAddWidgetModalOpen(false)} width="w-1/2 max-w-3xl">
-                <div className="max-h-[60vh] overflow-y-auto"><div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {availableWidgets.map(widget => (
-                        <div key={widget.id} className="p-4 border border-slate-700 rounded-lg flex justify-between items-center hover:bg-slate-800/50">
-                            <div><p className="font-semibold text-white">{widget.name}</p><p className="text-sm text-slate-400">{widget.description}</p></div>
-                            <button onClick={() => addWidget(widget)} className="p-2 bg-sky-600 text-white rounded-full hover:bg-sky-500 shrink-0" title={pageContent.ADD_WIDGET_TITLE}><Icon name="plus" className="w-4 h-4" /></button>
+            <Modal
+                title={pageContent.ADD_WIDGET_MODAL_TITLE}
+                isOpen={isAddWidgetModalOpen}
+                onClose={() => setIsAddWidgetModalOpen(false)}
+                width="w-1/2 max-w-3xl"
+            >
+                <div className="space-y-4">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div className="flex flex-1 flex-col gap-3 md:flex-row md:items-center md:gap-3">
+                            <label className="sr-only" htmlFor="widget-search">
+                                {pageContent.ADD_WIDGET_MODAL_SEARCH_LABEL ?? '搜尋小工具'}
+                            </label>
+                            <div className="relative flex-1">
+                                <Icon name="search" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                                <input
+                                    id="widget-search"
+                                    type="search"
+                                    value={widgetSearch}
+                                    onChange={(event) => setWidgetSearch(event.target.value)}
+                                    placeholder={pageContent.ADD_WIDGET_MODAL_SEARCH_PLACEHOLDER ?? '搜尋小工具或輸入關鍵字'}
+                                    className="w-full rounded-lg border border-slate-700/60 bg-slate-900/50 py-2 pl-10 pr-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+                                />
+                            </div>
+                            <div className="flex items-center gap-2 md:w-56">
+                                <label htmlFor="widget-context-filter" className="text-xs text-slate-400">
+                                    {pageContent.ADD_WIDGET_MODAL_FILTER_LABEL ?? '適用頁面'}
+                                </label>
+                                <select
+                                    id="widget-context-filter"
+                                    value={selectedWidgetContext}
+                                    onChange={(event) => setSelectedWidgetContext(event.target.value as 'all' | string)}
+                                    className="flex-1 rounded-lg border border-slate-700/60 bg-slate-900/50 px-3 py-2 text-sm text-slate-200 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+                                >
+                                    <option value="all">全部頁面</option>
+                                    {widgetContextOptions.map((context) => (
+                                        <option key={context} value={context}>
+                                            {context}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
-                    ))}
-                </div></div>
+                        <p className="text-xs text-slate-500">
+                            {pageContent.ADD_WIDGET_MODAL_HINT ?? '僅顯示尚未加入儀表板的小工具。'}
+                        </p>
+                    </div>
+
+                    <div className="max-h-[60vh] overflow-y-auto pr-1">
+                        {filteredWidgets.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-700/70 bg-slate-900/40 p-10 text-center text-sm text-slate-400">
+                                <Icon name="inbox" className="h-10 w-10 text-slate-600" />
+                                <p>{pageContent.ADD_WIDGET_EMPTY_STATE ?? '沒有符合的結果，請嘗試其他關鍵字或條件。'}</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                {filteredWidgets.map((widget) => (
+                                    <div
+                                        key={widget.id}
+                                        className="flex h-full flex-col justify-between gap-3 rounded-lg border border-slate-700/70 bg-slate-900/60 p-4 transition-colors hover:border-sky-500/50"
+                                    >
+                                        <div className="space-y-2">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="space-y-1">
+                                                    <p className="text-sm font-semibold text-white">{widget.name}</p>
+                                                    <p className="text-xs text-slate-500">ID：{widget.id}</p>
+                                                </div>
+                                                <IconButton
+                                                    icon="plus"
+                                                    label={pageContent.ADD_WIDGET_TITLE}
+                                                    tone="primary"
+                                                    onClick={() => addWidget(widget)}
+                                                    tooltip={pageContent.ADD_WIDGET_TITLE}
+                                                />
+                                            </div>
+                                            <p className="text-xs leading-6 text-slate-400">{widget.description}</p>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {widget.supported_pages.map((page) => (
+                                                <StatusTag key={`${widget.id}-${page}`} dense tone="neutral" label={page} />
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
             </Modal>
         </div>
     );

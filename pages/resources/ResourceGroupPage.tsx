@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ResourceGroup, ResourceGroupFilters, TableColumn } from '../../types';
+import { Resource, ResourceGroup, ResourceGroupFilters, TableColumn } from '../../types';
 import Icon from '../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
@@ -13,6 +13,11 @@ import UnifiedSearchModal from '../../components/UnifiedSearchModal';
 import ColumnSettingsModal from '../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
 import { showToast } from '../../services/toast';
+import StatusTag from '../../components/StatusTag';
+import IconButton from '../../components/IconButton';
+import Drawer from '../../components/Drawer';
+import { useOptions } from '../../contexts/OptionsContext';
+import { formatRelativeTime } from '../../utils/time';
 
 const PAGE_IDENTIFIER = 'resource_groups';
 
@@ -40,9 +45,29 @@ const ResourceGroupPage: React.FC = () => {
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+    const [previewGroup, setPreviewGroup] = useState<ResourceGroup | null>(null);
+    const [previewResources, setPreviewResources] = useState<Resource[]>([]);
+    const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+    const [previewError, setPreviewError] = useState<string | null>(null);
 
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
+
+    const { options } = useOptions();
+    const resourceOptions = options?.resources;
+
+    const statusDescriptors = useMemo(() => resourceOptions?.statuses ?? [], [resourceOptions?.statuses]);
+    const statusColorLookup = useMemo(() => {
+        const lookup: Record<string, string> = {};
+        resourceOptions?.status_colors?.forEach(descriptor => {
+            lookup[descriptor.value] = descriptor.color;
+        });
+        return lookup;
+    }, [resourceOptions?.status_colors]);
+
+    const englishFromValue = useCallback((value: string) => (
+        value.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())
+    ), []);
 
 
     const fetchGroups = useCallback(async () => {
@@ -119,10 +144,42 @@ const ResourceGroupPage: React.FC = () => {
             }
             fetchGroups();
         } catch (err) {
-            alert('Failed to save group.');
+            showToast('儲存資源群組失敗，請稍後再試。', 'error');
         } finally {
             setIsModalOpen(false);
         }
+    };
+
+    const handleViewGroup = (group: ResourceGroup) => {
+        setPreviewGroup(group);
+    };
+
+    useEffect(() => {
+        if (!previewGroup) {
+            setPreviewResources([]);
+            setPreviewError(null);
+            return;
+        }
+
+        const fetchMembers = async () => {
+            setIsPreviewLoading(true);
+            setPreviewError(null);
+            try {
+                const { data } = await api.get<{ items: Resource[] }>('/resources', { params: { page: 1, page_size: 500 } });
+                const filtered = (data.items || []).filter(resource => previewGroup.member_ids.includes(resource.id));
+                setPreviewResources(filtered);
+            } catch (err) {
+                setPreviewError('無法載入群組成員清單。');
+            } finally {
+                setIsPreviewLoading(false);
+            }
+        };
+
+        fetchMembers();
+    }, [previewGroup]);
+
+    const closePreviewDrawer = () => {
+        setPreviewGroup(null);
     };
 
     const handleDeleteClick = (group: ResourceGroup) => {
@@ -136,7 +193,7 @@ const ResourceGroupPage: React.FC = () => {
                 await api.del(`/resource-groups/${deletingGroup.id}`);
                 fetchGroups();
             } catch (err) {
-                alert('Failed to delete group.');
+                showToast('刪除資源群組失敗，請稍後再試。', 'error');
             } finally {
                 setIsDeleteModalOpen(false);
                 setDeletingGroup(null);
@@ -158,11 +215,31 @@ const ResourceGroupPage: React.FC = () => {
             case 'member_ids':
                 return group.member_ids.length;
             case 'status_summary':
+                const summaryOrder: Array<Resource['status']> = ['healthy', 'warning', 'critical'];
                 return (
-                    <div className="flex items-center space-x-2">
-                        <span className="flex items-center text-xs text-green-400"><span className="w-2 h-2 mr-1.5 rounded-full bg-green-400"></span>{group.status_summary.healthy}</span>
-                        <span className="flex items-center text-xs text-yellow-400"><span className="w-2 h-2 mr-1.5 rounded-full bg-yellow-400"></span>{group.status_summary.warning}</span>
-                        <span className="flex items-center text-xs text-red-400"><span className="w-2 h-2 mr-1.5 rounded-full bg-red-400"></span>{group.status_summary.critical}</span>
+                    <div className="flex flex-wrap gap-1.5">
+                        {summaryOrder.map(statusKey => {
+                            const descriptor = statusDescriptors.find(item => item.value === statusKey);
+                            const label = descriptor?.label || englishFromValue(statusKey);
+                            const tooltip = `${label} (${englishFromValue(statusKey)})`;
+                            const dotColor = statusColorLookup[statusKey] || '#38bdf8';
+                            const count = group.status_summary[statusKey as keyof typeof group.status_summary] || 0;
+                            return (
+                                <StatusTag
+                                    key={statusKey}
+                                    dense
+                                    className={descriptor?.class_name}
+                                    tooltip={`${tooltip}：${count} 台`}
+                                    label={(
+                                        <span className="flex items-center gap-1.5">
+                                            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: dotColor }} />
+                                            <span>{label}</span>
+                                            <span className="text-xs font-semibold text-slate-200/80">{count}</span>
+                                        </span>
+                                    )}
+                                />
+                            );
+                        })}
                     </div>
                 );
             default:
@@ -210,12 +287,27 @@ const ResourceGroupPage: React.FC = () => {
                                         <td key={key} className="px-6 py-4">{renderCellContent(group, key)}</td>
                                     ))}
                                     <td className="px-6 py-4 text-center">
-                                        <button onClick={() => handleEditGroup(group)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯">
-                                            <Icon name="edit-3" className="w-4 h-4" />
-                                        </button>
-                                        <button onClick={() => handleDeleteClick(group)} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除">
-                                            <Icon name="trash-2" className="w-4 h-4" />
-                                        </button>
+                                        <div className="flex items-center justify-center gap-1.5">
+                                            <IconButton
+                                                icon="eye"
+                                                label="檢視群組"
+                                                tooltip="檢視群組 View group"
+                                                onClick={() => handleViewGroup(group)}
+                                            />
+                                            <IconButton
+                                                icon="edit-3"
+                                                label="編輯群組"
+                                                tooltip="編輯群組 Edit group"
+                                                onClick={() => handleEditGroup(group)}
+                                            />
+                                            <IconButton
+                                                icon="trash-2"
+                                                label="刪除群組"
+                                                tooltip="刪除群組 Delete group"
+                                                onClick={() => handleDeleteClick(group)}
+                                                tone="danger"
+                                            />
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -264,6 +356,81 @@ const ResourceGroupPage: React.FC = () => {
                 allColumns={allColumns}
                 visibleColumnKeys={visibleColumns}
             />
+            <Drawer
+                isOpen={!!previewGroup}
+                onClose={closePreviewDrawer}
+                title={previewGroup?.name || '群組詳情'}
+                width="w-3/4 max-w-4xl"
+            >
+                {isPreviewLoading ? (
+                    <div className="flex h-64 items-center justify-center text-slate-400">
+                        <Icon name="loader-circle" className="h-6 w-6 animate-spin" />
+                    </div>
+                ) : previewError ? (
+                    <div className="rounded-lg border border-rose-500/40 bg-rose-500/10 p-6 text-rose-200">
+                        {previewError}
+                    </div>
+                ) : previewGroup ? (
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-1 gap-4 rounded-xl border border-slate-700 bg-slate-900/60 p-4 md:grid-cols-2">
+                            <div>
+                                <p className="text-sm text-slate-400">擁有團隊</p>
+                                <p className="mt-1 text-base font-semibold text-white">{previewGroup.owner_team || '未指定'}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm text-slate-400">最近更新</p>
+                                <p className="mt-1 text-base font-semibold text-white">{formatRelativeTime(previewGroup.updated_at)}</p>
+                            </div>
+                            <div className="md:col-span-2">
+                                <p className="text-sm text-slate-400">描述</p>
+                                <p className="mt-1 leading-relaxed text-slate-200">{previewGroup.description || '尚未填寫描述。'}</p>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-semibold text-white">狀態摘要</h3>
+                            <div className="mt-3">
+                                {renderCellContent(previewGroup, 'status_summary')}
+                            </div>
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-semibold text-white">成員資源 ({previewResources.length})</h3>
+                            {previewResources.length === 0 ? (
+                                <div className="mt-3 rounded-lg border border-dashed border-slate-700 bg-slate-900/50 p-6 text-center text-slate-400">
+                                    <Icon name="database" className="mx-auto mb-2 h-6 w-6" />
+                                    尚未加入任何資源。
+                                </div>
+                            ) : (
+                                <ul className="mt-3 space-y-2">
+                                    {previewResources.map(resource => {
+                                        const descriptor = statusDescriptors.find(item => item.value === resource.status);
+                                        const dotColor = statusColorLookup[resource.status] || '#38bdf8';
+                                        const readableLabel = descriptor?.label || englishFromValue(resource.status);
+                                        return (
+                                            <li key={resource.id} className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-3">
+                                                <div>
+                                                    <p className="font-medium text-white">{resource.name}</p>
+                                                    <p className="text-xs text-slate-400">{resource.type} · {resource.provider} · {resource.region}</p>
+                                                </div>
+                                                <StatusTag
+                                                    dense
+                                                    className={descriptor?.class_name}
+                                                    tooltip={`${readableLabel} (${englishFromValue(resource.status)})`}
+                                                    label={(
+                                                        <span className="flex items-center gap-1.5">
+                                                            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: dotColor }} />
+                                                            <span>{readableLabel}</span>
+                                                        </span>
+                                                    )}
+                                                />
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            )}
+                        </div>
+                    </div>
+                ) : null}
+            </Drawer>
         </div>
     );
 };

@@ -6,6 +6,7 @@ import api from '../../services/api';
 import { Resource } from '../../types';
 import PageKPIs from '../../components/PageKPIs';
 import { exportToCsv } from '../../services/export';
+import { showToast } from '../../services/toast';
 import { useOptions } from '../../contexts/OptionsContext';
 import { useChartTheme } from '../../contexts/ChartThemeContext';
 
@@ -87,28 +88,28 @@ const InfrastructureInsightsPage: React.FC = () => {
 
     const handleExport = () => {
         if (!riskPrediction && bookmarkedResources.length === 0) {
-           alert("沒有可匯出的資料。");
-           return;
-       }
-       const dataToExport = [
-           ...(riskPrediction?.top_risky_resources.map(r => ({
-               type: 'Risky Resource',
-               name: r.name,
-               details: r.risk,
-               status: ''
-           })) || []),
-           ...bookmarkedResources.map(r => ({
-               type: 'Bookmarked Resource',
-               name: r.name,
-               details: r.type,
-               status: r.status
-           }))
-       ];
+            showToast('沒有可匯出的資料。', 'warning');
+            return;
+        }
+        const dataToExport = [
+            ...(riskPrediction?.top_risky_resources.map(r => ({
+                type: '重點風險資源',
+                name: r.name,
+                details: r.risk,
+                status: ''
+            })) || []),
+            ...bookmarkedResources.map(r => ({
+                type: '已收藏資源',
+                name: r.name,
+                details: r.type,
+                status: r.status
+            }))
+        ];
         exportToCsv({
-           filename: `infra-insights-${new Date().toISOString().split('T')[0]}.csv`,
-           data: dataToExport,
-       });
-   };
+            filename: `infra-insights-${new Date().toISOString().split('T')[0]}.csv`,
+            data: dataToExport,
+        });
+    };
 
     // Chart Options
     const riskBreakdownOption = useMemo(() => ({

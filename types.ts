@@ -345,6 +345,12 @@ export interface AutomationTrigger {
     cron?: string;
     cron_description?: string;
     webhook_url?: string;
+    http_method?: 'post' | 'put' | 'patch' | 'delete';
+    auth_type?: 'none' | 'token' | 'basic';
+    custom_headers?: string;
+    secret?: string;
+    username?: string;
+    password?: string;
     event_conditions?: string;
   };
   last_triggered_at: string;
@@ -361,6 +367,10 @@ export interface MailSettings {
   sender_name: string;
   sender_email: string;
   encryption: MailEncryptionMode;
+  encryption_modes?: MailEncryptionMode[];
+  last_test_result?: TestResult;
+  last_tested_at?: string;
+  last_test_message?: string;
 }
 
 export interface MailTestResponse {
@@ -375,6 +385,10 @@ export interface GrafanaSettings {
   url: string;
   api_key: string;
   org_id: number;
+  last_test_result?: TestResult;
+  last_tested_at?: string;
+  last_test_message?: string;
+  detected_version?: string;
 }
 
 export interface GrafanaTestResponse {
@@ -561,6 +575,7 @@ export interface NotificationChannel {
     mention?: string;
     access_token?: string;
     phone_number?: string;
+    country_code?: string;
   };
   last_test_result: TestResult;
   last_tested_at: string;
@@ -572,6 +587,7 @@ export interface NotificationChannel {
 export interface NotificationStrategy {
   id: string;
   name: string;
+  description?: string;
   enabled: boolean;
   trigger_condition: string;
   channel_count: number;
@@ -583,6 +599,13 @@ export interface NotificationStrategy {
   deleted_at?: string;
   /** Identifiers of notification channels linked to the strategy. */
   channel_ids?: string[];
+  /** Primary team responsible for reviewing the strategy's通知. */
+  team_id?: string;
+  /** Latest execution metadata for quick visibility in the列表. */
+  last_triggered_at?: string;
+  last_triggered_status?: NotificationStatus;
+  last_triggered_channel?: string;
+  last_triggered_summary?: string;
 }
 
 export interface NotificationHistoryRecord {
@@ -680,6 +703,8 @@ export interface TagValue {
   usage_count: number;
 }
 
+export type TagKind = 'enum' | 'text' | 'number' | 'boolean' | 'json' | 'reference';
+
 export interface TagRegistryEntry {
   key: string;
   description: string;
@@ -688,6 +713,7 @@ export interface TagRegistryEntry {
   writable_roles: string[];
   readonly?: boolean;
   link_to_entity?: string;
+  kind?: TagKind;
 }
 
 export interface TagDefinition extends TagRegistryEntry {
@@ -695,6 +721,7 @@ export interface TagDefinition extends TagRegistryEntry {
   allowed_values: TagValue[];
   usage_count: number;
   deleted_at?: string;
+  kind: TagKind;
 }
 
 export interface TagBulkImportJob {
@@ -723,6 +750,7 @@ export interface TagBulkImportResponse {
 export interface TagManagementFilters {
   keyword?: string;
   scope?: TagScope;
+  kind?: TagKind;
 }
 
 export interface AuditLogFilters {
@@ -811,13 +839,24 @@ export interface MetricsData {
   memory: TimeSeriesData;
 }
 
+export type ResourceGroupStatusKey = 'healthy' | 'warning' | 'critical';
+
+export interface ServiceHealthMetadata {
+  refreshed_at?: string;
+  timezone?: string;
+  sampling_window?: string;
+  coverage?: number;
+  summary?: string;
+  status_tone?: 'info' | 'success' | 'warning' | 'danger' | 'neutral';
+  status_counts?: Record<ResourceGroupStatusKey, number>;
+}
+
 export interface ServiceHealthData {
   heatmap_data: [number, number, number][];
   x_axis_labels: string[];
   y_axis_labels: string[];
+  metadata?: ServiceHealthMetadata;
 }
-
-export type ResourceGroupStatusKey = 'healthy' | 'warning' | 'critical';
 
 export interface ResourceGroupStatusSeries {
   key: ResourceGroupStatusKey;
@@ -828,6 +867,14 @@ export interface ResourceGroupStatusSeries {
 export interface ResourceGroupStatusData {
   group_names: string[];
   series: ResourceGroupStatusSeries[];
+  metadata?: {
+    refreshed_at?: string;
+    timezone?: string;
+    summary?: string;
+    groups_total?: number;
+    status_counts?: Record<ResourceGroupStatusKey, number>;
+    status_tone?: 'info' | 'success' | 'warning' | 'danger' | 'neutral';
+  };
 }
 
 export interface Anomaly {
@@ -1156,6 +1203,7 @@ export interface ResourceOptions {
 
 export interface PersonnelOptions {
   statuses: StyleDescriptor<User['status']>[];
+  role_descriptors?: (StyleDescriptor<Role['id']> & { description?: string; helper_text?: string })[];
 }
 
 export interface AuditLogOptions {
@@ -1201,6 +1249,7 @@ export interface DashboardOptions {
 
 export interface TagManagementOptions {
   scopes: { value: TagScope; label: string; description: string }[];
+  kinds: { value: TagKind; label: string; description?: string }[];
   writable_roles: string[];
   governance_notes?: string;
 }
@@ -1270,6 +1319,7 @@ export interface Datasource {
   url: string;
   auth_method: AuthMethod;
   tags: KeyValueTag[];
+  updated_at?: string;
   deleted_at?: string;
 }
 
@@ -1314,6 +1364,7 @@ export interface DiscoveryTestResponse {
 export interface DatasourceFilters {
   keyword?: string;
   type?: DatasourceType;
+  status?: ConnectionStatus;
 }
 
 export interface DiscoveryJobFilters {

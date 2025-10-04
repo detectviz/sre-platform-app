@@ -24,6 +24,7 @@ const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen,
         scopes: opts.scopes.length ? [opts.scopes[0].value] : [],
         writable_roles: opts.writable_roles,
         required: false,
+        kind: opts.kinds.length ? opts.kinds[0].value : 'text',
     });
 
     useEffect(() => {
@@ -55,6 +56,7 @@ const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen,
     };
 
     const scopeOptions = tagManagementOptions?.scopes || [];
+    const kindOptions = tagManagementOptions?.kinds || [];
     const writableRoleOptions = tagManagementOptions?.writable_roles || [];
     const error = optionsError;
     const isLoading = isLoadingOptions;
@@ -130,6 +132,24 @@ const TagDefinitionEditModal: React.FC<TagDefinitionEditModalProps> = ({ isOpen,
                         disabled={isLoading || !!error}
                         className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm disabled:bg-slate-800/50 disabled:cursor-not-allowed"
                     ></textarea>
+                </FormRow>
+                <FormRow label="資料型別">
+                    <select
+                        value={formData.kind || ''}
+                        onChange={e => handleChange('kind', e.target.value)}
+                        disabled={isLoading || !!error}
+                        className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm disabled:bg-slate-800/50 disabled:cursor-not-allowed"
+                    >
+                        {kindOptions.map(kind => (
+                            <option key={kind.value} value={kind.value}>{kind.label}</option>
+                        ))}
+                        {kindOptions.length === 0 && <option value="text">文字 (Text)</option>}
+                    </select>
+                    {kindOptions.length > 0 && (
+                        <p className="text-xs text-slate-500 mt-1">
+                            {kindOptions.find(option => option.value === formData.kind)?.description || '請選擇此標籤應用的資料型別。'}
+                        </p>
+                    )}
                 </FormRow>
                 <FormRow label="隱私與治理">
                     <div className="grid grid-cols-1 gap-3">

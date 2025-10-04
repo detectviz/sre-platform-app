@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Team, User, TableColumn } from '../../../types';
-import Icon from '../../../components/Icon';
 import Toolbar, { ToolbarButton } from '../../../components/Toolbar';
 import TableContainer from '../../../components/TableContainer';
 import TeamEditModal from '../../../components/TeamEditModal';
@@ -13,6 +12,11 @@ import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 import { showToast } from '../../../services/toast';
 import Pagination from '../../../components/Pagination';
 import UnifiedSearchModal from '../../../components/UnifiedSearchModal';
+import IconButton from '../../../components/IconButton';
+import Drawer from '../../../components/Drawer';
+import SearchableSelect from '../../../components/SearchableSelect';
+import StatusTag from '../../../components/StatusTag';
+import { formatRelativeTime } from '../../../utils/time';
 
 const PAGE_IDENTIFIER = 'teams';
 
@@ -35,6 +39,9 @@ const TeamManagementPage: React.FC = () => {
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+    const [viewingTeam, setViewingTeam] = useState<Team | null>(null);
+    const [ownerModalTeam, setOwnerModalTeam] = useState<Team | null>(null);
+    const [ownerCandidate, setOwnerCandidate] = useState<string>('');
 
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
@@ -79,6 +86,9 @@ const TeamManagementPage: React.FC = () => {
 
     const userMap = useMemo(() => new Map(users.map(u => [u.id, u])), [users]);
     const findUserById = (id: string): User | undefined => userMap.get(id);
+    const totalMembers = useMemo(() => teams.reduce((sum, team) => sum + team.member_ids.length, 0), [teams]);
+    const ownerlessTeams = useMemo(() => teams.filter(team => !team.owner_id).length, [teams]);
+    const averageMembers = useMemo(() => teams.length > 0 ? totalMembers / teams.length : 0, [teams, totalMembers]);
 
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
         if (!pageKey) {
@@ -115,7 +125,7 @@ const TeamManagementPage: React.FC = () => {
             }
             fetchTeamsAndUsers();
         } catch (err) {
-            alert('Failed to save team.');
+            showToast('儲存團隊資料失敗，請稍後再試。', 'error');
         } finally {
             setIsModalOpen(false);
         }
@@ -126,13 +136,31 @@ const TeamManagementPage: React.FC = () => {
         setIsDeleteModalOpen(true);
     };
 
+    const openOwnerModal = (team: Team) => {
+        setOwnerModalTeam(team);
+        setOwnerCandidate(team.owner_id || '');
+    };
+
+    const handleSaveOwner = async () => {
+        if (!ownerModalTeam) return;
+        try {
+            await api.patch(`/iam/teams/${ownerModalTeam.id}`, { ...ownerModalTeam, owner_id: ownerCandidate });
+            fetchTeamsAndUsers();
+            showToast('已更新團隊擁有者。', 'success');
+        } catch (err) {
+            showToast('更新團隊擁有者失敗。', 'error');
+        } finally {
+            setOwnerModalTeam(null);
+        }
+    };
+
     const handleConfirmDelete = async () => {
         if (deletingTeam) {
             try {
                 await api.del(`/iam/teams/${deletingTeam.id}`);
                 fetchTeamsAndUsers();
             } catch (err) {
-                alert('Failed to delete team.');
+                showToast('刪除團隊失敗，請稍後再試。', 'error');
             } finally {
                 setIsDeleteModalOpen(false);
                 setDeletingTeam(null);
@@ -146,7 +174,7 @@ const TeamManagementPage: React.FC = () => {
             setSelectedIds([]);
             fetchTeamsAndUsers();
         } catch (err) {
-            alert('Failed to delete selected teams.');
+            showToast('批次刪除團隊失敗，請稍後再試。', 'error');
         }
     };
 
@@ -199,6 +227,25 @@ const TeamManagementPage: React.FC = () => {
                 batchActions={batchActions}
             />
 
+            <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded-lg border border-slate-700/60 bg-slate-900/60 p-4">
+                    <p className="text-sm text-slate-400">團隊數量</p>
+                    <p className="mt-2 text-2xl font-semibold text-white">{teams.length}</p>
+                </div>
+                <div className="rounded-lg border border-slate-700/60 bg-slate-900/60 p-4">
+                    <p className="text-sm text-slate-400">總成員數</p>
+                    <p className="mt-2 text-2xl font-semibold text-white">{totalMembers}</p>
+                </div>
+                <div className="rounded-lg border border-slate-700/60 bg-slate-900/60 p-4">
+                    <p className="text-sm text-slate-400">平均成員</p>
+                    <p className="mt-2 text-2xl font-semibold text-white">{averageMembers.toFixed(1)}</p>
+                </div>
+                <div className="rounded-lg border border-slate-700/60 bg-slate-900/60 p-4">
+                    <p className="text-sm text-slate-400">未指派擁有者</p>
+                    <p className={`mt-2 text-2xl font-semibold ${ownerlessTeams > 0 ? 'text-amber-300' : 'text-white'}`}>{ownerlessTeams}</p>
+                </div>
+            </div>
+
             <TableContainer>
                 <div className="flex-1 overflow-y-auto">
                     <table className="w-full text-sm text-left text-slate-300">
@@ -228,9 +275,11 @@ const TeamManagementPage: React.FC = () => {
                                     {visibleColumns.map(key => (
                                         <td key={key} className="px-6 py-4">{renderCellContent(team, key)}</td>
                                     ))}
-                                    <td className="px-6 py-4 text-center">
-                                        <button onClick={() => handleEditTeam(team)} className="p-1.5 rounded-md text-slate-400 hover:bg-slate-700 hover:text-white" title="編輯"><Icon name="edit-3" className="w-4 h-4" /></button>
-                                        <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(team); }} className="p-1.5 rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300" title="刪除"><Icon name="trash-2" className="w-4 h-4" /></button>
+                                    <td className="px-6 py-4 text-center space-x-1">
+                                        <IconButton icon="eye" label="檢視團隊" tooltip="檢視團隊詳情" onClick={() => setViewingTeam(team)} />
+                                        <IconButton icon="user-cog" label="變更擁有者" tooltip="變更團隊擁有者" onClick={() => openOwnerModal(team)} />
+                                        <IconButton icon="edit-3" label="編輯團隊" tooltip="編輯團隊" onClick={() => handleEditTeam(team)} />
+                                        <IconButton icon="trash-2" label="刪除團隊" tone="danger" tooltip="刪除團隊" onClick={(e) => { e.stopPropagation(); handleDeleteClick(team); }} />
                                     </td>
                                 </tr>
                             ))}
@@ -280,6 +329,78 @@ const TeamManagementPage: React.FC = () => {
                 }}
                 initialFilters={filters}
             />
+            <Drawer
+                isOpen={!!viewingTeam}
+                onClose={() => setViewingTeam(null)}
+                title={viewingTeam ? `團隊詳情：${viewingTeam.name}` : '團隊詳情'}
+                width="w-1/2"
+            >
+                {viewingTeam && (
+                    <div className="space-y-5 text-sm text-slate-300">
+                        <div>
+                            <p className="text-xs text-slate-500">描述</p>
+                            <p className="mt-1 font-medium text-white">{viewingTeam.description || '尚未提供描述'}</p>
+                        </div>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div>
+                                <p className="text-xs text-slate-500">擁有者</p>
+                                <p className="mt-1 font-medium text-white">{findUserById(viewingTeam.owner_id)?.name || '未指派'}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-slate-500">成員數量</p>
+                                <StatusTag label={`${viewingTeam.member_ids.length} 位成員`} tone="info" dense />
+                            </div>
+                            <div>
+                                <p className="text-xs text-slate-500">更新時間</p>
+                                <p className="mt-1 font-medium text-white">{formatRelativeTime(viewingTeam.updated_at)}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-slate-500">建立時間</p>
+                                <p className="mt-1 font-medium text-white">{formatRelativeTime(viewingTeam.created_at)}</p>
+                            </div>
+                        </div>
+                        <div>
+                            <p className="mb-2 text-xs text-slate-500">團隊成員</p>
+                            <ul className="space-y-2">
+                                {viewingTeam.member_ids.map(id => {
+                                    const member = findUserById(id);
+                                    if (!member) return null;
+                                    return (
+                                        <li key={id} className="flex items-center justify-between rounded-md border border-slate-700/70 bg-slate-900/50 px-3 py-2">
+                                            <span className="font-medium text-white">{member.name}</span>
+                                            <span className="text-xs text-slate-400">{member.email}</span>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </div>
+                    </div>
+                )}
+            </Drawer>
+            <Modal
+                isOpen={!!ownerModalTeam}
+                onClose={() => setOwnerModalTeam(null)}
+                title="變更團隊擁有者"
+                width="w-1/3"
+                footer={
+                    <div className="flex justify-end space-x-2">
+                        <button onClick={() => setOwnerModalTeam(null)} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">取消</button>
+                        <button onClick={handleSaveOwner} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md" disabled={!ownerCandidate}>儲存</button>
+                    </div>
+                }
+            >
+                {ownerModalTeam && (
+                    <div className="space-y-4">
+                        <p className="text-sm text-slate-300">選擇新的團隊擁有者後，系統會立即更新相關權限。</p>
+                        <SearchableSelect
+                            value={ownerCandidate}
+                            onChange={setOwnerCandidate}
+                            options={users.map(u => ({ value: u.id, label: `${u.name}｜${u.email}` }))}
+                            placeholder="搜尋成員..."
+                        />
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 };

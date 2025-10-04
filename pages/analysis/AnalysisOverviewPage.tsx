@@ -83,6 +83,75 @@ const AnalysisOverviewPage: React.FC = () => {
         return `最近 ${amount} ${unitLabel}`;
     }, []);
 
+    const translateRelativeTime = useCallback((value: string) => {
+        if (!value) {
+            return '—';
+        }
+        const normalized = value.trim().toLowerCase();
+        const relativeMatch = normalized.match(/^(about\s+)?(\d+)\s+(minute|minutes|hour|hours|day|days)\s+ago$/);
+        if (relativeMatch) {
+            const amount = Number(relativeMatch[2]);
+            const unit = relativeMatch[3];
+            const unitLabel = unit.startsWith('minute') ? '分鐘' : unit.startsWith('hour') ? '小時' : '天';
+            return `${amount} ${unitLabel}前`;
+        }
+        if (normalized === 'just now') {
+            return '剛剛';
+        }
+        return value;
+    }, []);
+
+    const formatAbsoluteTimestamp = useCallback((value: string | undefined) => {
+        if (!value) {
+            return '—';
+        }
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) {
+            return translateRelativeTime(value);
+        }
+        return new Intl.DateTimeFormat('zh-TW', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+        }).format(parsed);
+    }, [translateRelativeTime]);
+
+    const formatRelativeFromNow = useCallback((value: string | undefined) => {
+        if (!value) {
+            return '—';
+        }
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) {
+            return translateRelativeTime(value);
+        }
+        const diffMs = parsed.getTime() - Date.now();
+        const units: { limit: number; divisor: number; unit: Intl.RelativeTimeFormatUnit }[] = [
+            { limit: 60_000, divisor: 1_000, unit: 'second' },
+            { limit: 3_600_000, divisor: 60_000, unit: 'minute' },
+            { limit: 86_400_000, divisor: 3_600_000, unit: 'hour' },
+            { limit: Number.POSITIVE_INFINITY, divisor: 86_400_000, unit: 'day' },
+        ];
+        const formatter = new Intl.RelativeTimeFormat('zh-TW', { numeric: 'auto' });
+        for (const { limit, divisor, unit } of units) {
+            if (Math.abs(diffMs) < limit) {
+                return formatter.format(Math.round(diffMs / divisor), unit);
+            }
+        }
+        return formatter.format(Math.round(diffMs / 604_800_000), 'week');
+    }, [translateRelativeTime]);
+
+    const formatTimestampWithRelative = useCallback((value: string | undefined) => {
+        const absolute = formatAbsoluteTimestamp(value);
+        const relative = formatRelativeFromNow(value);
+        if (!value || absolute === '—') {
+            return absolute;
+        }
+        return `${absolute}（${relative}）`;
+    }, [formatAbsoluteTimestamp, formatRelativeFromNow]);
+
     const selectableTimeRangeOptions = useMemo(() => {
         if (timeRangeOptions.length > 0) {
             return timeRangeOptions;
@@ -95,13 +164,23 @@ const AnalysisOverviewPage: React.FC = () => {
 
     const displayedLogs: LogEntry[] = useMemo(() => overviewData?.recent_logs ?? [], [overviewData]);
 
-    const formatLogTimestamp = useCallback((timestamp: string) => {
-        const parsed = new Date(timestamp);
-        if (Number.isNaN(parsed.getTime())) {
-            return timestamp;
+    const latestLogTimestamp = useMemo(() => {
+        if (!overviewData?.recent_logs?.length) {
+            return undefined;
         }
-        return parsed.toLocaleString();
-    }, []);
+        return overviewData.recent_logs.reduce<string | undefined>((latest, log) => {
+            const parsed = new Date(log.timestamp);
+            if (Number.isNaN(parsed.getTime())) {
+                return latest;
+            }
+            if (!latest) {
+                return log.timestamp;
+            }
+            return parsed.getTime() > new Date(latest).getTime() ? log.timestamp : latest;
+        }, undefined);
+    }, [overviewData]);
+
+    const formatLogTimestamp = useCallback((timestamp: string) => formatTimestampWithRelative(timestamp), [formatTimestampWithRelative]);
 
     const handleTimeRangeChange = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
         setSelectedTimeRange(event.target.value);
@@ -254,13 +333,11 @@ const AnalysisOverviewPage: React.FC = () => {
 
     const eventCorrelationEvents = { 'click': handleEventCorrelationClick };
 
-    const getSeverityPill = (severity: Anomaly['severity']) => {
-        switch (severity) {
-            case 'critical': return 'bg-red-500/20 text-red-400';
-            case 'warning': return 'bg-yellow-500/20 text-yellow-400';
-            case 'info': return 'bg-sky-500/20 text-sky-400';
-        }
-    };
+    const severityMeta = useMemo(() => ({
+        critical: { className: 'bg-red-500/20 text-red-400', label: '嚴重', tooltip: 'Critical' },
+        warning: { className: 'bg-yellow-500/20 text-yellow-400', label: '警示', tooltip: 'Warning' },
+        info: { className: 'bg-sky-500/20 text-sky-400', label: '資訊', tooltip: 'Info' },
+    }), []);
 
     const getImpactEffortPill = (level: Suggestion['impact'] | Suggestion['effort']) => {
         switch (level) {
@@ -314,20 +391,41 @@ const AnalysisOverviewPage: React.FC = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="glass-card rounded-xl p-6">
-                    <h2 className="text-xl font-bold mb-4">AI 異常檢測</h2>
-                    <div className="space-y-3 h-52 overflow-y-auto">
-                        {overviewData.anomalies.map((anomaly, index) => (
-                            <div key={index} className="flex items-center p-3 bg-slate-800/50 rounded-lg">
-                                <span className={`px-2 py-1 text-xs font-semibold rounded-full capitalize ${getSeverityPill(anomaly.severity)} mr-3 shrink-0`}>{anomaly.severity}</span>
-                                <p className="flex-grow text-slate-300 text-sm">{anomaly.description}</p>
-                                <span className="text-sm text-slate-400 ml-3 shrink-0">{anomaly.timestamp}</span>
-                            </div>
-                        ))}
+                    <div className="flex items-center justify-between gap-3 mb-4">
+                        <h2 className="text-xl font-bold">AI 異常檢測</h2>
+                        {latestLogTimestamp && (
+                            <span className="text-xs text-slate-400">資料更新：{formatTimestampWithRelative(latestLogTimestamp)}</span>
+                        )}
+                    </div>
+                    <div className="space-y-3 h-52 overflow-y-auto pr-1">
+                        {overviewData.anomalies.map((anomaly, index) => {
+                            const meta = severityMeta[anomaly.severity];
+                            return (
+                                <div key={index} className="flex items-start gap-3 p-3 bg-slate-800/50 rounded-lg">
+                                    <span
+                                        className={`px-2 py-1 text-xs font-semibold rounded-full ${meta?.className ?? ''}`}
+                                        title={meta ? `${meta.label} (${meta.tooltip})` : undefined}
+                                        aria-label={meta ? `${meta.label} (${meta.tooltip})` : undefined}
+                                    >
+                                        {meta?.label ?? anomaly.severity}
+                                    </span>
+                                    <div className="flex-grow">
+                                        <p className="text-slate-300 text-sm leading-relaxed">{anomaly.description}</p>
+                                        <span className="text-xs text-slate-500 mt-2 block">{translateRelativeTime(anomaly.timestamp)}</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
                 <div className="glass-card rounded-xl p-6">
-                    <h2 className="text-xl font-bold mb-4">主動優化建議</h2>
-                    <div className="space-y-4 h-52 overflow-y-auto">
+                    <div className="flex items-center justify-between gap-3 mb-4">
+                        <h2 className="text-xl font-bold">主動優化建議</h2>
+                        {latestLogTimestamp && (
+                            <span className="text-xs text-slate-400">最近同步：{formatTimestampWithRelative(latestLogTimestamp)}</span>
+                        )}
+                    </div>
+                    <div className="space-y-4 h-52 overflow-y-auto pr-1">
                         {overviewData.suggestions.map((s, i) => (
                             <div key={i} className="p-3 bg-slate-800/50 rounded-lg">
                                 <div className="flex justify-between items-start">
@@ -337,7 +435,7 @@ const AnalysisOverviewPage: React.FC = () => {
                                         <span className={`px-2 py-0.5 rounded-full ${getImpactEffortPill(s.effort)}`}>{s.effort} 投入</span>
                                     </div>
                                 </div>
-                                <p className="text-sm text-slate-400 mt-1">{s.details}</p>
+                                <p className="text-sm text-slate-400 mt-1 leading-relaxed">{s.details}</p>
                             </div>
                         ))}
                     </div>

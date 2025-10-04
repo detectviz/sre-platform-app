@@ -1574,6 +1574,35 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 }
                 if (id === 'datasources') {
                     let datasources = getActive(DB.datasources);
+                    const keyword = typeof params?.keyword === 'string'
+                        ? params.keyword.trim().toLowerCase()
+                        : '';
+                    const typeFilter = typeof params?.type === 'string' && params.type.trim() !== ''
+                        ? params.type.trim()
+                        : null;
+                    const statusFilter = typeof params?.status === 'string' && params.status.trim() !== ''
+                        ? params.status.trim()
+                        : null;
+
+                    if (keyword) {
+                        datasources = datasources.filter((ds: any) => {
+                            const nameMatch = ds.name?.toLowerCase().includes(keyword);
+                            const urlMatch = ds.url?.toLowerCase().includes(keyword);
+                            const tagMatch = Array.isArray(ds.tags)
+                                ? ds.tags.some((tag: any) => `${tag.key ?? ''}=${tag.value ?? ''}`.toLowerCase().includes(keyword))
+                                : false;
+                            return nameMatch || urlMatch || tagMatch;
+                        });
+                    }
+
+                    if (typeFilter) {
+                        datasources = datasources.filter((ds: any) => ds.type === typeFilter);
+                    }
+
+                    if (statusFilter && ['ok', 'error', 'pending'].includes(statusFilter)) {
+                        datasources = datasources.filter((ds: any) => ds.status === statusFilter);
+                    }
+
                     if (params?.sort_by && params?.sort_order) {
                         datasources = sortData(datasources, params.sort_by, params.sort_order);
                     }

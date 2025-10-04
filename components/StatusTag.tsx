@@ -1,7 +1,7 @@
 import React from 'react';
 import Icon from './Icon';
 
-type StatusTone = 'default' | 'info' | 'success' | 'warning' | 'danger' | 'neutral';
+export type StatusTone = 'default' | 'info' | 'success' | 'warning' | 'danger' | 'neutral';
 
 const toneClasses: Record<StatusTone, string> = {
   default: 'bg-slate-800/70 text-slate-200 border border-slate-600/60',

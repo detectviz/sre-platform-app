@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { AuditLog, User, AuditLogOptions, AuditLogFilters, TableColumn } from '../../../types';
-import Icon from '../../../components/Icon';
+import { AuditLog, AuditLogFilters, TableColumn } from '../../../types';
 import TableContainer from '../../../components/TableContainer';
 import Drawer from '../../../components/Drawer';
 import Toolbar, { ToolbarButton } from '../../../components/Toolbar';
@@ -14,6 +13,10 @@ import ColumnSettingsModal from '../../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 import { showToast } from '../../../services/toast';
 import SortableHeader from '../../../components/SortableHeader';
+import { useOptions } from '../../../contexts/OptionsContext';
+import StatusTag from '../../../components/StatusTag';
+import JsonPreview from '../../../components/JsonPreview';
+import { formatRelativeTime } from '../../../utils/time';
 
 const PAGE_IDENTIFIER = 'audit_logs';
 
@@ -34,7 +37,35 @@ const AuditLogsPage: React.FC = () => {
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'timestamp', direction: 'desc' });
     
     const { metadata: pageMetadata } = usePageMetadata();
+    const { options } = useOptions();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
+
+    const actionLabelMap = useMemo(() => {
+        const baseMap: Record<string, string> = {
+            LOGIN_SUCCESS: '登入成功',
+            LOGIN_FAILURE: '登入失敗',
+            LOGOUT: '登出',
+            ROLE_UPDATED: '角色更新',
+            PERMISSION_CHANGED: '權限調整',
+            USER_CREATED: '新增使用者',
+            USER_DELETED: '刪除使用者',
+        };
+        options?.audit_logs?.action_types.forEach(action => {
+            if (!baseMap[action]) {
+                baseMap[action] = action.replace(/_/g, ' ').toUpperCase();
+            }
+        });
+        return baseMap;
+    }, [options?.audit_logs?.action_types]);
+
+    const resultToneMap: Record<string, 'success' | 'danger' | 'warning' | 'info' | 'neutral'> = {
+        success: 'success',
+        failed: 'danger',
+        error: 'danger',
+        partial: 'warning',
+    };
+
+    const getActionLabel = (action: string) => actionLabelMap[action] || action;
 
     const fetchAuditLogs = useCallback(async () => {
         if (!pageKey) return;
@@ -104,7 +135,7 @@ const AuditLogsPage: React.FC = () => {
     
     const handleExport = () => {
         if (logs.length === 0) {
-            alert("沒有可匯出的資料。");
+            showToast('沒有可匯出的資料。', 'warning');
             return;
         }
         exportToCsv({
@@ -125,18 +156,42 @@ const AuditLogsPage: React.FC = () => {
     
     const renderCellContent = (log: AuditLog, columnKey: string) => {
         switch (columnKey) {
-            case 'timestamp': return log.timestamp;
-            case 'user': return log.user.name;
-            case 'action': return <span className="font-mono text-xs">{log.action}</span>;
-            case 'target': return `${log.target.type}: ${log.target.name}`;
+            case 'timestamp':
+                return (
+                    <div className="flex flex-col">
+                        <span className="font-medium text-white">{formatRelativeTime(log.timestamp)}</span>
+                        <span className="text-xs text-slate-500">{log.timestamp}</span>
+                    </div>
+                );
+            case 'user':
+                return (
+                    <div className="flex flex-col">
+                        <span className="font-semibold text-white">{log.user.name}</span>
+                        <span className="text-xs text-slate-500">ID: {log.user.id}</span>
+                    </div>
+                );
+            case 'action':
+                return <StatusTag label={getActionLabel(log.action)} tone="info" dense tooltip={log.action} />;
+            case 'target':
+                return (
+                    <div className="space-y-0.5">
+                        <span className="font-medium text-white">{log.target.name}</span>
+                        <span className="text-xs text-slate-500">類型：{log.target.type}</span>
+                    </div>
+                );
             case 'result':
                 return (
-                    <span className={`font-semibold ${log.result === 'success' ? 'text-green-400' : 'text-red-400'}`}>
-                        {log.result.toUpperCase()}
-                    </span>
+                    <StatusTag
+                        label={log.result === 'success' ? '成功' : '失敗'}
+                        tone={resultToneMap[log.result] || 'neutral'}
+                        dense
+                        tooltip={log.result}
+                    />
                 );
-            case 'ip': return log.ip;
-            default: return <span className="text-slate-500">--</span>;
+            case 'ip':
+                return <code className="text-xs text-slate-200 bg-slate-800/60 px-2 py-1 rounded-md">{log.ip}</code>;
+            default:
+                return <span className="text-slate-500">--</span>;
         }
     };
 
@@ -175,10 +230,19 @@ const AuditLogsPage: React.FC = () => {
                                 <TableLoader colSpan={visibleColumns.length} />
                             ) : error ? (
                                 <TableError colSpan={visibleColumns.length} message={error} onRetry={fetchAuditLogs} />
+                            ) : logs.length === 0 ? (
+                                <tr>
+                                    <td colSpan={visibleColumns.length} className="px-6 py-12 text-center text-slate-400">
+                                        <div className="space-y-3">
+                                            <p className="text-sm">目前尚無審計紀錄，請調整篩選條件或稍後再試。</p>
+                                            <ToolbarButton icon="refresh" text="重新整理" onClick={fetchAuditLogs} />
+                                        </div>
+                                    </td>
+                                </tr>
                             ) : logs.map((log) => (
                                 <tr key={log.id} onClick={() => setSelectedLog(log)} className="border-b border-slate-800 hover:bg-slate-800/40 cursor-pointer">
                                     {visibleColumns.map(key => (
-                                        <td key={key} className="px-6 py-4">{renderCellContent(log, key)}</td>
+                                        <td key={key} className="px-6 py-4 align-top">{renderCellContent(log, key)}</td>
                                     ))}
                                 </tr>
                             ))}
@@ -197,12 +261,40 @@ const AuditLogsPage: React.FC = () => {
             <Drawer
                 isOpen={!!selectedLog}
                 onClose={() => setSelectedLog(null)}
-                title={`日誌詳情: ${selectedLog?.id}`}
+                title={`審計詳情：${selectedLog?.id ?? ''}`}
                 width="w-1/2"
             >
                 {selectedLog && (
-                    <div className="bg-slate-950 rounded-lg p-4 font-mono text-sm text-slate-300 overflow-x-auto">
-                        <pre>{JSON.stringify(selectedLog, null, 2)}</pre>
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="border border-slate-700/70 rounded-lg p-4 bg-slate-900/60">
+                                <p className="text-xs text-slate-500">動作</p>
+                                <div className="mt-2 flex items-center gap-2">
+                                    <StatusTag label={getActionLabel(selectedLog.action)} tone="info" />
+                                    <StatusTag label={selectedLog.result === 'success' ? '成功' : '失敗'} tone={resultToneMap[selectedLog.result] || 'neutral'} />
+                                </div>
+                            </div>
+                            <div className="border border-slate-700/70 rounded-lg p-4 bg-slate-900/60">
+                                <p className="text-xs text-slate-500">觸發時間</p>
+                                <p className="mt-2 text-sm text-white">{selectedLog.timestamp}</p>
+                                <p className="text-xs text-slate-500">{formatRelativeTime(selectedLog.timestamp)}</p>
+                            </div>
+                            <div className="border border-slate-700/70 rounded-lg p-4 bg-slate-900/60">
+                                <p className="text-xs text-slate-500">操作人員</p>
+                                <p className="mt-2 text-sm text-white">{selectedLog.user.name}</p>
+                                <code className="text-xs text-slate-200 bg-slate-800/60 px-2 py-1 rounded-md">ID: {selectedLog.user.id}</code>
+                            </div>
+                            <div className="border border-slate-700/70 rounded-lg p-4 bg-slate-900/60 space-y-1">
+                                <p className="text-xs text-slate-500">目標</p>
+                                <p className="text-sm text-white">{selectedLog.target.name}</p>
+                                <span className="text-xs text-slate-500">類型：{selectedLog.target.type}</span>
+                                <div className="flex items-center gap-2 text-xs text-slate-400">
+                                    <span>來源 IP：</span>
+                                    <code className="bg-slate-800/60 px-2 py-1 rounded-md">{selectedLog.ip}</code>
+                                </div>
+                            </div>
+                        </div>
+                        <JsonPreview data={selectedLog.details} title="詳細內容 (JSON)" />
                     </div>
                 )}
             </Drawer>

@@ -8,11 +8,18 @@ import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import { LogEntry, LogLevel, LogAnalysis, LogExplorerFilters } from '../../types';
 import api from '../../services/api';
 import { exportToCsv } from '../../services/export';
+import { showToast } from '../../services/toast';
 import LogAnalysisModal from '../../components/LogAnalysisModal';
 import { useOptions } from '../../contexts/OptionsContext';
 import UnifiedSearchModal from '../../components/UnifiedSearchModal';
 import { useChartTheme } from '../../contexts/ChartThemeContext';
 import { useLogOptions } from '../../hooks/useLogOptions';
+
+const SERIES_META: Record<'error' | 'warning' | 'info', { label: string; color: string }> = {
+    error: { label: '錯誤', color: '#a78bfa' },
+    warning: { label: '警告', color: '#38bdf8' },
+    info: { label: '資訊', color: '#34d399' },
+};
 
 const LogExplorerPage: React.FC = () => {
     const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -104,7 +111,7 @@ const LogExplorerPage: React.FC = () => {
         const sortedKeys = Object.keys(countsByLevel).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
 
         return {
-            timestamps: sortedKeys.map(key => new Date(key).toLocaleTimeString()),
+            timestamps: sortedKeys.map(key => new Date(key).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })),
             info: sortedKeys.map(key => countsByLevel[key].info),
             warning: sortedKeys.map(key => countsByLevel[key].warning),
             error: sortedKeys.map(key => countsByLevel[key].error),
@@ -112,8 +119,27 @@ const LogExplorerPage: React.FC = () => {
     }, [logs]);
 
     const histogramOption = useMemo(() => ({
-        tooltip: { trigger: 'axis' },
-        legend: { data: ['Error', 'Warning', 'Info'], textStyle: { color: chartTheme.text.primary } },
+        tooltip: {
+            trigger: 'axis',
+            formatter: (params: any[]) => {
+                if (!params?.length) {
+                    return '';
+                }
+                const [first] = params;
+                const header = `<div class="font-semibold mb-1">${first.axisValueLabel}</div>`;
+                const rows = params
+                    .map(series => {
+                        const meta = Object.values(SERIES_META).find(item => item.label === series.seriesName);
+                        return `<div style="display:flex;justify-content:space-between;gap:12px;">
+                            <span>${series.marker} ${series.seriesName}</span>
+                            <span>${series.data}</span>
+                        </div>`;
+                    })
+                    .join('');
+                return `${header}${rows}`;
+            },
+        },
+        legend: { data: Object.values(SERIES_META).map(item => item.label), textStyle: { color: chartTheme.text.primary } },
         grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
         xAxis: {
             type: 'category',
@@ -127,9 +153,9 @@ const LogExplorerPage: React.FC = () => {
             splitLine: { lineStyle: { color: chartTheme.grid.split_line } },
         },
         series: [
-            { name: 'Error', type: 'bar', stack: 'total', data: histogramData.error, color: chartTheme.log_levels.error },
-            { name: 'Warning', type: 'bar', stack: 'total', data: histogramData.warning, color: chartTheme.log_levels.warning },
-            { name: 'Info', type: 'bar', stack: 'total', data: histogramData.info, color: chartTheme.log_levels.info }
+            { name: SERIES_META.error.label, type: 'bar', stack: 'total', data: histogramData.error, color: SERIES_META.error.color },
+            { name: SERIES_META.warning.label, type: 'bar', stack: 'total', data: histogramData.warning, color: SERIES_META.warning.color },
+            { name: SERIES_META.info.label, type: 'bar', stack: 'total', data: histogramData.info, color: SERIES_META.info.color }
         ]
     }), [chartTheme, histogramData]);
 
@@ -155,7 +181,7 @@ const LogExplorerPage: React.FC = () => {
 
     const handleExport = () => {
         if (logs.length === 0) {
-            alert("沒有可匯出的資料。");
+            showToast('沒有可匯出的資料。', 'warning');
             return;
         }
         exportToCsv({
@@ -214,7 +240,20 @@ const LogExplorerPage: React.FC = () => {
                 </div>
             </div>
 
-            <div className="shrink-0 h-40">
+            <div className="shrink-0">
+                <div className="flex items-center justify-between px-2 py-1">
+                    <p className="text-xs text-slate-400">圖表顏色代表不同的日誌等級與事件數。</p>
+                    <div className="flex items-center gap-3 text-xs text-slate-300">
+                        {Object.values(SERIES_META).map(meta => (
+                            <div key={meta.label} className="flex items-center gap-2">
+                                <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: meta.color }} />
+                                <span>{meta.label}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+            <div className="shrink-0 h-44">
                 <EChartsReact option={histogramOption} />
             </div>
 
