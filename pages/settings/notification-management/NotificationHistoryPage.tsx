@@ -17,11 +17,32 @@ import StatusTag from '../../../components/StatusTag';
 import IconButton from '../../../components/IconButton';
 import JsonPreview from '../../../components/JsonPreview';
 import { formatRelativeTime } from '../../../utils/time';
+import QuickFilterBar, { QuickFilterOption } from '../../../components/QuickFilterBar';
+import { useOptions } from '../../../contexts/OptionsContext';
 
 type IconConfig = Record<NotificationChannelType | 'Default', { icon: string; color: string; }>;
 
 const PAGE_IDENTIFIER = 'notification_history';
 
+const STATUS_TONE_MAP: Record<NotificationStatus, 'success' | 'danger' | 'warning' | 'info' | 'neutral'> = {
+    sent: 'success',
+    failed: 'danger',
+    pending: 'info',
+};
+
+const DEFAULT_STATUS_DESCRIPTORS: { value: NotificationStatus; label: string }[] = [
+    { value: 'sent', label: '已送達' },
+    { value: 'failed', label: '失敗' },
+    { value: 'pending', label: '處理中' },
+];
+
+const DEFAULT_CHANNEL_DESCRIPTORS: { value: NotificationChannelType; label: string }[] = [
+    { value: 'email', label: '郵件' },
+    { value: 'webhook', label: 'Webhook (通用)' },
+    { value: 'slack', label: 'Slack' },
+    { value: 'line', label: 'LINE 通知' },
+    { value: 'sms', label: '簡訊' },
+];
 
 const NotificationHistoryPage: React.FC = () => {
     const [history, setHistory] = useState<NotificationHistoryRecord[]>([]);
@@ -41,6 +62,47 @@ const NotificationHistoryPage: React.FC = () => {
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
     const [statusFilter, setStatusFilter] = useState<NotificationStatus | 'all'>('all');
     const [channelFilter, setChannelFilter] = useState<NotificationChannelType | 'all'>('all');
+
+    const { options } = useOptions();
+    const notificationHistoryOptions = options?.notification_history;
+
+    const statusDescriptors = useMemo(
+        () => notificationHistoryOptions?.statuses ?? DEFAULT_STATUS_DESCRIPTORS,
+        [notificationHistoryOptions?.statuses]
+    );
+
+    const channelDescriptors = useMemo(
+        () => notificationHistoryOptions?.channel_types ?? DEFAULT_CHANNEL_DESCRIPTORS,
+        [notificationHistoryOptions?.channel_types]
+    );
+
+    const statusFilterOptions = useMemo<QuickFilterOption[]>(() => [
+        { value: 'all', label: '全部' },
+        ...statusDescriptors.map(({ value, label }) => ({ value, label })),
+    ], [statusDescriptors]);
+
+    const channelFilterOptions = useMemo<QuickFilterOption[]>(() => [
+        { value: 'all', label: '全部' },
+        ...channelDescriptors.map(({ value, label }) => ({ value, label })),
+    ], [channelDescriptors]);
+
+    const statusLabelMap = useMemo(() => {
+        const map = {} as Record<NotificationStatus, string>;
+        statusDescriptors.forEach(({ value, label }) => {
+            map[value] = label;
+        });
+        return map;
+    }, [statusDescriptors]);
+
+    const statusToneMap = STATUS_TONE_MAP;
+
+    const channelTypeLabelMap = useMemo(() => {
+        const map = {} as Record<NotificationChannelType, string>;
+        channelDescriptors.forEach(({ value, label }) => {
+            map[value] = label;
+        });
+        return map;
+    }, [channelDescriptors]);
 
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
@@ -142,23 +204,6 @@ const NotificationHistoryPage: React.FC = () => {
         return iconConfig[type] || iconConfig.Default || fallback;
     };
 
-    const availableChannelTypes = useMemo(() => {
-        if (!iconConfig) return [] as NotificationChannelType[];
-        return (Object.keys(iconConfig).filter(key => key !== 'Default') as NotificationChannelType[]);
-    }, [iconConfig]);
-
-    const statusToneMap: Record<NotificationStatus, 'success' | 'danger' | 'warning' | 'info' | 'neutral'> = {
-        sent: 'success',
-        failed: 'danger',
-        pending: 'info',
-    };
-
-    const statusLabelMap: Record<NotificationStatus, string> = {
-        sent: '已送達',
-        failed: '失敗',
-        pending: '處理中',
-    };
-
     const handleExport = () => {
         if (history.length === 0) {
             showToast("沒有可匯出的資料。", "error");
@@ -225,7 +270,7 @@ const NotificationHistoryPage: React.FC = () => {
                 return (
                     <div className="flex flex-col">
                         <span className="text-sm text-white">{record.recipient}</span>
-                        <span className="text-xs text-slate-500">管道：{record.channel_type}</span>
+                        <span className="text-xs text-slate-500">管道：{channelTypeLabelMap[record.channel_type] || record.channel_type}</span>
                     </div>
                 );
             case 'status':
@@ -254,36 +299,35 @@ const NotificationHistoryPage: React.FC = () => {
                 }
             />
 
-            <div className="px-6 py-3 flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-400">狀態</span>
-                    {(['all', 'sent', 'pending', 'failed'] as (NotificationStatus | 'all')[]).map(option => (
-                        <button
-                            key={option}
-                            type="button"
-                            onClick={() => setStatusFilter(option)}
-                            className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${statusFilter === option ? 'bg-sky-700/60 border-sky-500 text-white' : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:bg-slate-800/80'}`}
-                        >
-                            {option === 'all' ? '全部' : statusLabelMap[option]}
-                        </button>
-                    ))}
-                </div>
-                <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-400">管道</span>
-                    <button
-                        type="button"
-                        onClick={() => setChannelFilter('all')}
-                        className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${channelFilter === 'all' ? 'bg-sky-700/60 border-sky-500 text-white' : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:bg-slate-800/80'}`}
-                    >全部</button>
-                    {availableChannelTypes.map(type => (
-                        <button
-                            key={type}
-                            type="button"
-                            onClick={() => setChannelFilter(type)}
-                            className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${channelFilter === type ? 'bg-sky-700/60 border-sky-500 text-white' : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:bg-slate-800/80'}`}
-                        >{type}</button>
-                    ))}
-                </div>
+            <div className="px-6 py-3 space-y-3">
+                <QuickFilterBar
+                    label="狀態"
+                    options={statusFilterOptions}
+                    mode="single"
+                    value={[statusFilter]}
+                    onChange={(values) => {
+                        const next = values[0];
+                        if (!next || next === 'all') {
+                            setStatusFilter('all');
+                            return;
+                        }
+                        setStatusFilter(next as NotificationStatus);
+                    }}
+                />
+                <QuickFilterBar
+                    label="管道"
+                    options={channelFilterOptions}
+                    mode="single"
+                    value={[channelFilter]}
+                    onChange={(values) => {
+                        const next = values[0];
+                        if (!next || next === 'all') {
+                            setChannelFilter('all');
+                            return;
+                        }
+                        setChannelFilter(next as NotificationChannelType);
+                    }}
+                />
             </div>
             <TableContainer>
                 <div className="flex-1 overflow-y-auto">

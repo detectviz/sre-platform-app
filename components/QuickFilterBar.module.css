@@ -1,0 +1,70 @@
+.container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.options {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    row-gap: 10px;
+    flex: 1 1 auto;
+    min-height: 36px;
+}
+
+.label {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+
+.emptyText {
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    color: inherit;
+}
+
+.optionButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px !important;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 0 12px;
+    transition: transform 0.15s ease;
+}
+
+.optionButton:active {
+    transform: translateY(1px);
+}
+
+.count {
+    font-size: 11px;
+    opacity: 0.85;
+}
+
+.search {
+    flex: 0 1 240px;
+    min-width: 180px;
+}
+
+.search :global(.ant-input-affix-wrapper) {
+    border-radius: 999px;
+}
+
+.search :global(.ant-input-search-button) {
+    border-radius: 0 999px 999px 0;
+}
+
+.trailing {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
