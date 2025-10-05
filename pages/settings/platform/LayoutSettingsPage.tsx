@@ -81,25 +81,18 @@ const ListItem: React.FC<ListItemProps> = ({ widget, onAction, actionIcon, onMov
                     onSelect(widget);
                 }
             }}
-            className={`flex items-center justify-between rounded-lg border px-3 py-2.5 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50 ${isSelectedList
-                ? 'shadow-sm shadow-slate-900/40 hover:shadow-md hover:shadow-slate-900/60 cursor-grab active:cursor-grabbing'
-                : 'hover:border-slate-700/80 hover:bg-slate-800/60'
-                } ${isActive
-                    ? 'border-sky-500/60 bg-sky-500/15 ring-1 ring-sky-500/30'
-                    : 'border-slate-800/70 bg-slate-900/60'
-                } cursor-pointer`}
+            className={`flex items-center justify-between rounded-md border px-2 py-2 transition-all duration-200 focus:outline-none focus-visible:ring-1 focus-visible:ring-sky-500/50 ${isSelectedList
+                ? 'border-slate-700/80 bg-slate-800/60 hover:bg-slate-700/80 cursor-grab'
+                : 'border-slate-800/60 bg-slate-900/40 hover:border-slate-700/80 hover:bg-slate-800/40'
+                } ${isActive ? 'border-sky-500/60 bg-sky-500/10' : ''}`}
         >
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-4">
                 <span className={`mt-1 ${isSelectedList ? 'text-slate-400 cursor-grab active:cursor-grabbing' : 'text-slate-500'}`}>
                     <Icon name={isSelectedList ? 'grip-vertical' : 'layout-dashboard'} className={`w-4 h-4 ${isSelectedList ? 'hover:text-slate-300' : ''}`} />
                 </span>
-                <div className="space-y-1 flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-white truncate">{widget.name}</p>
-                    <p className="text-xs text-slate-400 leading-relaxed line-clamp-2">{widget.description}</p>
-                    <div className="flex flex-wrap gap-2 pt-1">
-                        <StatusTag dense tone="neutral" icon="layers" label={`支援頁面 ${widget.supported_pages.length}`} />
-                        {isSelectedList && <StatusTag dense tone="info" icon="eye" label="已顯示" />}
-                    </div>
+                <div className="space-y-1 flex-1 min-w-0 max-w-[200px]">
+                    <p className="text-sm font-medium text-white truncate">{widget.name}</p>
+                    <p className="text-xs text-slate-400 line-clamp-1">{widget.description}</p>
                 </div>
             </div>
             <div className="flex items-center gap-2">
@@ -108,33 +101,33 @@ const ListItem: React.FC<ListItemProps> = ({ widget, onAction, actionIcon, onMov
                         <button
                             onClick={(event) => handleMoveClick(event, onMoveUp)}
                             disabled={!onMoveUp}
-                            className={`p-2 rounded-md transition-all duration-200 ${onMoveUp
-                                ? 'text-slate-300 hover:text-white hover:bg-slate-700 hover:scale-105'
-                                : 'text-slate-600 cursor-not-allowed opacity-30'
+                            className={`p-1.5 rounded transition-colors ${onMoveUp
+                                ? 'text-slate-400 hover:text-white hover:bg-slate-700/60'
+                                : 'text-slate-600 opacity-30 cursor-not-allowed'
                                 }`}
-                            title={onMoveUp ? "上移" : "已到頂部，無法上移"}
+                            title={onMoveUp ? "上移" : "已到頂部"}
                         >
-                            <Icon name="arrow-up" className="w-4 h-4" />
+                            <Icon name="chevron-up" className="w-3.5 h-3.5" />
                         </button>
                         <button
                             onClick={(event) => handleMoveClick(event, onMoveDown)}
                             disabled={!onMoveDown}
-                            className={`p-2 rounded-md transition-all duration-200 ${onMoveDown
-                                ? 'text-slate-300 hover:text-white hover:bg-slate-700 hover:scale-105'
-                                : 'text-slate-600 cursor-not-allowed opacity-30'
+                            className={`p-1.5 rounded transition-colors ${onMoveDown
+                                ? 'text-slate-400 hover:text-white hover:bg-slate-700/60'
+                                : 'text-slate-600 opacity-30 cursor-not-allowed'
                                 }`}
-                            title={onMoveDown ? "下移" : "已到底部，無法下移"}
+                            title={onMoveDown ? "下移" : "已到底部"}
                         >
-                            <Icon name="arrow-down" className="w-4 h-4" />
+                            <Icon name="chevron-down" className="w-3.5 h-3.5" />
                         </button>
                     </>
                 )}
                 <button
                     onClick={handleActionClick}
-                    className="p-1.5 rounded-md text-slate-300 hover:text-white hover:bg-slate-700"
+                    className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700/60 transition-colors"
                     title={isSelectedList ? '移除卡片' : '加入卡片'}
                 >
-                    <Icon name={actionIcon} className="w-4 h-4" />
+                    <Icon name={actionIcon} className="w-3.5 h-3.5" />
                 </button>
             </div>
         </div>
@@ -204,15 +197,15 @@ const DualListSelector: React.FC<DualListSelectorProps> = ({ available, selected
     const selectedCount = selected.length;
 
     return (
-        <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4">
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-[1fr_1fr]">
+            <div className="rounded-lg border border-slate-800/60 bg-slate-900/50 p-4">
                 <div className="mb-3 flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-white">{pageContent.AVAILABLE_WIDGETS}</h3>
                     <StatusTag dense tone="neutral" icon="list" label={`${availableCount} 項`} />
                 </div>
-                <p className="mb-3 text-xs text-slate-400">拖曳或點擊右側箭頭即可加入儀表卡。僅顯示支援當前頁面的卡片。</p>
+                <p className="mb-3 text-xs text-slate-400">選擇要顯示的指標卡片</p>
                 {availableCount > 0 ? (
-                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                    <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                         {available.map(w => (
                             <ListItem key={w.id} widget={w} onAction={() => handleAdd(w)} actionIcon="chevron-right" />
                         ))}
@@ -223,37 +216,35 @@ const DualListSelector: React.FC<DualListSelectorProps> = ({ available, selected
                     </div>
                 )}
             </div>
-            <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4">
+            <div className="rounded-lg border border-slate-800/60 bg-slate-900/50 p-4">
                 <div className="mb-3 flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-white">{pageContent.DISPLAYED_WIDGETS}</h3>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                        <StatusTag dense tone="info" icon="layout-dashboard" label={`${selectedCount} 張`} />
                         {selectedCount > 1 && (
-                            <div className="flex items-center gap-1">
+                            <>
                                 <button
                                     onClick={() => autoSort('alphabetical')}
-                                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-600 bg-slate-800/80 px-2 py-1 text-xs font-medium text-slate-300 hover:bg-slate-700/80 hover:text-white transition-colors"
+                                    className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-700/60"
                                     title="按字母順序自動排序"
                                 >
                                     <Icon name="sort-asc" className="w-3 h-3" />
-                                    字母順序
                                 </button>
                                 <button
                                     onClick={() => autoSort('frequency')}
-                                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-600 bg-slate-800/80 px-2 py-1 text-xs font-medium text-slate-300 hover:bg-slate-700/80 hover:text-white transition-colors"
+                                    className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-700/60"
                                     title="按使用頻率自動排序"
                                 >
                                     <Icon name="activity" className="w-3 h-3" />
-                                    使用頻率
                                 </button>
-                            </div>
+                            </>
                         )}
-                        <StatusTag dense tone="info" icon="layout-dashboard" label={`${selectedCount} 張`} />
                     </div>
                 </div>
-                <p className="mb-3 text-xs text-slate-400">調整順序以決定在儀表板中出現的先後，第一張將顯示在最左側。</p>
+                <p className="mb-3 text-xs text-slate-400">拖拽調整顯示順序</p>
                 {selectedCount > 0 ? (
                     <div
-                        className="space-y-2 max-h-72 overflow-y-auto pr-1"
+                        className="space-y-2 max-h-64 overflow-y-auto pr-1"
                         onDragOver={(e) => {
                             e.preventDefault();
                             e.dataTransfer.dropEffect = 'move';
@@ -359,7 +350,7 @@ const AccordionItem: React.FC<AccordionItemProps> = ({ pageName, layouts, handle
                 onClick={() => setIsOpen(prev => !prev)}
                 className="w-full px-4 py-3 flex items-center justify-between text-left transition-colors hover:bg-slate-800/60 rounded-t-xl"
             >
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-4">
                     <Icon
                         name="chevron-right"
                         className={`w-5 h-5 mt-0.5 text-slate-400 transition-transform ${isOpen ? 'rotate-90 text-sky-400' : ''}`}
@@ -429,13 +420,14 @@ const LayoutSettingsPage: React.FC = () => {
     const { theme: themeMode } = useTheme();
     const colorLabelOverrides = (pageContent?.KPI_CARD_COLOR_LABELS as Partial<Record<KpiCardColor, string>> | undefined) ?? undefined;
     const kpiColorOptions = useMemo(() => {
-        const tones: KpiCardColor[] = ['default', 'primary', 'success', 'warning', 'error', 'info', 'performance', 'resource', 'health', 'monitoring'];
+        // 只保留常用的顏色選項
+        const tones: KpiCardColor[] = ['default', 'success', 'warning', 'error', 'info', 'performance', 'monitoring'];
         return tones.map((tone) => {
             const palette = getKpiCardPalette(token, tone, { themeMode });
             const labelText = colorLabelOverrides?.[tone] ?? KPI_CARD_COLOR_LABELS[tone];
             return {
                 label: (
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-4">
                         <span
                             className="tone-swatch"
                             style={{
@@ -580,7 +572,7 @@ const LayoutSettingsPage: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-900/70 p-5 text-slate-200">
+            <div className="flex items-start gap-4 rounded-xl border border-slate-800 bg-slate-900/70 p-5 text-slate-200">
                 <Icon name="info" className="w-5 h-5 mt-0.5 text-sky-400" />
                 <div className="space-y-2">
                     <p className="text-sm leading-relaxed">{pageContent.INFO_TEXT}</p>
@@ -607,8 +599,9 @@ const LayoutSettingsPage: React.FC = () => {
                 }
             >
                 {editingPage && (
-                    <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-                        <div className="space-y-4">
+                    <div className="flex flex-col gap-8">
+                        {/* 上半部：雙欄選擇器 */}
+                        <div className="grid gap-6 grid-cols-1 md:grid-cols-[1fr_1fr]">
                             <DualListSelector
                                 available={availableWidgetsForModal}
                                 selected={modalWidgets}
@@ -617,52 +610,53 @@ const LayoutSettingsPage: React.FC = () => {
                                 onActiveWidgetChange={setActiveWidgetId}
                             />
                         </div>
+
+                        {/* 下半部：預覽區域 */}
                         <div className="flex h-full flex-col gap-4">
                             {activeWidget ? (
-                                <div className="flex h-full flex-col gap-5 rounded-2xl border border-slate-800/80 bg-slate-900/70 p-5 shadow-lg shadow-slate-950/30">
-                                    <div>
+                                <div className="flex h-full flex-col gap-5 rounded-xl border border-slate-800/60 bg-slate-900/50 p-5">
+                                    <div className="space-y-2">
                                         <p className="text-sm font-semibold text-white">{activeWidget.name}</p>
-                                        <p className="mt-1 text-xs leading-relaxed text-slate-400">{activeWidget.description}</p>
+                                        <p className="text-xs leading-relaxed text-slate-400">{activeWidget.description}</p>
                                     </div>
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between">
-                                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">背景樣式</p>
-                                            <span className="text-[11px] text-slate-500">即時套用至預覽</span>
+                                            <p className="text-xs font-semibold text-slate-300">背景樣式</p>
+                                            <span className="text-xs text-slate-500">即時預覽</span>
                                         </div>
                                         <Segmented
                                             block
-                                            size="large"
-                                            className="kpi-tone-segmented rounded-xl bg-slate-950/40 p-1.5"
+                                            size="small"
+                                            className="kpi-tone-segmented rounded-lg bg-slate-800/50"
                                             options={kpiColorOptions}
                                             value={resolvedActiveColor}
                                             onChange={(value) => handleColorChange(activeWidget.id, value as KpiCardColor)}
                                         />
                                     </div>
-                                    <div
-                                        className="flex-1 rounded-2xl border border-slate-800/70 bg-slate-950/40 p-4 min-h-[280px]"
-                                        style={{ boxShadow: `inset 0 1px 0 0 rgba(148, 163, 184, 0.08)` }}
-                                    >
-                                        <div className="mb-3 flex items-center justify-between">
-                                            <p className="text-xs font-medium text-slate-400">預覽</p>
-                                            <span className="text-[11px] text-slate-500">{pageContent.PREVIEW_HINT ?? '顯示選定卡片的實際樣式'}</span>
+                                    <div className="flex-1 flex flex-col gap-4">
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-sm font-semibold text-white">預覽</p>
+                                            <span className="text-xs text-slate-500">即時預覽效果</span>
                                         </div>
-                                        <KpiCard
-                                            title={activeWidget.name}
-                                            value={activeKpiEntry?.value ?? '—'}
-                                            unit={activeKpiEntry?.unit}
-                                            description={activeKpiEntry?.description}
-                                            color={resolvedActiveColor}
-                                            trend={activeKpiEntry?.trend ?? null}
-                                            change={activeKpiEntry?.change}
-                                        />
-                                    </div>
-                                    <div className="rounded-xl border border-dashed border-slate-700/70 bg-slate-950/40 p-3 text-[11px] text-slate-500">
-                                        {pageContent.COLOR_HELPER_TEXT ?? '建議依據指標狀態選擇對應顏色，例如警示類型使用 Warning、失敗使用 Error。'}
+                                        <div className="flex-1 rounded-xl border border-slate-800/50 bg-slate-950/30 p-5 flex items-center justify-center">
+                                            <KpiCard
+                                                title={activeWidget.name}
+                                                value={activeKpiEntry?.value ?? '—'}
+                                                unit={activeKpiEntry?.unit}
+                                                description={activeKpiEntry?.description}
+                                                color={resolvedActiveColor}
+                                                trend={activeKpiEntry?.trend ?? null}
+                                                change={activeKpiEntry?.change}
+                                            />
+                                        </div>
+                                        <div className="rounded-lg border border-slate-700/50 bg-slate-950/20 p-3 text-xs text-slate-500 text-center">
+                                            {pageContent.COLOR_HELPER_TEXT ?? '選擇適合的顏色主題以匹配指標類型'}
+                                        </div>
                                     </div>
                                 </div>
                             ) : (
                                 <div className="flex min-h-[220px] items-center justify-center rounded-xl border border-dashed border-slate-700 bg-slate-900/40 p-6 text-sm text-slate-400">
-                                    請從左側列表選擇要調整的 KPI 卡片。
+                                    請從上方列表選擇要調整的 KPI 卡片。
                                 </div>
                             )}
                         </div>
