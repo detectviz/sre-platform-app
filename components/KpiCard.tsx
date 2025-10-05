@@ -1,11 +1,11 @@
 import React, { useMemo } from 'react';
 import { theme } from 'antd';
 import { Card } from 'antd';
-import type { CardProps } from 'antd';
 import type { GlobalToken } from 'antd/es/theme/interface';
 import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
 import type { CSSProperties } from 'react';
 import type { KpiCardColor, KpiTrendDirection } from '../types';
+import { useTheme } from '../contexts/ThemeContext';
 
 export type { KpiCardColor } from '../types';
 
@@ -58,6 +58,37 @@ export interface KpiCardPalette {
   swatchBorder?: string;
 }
 
+type ThemeMode = 'light' | 'dark';
+type StatusTone = 'error' | 'warning' | 'success' | 'info' | 'default';
+
+export const kpiPalette: Record<StatusTone, { bg: string; text: string }> = {
+  error: { bg: 'rgba(255,77,79,0.25)', text: 'hsl(0,70%,75%)' },
+  warning: { bg: 'rgba(250,173,20,0.25)', text: 'hsl(35,70%,70%)' },
+  success: { bg: 'rgba(82,196,26,0.25)', text: 'hsl(130,50%,70%)' },
+  info: { bg: 'rgba(22,119,255,0.25)', text: 'hsl(210,60%,75%)' },
+  default: { bg: 'rgba(255,255,255,0.08)', text: '#d9d9d9' },
+};
+
+export const kpiPaletteLight: Record<StatusTone, { bg: string; text: string }> = {
+  error: { bg: 'rgba(255,77,79,0.16)', text: 'hsl(0,70%,38%)' },
+  warning: { bg: 'rgba(250,173,20,0.16)', text: 'hsl(35,70%,40%)' },
+  success: { bg: 'rgba(82,196,26,0.16)', text: 'hsl(130,45%,32%)' },
+  info: { bg: 'rgba(22,119,255,0.16)', text: 'hsl(210,70%,36%)' },
+  default: { bg: 'rgba(0,0,0,0.04)', text: '#262626' },
+};
+
+const STATUS_TONES: StatusTone[] = ['error', 'warning', 'success', 'info', 'default'];
+const STATUS_BASE_COLORS: Record<StatusTone, string> = {
+  error: '#ff4d4f',
+  warning: '#faad14',
+  success: '#52c41a',
+  info: '#1677ff',
+  default: '#d9d9d9',
+};
+
+const isStatusTone = (tone: KpiCardColor): tone is StatusTone =>
+  STATUS_TONES.includes(tone as StatusTone);
+
 type RGB = { r: number; g: number; b: number };
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
@@ -92,6 +123,14 @@ const parseColor = (color: string): RGB | null => {
       g: Number(rgbMatch[2]),
       b: Number(rgbMatch[3]),
     };
+  }
+
+  const hslMatch = trimmed.match(/hsla?\(([^,]+),\s*([^,]+)%,\s*([^,]+)%/i);
+  if (hslMatch) {
+    const h = ((Number(hslMatch[1]) % 360) + 360) % 360;
+    const s = Number(hslMatch[2]) / 100;
+    const l = Number(hslMatch[3]) / 100;
+    return hslToRgb({ h: h / 360, s, l });
   }
 
   return null;
@@ -183,139 +222,213 @@ const toRgba = (color: string, alpha: number) => {
   return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
 };
 
+const createTextTokens = (textColor: string, mode: ThemeMode) => {
+  if (!textColor) {
+    return {
+      value: textColor,
+      title: textColor,
+      description: textColor,
+      unit: textColor,
+    };
+  }
+
+  if (mode === 'dark') {
+    return {
+      value: tuneColor(textColor, { lightness: 0.12 }),
+      title: textColor,
+      description: tuneColor(textColor, { lightness: -0.08 }),
+      unit: tuneColor(textColor, { lightness: -0.04 }),
+    };
+  }
+
+  return {
+    value: tuneColor(textColor, { lightness: -0.12 }),
+    title: tuneColor(textColor, { lightness: -0.08 }),
+    description: tuneColor(textColor, { lightness: -0.02 }),
+    unit: tuneColor(textColor, { lightness: -0.04 }),
+  };
+};
+
+export interface GetKpiCardPaletteOptions {
+  themeMode?: ThemeMode;
+}
+
 const buildVibrantGradient = (baseColor: string) => {
   const start = tuneColor(baseColor, { lightness: 0.18, saturation: 0.12 });
   const end = tuneColor(baseColor, { lightness: -0.16, saturation: 0.05 });
   return `linear-gradient(135deg, ${start}, ${end})`;
 };
 
-export const getKpiCardPalette = (token: GlobalToken, tone: KpiCardColor = 'default'): KpiCardPalette => {
+export const getKpiCardPalette = (
+  token: GlobalToken,
+  tone: KpiCardColor = 'default',
+  options: GetKpiCardPaletteOptions = {},
+): KpiCardPalette => {
+  const themeMode: ThemeMode = options.themeMode ?? 'dark';
+  const statusPalette = themeMode === 'dark' ? kpiPalette : kpiPaletteLight;
+
+  if (isStatusTone(tone) && tone !== 'default') {
+    const baseColor = STATUS_BASE_COLORS[tone];
+    const textTokens = createTextTokens(statusPalette[tone].text, themeMode);
+    return {
+      background: statusPalette[tone].bg,
+      value: textTokens.value,
+      title: textTokens.title,
+      description: textTokens.description,
+      unit: textTokens.unit,
+      hoverShadow: `0 18px 42px -20px ${toRgba(baseColor, themeMode === 'dark' ? 0.55 : 0.28)}`,
+      baseColor,
+      swatchBorder: themeMode === 'dark' ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.12)',
+    };
+  }
+
+  if (tone === 'default') {
+    const palette = statusPalette.default;
+    const baseColor = STATUS_BASE_COLORS.default;
+    const textTokens = createTextTokens(palette.text, themeMode);
+    return {
+      background: palette.bg,
+      value: textTokens.value || token.colorText,
+      title: textTokens.title || (themeMode === 'dark' ? '#d9d9d9' : token.colorTextSecondary),
+      description:
+        textTokens.description ||
+        (themeMode === 'dark' ? 'rgba(255,255,255,0.65)' : token.colorTextTertiary ?? '#595959'),
+      unit:
+        textTokens.unit ||
+        (themeMode === 'dark' ? 'rgba(255,255,255,0.7)' : token.colorTextTertiary ?? '#595959'),
+      hoverShadow:
+        token.boxShadowSecondary ??
+        (themeMode === 'dark' ? '0 18px 42px -24px rgba(0,0,0,0.6)' : '0 18px 42px -24px rgba(0,0,0,0.2)'),
+      baseColor,
+      swatchBorder: themeMode === 'dark' ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.08)',
+    };
+  }
+
   const primaryAccent = token.colorInfo ?? token.colorPrimary;
   const neutralBase = token.colorBgElevated ?? token.colorBgContainer;
 
   switch (tone) {
     case 'primary': {
-      const base = primaryAccent || '#3274d9'; // 使用更貼近Grafana的主題藍色
+      const base = primaryAccent || '#3274d9';
       return {
-        background: `linear-gradient(135deg, ${base}, ${base})`,
+        background: buildVibrantGradient(base),
         value: '#ffffff',
         title: '#ffffff',
-        description: '#ffffff',
-        unit: '#ffffff',
+        description: '#e6f4ff',
+        unit: '#e6f4ff',
         hoverShadow: `0 22px 46px -24px ${toRgba(base, 0.55)}`,
         baseColor: base,
-        swatchBorder: '#ffffff',
-      };
-    }
-    case 'success': {
-      const base = token.colorSuccess || '#56c596'; // 使用更貼近Grafana的綠色
-      return {
-        background: `linear-gradient(135deg, ${base}, ${base})`,
-        value: '#ffffff',
-        title: '#ffffff',
-        description: '#ffffff',
-        unit: '#ffffff',
-        hoverShadow: `0 22px 46px -24px ${toRgba(base, 0.5)}`,
-        baseColor: base,
-        swatchBorder: '#ffffff',
-      };
-    }
-    case 'info': {
-      const base = '#36a2eb'; // 更鮮明的藍色，類似Grafana
-      return {
-        background: `linear-gradient(135deg, ${base}, ${base})`,
-        value: '#ffffff',
-        title: '#ffffff',
-        description: '#ffffff',
-        unit: '#ffffff',
-        hoverShadow: `0 22px 46px -24px ${toRgba(base, 0.5)}`,
-        baseColor: base,
-        swatchBorder: '#ffffff',
+        swatchBorder: themeMode === 'dark' ? '#ffffff' : '#102a43',
       };
     }
     case 'performance': {
-      const base = '#9966ff'; // 更鮮明的紫色，類似Grafana
+      const base = '#9966ff';
       return {
-        background: `linear-gradient(135deg, ${base}, ${base})`,
+        background: buildVibrantGradient(base),
         value: '#ffffff',
-        title: '#ffffff',
-        description: '#ffffff',
-        unit: '#ffffff',
+        title: '#f8f5ff',
+        description: '#ede7ff',
+        unit: '#ede7ff',
         hoverShadow: `0 22px 46px -24px ${toRgba(base, 0.5)}`,
         baseColor: base,
-        swatchBorder: '#ffffff',
+        swatchBorder: themeMode === 'dark' ? '#ffffff' : '#2f0544',
       };
     }
     case 'resource': {
-      const base = '#56c596'; // 更鮮明的綠色，類似Grafana
+      const base = '#56c596';
       return {
-        background: `linear-gradient(135deg, ${base}, ${base})`,
+        background: buildVibrantGradient(base),
         value: '#ffffff',
-        title: '#ffffff',
-        description: '#ffffff',
-        unit: '#ffffff',
+        title: '#f6fffa',
+        description: '#e9fff4',
+        unit: '#e9fff4',
         hoverShadow: `0 22px 46px -24px ${toRgba(base, 0.5)}`,
         baseColor: base,
-        swatchBorder: '#ffffff',
+        swatchBorder: themeMode === 'dark' ? '#ffffff' : '#0f2f21',
       };
     }
     case 'health': {
-      const base = '#4ecdc4'; // 青綠色，更符合Grafana的健康狀態色彩
+      const base = '#4ecdc4';
       return {
-        background: `linear-gradient(135deg, ${base}, ${base})`,
+        background: buildVibrantGradient(base),
         value: '#ffffff',
-        title: '#ffffff',
-        description: '#ffffff',
-        unit: '#ffffff',
+        title: '#effffd',
+        description: '#ddfbf8',
+        unit: '#ddfbf8',
         hoverShadow: `0 22px 46px -24px ${toRgba(base, 0.5)}`,
         baseColor: base,
-        swatchBorder: '#ffffff',
+        swatchBorder: themeMode === 'dark' ? '#ffffff' : '#0d2a28',
       };
     }
     case 'monitoring': {
-      const base = '#17becf'; // 青藍色，更符合Grafana的監控色彩
+      const base = '#17becf';
       return {
-        background: `linear-gradient(135deg, ${base}, ${base})`,
+        background: buildVibrantGradient(base),
         value: '#ffffff',
-        title: '#ffffff',
-        description: '#ffffff',
-        unit: '#ffffff',
+        title: '#e8fbff',
+        description: '#d1f5fb',
+        unit: '#d1f5fb',
         hoverShadow: `0 22px 46px -24px ${toRgba(base, 0.5)}`,
         baseColor: base,
-        swatchBorder: '#ffffff',
+        swatchBorder: themeMode === 'dark' ? '#ffffff' : '#07272b',
+      };
+    }
+    case 'info': {
+      const base = '#36a2eb';
+      return {
+        background: buildVibrantGradient(base),
+        value: '#ffffff',
+        title: '#e6f4ff',
+        description: '#c9e8ff',
+        unit: '#c9e8ff',
+        hoverShadow: `0 22px 46px -24px ${toRgba(base, 0.5)}`,
+        baseColor: base,
+        swatchBorder: themeMode === 'dark' ? '#ffffff' : '#102a43',
+      };
+    }
+    case 'success': {
+      const base = token.colorSuccess || '#56c596';
+      return {
+        background: buildVibrantGradient(base),
+        value: '#ffffff',
+        title: '#f6ffed',
+        description: '#d9f7be',
+        unit: '#d9f7be',
+        hoverShadow: `0 22px 46px -24px ${toRgba(base, 0.5)}`,
+        baseColor: base,
+        swatchBorder: themeMode === 'dark' ? '#ffffff' : '#0f2f21',
       };
     }
     case 'warning': {
-      const base = token.colorWarning || '#f2cc0c'; // 使用更貼近Grafana的黃色
+      const base = token.colorWarning || '#f2cc0c';
       return {
-        background: `linear-gradient(135deg, ${base}, ${base})`,
-        value: '#000000', // 黃色背景用黑色文字
-        title: '#000000',
-        description: '#000000',
-        unit: '#000000',
+        background: buildVibrantGradient(base),
+        value: themeMode === 'dark' ? '#1f1f1f' : '#000000',
+        title: themeMode === 'dark' ? '#262626' : '#000000',
+        description: themeMode === 'dark' ? '#333333' : '#262626',
+        unit: themeMode === 'dark' ? '#333333' : '#262626',
         hoverShadow: `0 22px 46px -24px ${toRgba(base, 0.48)}`,
         baseColor: base,
-        swatchBorder: '#000000',
+        swatchBorder: themeMode === 'dark' ? '#1f1f1f' : '#000000',
       };
     }
     case 'error': {
-      const base = token.colorError || '#dc3545'; // 使用更貼近Grafana的紅色
+      const base = token.colorError || '#dc3545';
       return {
-        background: `linear-gradient(135deg, ${base}, ${base})`,
+        background: buildVibrantGradient(base),
         value: '#ffffff',
-        title: '#ffffff',
-        description: '#ffffff',
-        unit: '#ffffff',
+        title: '#fff1f0',
+        description: '#ffccc7',
+        unit: '#ffccc7',
         hoverShadow: `0 22px 46px -24px ${toRgba(base, 0.52)}`,
         baseColor: base,
-        swatchBorder: '#ffffff',
+        swatchBorder: themeMode === 'dark' ? '#ffffff' : '#2a0708',
       };
     }
-    case 'default':
     default: {
       const base = neutralBase;
       return {
-        background: `linear-gradient(135deg, ${base}, ${base})`,
+        background: buildVibrantGradient(base),
         value: token.colorText,
         title: token.colorTextSecondary,
         description: token.colorTextTertiary ?? token.colorTextSecondary,
@@ -326,6 +439,25 @@ export const getKpiCardPalette = (token: GlobalToken, tone: KpiCardColor = 'defa
       };
     }
   }
+};
+
+const WHITE_ICON_SHADOW = '0 1px 2px rgba(0,0,0,0.25)';
+
+const TREND_COLOR_RULES: Record<ThemeMode, Record<StatusTone, { up: string; down: string }>> = {
+  dark: {
+    error: { up: '#ffffff', down: '#ffffff' },
+    warning: { up: '#ffffff', down: '#ffffff' },
+    success: { up: '#ffffff', down: '#ffffff' },
+    info: { up: '#52c41a', down: '#ff4d4f' },
+    default: { up: '#52c41a', down: '#ff4d4f' },
+  },
+  light: {
+    error: { up: '#52c41a', down: '#ff4d4f' },
+    warning: { up: '#52c41a', down: '#ff4d4f' },
+    success: { up: '#52c41a', down: '#ff4d4f' },
+    info: { up: '#52c41a', down: '#ff4d4f' },
+    default: { up: '#52c41a', down: '#ff4d4f' },
+  },
 };
 
 const KpiCard: React.FC<KpiCardProps> = ({
@@ -340,34 +472,39 @@ const KpiCard: React.FC<KpiCardProps> = ({
   onClick,
 }) => {
   const { token } = theme.useToken();
+  const { theme: themeMode } = useTheme();
 
-  const palette = useMemo(() => getKpiCardPalette(token, (color as KpiCardColor) || 'default'), [token, color]);
-  const trendColor = trend === 'down' ? token.colorError : token.colorSuccess;
+  const palette = useMemo(
+    () => getKpiCardPalette(token, (color as KpiCardColor) || 'default', { themeMode }),
+    [token, color, themeMode],
+  );
 
   const changePalette = useMemo(() => {
-    const tinted = ((color as KpiCardColor) || 'default') !== 'default';
-    const currentColor = (color as KpiCardColor) || 'default';
+    const tone = (color as KpiCardColor) || 'default';
+    const statusTone = isStatusTone(tone) ? tone : null;
+    const fallbackUp = token.colorSuccess ?? '#52c41a';
+    const fallbackDown = token.colorError ?? '#ff4d4f';
+    const trendSet = statusTone ? TREND_COLOR_RULES[themeMode][statusTone] : null;
+    const direction = trend === 'down' ? 'down' : 'up';
+    const iconColor = (trendSet ?? { up: fallbackUp, down: fallbackDown })[direction];
+    const iconShadow = iconColor.toLowerCase() === '#ffffff' ? WHITE_ICON_SHADOW : 'none';
 
-    // 簡單選擇文字顏色
-    const getTextColor = () => {
-      if (!tinted) return token.colorTextSecondary;
-      // 黃色背景用黑色，其他用白色
-      return currentColor === 'warning' ? '#000000' : '#ffffff';
-    };
-
-    // 為趨勢指標選擇適當的顏色
-    const getTrendIconColor = () => {
-      if (!tinted) return trendColor; // 預設情況使用原始趨勢顏色
-      return getTextColor(); // 有色背景使用對比色
-    };
+    const background = statusTone ? 'transparent' : toRgba(palette.baseColor, themeMode === 'dark' ? 0.16 : 0.12);
+    const iconBackground = statusTone
+      ? themeMode === 'dark'
+        ? toRgba('#000000', 0.35)
+        : toRgba('#ffffff', 0.9)
+      : toRgba(palette.baseColor, themeMode === 'dark' ? 0.28 : 0.16);
+    const textColor = statusTone ? palette.title : token.colorTextSecondary;
 
     return {
-      background: tinted ? palette.baseColor : token.colorFillSecondary,
-      text: getTextColor(),
-      iconBackground: tinted ? palette.baseColor : token.colorBgElevated,
-      iconColor: getTrendIconColor(),
+      background,
+      text: textColor,
+      iconBackground,
+      iconColor,
+      iconShadow,
     };
-  }, [color, palette.baseColor, palette.value, token.colorBgElevated, token.colorFillSecondary, token.colorTextSecondary, trendColor]);
+  }, [color, palette.baseColor, palette.title, themeMode, token.colorError, token.colorSuccess, token.colorTextSecondary, trend]);
 
   const cardStyle: CSSProperties & Record<string, string> = {
     background: palette.background,
@@ -381,27 +518,12 @@ const KpiCard: React.FC<KpiCardProps> = ({
     '--kpi-card-change-text': changePalette.text,
     '--kpi-card-change-icon-bg': changePalette.iconBackground,
     '--kpi-card-change-icon-color': changePalette.iconColor,
+    '--kpi-card-change-icon-shadow': changePalette.iconShadow,
   };
 
   const displayTrend = trend && (trend === 'up' || trend === 'down');
   const TrendIcon = trend === 'down' ? ArrowDownOutlined : ArrowUpOutlined;
   const showChange = displayTrend || Boolean(change);
-
-  // 為趨勢指標選擇適當的顏色，避免與背景衝突
-  const changeToneStyle = useMemo(() => {
-    if (!displayTrend) return undefined;
-
-    const currentColor = (color as KpiCardColor) || 'default';
-    const tinted = currentColor !== 'default';
-
-    if (!tinted) {
-      // 預設背景使用原始趨勢顏色
-      return { color: trendColor };
-    }
-
-    // 有色背景：黃色用黑色，其他用白色
-    return { color: currentColor === 'warning' ? '#000000' : '#ffffff' };
-  }, [displayTrend, color, trendColor]);
 
   return (
     // @ts-ignore
@@ -425,7 +547,7 @@ const KpiCard: React.FC<KpiCardProps> = ({
             {title}
           </div>
           {showChange && (
-            <div className="kpi-card-change" style={changeToneStyle}>
+            <div className="kpi-card-change">
               {displayTrend && (
                 <span className="kpi-card-change-icon">
                   <TrendIcon />
