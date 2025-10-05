@@ -153,7 +153,7 @@ const AutoDiscoveryPage: React.FC = () => {
         const timeText = hour === '*' && minute === '*'
             ? '每分鐘'
             : hour === '*'
-                ? describeField(minute, '分鐘')
+                ? `每小時的第 ${formatNumber(minute)} 分鐘`
                 : minute === '*'
                     ? describeField(hour, '小時')
                     : `於 ${formatNumber(hour)}:${formatNumber(minute)} 執行`;

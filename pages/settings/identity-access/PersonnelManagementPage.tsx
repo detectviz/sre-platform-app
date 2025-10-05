@@ -21,14 +21,12 @@ import StatusTag from '../../../components/StatusTag';
 import IconButton from '../../../components/IconButton';
 import Drawer from '../../../components/Drawer';
 import { formatRelativeTime } from '../../../utils/time';
-import QuickFilterBar, { QuickFilterOption } from '../../../components/QuickFilterBar';
 import SortableColumnHeaderCell from '../../../components/SortableColumnHeaderCell';
 import useTableSorting from '../../../hooks/useTableSorting';
 
 const PAGE_IDENTIFIER = 'personnel';
 
-type StatusFilterValue = 'all' | User['status'];
-type PersonnelFilterState = PersonnelFilters & { status?: User['status'] };
+type PersonnelFilterState = PersonnelFilters;
 
 const PersonnelManagementPage: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
@@ -40,7 +38,6 @@ const PersonnelManagementPage: React.FC = () => {
     const [filters, setFilters] = useState<PersonnelFilterState>({});
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
-    const [statusFilter, setStatusFilter] = useState<StatusFilterValue>('all');
 
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -55,7 +52,6 @@ const PersonnelManagementPage: React.FC = () => {
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
 
-    const filterStatus = filters.status;
 
     const { options } = useOptions();
 
@@ -107,33 +103,8 @@ const PersonnelManagementPage: React.FC = () => {
         }
     }, [fetchUsers, pageKey]);
 
-    useEffect(() => {
-        const nextStatus = (filterStatus ?? 'all') as StatusFilterValue;
-        setStatusFilter(prev => (prev === nextStatus ? prev : nextStatus));
-    }, [filterStatus]);
 
 
-    useEffect(() => {
-        let shouldResetPage = false;
-        setFilters(prev => {
-            if (statusFilter === 'all') {
-                if (typeof prev.status === 'undefined') {
-                    return prev;
-                }
-                const { status: _removed, ...rest } = prev;
-                shouldResetPage = true;
-                return rest as PersonnelFilterState;
-            }
-            if (prev.status === statusFilter) {
-                return prev;
-            }
-            shouldResetPage = true;
-            return { ...prev, status: statusFilter };
-        });
-        if (shouldResetPage) {
-            setCurrentPage(1);
-        }
-    }, [statusFilter]);
 
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
         if (!pageKey) {
@@ -164,19 +135,6 @@ const PersonnelManagementPage: React.FC = () => {
         }, {} as Record<User['status'], string>);
     }, [options?.personnel?.statuses]);
 
-    const statusQuickFilterOptions: QuickFilterOption[] = useMemo(() => {
-        const descriptors = options?.personnel?.statuses ?? [];
-        const unique = new Map<string, string>();
-        descriptors.forEach(descriptor => {
-            if (!unique.has(descriptor.value)) {
-                unique.set(descriptor.value, descriptor.label);
-            }
-        });
-        return [
-            { value: 'all', label: '全部' },
-            ...Array.from(unique.entries()).map(([value, label]) => ({ value, label })),
-        ];
-    }, [options?.personnel?.statuses]);
 
     const handleInvite = async (details: { email: string; name?: string; role: User['role']; team: string }) => {
         try {
@@ -330,14 +288,6 @@ const PersonnelManagementPage: React.FC = () => {
                 batchActions={batchActions}
             />
 
-            <div className="mt-3 mb-4">
-                <QuickFilterBar
-                    options={statusQuickFilterOptions}
-                    mode="single"
-                    value={[statusFilter]}
-                    onChange={(values) => setStatusFilter((values[0] as StatusFilterValue) ?? 'all')}
-                />
-            </div>
 
             <TableContainer>
                 <div className="flex-1 overflow-y-auto">

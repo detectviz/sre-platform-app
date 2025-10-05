@@ -575,7 +575,7 @@ const TagManagementPage: React.FC = () => {
                                         />
                                     );
                                 })}
-                                <th scope="col" className="px-6 py-3 text-right">操作</th>
+                                <th scope="col" className="px-6 py-3">操作</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -627,6 +627,15 @@ const TagManagementPage: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
+                {!isLoading && !error && (
+                    <Pagination
+                        total={totalTags}
+                        page={currentPage}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={setPageSize}
+                    />
+                )}
             </TableContainer>
             {isEditModalOpen && (
                 <TagDefinitionEditModal
@@ -727,17 +736,6 @@ const TagManagementPage: React.FC = () => {
                 allColumns={allColumns}
                 visibleColumnKeys={visibleColumns}
             />
-            {!isLoading && !error && (
-                <div className="mt-6">
-                    <Pagination
-                        total={totalTags}
-                        page={currentPage}
-                        pageSize={pageSize}
-                        onPageChange={setCurrentPage}
-                        onPageSizeChange={setPageSize}
-                    />
-                </div>
-            )}
         </div>
     );
 };

@@ -11,7 +11,7 @@ const INCIDENT_STATUS_LABELS: Record<Incident['status'], string> = {
     silenced: 'silenced',
 };
 
-const KPI_CARD_COLORS: KpiCardColor[] = ['default', 'primary', 'success', 'warning', 'error'];
+const KPI_CARD_COLORS: KpiCardColor[] = ['default', 'success', 'warning', 'error'];
 const KPI_TRENDS: Array<Exclude<KpiDataEntry['trend'], null>> = ['up', 'down'];
 
 /**

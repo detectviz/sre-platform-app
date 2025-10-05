@@ -1,25 +1,36 @@
+/* ==========================================================================
+   KPI Card 組件樣式
+   ========================================================================== */
+
+/* 主要卡片容器 */
 .kpi-card.ant-card {
   position: relative;
   border-radius: 8px;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
   border: none;
-  box-sizing: border-box;
-  word-wrap: break-word;
   background: transparent;
-}
+  box-sizing: border-box;
+  overflow: hidden;
+  word-wrap: break-word;
 
+  /* 動畫和過渡效果 */
+  transform-origin: center;
+  will-change: transform;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: none;
+}
 
 .kpi-card.ant-card:hover {
   transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 8px 32px -8px rgba(0, 0, 0, 0.2);
+  box-shadow: none;
 }
-
 
 .kpi-card.ant-card .ant-card-body {
   padding: 8px !important;
 }
+
+/* ==========================================================================
+   卡片內部結構
+   ========================================================================== */
 
 .kpi-card-inner {
   display: flex;
@@ -31,6 +42,7 @@
   box-sizing: border-box;
 }
 
+/* 標題區域 */
 .kpi-card-header {
   display: flex;
   align-items: flex-start;
@@ -45,12 +57,13 @@
   font-weight: 500;
   color: var(--kpi-card-title-color, inherit);
   letter-spacing: 0.01em;
+  line-height: 1.4;
   word-break: break-word;
   hyphens: auto;
   overflow-wrap: break-word;
-  line-height: 1.4;
 }
 
+/* 數值區域 */
 .kpi-card-value-row {
   display: flex;
   align-items: baseline;
@@ -79,6 +92,7 @@
   letter-spacing: 0.05em;
 }
 
+/* 描述區域 */
 .kpi-card-description {
   font-size: 12px;
   line-height: 1.4;
@@ -90,12 +104,17 @@
   padding: 0 0 8px 0;
 }
 
+/* 底部區域 */
 .kpi-card-footer {
   display: flex;
   align-items: flex-end;
   gap: 8px;
   width: 100%;
 }
+
+/* ==========================================================================
+   變化指示器
+   ========================================================================== */
 
 .kpi-card-change {
   display: inline-flex;
@@ -122,28 +141,11 @@
   text-shadow: var(--kpi-card-change-icon-shadow, none);
 }
 
-.tone-swatch {
-  display: inline-flex;
-  width: 48px;
-  height: 24px;
-  border-radius: 999px;
-  border: 1px solid rgb(255, 255, 255);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
+/* ==========================================================================
+   響應式設計
+   ========================================================================== */
 
-.kpi-tone-segmented .ant-segmented-item {
-  padding: 8px 12px;
-}
-
-.kpi-tone-segmented .ant-segmented-item-label {
-  padding: 4px 0;
-}
-
-.kpi-tone-segmented .ant-segmented-item-selected .tone-swatch {
-  transform: translateY(-1px);
-  box-shadow: 0 0 0 3px rgb(255, 255, 255);
-}
-
+/* 平板尺寸 (768px 以下) */
 @media (max-width: 768px) {
   .kpi-card.ant-card .ant-card-body {
     padding: 14px !important;
@@ -188,41 +190,7 @@
   }
 }
 
-@media (max-width: 380px) {
-  .kpi-card.ant-card .ant-card-body {
-    padding: 10px !important;
-  }
-
-  .kpi-card-inner {
-    gap: 3px;
-    height: 70px;
-  }
-
-  .kpi-card-title {
-    font-size: 9px;
-  }
-
-  .kpi-card-value-text {
-    font-size: 24px;
-  }
-
-  .kpi-card-unit {
-    font-size: 9px;
-  }
-
-  .kpi-card-description {
-    font-size: 8px;
-  }
-
-  .kpi-card-value-row {
-    min-height: 32px;
-  }
-
-  .kpi-card-change {
-    font-size: 7px;
-  }
-}
-
+/* 小手機尺寸 (480px 以下) */
 @media (max-width: 480px) {
   .kpi-card.ant-card .ant-card-body {
     padding: 12px !important;
@@ -268,41 +236,71 @@
   }
 }
 
-/* 改進動畫效果 */
-.kpi-card.ant-card {
-  transform-origin: center;
-  will-change: transform, box-shadow;
+/* 極小手機尺寸 (380px 以下) */
+@media (max-width: 380px) {
+  .kpi-card.ant-card .ant-card-body {
+    padding: 10px !important;
+  }
+
+  .kpi-card-inner {
+    gap: 3px;
+    height: 70px;
+  }
+
+  .kpi-card-title {
+    font-size: 9px;
+  }
+
+  .kpi-card-value-text {
+    font-size: 24px;
+  }
+
+  .kpi-card-unit {
+    font-size: 9px;
+  }
+
+  .kpi-card-description {
+    font-size: 8px;
+  }
+
+  .kpi-card-value-row {
+    min-height: 32px;
+  }
+
+  .kpi-card-change {
+    font-size: 7px;
+  }
 }
 
-.kpi-card.ant-card:hover {
-  animation: kpiCardHover 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
-}
+/* ==========================================================================
+   動畫效果
+   ========================================================================== */
 
 @keyframes kpiCardHover {
   0% {
     transform: translateY(0) scale(1);
-    box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.1);
+    box-shadow: none;
   }
 
   100% {
     transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 8px 32px -8px rgba(0, 0, 0, 0.2);
+    box-shadow: none;
   }
 }
 
-@keyframes kpiCardHoverDark {
+@keyframes kpiCardHoverWarning {
   0% {
     transform: translateY(0) scale(1);
-    box-shadow: 0 4px 20px -4px rgba(242, 204, 12, 0.3);
+    box-shadow: none;
   }
 
   100% {
     transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 8px 32px -8px rgba(242, 204, 12, 0.4);
+    box-shadow: none;
   }
 }
 
-/* 為不同顏色主題添加微妙的動畫差異 */
+/* 不同顏色主題的動畫效果 */
 .kpi-card.ant-card[data-color="primary"]:hover {
   animation: kpiCardHover 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
@@ -312,7 +310,7 @@
 }
 
 .kpi-card.ant-card[data-color="warning"]:hover {
-  animation: kpiCardHoverDark 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+  animation: kpiCardHoverWarning 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
 }
 
 .kpi-card.ant-card[data-color="error"]:hover {

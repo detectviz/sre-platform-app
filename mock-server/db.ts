@@ -1203,7 +1203,7 @@ const MOCK_ICON_MAP: Record<string, string> = {
 };
 
 const MOCK_CHART_COLORS: ChartTheme = {
-    palette: ['#38bdf8', '#a78bfa', '#34d399', '#f87171', '#fbbf24', '#60a5fa'],
+    palette: ['#38bdf8', '#a78bfa', '#34d399', '#f87171', '#f5f4a9', '#60a5fa'],
     text: {
         primary: '#f8fafc',
         secondary: '#94a3b8',
@@ -1376,7 +1376,7 @@ const MOCK_DASHBOARD_TEMPLATES: DashboardTemplate[] = [
 ];
 const MOCK_INCIDENTS: Incident[] = [
     { id: 'INC-001', summary: 'API 延遲超過閾值', resource: 'api-server-01', resource_id: 'res-001', impact: 'high', priority: 'p1', category: 'application', rule: 'API 延遲規則', rule_id: 'rule-002', status: 'new', severity: 'warning', assignee: '張三', team_id: 'team-001', owner_id: 'usr-001', tags: { team: 'SRE Platform', owner: 'Alice Chen', env: 'production', service: 'api-gateway' }, occurred_at: '2024-01-15T10:30:00Z', created_at: '2024-01-15T10:30:00Z', updated_at: '2024-01-15T10:30:00Z', acknowledged_at: undefined, resolved_at: undefined, silenced_by: undefined, notifications_sent: undefined, history: [{ timestamp: '2024-01-15T10:30:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "API 延遲規則".' }] },
-    { id: 'INC-002', summary: '資料庫連接超時', resource: 'db-primary', resource_id: 'res-002', impact: 'high', priority: 'p0', category: 'infrastructure', rule: '資料庫連接規則', rule_id: 'rule-db-conn', status: 'acknowledged', severity: 'critical', assignee: '李四', team_id: 'team-002', owner_id: 'usr-002', tags: { team: 'Core Infrastructure', owner: 'Bob Lee', env: 'production', service: 'database' }, occurred_at: '2024-01-15T10:15:00Z', created_at: '2024-01-15T10:15:00Z', updated_at: '2024-01-15T10:15:00Z', acknowledged_at: '2024-01-15T10:20:00Z', resolved_at: undefined, silenced_by: undefined, notifications_sent: undefined, history: [{ timestamp: '2024-01-15T10:15:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "資料庫連接規則".' }] },
+    { id: 'INC-002', summary: '資料庫連接超時', resource: 'db-default', resource_id: 'res-002', impact: 'high', priority: 'p0', category: 'infrastructure', rule: '資料庫連接規則', rule_id: 'rule-db-conn', status: 'acknowledged', severity: 'critical', assignee: '李四', team_id: 'team-002', owner_id: 'usr-002', tags: { team: 'Core Infrastructure', owner: 'Bob Lee', env: 'production', service: 'database' }, occurred_at: '2024-01-15T10:15:00Z', created_at: '2024-01-15T10:15:00Z', updated_at: '2024-01-15T10:15:00Z', acknowledged_at: '2024-01-15T10:20:00Z', resolved_at: undefined, silenced_by: undefined, notifications_sent: undefined, history: [{ timestamp: '2024-01-15T10:15:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "資料庫連接規則".' }] },
     { id: 'INC-003', summary: 'CPU 使用率異常', resource: 'web-prod-12', resource_id: 'res-004', impact: 'medium', priority: 'p2', category: 'application', rule: 'CPU 使用率規則', rule_id: 'rule-cpu', status: 'resolved', severity: 'warning', assignee: '王五', team_id: 'team-003', owner_id: 'usr-003', tags: { team: 'API Services', owner: 'Charlie Wu', env: 'production' }, occurred_at: '2024-01-15T09:45:00Z', created_at: '2024-01-15T09:45:00Z', updated_at: '2024-01-15T09:45:00Z', acknowledged_at: '2024-01-15T10:00:00Z', resolved_at: '2024-01-15T10:05:00Z', silenced_by: undefined, notifications_sent: undefined, history: [{ timestamp: '2024-01-15T09:45:00Z', user: 'System', action: 'Created', details: 'Incident created from rule "CPU 使用率規則".' }] },
     { id: 'INC-004', summary: 'Edge gateway maintenance window', resource: 'edge-gw-1', resource_id: 'res-007', impact: 'low', priority: 'p3', category: 'other', rule: '維運公告', rule_id: 'rule-maint', status: 'silenced', severity: 'info', assignee: undefined, team_id: 'team-001', owner_id: 'usr-001', tags: { team: 'SRE Platform', env: 'staging' }, occurred_at: '2024-01-14T22:00:00Z', created_at: '2024-01-14T21:45:00Z', updated_at: '2024-01-14T21:45:00Z', acknowledged_at: undefined, resolved_at: undefined, silenced_by: 'usr-001', notifications_sent: undefined, history: [{ timestamp: '2024-01-14T21:45:00Z', user: 'System', action: 'Created', details: 'Maintenance notice created for edge gateway.' }, { timestamp: '2024-01-14T21:50:00Z', user: 'Admin User', action: 'Silenced', details: 'Maintenance window approved and incident silenced.' }] },
 ];
@@ -1884,7 +1884,7 @@ const MOCK_LOGS: LogEntry[] = [
     { id: 'log-2', timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(), level: 'warning', service: 'api-gateway', message: 'High latency detected on /checkout endpoint', details: { latency_ms: 920 } },
     { id: 'log-3', timestamp: new Date(Date.now() - 70 * 60 * 1000).toISOString(), level: 'error', service: 'order-service', message: 'Circuit breaker opened due to downstream failures', details: { failure_count: 27 } },
     { id: 'log-4', timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), level: 'info', service: 'deployment-service', message: 'Blue/green deployment completed successfully', details: { version: 'v2025.09.24.1' } },
-    { id: 'log-5', timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), level: 'warning', service: 'database', message: 'Connection pool saturation exceeded 85%', details: { pool: 'primary-read' } },
+    { id: 'log-5', timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), level: 'warning', service: 'database', message: 'Connection pool saturation exceeded 85%', details: { pool: 'default-read' } },
     { id: 'log-6', timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(), level: 'error', service: 'billing-service', message: 'Recurring invoice generation timeout', details: { job_id: 'billing-7821' } },
 ];
 const MOCK_LOG_TIME_OPTIONS: { label: string, value: string }[] = [
@@ -1929,7 +1929,7 @@ const LAYOUT_WIDGETS: LayoutWidget[] = [
     { id: 'incident_in_progress', name: '處理中事件', description: '顯示目前狀態為「已認領」的事件總數。', supported_pages: ['事件'] },
     { id: 'incident_resolved_today', name: '今日已解決', description: '顯示今天已解決的事件總數。', supported_pages: ['事件'] },
     // SREWarRoom
-    { id: 'sre_pending_incidents', name: '待處理事件', description: '顯示待處理的事件總數。', supported_pages: ['SREWarRoom'] },
+    { id: 'sre_pending_incidents', name: '待處理事件', description: '', supported_pages: ['SREWarRoom'] },
     { id: 'sre_in_progress', name: '處理中', description: '顯示正在處理中的事件。', supported_pages: ['SREWarRoom'] },
     { id: 'sre_resolved_today', name: '今日已解決', description: '顯示今日已解決的事件。', supported_pages: ['SREWarRoom'] },
     { id: 'sre_automation_rate', name: '自動化率', description: '顯示自動化處理的事件比例。', supported_pages: ['SREWarRoom'] },
@@ -2002,42 +2002,42 @@ const KPI_DATA: Record<string, KpiDataEntry> = {
     'sre_pending_incidents': { value: '5', description: '2 嚴重', color: 'error', trend: 'up', change: '+2 件' },
     'sre_in_progress': { value: '3', description: '↓15% vs yesterday', color: 'warning', trend: 'down', change: '15%' },
     'sre_resolved_today': { value: '12', description: '↑8% vs yesterday', color: 'success', trend: 'up', change: '8%' },
-    'sre_automation_rate': { value: '35.2%', description: '4 事件自動解決', color: 'primary', trend: 'up', change: '4 次' },
-    'infra_total_resources': { value: '120', description: '跨雲供應商', color: 'primary' },
+    'sre_automation_rate': { value: '35.2%', description: '4 事件自動解決', color: 'default', trend: 'up', change: '4 次' },
+    'infra_total_resources': { value: '120', description: '跨雲供應商', color: 'default' },
     'infra_running': { value: '115', description: '95.8% 健康', color: 'success' },
     'infra_anomalies': { value: '5', description: '4.2% 需要關注', color: 'warning', trend: 'up', change: '4.2%' },
     'infra_offline': { value: '0', description: '0% 離線', color: 'default' },
 
-    'resource_total_count': { value: '345', description: '↑2% vs last week', color: 'primary', trend: 'up', change: '2%' },
+    'resource_total_count': { value: '345', description: '↑2% vs last week', color: 'default', trend: 'up', change: '2%' },
     'resource_health_rate': { value: '98.5%', description: '340 健康', color: 'success' },
     'resource_alerting': { value: '5', description: '3 critical, 2 warning', color: 'warning', trend: 'up', change: '5 項' },
-    'resource_group_count': { value: '15', description: '↑2 vs last month', color: 'primary', trend: 'up', change: '2' },
+    'resource_group_count': { value: '15', description: '↑2 vs last month', color: 'default', trend: 'up', change: '2' },
 
-    'dashboard_total_count': { value: '28', description: '↑3 vs last month', color: 'primary', trend: 'up', change: '3' },
-    'dashboard_custom_count': { value: '12', description: '使用者自訂的內建儀表板數量。', color: 'primary' },
+    'dashboard_total_count': { value: '28', description: '↑3 vs last month', color: 'default', trend: 'up', change: '3' },
+    'dashboard_custom_count': { value: '12', description: '使用者自訂的內建儀表板數量。', color: 'default' },
     'dashboard_grafana_count': { value: '16', description: '從 Grafana 連結的儀表板數量。', color: 'success' },
 
     'analysis_critical_anomalies': { value: '3', description: '↑1 vs yesterday', color: 'error', trend: 'up', change: '+1' },
     'analysis_log_volume': { value: '25.1 GB', description: '↓5% vs yesterday', color: 'warning', trend: 'down', change: '5%' },
     'analysis_trace_errors': { value: '1.2%', description: '↑0.3% vs last hour', color: 'error', trend: 'up', change: '0.3%' },
 
-    'automation_runs_today': { value: '1,283', description: '↑10% vs yesterday', color: 'primary', trend: 'up', change: '10%' },
+    'automation_runs_today': { value: '1,283', description: '↑10% vs yesterday', color: 'default', trend: 'up', change: '10%' },
     'automation_success_rate': { value: '99.8%', description: '2 failures', color: 'success', trend: 'down', change: '2 次' },
-    'automation_suppressed_alerts': { value: '45', description: 'Saved 2 hours of toil', color: 'primary' },
+    'automation_suppressed_alerts': { value: '45', description: 'Saved 2 hours of toil', color: 'default' },
 
-    'iam_total_users': { value: '124', description: '↑5 new users this month', color: 'primary', trend: 'up', change: '5 人' },
+    'iam_total_users': { value: '124', description: '↑5 new users this month', color: 'default', trend: 'up', change: '5 人' },
     'iam_active_users': { value: '98', description: '79% active rate', color: 'success' },
     'iam_login_failures': { value: '8', description: 'From 3 unique IPs', color: 'error', trend: 'up', change: '3 個 IP' },
 
-    'notification_sent_today': { value: '342', description: '25 critical alerts', color: 'primary', trend: 'up', change: '25 次' },
+    'notification_sent_today': { value: '342', description: '25 critical alerts', color: 'default', trend: 'up', change: '25 次' },
     'notification_failure_rate': { value: '0.5%', description: '2 failed sends', color: 'warning', trend: 'down', change: '2 次失敗' },
-    'notification_channels': { value: '8', description: 'Email, Slack, Webhook', color: 'primary' },
+    'notification_channels': { value: '8', description: 'Email, Slack, Webhook', color: 'default' },
 
-    'platform_tags_defined': { value: '42', description: '12 required tags', color: 'primary' },
-    'platform_auth_provider': { value: 'Keycloak', description: 'OIDC Enabled', color: 'primary' },
+    'platform_tags_defined': { value: '42', description: '12 required tags', color: 'default' },
+    'platform_auth_provider': { value: 'Keycloak', description: 'OIDC Enabled', color: 'default' },
     'platform_mail_status': { value: 'Healthy', description: 'SMTP service is operational', color: 'success' },
 
-    'profile_login_count_7d': { value: '8', description: '來自 2 個不同 IP', color: 'primary' },
+    'profile_login_count_7d': { value: '8', description: '來自 2 個不同 IP', color: 'default' },
     'profile_last_password_change': { value: '3 天前', description: '建議每 90 天更新一次', color: 'warning' },
     'profile_mfa_status': { value: '已啟用', description: '您的帳戶受到保護', color: 'success' },
 };
@@ -2151,9 +2151,9 @@ const MOCK_SINGLE_INCIDENT_ANALYSIS: IncidentAnalysis = {
 };
 
 const MOCK_MULTI_INCIDENT_ANALYSIS: MultiIncidentAnalysis = {
-    summary: '多個事件均指向 `db-primary` 資料庫效能問題。',
+    summary: '多個事件均指向 `db-default` 資料庫效能問題。',
     common_patterns: ['所有事件都在高流量時段發生。', '皆涉及資料庫讀取密集型操作。'],
-    group_actions: [{ description: '建議對 `db-primary` 進行緊急擴容。', action_text: '執行資料庫擴容', playbook_id: 'play-004' }]
+    group_actions: [{ description: '建議對 `db-default` 進行緊急擴容。', action_text: '執行資料庫擴容', playbook_id: 'play-004' }]
 };
 
 const MOCK_ALERT_RULE_ANALYSIS: RuleAnalysisReport = {
@@ -2498,8 +2498,8 @@ const MOCK_INCIDENT_ANALYSIS_REPORT = {
 const MOCK_MULTI_INCIDENT_ANALYSIS_REPORT = {
     incident_ids: ['INC-001', 'INC-004', 'INC-010'],
     correlation_found: true,
-    correlation_summary: '所有事件皆與 `db-primary` 在流量高峰時的性能下降相關。',
-    common_root_cause: '`db-primary` 寫入延遲在尖峰期間飆升，導致下游服務堆積。',
+    correlation_summary: '所有事件皆與 `db-default` 在流量高峰時的性能下降相關。',
+    common_root_cause: '`db-default` 寫入延遲在尖峰期間飆升，導致下游服務堆積。',
     timeline: [
         { timestamp: '2024-01-15T08:15:00Z', incident_id: 'INC-001', event: 'API latency alert triggered' },
         { timestamp: '2024-01-15T08:21:00Z', incident_id: 'INC-004', event: 'Database connection timeout detected' },
@@ -2741,7 +2741,7 @@ const MOCK_ANOMALY_DETECTION_REPORT = {
         },
         {
             resource_id: 'res-002',
-            resource_name: 'db-primary',
+            resource_name: 'db-default',
             metric: 'latency_ms',
             timestamp: '2024-01-15T15:28:00Z',
             actual_value: 420,
@@ -2822,9 +2822,9 @@ const MOCK_TAB_CONFIGS: TabConfigMap = {
     ],
     platform_settings: [
         { label: '標籤管理', path: '/settings/platform-settings', icon: 'tags' },
+        { label: '版面管理', path: '/settings/platform-settings/layout', icon: 'layout' },
         { label: '郵件設定', path: '/settings/platform-settings/mail', icon: 'mail' },
         { label: '身份驗證', path: '/settings/platform-settings/auth', icon: 'key' },
-        { label: '版面管理', path: '/settings/platform-settings/layout', icon: 'layout' },
         { label: 'Grafana 設定', path: '/settings/platform-settings/grafana', icon: 'area-chart' },
         { label: 'License', path: '/settings/platform-settings/license', icon: 'award' },
     ],

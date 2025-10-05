@@ -1,1 +1,4 @@
 @import 'antd/dist/reset.css';
+
+/* 全域樣式導入 */
+@import './components/Select.css';

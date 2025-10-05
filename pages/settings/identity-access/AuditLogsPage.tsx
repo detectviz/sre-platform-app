@@ -35,7 +35,7 @@ const AuditLogsPage: React.FC = () => {
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
-    
+
     const { metadata: pageMetadata } = usePageMetadata();
     const { options } = useOptions();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
@@ -153,7 +153,7 @@ const AuditLogsPage: React.FC = () => {
             fetchAuditLogs();
         }
     }, [fetchAuditLogs, pageKey]);
-    
+
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
         if (!pageKey) {
             showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
@@ -169,7 +169,7 @@ const AuditLogsPage: React.FC = () => {
             setIsColumnSettingsModalOpen(false);
         }
     };
-    
+
     const handleExport = () => {
         if (logs.length === 0) {
             showToast('沒有可匯出的資料。', 'warning');
@@ -196,19 +196,16 @@ const AuditLogsPage: React.FC = () => {
             case 'timestamp': {
                 const timestampParts = formatTimestamp(log.timestamp);
                 return (
-                    <div className="flex flex-col">
+                    <div className="flex items-center">
                         <span className="font-medium text-white">{timestampParts.relative}</span>
-                        <span className="text-xs text-slate-500">{timestampParts.exact}</span>
                     </div>
                 );
             }
             case 'user': {
                 const userName = log.user?.name ?? '未知使用者';
-                const userId = log.user?.id ?? '—';
                 return (
-                    <div className="flex flex-col">
+                    <div className="flex items-center">
                         <span className="font-semibold text-white">{userName}</span>
-                        <span className="text-xs text-slate-500">ID: {userId}</span>
                     </div>
                 );
             }
@@ -216,11 +213,9 @@ const AuditLogsPage: React.FC = () => {
                 return <StatusTag label={getActionLabel(log.action)} tone="info" dense tooltip={log.action} />;
             case 'target': {
                 const targetName = log.target?.name ?? '未提供';
-                const targetType = log.target?.type ?? '未指定';
                 return (
-                    <div className="space-y-0.5">
+                    <div className="flex items-center">
                         <span className="font-medium text-white">{targetName}</span>
-                        <span className="text-xs text-slate-500">類型：{targetType}</span>
                     </div>
                 );
             }

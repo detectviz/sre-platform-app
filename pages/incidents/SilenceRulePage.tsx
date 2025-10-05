@@ -346,21 +346,23 @@ const SilenceRulePage: React.FC = () => {
                     const start = rule.schedule.starts_at ? dayjs(rule.schedule.starts_at).format('YYYY-MM-DD HH:mm') : '未設定';
                     const end = rule.schedule.ends_at ? dayjs(rule.schedule.ends_at).format('YYYY-MM-DD HH:mm') : '未設定';
                     return (
-                        <div className="text-xs text-slate-300">
-                            <div>開始：{start}</div>
-                            <div>結束：{end}</div>
+                        <div className="flex items-center text-sm text-white">
+                            {start} - {end}
                         </div>
                     );
                 }
                 if (rule.schedule.type === 'recurring') {
                     return (
-                        <div className="text-xs text-slate-300">
-                            <div>{rule.schedule.cron_description || rule.schedule.cron || 'N/A'}</div>
-                            {rule.schedule.timezone && <div className="text-slate-500">時區：{rule.schedule.timezone}</div>}
+                        <div className="flex items-center text-sm text-white">
+                            {rule.schedule.cron_description || rule.schedule.cron || 'N/A'}
                         </div>
                     );
                 }
-                return 'N/A';
+                return (
+                    <div className="flex items-center text-sm text-slate-400">
+                        無排程
+                    </div>
+                );
             case 'creator':
                 return <span className="text-slate-200">{rule.creator}</span>;
             case 'created_at':

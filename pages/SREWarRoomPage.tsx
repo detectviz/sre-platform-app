@@ -332,45 +332,50 @@ const SREWarRoomPage: React.FC = () => {
                 ) : aiBriefing ? (
                     <div className="space-y-5 text-slate-300">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="rounded-xl border border-emerald-500/20 bg-slate-900/40 p-4 space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="font-semibold text-white flex items-center"><Icon name="shield-check" className="w-5 h-5 mr-2 text-emerald-400" /> {pageContent.STABILITY_SUMMARY}</h3>
-                                    {extractHighlight(aiBriefing.stability_summary) && (
-                                        <StatusTag label={extractHighlight(aiBriefing.stability_summary)!} tone="success" dense />
-                                    )}
+                            <div className="rounded-xl border border-emerald-500/20 bg-slate-900/40 p-4">
+                                <div className="flex items-center gap-3 mb-3">
+                                    <Icon name="shield-check" className="w-5 h-5 text-emerald-400" />
+                                    <h3 className="font-semibold text-white">{pageContent.STABILITY_SUMMARY}</h3>
                                 </div>
-                                <p className="text-sm leading-relaxed">{aiBriefing.stability_summary}</p>
+                                <p className="text-sm leading-relaxed text-slate-300">{aiBriefing.stability_summary}</p>
                             </div>
-                            <div className="rounded-xl border border-orange-500/30 bg-slate-900/40 p-4 space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="font-semibold text-white flex items-center"><Icon name="siren" className="w-5 h-5 mr-2 text-orange-400" /> {pageContent.KEY_ANOMALY}</h3>
-                                    {extractHighlight(aiBriefing.key_anomaly.description) && (
-                                        <StatusTag label={extractHighlight(aiBriefing.key_anomaly.description)!} tone="danger" dense />
-                                    )}
+                            <div className="rounded-xl border border-orange-500/30 bg-slate-900/40 p-4">
+                                <div className="flex items-center gap-3 mb-3">
+                                    <Icon name="siren" className="w-5 h-5 text-orange-400" />
+                                    <h3 className="font-semibold text-white">{pageContent.KEY_ANOMALY}</h3>
                                 </div>
-                                <p className="text-sm leading-relaxed">
-                                    {aiBriefing.key_anomaly.description}
-                                    <span className="ml-1">
-                                        <Link to={aiBriefing.key_anomaly.resource_path} className="text-sky-400 hover:underline font-semibold">
-                                            {aiBriefing.key_anomaly.resource_name}
-                                        </Link>
-                                    </span>
+                                <div className="space-y-2">
+                                    <p className="text-sm leading-relaxed text-slate-300">
+                                        {aiBriefing.key_anomaly.description.split('支付 API').map((part, index, array) => (
+                                            index < array.length - 1 ? (
+                                                <React.Fragment key={index}>
+                                                    {part}
+                                                    <Link to={aiBriefing.key_anomaly.resource_path} className="text-sky-400 underline font-semibold">
+                                                        支付 API
+                                                    </Link>
+                                                </React.Fragment>
+                                            ) : part
+                                        ))}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="rounded-xl border border-yellow-400/30 bg-slate-900/40 p-4">
+                                <div className="flex items-center gap-3 mb-3">
+                                    <Icon name="wrench" className="w-5 h-5 text-yellow-300" />
+                                    <h3 className="font-semibold text-white">{pageContent.RECOMMENDED_ACTION}</h3>
+                                </div>
+                                <p className="text-sm leading-relaxed text-slate-300">
+                                    {aiBriefing.recommendation.action_text.split('檢視支付 API 的日誌').map((part, index, array) => (
+                                        index < array.length - 1 ? (
+                                            <React.Fragment key={index}>
+                                                {part}
+                                                <Link to={aiBriefing.recommendation.button_link} className="text-sky-400 underline font-semibold">
+                                                    檢視支付 API 的日誌
+                                                </Link>
+                                            </React.Fragment>
+                                        ) : part
+                                    ))}
                                 </p>
-                            </div>
-                            <div className="rounded-xl border border-yellow-400/30 bg-slate-900/40 p-4 flex flex-col justify-between gap-3">
-                                <div>
-                                    <h3 className="font-semibold text-white flex items-center mb-3"><Icon name="wrench" className="w-5 h-5 mr-2 text-yellow-300" /> {pageContent.RECOMMENDED_ACTION}</h3>
-                                    <p className="text-sm leading-relaxed">{aiBriefing.recommendation.action_text}</p>
-                                </div>
-                                <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-yellow-500/20">
-                                    <StatusTag label="建議" tone="warning" dense />
-                                    <Link to={aiBriefing.recommendation.button_link}>
-                                        <button className="flex items-center text-sm text-white bg-sky-600 hover:bg-sky-700 px-3 py-1.5 rounded-md shadow-sm">
-                                            <Icon name="arrow-right" className="w-4 h-4 mr-2" />
-                                            {aiBriefing.recommendation.button_text}
-                                        </button>
-                                    </Link>
-                                </div>
                             </div>
                         </div>
                     </div>

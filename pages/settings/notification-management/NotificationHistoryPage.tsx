@@ -252,9 +252,8 @@ const NotificationHistoryPage: React.FC = () => {
         switch (columnKey) {
             case 'timestamp':
                 return (
-                    <div className="flex flex-col">
+                    <div className="flex items-center">
                         <span className="font-medium text-white">{formatRelativeTime(record.timestamp)}</span>
-                        <span className="text-xs text-slate-500">{record.timestamp}</span>
                     </div>
                 );
             case 'strategy':
@@ -273,9 +272,8 @@ const NotificationHistoryPage: React.FC = () => {
                 );
             case 'recipient':
                 return (
-                    <div className="flex flex-col">
+                    <div className="flex items-center">
                         <span className="text-sm text-white">{record.recipient}</span>
-                        <span className="text-xs text-slate-500">管道：{channelTypeLabelMap[record.channel_type] || record.channel_type}</span>
                     </div>
                 );
             case 'status':

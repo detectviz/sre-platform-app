@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { theme } from 'antd';
 import { Card } from 'antd';
-import type { CardProps } from 'antd';
 import type { GlobalToken } from 'antd/es/theme/interface';
 import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
 import type { CSSProperties } from 'react';
@@ -9,47 +8,68 @@ import type { KpiCardColor, KpiTrendDirection } from '../types';
 
 export type { KpiCardColor } from '../types';
 
-/**
- * SRE Platform KPI Card Color System
- *
- * 專為監控和運維場景設計的專業色彩系統：
- *
- * 🎨 色彩主題說明：
- * - default: 中性灰色，適用於一般指標
- * - primary: 品牌藍色，用於主要業務指標
- * - success: 成功綠色，表示正常運行狀態
- * - warning: 警告橙色，提示需要關注的指標
- * - error: 錯誤紅色，表示嚴重問題
- * - info: 資訊青色，用於一般資訊類指標
- * - performance: 效能紫色，專為效能指標設計
- * - resource: 資源綠色，用於資源使用率指標
- * - health: 健康深綠，強調系統健康狀態
- * - monitoring: 監控藍色，用於監控相關指標
- *
- * 🔧 設計原則：
- * - 每個主題都有獨特的漸變背景和懸停效果
- * - 在深色主題下提供優秀的對比度和可讀性
- * - 色彩語義明確，符合監控運維的視覺語言
- * - 支援動畫過渡，提供流暢的互動體驗
- */
-
 import './KpiCard.css';
 
 /**
- * 智慧 KPI 調色盤 (深色主題)
- * @description 根據 Grafana "status palette" 設計，提供高對比度且語義清晰的顏色。
- * - bg: 使用半透明背景以融入深色主題。
- * - text: 使用柔和的 HSL 顏色以降低視覺疲勞。
+ * KPI Card 調色盤系統
+ * 
+ * 專為 SRE 平台設計的監控指標卡片色彩系統：
+ * - 基於 Grafana 色彩規範，確保視覺一致性
+ * - 針對深色主題優化，提供良好的對比度
+ * - 語義化顏色設計，符合監控運維場景
  */
-export const kpiPalette = {
-  error: { bg: 'rgba(255,77,79,0.25)', text: 'hsl(0,70%,75%)' },
-  warning: { bg: 'rgba(250,173,20,0.25)', text: 'hsl(35,70%,70%)' },
-  success: { bg: 'rgba(82,196,26,0.25)', text: 'hsl(130,50%,70%)' },
-  info: { bg: 'rgba(22,119,255,0.25)', text: 'hsl(210,60%,75%)' },
-  default: { bg: 'rgba(255,255,255,0.08)', text: '#d9d9d9' },
-  performance: { bg: 'rgba(153,102,255,0.25)', text: 'hsl(260,60%,75%)' },
-  monitoring: { bg: 'rgba(23,190,207,0.25)', text: 'hsl(185,70%,75%)' },
-};
+const KPI_COLOR_PALETTE = {
+  default: {
+    background: 'rgba(71, 85, 105, 0.3)',
+    text: '#e2e8f0',
+    shadow: 'rgba(71, 85, 105, 0.4)',
+  },
+  primary: {
+    background: 'rgba(59, 130, 246, 0.25)',
+    text: '#93c5fd',
+    shadow: 'rgba(59, 130, 246, 0.4)',
+  },
+  success: {
+    background: 'rgba(34, 197, 94, 0.25)',
+    text: '#86efac',
+    shadow: 'rgba(34, 197, 94, 0.4)',
+  },
+  warning: {
+    background: 'rgba(245, 158, 11, 0.25)',
+    text: '#f5f4a9', // 淡黃色文字
+    shadow: 'rgba(245, 158, 11, 0.4)',
+  },
+  error: {
+    background: 'rgba(239, 68, 68, 0.25)',
+    text: '#fca5a5',
+    shadow: 'rgba(239, 68, 68, 0.4)',
+  },
+  info: {
+    background: 'rgba(6, 182, 212, 0.25)',
+    text: '#67e8f9',
+    shadow: 'rgba(6, 182, 212, 0.4)',
+  },
+  performance: {
+    background: 'rgba(147, 51, 234, 0.25)',
+    text: '#c4b5fd',
+    shadow: 'rgba(147, 51, 234, 0.4)',
+  },
+  resource: {
+    background: 'rgba(5, 150, 105, 0.25)',
+    text: '#6ee7b7',
+    shadow: 'rgba(5, 150, 105, 0.4)',
+  },
+  health: {
+    background: 'rgba(16, 185, 129, 0.25)',
+    text: '#6ee7b7',
+    shadow: 'rgba(16, 185, 129, 0.4)',
+  },
+  monitoring: {
+    background: 'rgba(14, 165, 233, 0.25)',
+    text: '#7dd3fc',
+    shadow: 'rgba(14, 165, 233, 0.4)',
+  },
+} as const;
 
 export interface KpiCardProps {
   title: string;
@@ -69,28 +89,42 @@ export interface KpiCardPalette {
   title: string;
   description: string;
   unit: string;
-  hoverShadow: string;
   baseColor: string;
   swatchBorder?: string;
 }
 
+// 獲取 KPI 卡片調色盤
 export const getKpiCardPalette = (token: GlobalToken, tone: KpiCardColor = 'default'): KpiCardPalette => {
-  // 確保傳入的 tone 在 kpiPalette 中有效，否則使用 default
-  const safeTone = (tone && tone in kpiPalette ? tone : 'default') as keyof typeof kpiPalette;
-  const selectedPalette = kpiPalette[safeTone];
-
-  // 從半透明的背景色中提取 RGB 值，用於生成更柔和的陰影
-  const shadowColor = selectedPalette.bg.replace(/,.*?\)/, ', 0.3)');
+  const palette = KPI_COLOR_PALETTE[tone] || KPI_COLOR_PALETTE.default;
 
   return {
-    background: selectedPalette.bg,
-    value: selectedPalette.text,
-    title: selectedPalette.text,
-    description: selectedPalette.text,
-    unit: selectedPalette.text,
-    hoverShadow: `0 8px 32px -8px ${shadowColor}`,
-    baseColor: selectedPalette.bg,
+    background: palette.background,
+    value: palette.text,
+    title: palette.text,
+    description: palette.text,
+    unit: palette.text,
+    baseColor: palette.background,
     swatchBorder: token.colorBorderSecondary,
+  };
+};
+
+// 獲取趨勢指示器樣式
+const getTrendStyle = (color: KpiCardColor, trend: KpiTrendDirection | null): CSSProperties => {
+  if (!trend || (trend !== 'up' && trend !== 'down')) {
+    return {};
+  }
+
+  // 警示背景使用淡黃色文字，其他使用白色
+  if (color === 'warning') {
+    return {
+      color: '#f5f4a9',
+      textShadow: '0 1px 2px rgba(0, 0, 0, 0.25)',
+    };
+  }
+
+  return {
+    color: '#ffffff',
+    textShadow: '0 1px 2px rgba(0, 0, 0, 0.25)',
   };
 };
 
@@ -107,7 +141,7 @@ const KpiCard: React.FC<KpiCardProps> = ({
 }) => {
   const { token } = theme.useToken();
 
-  const palette = useMemo(() => getKpiCardPalette(token, (color as KpiCardColor) || 'default'), [token, color]);
+  const palette = useMemo(() => getKpiCardPalette(token, color as KpiCardColor), [token, color]);
 
   const cardStyle: CSSProperties & Record<string, string> = {
     background: palette.background,
@@ -116,40 +150,13 @@ const KpiCard: React.FC<KpiCardProps> = ({
     '--kpi-card-description-color': palette.description,
     '--kpi-card-unit-color': palette.unit,
     '--kpi-card-value-color': palette.value,
-    '--kpi-card-hover-shadow': palette.hoverShadow,
   };
 
   const displayTrend = trend && (trend === 'up' || trend === 'down');
   const TrendIcon = trend === 'down' ? ArrowDownOutlined : ArrowUpOutlined;
   const showChange = displayTrend || Boolean(change);
 
-  // 根據 KPI 卡片背景色，動態決定趨勢的顏色
-  const trendStyle = useMemo((): React.CSSProperties => {
-    if (!displayTrend) {
-      return { color: palette.value }; // 若無趨勢，文字顏色與主色調一致
-    }
-
-    const safeColor = (color && color in kpiPalette ? color : 'default') as keyof typeof kpiPalette;
-
-    switch (safeColor) {
-      case 'error':
-      case 'warning':
-      case 'success':
-        // 在紅、橙、綠背景下，趨勢箭頭統一為白色以確保可見性
-        return {
-          color: '#ffffff',
-          textShadow: '0 1px 2px rgba(0,0,0,0.25)',
-        };
-      case 'info':
-      case 'default':
-      default:
-        // 在藍色和灰色背景下，趨勢箭頭保留語義顏色（綠升紅降）
-        return {
-          color: trend === 'down' ? '#ff4d4f' : '#52c41a',
-        };
-    }
-  }, [displayTrend, color, trend, palette.value]);
-
+  const trendStyle = useMemo(() => getTrendStyle(color as KpiCardColor, trend), [color, trend]);
 
   return (
     // @ts-ignore
@@ -165,7 +172,7 @@ const KpiCard: React.FC<KpiCardProps> = ({
         padding: 0,
       }}
       onClick={onClick}
-      data-color={(color as KpiCardColor) || 'default'}
+      data-color={color}
     >
       <div className="kpi-card-inner">
         <div className="kpi-card-header">

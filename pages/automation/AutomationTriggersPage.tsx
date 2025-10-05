@@ -238,9 +238,8 @@ const AutomationTriggersPage: React.FC = () => {
                 );
             case 'name':
                 return (
-                    <div className="space-y-1">
+                    <div className="flex items-center">
                         <span className="font-medium text-white">{trigger.name}</span>
-                        {trigger.description && <p className="text-xs text-slate-400">{trigger.description}</p>}
                     </div>
                 );
             case 'type': {
@@ -256,16 +255,14 @@ const AutomationTriggersPage: React.FC = () => {
             }
             case 'target_playbook_id':
                 return (
-                    <div className="space-y-1">
+                    <div className="flex items-center">
                         <span className="font-medium text-white">{findPlaybookName(trigger.target_playbook_id)}</span>
-                        <span className="block text-xs text-slate-400">{trigger.target_playbook_id}</span>
                     </div>
                 );
             case 'last_triggered_at':
                 return (
-                    <div className="space-y-1">
+                    <div className="flex items-center">
                         <span className="font-medium text-white">{formatRelativeTime(trigger.last_triggered_at)}</span>
-                        <span className="text-xs text-slate-400">{trigger.last_triggered_at}</span>
                     </div>
                 );
             case 'last_execution': {

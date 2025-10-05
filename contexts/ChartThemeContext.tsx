@@ -10,7 +10,7 @@ type ChartThemeContextValue = {
 };
 
 export const DEFAULT_CHART_THEME: ChartTheme = {
-  palette: ['#38bdf8', '#a78bfa', '#34d399', '#f87171', '#fbbf24', '#60a5fa'],
+  palette: ['#38bdf8', '#a78bfa', '#34d399', '#f87171', '#f5f4a9', '#60a5fa'],
   text: {
     primary: '#f8fafc',
     secondary: '#94a3b8',

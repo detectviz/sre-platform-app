@@ -245,9 +245,8 @@ const AutomationPlaybooksPage: React.FC = () => {
             }
             case 'last_run_at':
                 return (
-                    <div className="space-y-1 text-sm">
+                    <div className="flex items-center text-sm">
                         <span className="font-medium text-white">{formatRelativeTime(pb.last_run_at)}</span>
-                        <span className="block text-xs text-slate-400">{pb.last_run_at}</span>
                     </div>
                 );
             case 'run_count':

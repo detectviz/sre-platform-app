@@ -309,16 +309,14 @@ const NotificationStrategyPage: React.FC = () => {
                 ) : <span className="text-slate-500">尚未觸發</span>;
             case 'creator':
                 return (
-                    <div className="flex flex-col">
+                    <div className="flex items-center">
                         <span className="font-medium text-white">{strategy.creator}</span>
-                        <span className="text-xs text-slate-500">建立者</span>
                     </div>
                 );
             case 'updated_at':
                 return (
-                    <div className="flex flex-col">
+                    <div className="flex items-center">
                         <span className="font-medium text-white">{formatRelativeTime(strategy.updated_at)}</span>
-                        <span className="text-xs text-slate-500">{strategy.updated_at}</span>
                     </div>
                 );
             default:

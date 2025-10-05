@@ -210,32 +210,22 @@ const RoleManagementPage: React.FC = () => {
                 {
                     const descriptor = getRoleDescriptor(role);
                     return (
-                        <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                                <span className="font-semibold text-white">{descriptor?.label || role.name}</span>
-                                {!role.enabled && <StatusTag label="已停用" tone="neutral" dense />}
-                            </div>
-                            <p className="text-xs leading-5 text-slate-400">
-                                {descriptor?.description || role.description || '尚未設定描述'}
-                            </p>
-                            {descriptor?.helper_text && (
-                                <p className="text-[11px] text-slate-500">{descriptor.helper_text}</p>
-                            )}
+                        <div className="flex items-center gap-2">
+                            <span className="font-semibold text-white">{descriptor?.label || role.name}</span>
+                            {!role.enabled && <StatusTag label="已停用" tone="neutral" dense />}
                         </div>
                     );
                 }
             case 'user_count':
                 return (
-                    <div className="flex flex-col">
+                    <div className="flex items-center">
                         <span className="font-semibold text-white">{role.user_count}</span>
-                        <span className="text-xs text-slate-400">成員</span>
                     </div>
                 );
             case 'created_at':
                 return (
-                    <div className="flex flex-col">
+                    <div className="flex items-center">
                         <span className="font-medium text-white">{formatRelativeTime(role.updated_at)}</span>
-                        <span className="text-xs text-slate-500">更新於</span>
                     </div>
                 );
             default:

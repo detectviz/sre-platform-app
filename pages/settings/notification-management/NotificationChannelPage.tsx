@@ -279,9 +279,8 @@ const NotificationChannelPage: React.FC = () => {
                 );
             case 'last_tested_at':
                 return channel.last_tested_at ? (
-                    <div className="flex flex-col">
+                    <div className="flex items-center">
                         <span className="font-medium text-white">{formatRelativeTime(channel.last_tested_at)}</span>
-                        <span className="text-xs text-slate-500">{channel.last_tested_at}</span>
                     </div>
                 ) : <span className="text-slate-500">尚未測試</span>;
             default:

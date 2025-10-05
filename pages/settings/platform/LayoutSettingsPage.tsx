@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Segmented, Select, theme } from 'antd';
-import { LayoutWidget, KpiDataEntry, KpiCardColor } from '../../../types';
+import { LayoutWidget, KpiDataEntry, KpiCardColor, TableColumn } from '../../../types';
 import Icon from '../../../components/Icon';
+import IconButton from '../../../components/IconButton';
 import Modal from '../../../components/Modal';
 import api from '../../../services/api';
 import { showToast } from '../../../services/toast';
@@ -10,6 +11,12 @@ import StatusTag from '../../../components/StatusTag';
 import { formatTimestamp } from '../../../utils/time';
 import KpiCard, { getKpiCardPalette } from '../../../components/KpiCard';
 import { useTheme } from '../../../contexts/ThemeContext';
+import Toolbar, { ToolbarButton } from '../../../components/Toolbar';
+import TableContainer from '../../../components/TableContainer';
+import SortableColumnHeaderCell from '../../../components/SortableColumnHeaderCell';
+import Pagination from '../../../components/Pagination';
+import { useTableSorting } from '../../../hooks/useTableSorting';
+import { usePageMetadata } from '../../../contexts/PageMetadataContext';
 
 interface ListItemProps {
     widget: LayoutWidget;
@@ -27,14 +34,11 @@ interface ListItemProps {
 
 const KPI_CARD_COLOR_LABELS: Record<KpiCardColor, string> = {
     default: '預設',
-    primary: '主要',
     success: '成功',
     warning: '警示',
     error: '錯誤',
     info: '資訊',
     performance: '效能',
-    resource: '資源',
-    health: '健康',
     monitoring: '監控',
 };
 const ListItem: React.FC<ListItemProps> = ({
@@ -82,6 +86,7 @@ const ListItem: React.FC<ListItemProps> = ({
             role="button"
             tabIndex={0}
             draggable={isSelectedList}
+            data-widget-id={widget.id}
             onDragStart={(e) => {
                 if (isSelectedList) {
                     e.dataTransfer.effectAllowed = 'move';
@@ -157,7 +162,7 @@ const ListItem: React.FC<ListItemProps> = ({
                             size="small"
                             value={resolvedColor}
                             options={colorOptions}
-                            className="w-32"
+                            className="w-20"
                             popupClassName="kpi-color-select-dropdown"
                             dropdownMatchSelectWidth={false}
                             aria-label={`${widget.name} 顏色設定`}
@@ -248,8 +253,8 @@ const DualListSelector: React.FC<DualListSelectorProps> = ({
     const selectedCount = selected.length;
 
     return (
-        <div className="grid gap-6 grid-cols-1 md:grid-cols-[1fr_1fr]">
-            <div className="rounded-lg border border-slate-800/60 bg-slate-900/50 p-4">
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-2 md:grid-cols-2 items-start">
+            <div className="rounded-lg border border-slate-800/60 bg-slate-900/50 p-4 min-h-[280px]">
                 <div className="mb-3 flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-white">{pageContent.AVAILABLE_WIDGETS}</h3>
                     <StatusTag dense tone="neutral" icon="list" label={`${availableCount} 項`} />
@@ -267,7 +272,7 @@ const DualListSelector: React.FC<DualListSelectorProps> = ({
                     </div>
                 )}
             </div>
-            <div className="rounded-lg border border-slate-800/60 bg-slate-900/50 p-4">
+            <div className="rounded-lg border border-slate-800/60 bg-slate-900/50 p-4 min-h-[280px]">
                 <div className="mb-3 flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-white">{pageContent.DISPLAYED_WIDGETS}</h3>
                     <div className="flex items-center gap-1">
@@ -295,7 +300,7 @@ const DualListSelector: React.FC<DualListSelectorProps> = ({
                 <p className="mb-3 text-xs text-slate-400">拖拽調整顯示順序</p>
                 {selectedCount > 0 ? (
                     <div
-                        className="space-y-2 max-h-64 overflow-y-auto pr-1"
+                        className="space-y-2 min-h-[200px] max-h-64 overflow-y-auto pr-1"
                         onDragOver={(e) => {
                             e.preventDefault();
                             e.dataTransfer.dropEffect = 'move';
@@ -304,9 +309,24 @@ const DualListSelector: React.FC<DualListSelectorProps> = ({
                             e.preventDefault();
                             const draggedId = e.dataTransfer.getData('text/plain');
                             const draggedIndex = selected.findIndex(w => w.id === draggedId);
+
                             if (draggedIndex !== -1) {
-                                // 這裡可以實現更複雜的拖拽邏輯
-                                // 當前簡化為維持現有順序
+                                // 獲取拖拽目標位置
+                                const dropTarget = e.target as HTMLElement;
+                                const listItem = dropTarget.closest('[draggable="true"]');
+
+                                if (listItem) {
+                                    const targetId = listItem.getAttribute('data-widget-id');
+                                    const targetIndex = selected.findIndex(w => w.id === targetId);
+
+                                    if (targetIndex !== -1 && targetIndex !== draggedIndex) {
+                                        // 重新排序陣列
+                                        const newSelected = [...selected];
+                                        const [draggedItem] = newSelected.splice(draggedIndex, 1);
+                                        newSelected.splice(targetIndex, 0, draggedItem);
+                                        onChange(newSelected);
+                                    }
+                                }
                             }
                         }}
                     >
@@ -344,12 +364,6 @@ interface LayoutConfig {
 }
 type LayoutsData = Record<string, LayoutConfig>;
 
-interface AccordionItemProps {
-    pageName: string;
-    layouts: LayoutsData;
-    handleEditClick: (pageName: string) => void;
-    allWidgets: LayoutWidget[];
-}
 const relativeFormatter = new Intl.RelativeTimeFormat('zh-TW', { numeric: 'auto' });
 
 const formatRelativeFromNow = (value?: string) => {
@@ -376,85 +390,9 @@ const formatRelativeFromNow = (value?: string) => {
     return relativeFormatter.format(Math.round(diffMs / 2_592_000_000), 'month');
 };
 
-const AccordionItem: React.FC<AccordionItemProps> = ({ pageName, layouts, handleEditClick, allWidgets }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const { content } = useContent();
-    const pageContent = content?.LAYOUT_SETTINGS;
-    const pageLayout = layouts[pageName];
-    const widget_ids = pageLayout?.widget_ids || [];
-    const getWidgetById = (id: string) => allWidgets.find(w => w.id === id);
-    const displayedCount = widget_ids.length;
-    const supportedCount = useMemo(() => allWidgets.filter(w => w.supported_pages.includes(pageName)).length, [allWidgets, pageName]);
-    const lastUpdatedAt = pageLayout?.updated_at;
-    const lastUpdatedAbsolute = lastUpdatedAt ? formatTimestamp(lastUpdatedAt, { showSeconds: false }) : '—';
-    const lastUpdatedRelative = formatRelativeFromNow(lastUpdatedAt);
-
-    if (!pageContent) {
-        return (
-            <div className="border-b border-slate-800 p-4 text-slate-500 flex items-center space-x-2">
-                <Icon name="loader-circle" className="w-4 h-4 animate-spin" />
-                <span>正在載入 {pageName} 的版面資訊...</span>
-            </div>
-        );
-    }
-
-    return (
-        <div className="rounded-xl border border-slate-800 bg-slate-900/70">
-            <button
-                onClick={() => setIsOpen(prev => !prev)}
-                className="w-full px-4 py-3 flex items-center justify-between text-left transition-colors hover:bg-slate-800/60 rounded-t-xl"
-            >
-                <div className="flex items-start gap-4">
-                    <Icon
-                        name="chevron-right"
-                        className={`w-5 h-5 mt-0.5 text-slate-400 transition-transform ${isOpen ? 'rotate-90 text-sky-400' : ''}`}
-                    />
-                    <div>
-                        <p className="text-base font-semibold text-white">{pageName}</p>
-                        <p className="mt-1 text-xs text-slate-400">支援 {supportedCount} 張卡片，已顯示 {displayedCount} 張。</p>
-                    </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    <StatusTag dense tone="info" icon="layout-dashboard" label={`已顯示 ${displayedCount}`} />
-                    <StatusTag dense tone="neutral" icon="layers" label={`可用 ${supportedCount}`} />
-                </div>
-            </button>
-            {isOpen && (
-                <div className="px-4 pb-4 pt-2">
-                    <div className="rounded-lg border border-slate-800 bg-slate-950/40 p-4">
-                        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                            <div className="space-y-2">
-                                <h4 className="text-sm font-semibold text-white">{pageContent.CURRENTLY_DISPLAYED}</h4>
-                                {widget_ids.length > 0 ? (
-                                    <ol className="list-decimal list-inside space-y-1 text-sm text-slate-200">
-                                        {widget_ids.map(id => {
-                                            const widget = getWidgetById(id);
-                                            return <li key={id}>{widget?.name || '未命名卡片'}</li>;
-                                        })}
-                                    </ol>
-                                ) : (
-                                    <p className="text-sm text-slate-400">{pageContent.NO_CARDS_DISPLAYED}</p>
-                                )}
-                            </div>
-                            <div className="flex flex-col items-start gap-2 text-xs text-slate-400 md:items-end">
-                                <StatusTag dense tone="neutral" icon="user" label={`維護人員：${pageLayout?.updated_by || '—'}`} />
-                                <p className="flex items-center gap-2"><Icon name="clock" className="w-3.5 h-3.5 text-slate-400" />{`最後更新 ${lastUpdatedAbsolute}（${lastUpdatedRelative}）`}</p>
-                                <button
-                                    onClick={() => handleEditClick(pageName)}
-                                    className="inline-flex items-center gap-2 rounded-md border border-sky-500/40 bg-sky-900/20 px-3 py-1.5 text-xs font-medium text-sky-200 hover:bg-sky-500/20"
-                                >
-                                    <Icon name="edit-3" className="w-4 h-4" />{pageContent.EDIT_BUTTON}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
-
 // Main Page Component
+const PAGE_IDENTIFIER = 'layout_settings';
+
 const LayoutSettingsPage: React.FC = () => {
     const [layouts, setLayouts] = useState<LayoutsData>({});
     const [allWidgets, setAllWidgets] = useState<LayoutWidget[]>([]);
@@ -462,11 +400,38 @@ const LayoutSettingsPage: React.FC = () => {
     const [draftKpiData, setDraftKpiData] = useState<Record<string, KpiDataEntry>>({});
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [allColumns, setAllColumns] = useState<TableColumn[]>([]);
+    const [total, setTotal] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+
+    const { metadata: pageMetadata } = usePageMetadata();
+    const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
+
+    const { sortConfig, sortParams, handleSort } = useTableSorting({ defaultSortKey: 'name', defaultSortDirection: 'asc' });
+
+    // Initialize allColumns
+    useEffect(() => {
+        const columns: TableColumn[] = [
+            { key: 'name', label: '頁面名稱', sortable: true },
+            { key: 'displayed', label: '已顯示', sortable: false },
+            { key: 'available', label: '可用', sortable: false },
+            { key: 'maintainer', label: '維護人員', sortable: false },
+            { key: 'updated', label: '最後更新', sortable: true },
+            { key: 'actions', label: '操作', sortable: false },
+        ];
+        setAllColumns(columns);
+        setVisibleColumns(columns.map(c => c.key));
+    }, []);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPage, setEditingPage] = useState<string | null>(null);
     const [modalWidgets, setModalWidgets] = useState<LayoutWidget[]>([]);
     const [activeWidgetId, setActiveWidgetId] = useState<string | null>(null);
+    const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
+    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const { content } = useContent();
     const pageContent = content?.LAYOUT_SETTINGS;
     const globalContent = content?.GLOBAL;
@@ -477,21 +442,29 @@ const LayoutSettingsPage: React.FC = () => {
         // 只保留常用的顏色選項
         const tones: KpiCardColor[] = ['default', 'success', 'warning', 'error', 'info', 'performance', 'monitoring'];
         return tones.map((tone) => {
-            const palette = getKpiCardPalette(token, tone, { themeMode });
+            const palette = getKpiCardPalette(token, tone);
             const labelText = colorLabelOverrides?.[tone] ?? KPI_CARD_COLOR_LABELS[tone];
+
+            // 使用原始的背景色，讓選擇器顯示真正的背景色
+            const backgroundColor = palette.background;
+
             return {
                 label: (
-                    <div className="flex items-center gap-4" title={labelText}>
-                        <span
-                            className="tone-swatch"
-                            style={{
-                                background: palette.background,
-                                borderColor: palette.swatchBorder ?? token.colorBorderSecondary ?? token.colorBorder,
-                            }}
-                        />
-                        <span className="text-xs font-medium tracking-wide" style={{ color: token.colorTextSecondary }}>
-                            {labelText}
-                        </span>
+                    <div className="flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-medium"
+                        style={{
+                            background: backgroundColor,
+                            color: palette.value,
+                            border: `1px solid ${palette.swatchBorder ?? token.colorBorderSecondary ?? token.colorBorder}`,
+                            minWidth: '44px',
+                            maxWidth: '48px',
+                            height: '18px',
+                            fontSize: '11px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                        }}
+                        title={labelText}>
+                        {labelText}
                     </div>
                 ),
                 value: tone,
@@ -600,9 +573,55 @@ const LayoutSettingsPage: React.FC = () => {
         }
     };
 
+    const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
+        if (!pageKey) {
+            showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
+            return;
+        }
+        try {
+            await api.put(`/settings/column-config/${pageKey}`, newColumnKeys);
+            setVisibleColumns(newColumnKeys);
+            showToast('欄位設定已儲存。', 'success');
+        } catch (err) {
+            showToast('無法儲存欄位設定。', 'error');
+        } finally {
+            setIsColumnSettingsModalOpen(false);
+        }
+    };
+
+    const handleExport = async () => {
+        try {
+            const response = await api.get('/settings/layouts', {
+                responseType: 'blob'
+            });
+            const url = window.URL.createObjectURL(new Blob([response.data as BlobPart]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `layout-settings-${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            showToast('版面設定已匯出。', 'success');
+        } catch (err) {
+            showToast('匯出失敗。', 'error');
+        }
+    };
+
     const availableWidgetsForModal = allWidgets.filter(w =>
         !modalWidgets.some(selected => selected.id === w.id) &&
         w.supported_pages.includes(editingPage || '')
+    );
+
+    const leftActions = (
+        <ToolbarButton icon="search" text="搜索和篩選" onClick={() => setIsSearchModalOpen(true)} />
+    );
+
+    const rightActions = (
+        <>
+            <ToolbarButton icon="upload" text="匯入" onClick={() => setIsImportModalOpen(true)} />
+            <ToolbarButton icon="download" text="匯出" onClick={handleExport} />
+            <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => setIsColumnSettingsModalOpen(true)} />
+        </>
     );
 
     if (isLoading || !pageContent || !globalContent) {
@@ -627,18 +646,92 @@ const LayoutSettingsPage: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-start gap-4 rounded-xl border border-slate-800 bg-slate-900/70 p-5 text-slate-200">
-                <Icon name="info" className="w-5 h-5 mt-0.5 text-sky-400" />
-                <div className="space-y-2">
-                    <p className="text-sm leading-relaxed">{pageContent.INFO_TEXT}</p>
-                    <p className="text-xs text-slate-400">調整後的設定會即時套用至所有使用儀表板的頁面，建議於非尖峰時段更新。</p>
-                </div>
-            </div>
+            <Toolbar leftActions={leftActions} rightActions={rightActions} />
 
-            <div className="space-y-4">
-                {Object.keys(layouts).map(pageName => (
-                    <AccordionItem key={pageName} pageName={pageName} layouts={layouts} handleEditClick={handleEditClick} allWidgets={allWidgets} />
-                ))}
+            <div className="rounded-xl border border-slate-800 bg-slate-900/70 overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left text-slate-300">
+                        <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
+                            <tr>
+                                <SortableColumnHeaderCell
+                                    column={allColumns.find(c => c.key === 'name')}
+                                    columnKey="name"
+                                    sortConfig={sortConfig}
+                                    onSort={handleSort}
+                                />
+                                <th scope="col" className="px-6 py-3 text-center">已顯示</th>
+                                <th scope="col" className="px-6 py-3 text-center">可用</th>
+                                <th scope="col" className="px-6 py-3">維護人員</th>
+                                <SortableColumnHeaderCell
+                                    column={allColumns.find(c => c.key === 'updated')}
+                                    columnKey="updated"
+                                    sortConfig={sortConfig}
+                                    onSort={handleSort}
+                                />
+                                <th scope="col" className="px-6 py-3 text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800">
+                            {Object.keys(layouts).map(pageName => {
+                                const pageLayout = layouts[pageName];
+                                const widget_ids = pageLayout?.widget_ids || [];
+                                const displayedCount = widget_ids.length;
+                                const supportedCount = allWidgets.filter(w => w.supported_pages.includes(pageName)).length;
+                                const lastUpdatedAt = pageLayout?.updated_at;
+                                const lastUpdatedAbsolute = lastUpdatedAt ? formatTimestamp(lastUpdatedAt, { showSeconds: false }) : '—';
+                                const lastUpdatedRelative = formatRelativeFromNow(lastUpdatedAt);
+
+                                return (
+                                    <tr key={pageName} className="hover:bg-slate-800/40 transition-colors">
+                                        <td className="px-4 py-3">
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-medium text-white">{pageName}</span>
+                                                <span className="text-xs text-slate-400">
+                                                    {widget_ids.length > 0 ? (
+                                                        widget_ids.slice(0, 3).map(id => {
+                                                            const widget = allWidgets.find(w => w.id === id);
+                                                            return widget?.name || '未命名';
+                                                        }).join('、') + (widget_ids.length > 3 ? '...' : '')
+                                                    ) : '尚未設定'}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                            <StatusTag dense tone="info" icon="layout-dashboard" label={displayedCount.toString()} />
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                            <StatusTag dense tone="neutral" icon="layers" label={supportedCount.toString()} />
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <span className="text-sm text-slate-200">{pageLayout?.updated_by || '—'}</span>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="flex flex-col">
+                                                <span className="text-sm text-slate-200">{lastUpdatedAbsolute}</span>
+                                                <span className="text-xs text-slate-400">{lastUpdatedRelative}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <IconButton
+                                                icon="edit-3"
+                                                label="編輯版面"
+                                                tooltip="編輯版面設定"
+                                                onClick={() => handleEditClick(pageName)}
+                                            />
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+                <Pagination
+                    total={total}
+                    page={currentPage}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={setPageSize}
+                />
             </div>
 
             <Modal
@@ -654,9 +747,47 @@ const LayoutSettingsPage: React.FC = () => {
                 }
             >
                 {editingPage && (
-                    <div className="flex flex-col gap-8">
-                        {/* 上半部：雙欄選擇器 */}
-                        <div className="grid gap-6 grid-cols-1 md:grid-cols-[1fr_1fr]">
+                    <div className="flex flex-col gap-4">
+                        {/* 上半部：預覽 */}
+                        <div className="flex flex-col gap-4">
+                            <div className="flex h-full flex-col gap-5 rounded-xl border border-slate-800/60 bg-slate-900/50 p-5">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-sm font-semibold text-white">已顯示欄位預覽</p>
+                                    <span className="text-xs text-slate-500">{modalWidgets.length} 張卡片</span>
+                                </div>
+                                <div className="flex-1 min-h-0">
+                                    {modalWidgets.length > 0 ? (
+                                        <div className="flex gap-4">
+                                            {modalWidgets.map(widget => {
+                                                const kpiEntry = draftKpiData[widget.id] ?? kpiData[widget.id];
+                                                const color = draftKpiData[widget.id]?.color ?? kpiData[widget.id]?.color ?? 'default';
+                                                return (
+                                                    <div className="flex-1 min-w-0">
+                                                        <KpiCard
+                                                            key={widget.id}
+                                                            title={widget.name}
+                                                            value={kpiEntry?.value ?? '—'}
+                                                            unit={kpiEntry?.unit}
+                                                            description={kpiEntry?.description || ''}
+                                                            color={color as KpiCardColor}
+                                                            trend={kpiEntry?.trend ?? null}
+                                                            change={kpiEntry?.change}
+                                                        />
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-700 bg-slate-950/30 p-6 text-sm text-slate-400">
+                                            尚未選擇任何 KPI 卡片
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 下半部：雙欄選擇器 */}
+                        <div>
                             <DualListSelector
                                 available={availableWidgetsForModal}
                                 selected={modalWidgets}
@@ -668,56 +799,6 @@ const LayoutSettingsPage: React.FC = () => {
                                 onColorChange={handleColorChange}
                                 kpiColorOptions={kpiColorOptions}
                             />
-                        </div>
-
-                        {/* 下半部：預覽區域 */}
-                        <div className="flex h-full flex-col gap-4">
-                            {activeWidget ? (
-                                <div className="flex h-full flex-col gap-5 rounded-xl border border-slate-800/60 bg-slate-900/50 p-5">
-                                    <div className="space-y-2">
-                                        <p className="text-sm font-semibold text-white">{activeWidget.name}</p>
-                                        <p className="text-xs leading-relaxed text-slate-400">{activeWidget.description}</p>
-                                    </div>
-                                    <div className="space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <p className="text-xs font-semibold text-slate-300">背景樣式</p>
-                                            <span className="text-xs text-slate-500">即時預覽</span>
-                                        </div>
-                                        <Segmented
-                                            block
-                                            size="small"
-                                            className="kpi-tone-segmented rounded-lg bg-slate-800/50"
-                                            options={kpiColorOptions}
-                                            value={resolvedActiveColor}
-                                            onChange={(value) => handleColorChange(activeWidget.id, value as KpiCardColor)}
-                                        />
-                                    </div>
-                                    <div className="flex-1 flex flex-col gap-4">
-                                        <div className="flex items-center justify-between">
-                                            <p className="text-sm font-semibold text-white">預覽</p>
-                                            <span className="text-xs text-slate-500">即時預覽效果</span>
-                                        </div>
-                                        <div className="flex-1 rounded-xl border border-slate-800/50 bg-slate-950/30 p-5 flex items-center justify-center">
-                                            <KpiCard
-                                                title={activeWidget.name}
-                                                value={activeKpiEntry?.value ?? '—'}
-                                                unit={activeKpiEntry?.unit}
-                                                description={activeKpiEntry?.description}
-                                                color={resolvedActiveColor}
-                                                trend={activeKpiEntry?.trend ?? null}
-                                                change={activeKpiEntry?.change}
-                                            />
-                                        </div>
-                                        <div className="rounded-lg border border-slate-700/50 bg-slate-950/20 p-3 text-xs text-slate-500 text-center">
-                                            {pageContent.COLOR_HELPER_TEXT ?? '選擇適合的顏色主題以匹配指標類型'}
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="flex min-h-[220px] items-center justify-center rounded-xl border border-dashed border-slate-700 bg-slate-900/40 p-6 text-sm text-slate-400">
-                                    請從上方列表選擇要調整的 KPI 卡片。
-                                </div>
-                            )}
                         </div>
                     </div>
                 )}
