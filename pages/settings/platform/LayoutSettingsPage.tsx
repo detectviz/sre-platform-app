@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Segmented, theme } from 'antd';
+import { Segmented, Select, theme } from 'antd';
 import { LayoutWidget, KpiDataEntry, KpiCardColor } from '../../../types';
 import Icon from '../../../components/Icon';
 import Modal from '../../../components/Modal';
@@ -20,6 +20,9 @@ interface ListItemProps {
     isSelectedList?: boolean;
     onSelect?: (widget: LayoutWidget) => void;
     isActive?: boolean;
+    color?: KpiCardColor;
+    colorOptions?: { label: React.ReactNode; value: KpiCardColor; title: string }[];
+    onColorChange?: (tone: KpiCardColor) => void;
 }
 
 const KPI_CARD_COLOR_LABELS: Record<KpiCardColor, string> = {
@@ -34,7 +37,19 @@ const KPI_CARD_COLOR_LABELS: Record<KpiCardColor, string> = {
     health: '健康',
     monitoring: '監控',
 };
-const ListItem: React.FC<ListItemProps> = ({ widget, onAction, actionIcon, onMoveUp, onMoveDown, isSelectedList = false, onSelect, isActive = false }) => {
+const ListItem: React.FC<ListItemProps> = ({
+    widget,
+    onAction,
+    actionIcon,
+    onMoveUp,
+    onMoveDown,
+    isSelectedList = false,
+    onSelect,
+    isActive = false,
+    color,
+    colorOptions,
+    onColorChange,
+}) => {
     const handleMove = useCallback((moveFn?: () => void) => () => {
         if (moveFn) {
             moveFn();
@@ -58,6 +73,9 @@ const ListItem: React.FC<ListItemProps> = ({ widget, onAction, actionIcon, onMov
             moveFn();
         }
     }, []);
+
+    const resolvedColor = color ?? 'default';
+    const selectedColorLabel = colorOptions?.find(option => option.value === resolvedColor)?.title;
 
     return (
         <div
@@ -129,6 +147,25 @@ const ListItem: React.FC<ListItemProps> = ({ widget, onAction, actionIcon, onMov
                 >
                     <Icon name={actionIcon} className="w-3.5 h-3.5" />
                 </button>
+                {isSelectedList && colorOptions && onColorChange && (
+                    <div
+                        onClick={(event) => event.stopPropagation()}
+                        onMouseDown={(event) => event.stopPropagation()}
+                        onKeyDown={(event) => event.stopPropagation()}
+                    >
+                        <Select
+                            size="small"
+                            value={resolvedColor}
+                            options={colorOptions}
+                            className="w-32"
+                            popupClassName="kpi-color-select-dropdown"
+                            dropdownMatchSelectWidth={false}
+                            aria-label={`${widget.name} 顏色設定`}
+                            title={selectedColorLabel}
+                            onChange={(value) => onColorChange(value as KpiCardColor)}
+                        />
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -142,9 +179,23 @@ interface DualListSelectorProps {
     onChange: (newSelected: LayoutWidget[]) => void;
     activeWidgetId?: string | null;
     onActiveWidgetChange?: (widgetId: string | null) => void;
+    draftKpiData: Record<string, KpiDataEntry>;
+    baselineKpiData: Record<string, KpiDataEntry>;
+    onColorChange: (widgetId: string, tone: KpiCardColor) => void;
+    kpiColorOptions: { label: React.ReactNode; value: KpiCardColor; title: string }[];
 }
 
-const DualListSelector: React.FC<DualListSelectorProps> = ({ available, selected, onChange, activeWidgetId, onActiveWidgetChange }) => {
+const DualListSelector: React.FC<DualListSelectorProps> = ({
+    available,
+    selected,
+    onChange,
+    activeWidgetId,
+    onActiveWidgetChange,
+    draftKpiData,
+    baselineKpiData,
+    onColorChange,
+    kpiColorOptions,
+}) => {
     const { content } = useContent();
     const pageContent = content?.LAYOUT_SETTINGS;
 
@@ -270,6 +321,9 @@ const DualListSelector: React.FC<DualListSelectorProps> = ({ available, selected
                                 isSelectedList={true}
                                 onSelect={() => onActiveWidgetChange?.(w.id)}
                                 isActive={activeWidgetId === w.id}
+                                color={draftKpiData[w.id]?.color ?? baselineKpiData[w.id]?.color ?? 'default'}
+                                colorOptions={kpiColorOptions}
+                                onColorChange={(tone) => onColorChange(w.id, tone)}
                             />
                         ))}
                     </div>
@@ -427,7 +481,7 @@ const LayoutSettingsPage: React.FC = () => {
             const labelText = colorLabelOverrides?.[tone] ?? KPI_CARD_COLOR_LABELS[tone];
             return {
                 label: (
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4" title={labelText}>
                         <span
                             className="tone-swatch"
                             style={{
@@ -441,6 +495,7 @@ const LayoutSettingsPage: React.FC = () => {
                     </div>
                 ),
                 value: tone,
+                title: labelText,
             };
         });
     }, [colorLabelOverrides, themeMode, token]);
@@ -608,6 +663,10 @@ const LayoutSettingsPage: React.FC = () => {
                                 onChange={setModalWidgets}
                                 activeWidgetId={activeWidgetId}
                                 onActiveWidgetChange={setActiveWidgetId}
+                                draftKpiData={draftKpiData}
+                                baselineKpiData={kpiData}
+                                onColorChange={handleColorChange}
+                                kpiColorOptions={kpiColorOptions}
                             />
                         </div>
 
