@@ -9,6 +9,7 @@ import { useContent } from '../../../contexts/ContentContext';
 import StatusTag from '../../../components/StatusTag';
 import { formatTimestamp } from '../../../utils/time';
 import KpiCard, { getKpiCardPalette } from '../../../components/KpiCard';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 interface ListItemProps {
     widget: LayoutWidget;
@@ -425,11 +426,12 @@ const LayoutSettingsPage: React.FC = () => {
     const pageContent = content?.LAYOUT_SETTINGS;
     const globalContent = content?.GLOBAL;
     const { token } = theme.useToken();
+    const { theme: themeMode } = useTheme();
     const colorLabelOverrides = (pageContent?.KPI_CARD_COLOR_LABELS as Partial<Record<KpiCardColor, string>> | undefined) ?? undefined;
     const kpiColorOptions = useMemo(() => {
         const tones: KpiCardColor[] = ['default', 'primary', 'success', 'warning', 'error', 'info', 'performance', 'resource', 'health', 'monitoring'];
         return tones.map((tone) => {
-            const palette = getKpiCardPalette(token, tone);
+            const palette = getKpiCardPalette(token, tone, { themeMode });
             const labelText = colorLabelOverrides?.[tone] ?? KPI_CARD_COLOR_LABELS[tone];
             return {
                 label: (
@@ -449,7 +451,7 @@ const LayoutSettingsPage: React.FC = () => {
                 value: tone,
             };
         });
-    }, [colorLabelOverrides, token]);
+    }, [colorLabelOverrides, themeMode, token]);
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
