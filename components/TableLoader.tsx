@@ -1,18 +1,22 @@
 import React from 'react';
 import Icon from './Icon';
+import { useContentSection } from '../contexts/ContentContext';
 
 interface TableLoaderProps {
     colSpan: number;
     message?: string;
 }
 
-const TableLoader: React.FC<TableLoaderProps> = ({ colSpan, message = "載入中..." }) => {
+const TableLoader: React.FC<TableLoaderProps> = ({ colSpan, message }) => {
+    const globalContent = useContentSection('GLOBAL');
+    const displayMessage = message ?? globalContent?.LOADING ?? 'Loading...';
+
     return (
-        <tr>
-            <td colSpan={colSpan} className="text-center py-20 text-slate-400">
-                <div className="flex flex-col items-center justify-center">
-                    <Icon name="loader-circle" className="w-8 h-8 animate-spin mb-2" />
-                    <p>{message}</p>
+        <tr className="app-table__state-row">
+            <td colSpan={colSpan} className="app-table__cell app-table__cell--center">
+                <div className="app-table__state">
+                    <Icon name="loader-circle" className="app-table__state-icon animate-spin" />
+                    <p className="app-table__state-description">{displayMessage}</p>
                 </div>
             </td>
         </tr>

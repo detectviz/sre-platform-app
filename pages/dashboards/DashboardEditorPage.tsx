@@ -11,6 +11,7 @@ import { useOptions } from '../../contexts/OptionsContext';
 import { useContent } from '../../contexts/ContentContext';
 import IconButton from '../../components/IconButton';
 import StatusTag from '../../components/StatusTag';
+import { ROUTES } from '../../constants/routes';
 
 const COLS = 12;
 const ROW_HEIGHT = 80;
@@ -193,7 +194,7 @@ const DashboardEditorPage: React.FC = () => {
                 const { data: createdDashboard } = await api.post<Dashboard>('/dashboards', dashboardPayload);
                 showToast(pageContent.SAVE_SUCCESS.replace('{name}', createdDashboard.name), 'success');
             }
-            navigate('/dashboards');
+            navigate(ROUTES.DASHBOARDS);
         } catch (error) {
             showToast(isEditMode ? pageContent.UPDATE_ERROR : pageContent.SAVE_ERROR, 'error');
         } finally {
@@ -326,7 +327,7 @@ const DashboardEditorPage: React.FC = () => {
                     <button onClick={handleUndo} disabled={history.length === 0} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700/50 hover:bg-slate-700 rounded-md flex items-center disabled:opacity-50 disabled:cursor-not-allowed">
                         <Icon name="undo-2" className="w-4 h-4 mr-2" /> 撤銷
                     </button>
-                    <button onClick={() => navigate('/dashboards')} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700/50 hover:bg-slate-700 rounded-md">
+                    <button onClick={() => navigate(ROUTES.DASHBOARDS)} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700/50 hover:bg-slate-700 rounded-md">
                         {pageContent.CANCEL_BUTTON}
                     </button>
                     <button onClick={handleSave} disabled={isSaving || isLoading || (isLoadingOptions && !isEditMode)} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md flex items-center disabled:opacity-50 disabled:cursor-not-allowed">

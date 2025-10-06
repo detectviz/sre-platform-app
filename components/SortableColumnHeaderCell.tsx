@@ -24,9 +24,12 @@ const SortableColumnHeaderCell: React.FC<SortableColumnHeaderCellProps> = ({
     const isSortable = column?.sortable !== false;
     const sortKey = column?.sort_key ?? column?.key ?? columnKey;
 
+    const additionalClassName = className ?? '';
+
     if (!isSortable) {
+        const cellClassName = ['app-table__header-cell', additionalClassName].filter(Boolean).join(' ');
         return (
-            <th scope="col" className={`px-6 py-3 ${className ?? ''}`.trim()}>
+            <th scope="col" className={cellClassName}>
                 {label}
             </th>
         );
@@ -38,7 +41,7 @@ const SortableColumnHeaderCell: React.FC<SortableColumnHeaderCellProps> = ({
             sortKey={sortKey}
             sortConfig={sortConfig}
             onSort={onSort}
-            className={className}
+            className={additionalClassName}
         />
     );
 };

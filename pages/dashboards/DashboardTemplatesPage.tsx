@@ -6,6 +6,7 @@ import api from '../../services/api';
 import StatusTag from '../../components/StatusTag';
 import { useOptions } from '../../contexts/OptionsContext';
 import { useContent } from '../../contexts/ContentContext';
+import { ROUTES } from '../../constants/routes';
 
 const DashboardTemplatesPage: React.FC = () => {
     const navigate = useNavigate();
@@ -32,7 +33,7 @@ const DashboardTemplatesPage: React.FC = () => {
     }, [options]);
 
     const handleUseTemplate = (template: DashboardTemplate) => {
-        navigate('/dashboards/new', { state: { template } }); 
+        navigate(ROUTES.DASHBOARDS_NEW, { state: { template } });
     };
 
     if (isLoading) {

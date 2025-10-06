@@ -38,6 +38,7 @@ import LogExplorerPage from './pages/analysis/LogExplorerPage';
 import DashboardTemplatesPage from './pages/dashboards/DashboardTemplatesPage';
 import DashboardEditorPage from './pages/dashboards/DashboardEditorPage';
 import CapacityPlanningPage from './pages/analysis/CapacityPlanningPage';
+import { ROUTES, buildRoute } from './constants/routes';
 import BacktestingPage from './pages/analysis/BacktestingPage';
 import InfrastructureInsightsPage from './pages/dashboards/InfrastructureInsightsPage';
 import api from './services/api';
@@ -95,7 +96,7 @@ const DashboardRedirector: React.FC = () => {
     loadSystemConfig();
   }, []);
 
-  return <Navigate to={`/dashboard/${defaultDashboardId}`} replace />;
+  return <Navigate to={buildRoute.dashboardDetails(defaultDashboardId)} replace />;
 };
 
 const AppRoutes: React.FC = () => {
@@ -136,8 +137,8 @@ const AppRoutes: React.FC = () => {
     <HashRouter>
       <RenderIcons />
       <Routes>
-        <Route path="/" element={<AppLayout />}>
-          <Route index element={<Navigate to={`/home`} replace />} />
+          <Route path="/" element={<AppLayout />}>
+          <Route index element={<Navigate to={ROUTES.HOME} replace />} />
           <Route path="home" element={<DashboardRedirector />} />
           <Route path="dashboard/infrastructure-insights" element={<InfrastructureInsightsPage />} />
           <Route path="dashboard/resource-overview" element={<ResourceOverviewPage />} />
@@ -152,7 +153,7 @@ const AppRoutes: React.FC = () => {
           </Route>
 
           <Route path="resources" element={<PageWithTabsLayout title={pageLayouts.resources.title} description={pageLayouts.resources.description} kpi_page_name={pageLayouts.resources.kpi_page_name} tabs={tabConfigs?.resources || []} />}>
-            <Route index element={<Navigate to="/resources/list" replace />} />
+            <Route index element={<Navigate to={ROUTES.RESOURCES_LIST} replace />} />
             <Route path="list" element={<ResourceListPage />} />
             <Route path="list/:resource_id" element={<ResourceListPage />} />
             <Route path=":resource_id" element={<ResourceDetailPage />} />
@@ -170,7 +171,7 @@ const AppRoutes: React.FC = () => {
           </Route>
 
           <Route path="analyzing" element={<PageWithTabsLayout title={pageLayouts.analysis.title} description={pageLayouts.analysis.description} kpi_page_name={pageLayouts.analysis.kpi_page_name} tabs={tabConfigs?.analysis || []} />}>
-            <Route index element={<Navigate to="/analyzing/logs" replace />} />
+            <Route index element={<Navigate to={ROUTES.ANALYSIS_LOGS} replace />} />
             <Route path="logs" element={<LogExplorerPage />} />
             <Route path="capacity" element={<CapacityPlanningPage />} />
             <Route path="backtesting" element={<BacktestingPage />} />

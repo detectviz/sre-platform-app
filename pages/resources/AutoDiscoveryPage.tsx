@@ -193,11 +193,11 @@ const AutoDiscoveryPage: React.FC = () => {
                     <ToolbarButton icon="plus" text="新增掃描" primary onClick={handleNew} />
                 }
             />
-            <TableContainer>
-                <div className="h-full overflow-y-auto">
-                    <table className="w-full text-sm text-left text-slate-300">
-                        <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
-                            <tr>
+            <TableContainer
+                table={(
+                    <table className="app-table text-sm">
+                        <thead className="app-table__head">
+                            <tr className="app-table__head-row">
                                 <SortableHeader
                                     label="名稱"
                                     sortKey="name"
@@ -228,7 +228,7 @@ const AutoDiscoveryPage: React.FC = () => {
                                     sortConfig={sortConfig}
                                     onSort={handleSort}
                                 />
-                                <th className="px-6 py-3 text-center">操作</th>
+                                <th className="app-table__header-cell app-table__header-cell--center">操作</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -236,61 +236,70 @@ const AutoDiscoveryPage: React.FC = () => {
                                 <TableLoader colSpan={6} />
                             ) : error ? (
                                 <TableError colSpan={6} message={error} onRetry={fetchJobs} />
-                            ) : jobs.map((job) => (
-                                <tr key={job.id} className="border-b border-slate-800 hover:bg-slate-800/40">
-                                    <td className="px-6 py-4 font-medium text-white">{job.name}</td>
-                                    <td className="px-6 py-4">{
-                                        (() => {
-                                            const kindDescriptor = autoDiscoveryOptions?.job_kinds.find(k => k.value === job.kind);
-                                            const label = kindDescriptor?.label || job.kind;
-                                            const className = kindDescriptor?.class_name || '';
-                                            return (
-                                                <StatusTag
-                                                    label={label}
-                                                    className={className}
-                                                    dense
-                                                    tooltip={`掃描類型：${label}`}
-                                                />
-                                            );
-                                        })()
-                                    }</td>
-                                    <td className="px-6 py-4">{renderSchedule(job.schedule)}</td>
-                                    <td className="px-6 py-4">{job.last_run_at}</td>
-                                    <td className="px-6 py-4">
-                                        {(() => {
-                                            const meta = JOB_STATUS_META[job.status];
-                                            return (
-                                                <StatusTag
-                                                    label={meta.label}
-                                                    tone={meta.tone}
-                                                    icon={meta.icon}
-                                                    dense
-                                                    tooltip={`任務狀態：${meta.label}`}
-                                                />
-                                            );
-                                        })()}
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <IconButton icon="list" label="查看結果" tooltip="檢視最新掃描結果" onClick={() => handleViewResults(job)} />
-                                            <IconButton icon="play" label="手動執行" tooltip="立即手動執行一次掃描" onClick={() => handleManualRun(job.id)} />
-                                            <IconButton icon="edit-3" label="編輯掃描" tooltip="編輯掃描設定" onClick={() => handleEdit(job)} />
-                                            <IconButton icon="trash-2" label="刪除掃描" tooltip="刪除此掃描任務" tone="danger" onClick={() => handleDelete(job)} />
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                            ) : (
+                                jobs.map(job => {
+                                    const rowClassName = 'app-table__row';
+                                    return (
+                                        <tr key={job.id} className={rowClassName}>
+                                            <td className="app-table__cell">
+                                                <span className="font-medium app-text-emphasis">{job.name}</span>
+                                            </td>
+                                            <td className="app-table__cell">
+                                                {(() => {
+                                                    const kindDescriptor = autoDiscoveryOptions?.job_kinds.find(k => k.value === job.kind);
+                                                    const label = kindDescriptor?.label || job.kind;
+                                                    const className = kindDescriptor?.class_name || '';
+                                                    return (
+                                                        <StatusTag
+                                                            label={label}
+                                                            className={className}
+                                                            dense
+                                                            tooltip={`掃描類型：${label}`}
+                                                        />
+                                                    );
+                                                })()}
+                                            </td>
+                                            <td className="app-table__cell">{renderSchedule(job.schedule)}</td>
+                                            <td className="app-table__cell">{job.last_run_at}</td>
+                                            <td className="app-table__cell">
+                                                {(() => {
+                                                    const meta = JOB_STATUS_META[job.status];
+                                                    return (
+                                                        <StatusTag
+                                                            label={meta.label}
+                                                            tone={meta.tone}
+                                                            icon={meta.icon}
+                                                            dense
+                                                            tooltip={`任務狀態：${meta.label}`}
+                                                        />
+                                                    );
+                                                })()}
+                                            </td>
+                                            <td className="app-table__cell app-table__cell--center">
+                                                <div className="app-table__actions">
+                                                    <IconButton icon="list" label="查看結果" tooltip="檢視最新掃描結果" onClick={() => handleViewResults(job)} />
+                                                    <IconButton icon="play" label="手動執行" tooltip="立即手動執行一次掃描" onClick={() => handleManualRun(job.id)} />
+                                                    <IconButton icon="edit-3" label="編輯掃描" tooltip="編輯掃描設定" onClick={() => handleEdit(job)} />
+                                                    <IconButton icon="trash-2" label="刪除掃描" tooltip="刪除此掃描任務" tone="danger" onClick={() => handleDelete(job)} />
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
                         </tbody>
                     </table>
-                </div>
-                <Pagination
-                    total={total}
-                    page={currentPage}
-                    pageSize={pageSize}
-                    onPageChange={setCurrentPage}
-                    onPageSizeChange={setPageSize}
-                />
-            </TableContainer>
+                )}
+                footer={(
+                    <Pagination
+                        total={total}
+                        page={currentPage}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={setPageSize}
+                    />
+                )}
+            />
             {isEditModalOpen && (
                 <AutoDiscoveryEditModal
                     isOpen={isEditModalOpen}

@@ -1,5 +1,11 @@
 import React from 'react';
 
+export type DeepPartial<T> = T extends Array<infer U>
+  ? Array<DeepPartial<U>>
+  : T extends object
+    ? { [K in keyof T]?: DeepPartial<T[K]> }
+    : T;
+
 // ----- Shared Enumerations (aligned with docs/enums-ssot.md) -----
 export type IncidentStatus = 'new' | 'acknowledged' | 'resolved' | 'silenced';
 export type IncidentSeverity = 'critical' | 'warning' | 'info';
@@ -1234,6 +1240,35 @@ export interface NotificationOptions {
   severities: StyleDescriptor<NotificationItem['severity']>[];
 }
 
+export type ResourceEventSeverity = 'info' | 'warning' | 'critical';
+
+export interface ResourceUtilizationBand {
+  id: string;
+  label: string;
+  min?: number;
+  max?: number;
+  fill_class: string;
+  text_class: string;
+}
+
+export interface ResourceEventDescriptor {
+  severity: ResourceEventSeverity;
+  label: string;
+  badge_class: string;
+  dot_class: string;
+  title_template: string;
+  summary_template: string;
+}
+
+export interface ResourceEventVolumeDescriptor {
+  id: string;
+  label: string;
+  min?: number;
+  max?: number;
+  badge_class: string;
+  dot_class: string;
+}
+
 export interface ResourceOptions {
   statuses: StyleDescriptor<Resource['status']>[];
   status_colors: ColorDescriptor<Resource['status']>[];
@@ -1241,6 +1276,9 @@ export interface ResourceOptions {
   providers: string[];
   regions: string[];
   owners: string[];
+  utilization_bands?: ResourceUtilizationBand[];
+  event_volume_bands?: ResourceEventVolumeDescriptor[];
+  event_severities?: ResourceEventDescriptor[];
 }
 
 export interface PersonnelOptions {

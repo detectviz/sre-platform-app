@@ -302,14 +302,21 @@ const AutomationTriggersPage: React.FC = () => {
                 onClearSelection={() => setSelectedIds([])}
                 batchActions={batchActions}
             />
-            <TableContainer>
-                <div className="flex-1 overflow-y-auto">
-                    <table className="w-full text-sm text-left text-slate-300">
-                        <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
-                            <tr>
-                                <th scope="col" className="p-4 w-12">
-                                    <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
-                                        checked={isAllSelected} ref={el => { if (el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
+            <TableContainer
+                table={(
+                    <table className="app-table text-sm">
+                        <thead className="app-table__head">
+                            <tr className="app-table__head-row">
+                                <th scope="col" className="app-table__checkbox-cell">
+                                    <input
+                                        type="checkbox"
+                                        className="app-checkbox"
+                                        checked={isAllSelected}
+                                        ref={el => {
+                                            if (el) el.indeterminate = isIndeterminate;
+                                        }}
+                                        onChange={handleSelectAll}
+                                    />
                                 </th>
                                 {visibleColumns.map(key => {
                                     const column = allColumns.find(c => c.key === key);
@@ -323,7 +330,7 @@ const AutomationTriggersPage: React.FC = () => {
                                         />
                                     );
                                 })}
-                                <th scope="col" className="px-6 py-3 text-center">操作</th>
+                                <th scope="col" className="app-table__header-cell app-table__header-cell--center">操作</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -331,45 +338,58 @@ const AutomationTriggersPage: React.FC = () => {
                                 <TableLoader colSpan={visibleColumns.length + 2} />
                             ) : error ? (
                                 <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchTriggersAndPlaybooks} />
-                            ) : triggers.map((trigger) => (
-                                <tr key={trigger.id} className={`border-b border-slate-800 ${selectedIds.includes(trigger.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
-                                    <td className="p-4 w-12">
-                                        <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
-                                            checked={selectedIds.includes(trigger.id)} onChange={(e) => handleSelectOne(e, trigger.id)} />
-                                    </td>
-                                    {visibleColumns.map(key => (
-                                        <td key={key} className="px-6 py-4">{renderCellContent(trigger, key)}</td>
-                                    ))}
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <IconButton
-                                                icon="edit-3"
-                                                label="編輯觸發器"
-                                                tooltip="編輯觸發器"
-                                                onClick={() => handleEditTrigger(trigger)}
-                                            />
-                                            <IconButton
-                                                icon="trash-2"
-                                                label="刪除觸發器"
-                                                tooltip="刪除觸發器"
-                                                tone="danger"
-                                                onClick={() => handleDeleteClick(trigger)}
-                                            />
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                            ) : (
+                                triggers.map(trigger => {
+                                    const rowClassName = selectedIds.includes(trigger.id)
+                                        ? 'app-table__row app-table__row--selected'
+                                        : 'app-table__row';
+                                    return (
+                                        <tr key={trigger.id} className={rowClassName}>
+                                            <td className="app-table__checkbox-cell">
+                                                <input
+                                                    type="checkbox"
+                                                    className="app-checkbox"
+                                                    checked={selectedIds.includes(trigger.id)}
+                                                    onChange={e => handleSelectOne(e, trigger.id)}
+                                                />
+                                            </td>
+                                            {visibleColumns.map(key => (
+                                                <td key={key} className="app-table__cell">{renderCellContent(trigger, key)}</td>
+                                            ))}
+                                            <td className="app-table__cell app-table__cell--center">
+                                                <div className="app-table__actions">
+                                                    <IconButton
+                                                        icon="edit-3"
+                                                        label="編輯觸發器"
+                                                        tooltip="編輯觸發器"
+                                                        onClick={() => handleEditTrigger(trigger)}
+                                                    />
+                                                    <IconButton
+                                                        icon="trash-2"
+                                                        label="刪除觸發器"
+                                                        tooltip="刪除觸發器"
+                                                        tone="danger"
+                                                        onClick={() => handleDeleteClick(trigger)}
+                                                    />
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
                         </tbody>
                     </table>
-                </div>
-                <Pagination
-                    total={total}
-                    page={currentPage}
-                    pageSize={pageSize}
-                    onPageChange={setCurrentPage}
-                    onPageSizeChange={setPageSize}
-                />
-            </TableContainer>
+                )}
+                footer={(
+                    <Pagination
+                        total={total}
+                        page={currentPage}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={setPageSize}
+                    />
+                )}
+            />
             {isModalOpen && (
                 <AutomationTriggerEditModal
                     isOpen={isModalOpen}

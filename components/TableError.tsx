@@ -1,5 +1,6 @@
 import React from 'react';
 import Icon from './Icon';
+import { useContentSection } from '../contexts/ContentContext';
 
 interface TableErrorProps {
     colSpan: number;
@@ -8,18 +9,24 @@ interface TableErrorProps {
 }
 
 const TableError: React.FC<TableErrorProps> = ({ colSpan, message, onRetry }) => {
+    const globalContent = useContentSection('GLOBAL');
+    const retryLabel = globalContent?.RETRY ?? 'Retry';
+    const retryHint = globalContent?.TABLE_ERROR_HINT ?? '請稍後再試，或聯絡支援團隊。';
+
     return (
-        <tr>
-            <td colSpan={colSpan} className="text-center py-20 text-red-400">
-                <div className="flex flex-col items-center justify-center">
-                    <Icon name="alert-circle" className="w-10 h-10 mb-2" />
-                    <p className="font-semibold">{message}</p>
-                    <p className="text-sm text-slate-500">請稍後再試，或聯絡支援團隊。</p>
+        <tr className="app-table__state-row">
+            <td colSpan={colSpan} className="app-table__cell app-table__cell--center">
+                <div className="app-table__state">
+                    <Icon name="alert-circle" className="app-table__state-icon app-table__state-icon--error" />
+                    <p className="app-table__state-title">{message}</p>
+                    <p className="app-table__state-description">{retryHint}</p>
                     {onRetry && (
-                        <button onClick={onRetry} className="mt-4 px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md flex items-center">
-                            <Icon name="refresh-cw" className="w-4 h-4 mr-2" />
-                            重試
-                        </button>
+                        <div className="app-table__state-actions">
+                            <button onClick={onRetry} className="app-btn app-btn--primary">
+                                <Icon name="refresh-cw" className="w-4 h-4" />
+                                {retryLabel}
+                            </button>
+                        </div>
                     )}
                 </div>
             </td>

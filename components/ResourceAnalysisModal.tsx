@@ -4,6 +4,7 @@ import Modal from './Modal';
 import Icon from './Icon';
 import { Resource, ResourceAnalysis } from '../types';
 import api from '../services/api';
+import { buildRoute } from '../constants/routes';
 
 interface ResourceAnalysisModalProps {
     isOpen: boolean;
@@ -106,7 +107,7 @@ const ResourceAnalysisModal: React.FC<ResourceAnalysisModalProps> = ({ isOpen, o
                         {analysis.risk_analysis.map((risk, i) => (
                             <div key={i} className="p-3 bg-slate-800/50 rounded-lg">
                                 <div className="flex justify-between items-start">
-                                    <Link to={`/resources/list/${risk.resource_id}`} className="font-semibold text-white hover:underline">{risk.resource_name}</Link>
+                                    <Link to={buildRoute.resourceDetails(risk.resource_id)} className="font-semibold text-white hover:underline">{risk.resource_name}</Link>
                                     <RiskLevelPill level={risk.risk_level} />
                                 </div>
                                 <p className="text-sm text-slate-400 mt-1">原因: {risk.reason}</p>
@@ -120,7 +121,7 @@ const ResourceAnalysisModal: React.FC<ResourceAnalysisModalProps> = ({ isOpen, o
                         {analysis.optimization_suggestions.map((suggestion, i) => (
                             <div key={i} className="p-3 bg-slate-800/50 rounded-lg">
                                 <div className="flex justify-between items-start">
-                                    <Link to={`/resources/list/${suggestion.resource_id}`} className="font-semibold text-white hover:underline">{suggestion.resource_name}</Link>
+                                    <Link to={buildRoute.resourceDetails(suggestion.resource_id)} className="font-semibold text-white hover:underline">{suggestion.resource_name}</Link>
                                     <OptimizationTypePill type={suggestion.type} />
                                 </div>
                                 <p className="text-sm text-slate-300 mt-1">{suggestion.suggestion}</p>

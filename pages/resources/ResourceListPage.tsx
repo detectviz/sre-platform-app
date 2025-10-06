@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Resource, ResourceFilters, TableColumn } from '../../types';
+import { Resource, ResourceEventDescriptor, ResourceEventSeverity, ResourceFilters, TableColumn } from '../../types';
 import Toolbar, { ToolbarButton } from '../../components/Toolbar';
 import TableContainer from '../../components/TableContainer';
 import Drawer from '../../components/Drawer';
@@ -26,36 +26,21 @@ import StatusTag from '../../components/StatusTag';
 import IconButton from '../../components/IconButton';
 import SortableColumnHeaderCell from '../../components/SortableColumnHeaderCell';
 import useTableSorting from '../../hooks/useTableSorting';
+import { ROUTES, buildRoute } from '../../constants/routes';
+import { useDesignSystemClasses } from '../../hooks/useDesignSystemClasses';
 
 const PAGE_IDENTIFIER = 'resources';
 
 interface ResourceEventItem {
     id: string;
     title: string;
-    severity: 'info' | 'warning' | 'critical';
+    severity: ResourceEventSeverity;
     occurred_at: string;
     summary: string;
 }
 
-const EVENT_SEVERITY_STYLES: Record<ResourceEventItem['severity'], { badge: string; dot: string; label: string }> = {
-    info: {
-        badge: 'bg-slate-200 text-slate-700 border border-slate-300 dark:bg-slate-800/60 dark:text-slate-200 dark:border-slate-700',
-        dot: 'bg-slate-400 dark:bg-slate-500',
-        label: '資訊',
-    },
-    warning: {
-        badge: 'bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-500/20 dark:text-amber-200 dark:border-amber-400/60',
-        dot: 'bg-amber-400 dark:bg-amber-300',
-        label: '警告',
-    },
-    critical: {
-        badge: 'bg-red-100 text-red-700 border border-red-200 dark:bg-red-500/20 dark:text-red-200 dark:border-red-500/60',
-        dot: 'bg-red-500 dark:bg-red-400',
-        label: '嚴重',
-    },
-};
-
 const ResourceListPage: React.FC = () => {
+    const design = useDesignSystemClasses();
     const [resources, setResources] = useState<Resource[]>([]);
     const [allColumns, setAllColumns] = useState<TableColumn[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -107,6 +92,15 @@ const ResourceListPage: React.FC = () => {
         return colors;
     }, [resourceOptions?.status_colors]);
     const typeDescriptors = useMemo(() => resourceOptions?.types ?? [], [resourceOptions?.types]);
+    const utilizationBands = useMemo(() => resourceOptions?.utilization_bands ?? [], [resourceOptions?.utilization_bands]);
+    const eventVolumeBands = useMemo(() => resourceOptions?.event_volume_bands ?? [], [resourceOptions?.event_volume_bands]);
+    const eventSeverityLookup = useMemo(() => {
+        const map = new Map<ResourceEventSeverity, ResourceEventDescriptor>();
+        resourceOptions?.event_severities?.forEach(descriptor => {
+            map.set(descriptor.severity, descriptor);
+        });
+        return map;
+    }, [resourceOptions?.event_severities]);
 
     const englishFromValue = useCallback((value: string) => (
         value.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())
@@ -173,11 +167,11 @@ const ResourceListPage: React.FC = () => {
     };
 
     const handleViewDetails = (id: string) => {
-        navigate(`/resources/list/${id}`);
+        navigate(buildRoute.resourceDetails(id));
     };
 
     const handleCloseDrawer = () => {
-        navigate('/resources/list');
+        navigate(ROUTES.RESOURCES_LIST);
     };
 
     const handleNewResource = () => {
@@ -255,69 +249,36 @@ const ResourceListPage: React.FC = () => {
         }
     }, []);
 
-    const getUtilizationTone = (value?: number) => {
-        if (value === undefined || value === null || Number.isNaN(value)) {
-            return {
-                barColor: '#64748b',
-                textClass: 'text-slate-500 dark:text-slate-500',
-            };
-        }
-        if (value >= 80) {
-            return {
-                barColor: '#f5222d',
-                textClass: 'text-red-600 dark:text-red-300',
-            };
-        }
-        if (value >= 60) {
-            return {
-                barColor: '#faad14',
-                textClass: 'text-amber-600 dark:text-amber-300',
-            };
-        }
-        return {
-            barColor: '#52c41a',
-            textClass: 'text-emerald-600 dark:text-emerald-300',
-        };
-    };
-
     const renderUtilizationPill = (value: number | undefined, label: string) => {
         if (value === undefined || value === null || Number.isNaN(value)) {
-            return <span className="text-slate-400 dark:text-slate-500">--</span>;
+            return <span className={design.text.muted}>--</span>;
         }
         const normalized = Math.max(0, Math.min(100, value));
-        const tone = getUtilizationTone(normalized);
+        const band = utilizationBands.find(candidate => {
+            const meetsMin = candidate.min === undefined || normalized >= candidate.min;
+            const meetsMax = candidate.max === undefined || normalized <= candidate.max;
+            return meetsMin && meetsMax;
+        });
+        const fillClass = band?.fill_class ?? 'app-meter-bar__fill app-meter-bar__fill--inactive';
+        const textClass = band?.text_class ?? design.text.secondary;
         return (
             <div className="flex w-full max-w-[9.5rem] items-center gap-2" title={`${label}: ${normalized.toFixed(1)}%`}>
-                <div className="relative h-2.5 grow overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-700/70">
-                    <div
-                        className="h-full rounded-full transition-all duration-300 ease-out"
-                        style={{ width: `${normalized}%`, backgroundColor: tone.barColor }}
-                    />
+                <div className="app-meter-bar">
+                    <div className={fillClass} style={{ width: `${normalized}%` }} />
                 </div>
-                <span className={`min-w-[2.75rem] text-right text-xs font-semibold tabular-nums ${tone.textClass}`}>
+                <span className={`min-w-[2.75rem] text-right text-xs font-semibold tabular-nums ${textClass}`}>
                     {normalized.toFixed(1)}%
                 </span>
             </div>
         );
     };
 
-    const getEventCountTone = (count: number) => {
-        if (count >= 2) {
-            return {
-                className: 'bg-red-100 text-red-700 border border-red-200 dark:bg-red-500/20 dark:text-red-200 dark:border-red-500/60',
-                dotClass: 'bg-red-500 dark:bg-red-400',
-            };
-        }
-        if (count >= 1) {
-            return {
-                className: 'bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-500/20 dark:text-amber-200 dark:border-amber-400/60',
-                dotClass: 'bg-amber-400 dark:bg-amber-300',
-            };
-        }
-        return {
-            className: 'bg-slate-200 text-slate-700 border border-slate-300 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700',
-            dotClass: 'bg-slate-400 dark:bg-slate-500',
-        };
+    const resolveEventVolume = (count: number) => {
+        return eventVolumeBands.find(descriptor => {
+            const meetsMin = descriptor.min === undefined || count >= descriptor.min;
+            const meetsMax = descriptor.max === undefined || count <= descriptor.max;
+            return meetsMin && meetsMax;
+        });
     };
 
     const generateMockEvents = useCallback((resource: Resource): ResourceEventItem[] => {
@@ -326,27 +287,35 @@ const ResourceListPage: React.FC = () => {
             return [];
         }
         const length = Math.min(5, total);
+        const severitySequence: ResourceEventSeverity[] = ['critical', 'warning', 'info'];
         return Array.from({ length }, (_, index) => {
-            const severity: ResourceEventItem['severity'] = (() => {
-                if (total >= 3) {
-                    if (index === 0) return 'critical';
-                    if (index <= 1) return 'warning';
-                    return 'info';
-                }
-                if (total === 2) {
-                    return index === 0 ? 'critical' : 'warning';
-                }
-                return 'warning';
-            })();
+            let severity: ResourceEventSeverity;
+            if (total >= 3) {
+                severity = severitySequence[Math.min(index, severitySequence.length - 1)];
+            } else if (total === 2) {
+                severity = index === 0 ? 'critical' : 'warning';
+            } else {
+                severity = 'warning';
+            }
+
+            const descriptor = eventSeverityLookup.get(severity);
+            const severityLabel = descriptor?.label ?? (severity === 'critical' ? '嚴重' : severity === 'warning' ? '警告' : '資訊');
+            const titleTemplate = descriptor?.title_template ?? '{severityLabel}事件';
+            const summaryTemplate = descriptor?.summary_template ?? '{resourceName} 在最近 24 小時產生 {severityLabel} 訊號。';
+
             return {
                 id: `${resource.id}-evt-${index + 1}`,
-                title: severity === 'critical' ? '高優先級事件' : severity === 'warning' ? '警告事件' : '資訊事件',
+                title: titleTemplate
+                    .replace('{resourceName}', resource.name)
+                    .replace('{severityLabel}', severityLabel),
                 severity,
                 occurred_at: new Date(Date.now() - (index + 1) * 45 * 60 * 1000).toISOString(),
-                summary: `${resource.name} 在最近 24 小時內產生 ${severity === 'critical' ? '嚴重' : severity === 'warning' ? '警告' : '資訊'}訊號，請檢視詳細監控趨勢。`,
+                summary: summaryTemplate
+                    .replace('{resourceName}', resource.name)
+                    .replace('{severityLabel}', severityLabel),
             };
         });
-    }, []);
+    }, [eventSeverityLookup]);
 
     const handleOpenEventDrawer = (resource: Resource) => {
         if ((resource.event_count ?? 0) === 0) {
@@ -422,59 +391,55 @@ const ResourceListPage: React.FC = () => {
         switch (columnKey) {
             case 'status':
                 const descriptor = statusDescriptors.find(item => item.value === res.status);
-                const statusColor = statusColorLookup[res.status] || '#38bdf8';
+                const statusColor = statusColorLookup[res.status] || 'var(--status-info-dot)';
                 const readableLabel = descriptor?.label || res.status;
                 const tooltip = `${readableLabel} (${englishFromValue(res.status)})`;
                 return (
                     <StatusTag
                         dense
-                        className={descriptor?.class_name}
+                        className={descriptor?.class_name || 'app-status-pill app-status-pill--muted'}
                         tooltip={tooltip}
                         label={(
                             <span className="flex items-center gap-1.5">
                                 <span
-                                    className="h-1.5 w-1.5 rounded-full"
+                                    className="app-dot"
                                     style={{ backgroundColor: statusColor }}
                                 />
-                                <span className="text-slate-900 dark:text-slate-100">{readableLabel}</span>
+                                <span className={design.text.emphasis}>{readableLabel}</span>
                             </span>
                         )}
                     />
                 );
             case 'name':
                 return (
-                    <span className="font-medium text-slate-900 dark:text-slate-100" title={res.name}>
+                    <span className={`font-medium ${design.text.emphasis}`} title={res.name}>
                         {res.name}
                     </span>
                 );
             case 'type': {
                 const typeDescriptor = typeDescriptors.find(t => t.value === res.type);
-                const pillClass = typeDescriptor?.class_name
-                    || 'bg-slate-200 text-slate-700 border border-slate-300 dark:bg-slate-800/60 dark:text-slate-200 dark:border-slate-700';
+                const pillClass = typeDescriptor?.class_name || 'app-badge app-badge--neutral';
                 const label = typeDescriptor?.label || res.type;
                 return (
-                    <span
-                        className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${pillClass}`}
-                        title={typeDescriptor ? `${label}` : undefined}
-                    >
+                    <span className={pillClass} title={typeDescriptor ? `${label}` : undefined}>
                         {label}
                     </span>
                 );
             }
             case 'event_count': {
                 const eventCount = res.event_count ?? 0;
-                const tone = getEventCountTone(eventCount);
+                const volumeDescriptor = resolveEventVolume(eventCount);
                 const isDisabled = eventCount === 0;
                 return (
                     <button
                         type="button"
                         onClick={() => handleOpenEventDrawer(res)}
                         disabled={isDisabled}
-                        className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold transition ${tone.className} ${isDisabled ? 'cursor-default opacity-60' : 'hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500/40 dark:focus-visible:ring-slate-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent'}`}
+                        className={volumeDescriptor?.badge_class || 'app-badge app-badge--neutral app-badge--interactive'}
                         title={eventCount === 0 ? '最近 24 小時內沒有事件' : `最近 24 小時內有 ${eventCount} 件事件`}
                     >
-                        <span className={`h-2 w-2 rounded-full ${tone.dotClass}`} />
-                        <span>{eventCount}</span>
+                        <span className={volumeDescriptor?.dot_class || 'app-badge__dot'} />
+                        <span className="tabular-nums">{eventCount}</span>
                     </button>
                 );
             }
@@ -484,27 +449,27 @@ const ResourceListPage: React.FC = () => {
                 return renderUtilizationPill(res.metrics?.memory, '記憶體使用率');
             case 'provider':
                 return res.provider
-                    ? <span className="text-slate-600 dark:text-slate-300">{res.provider}</span>
-                    : <span className="text-slate-400 dark:text-slate-500">--</span>;
+                    ? <span className={design.text.secondary}>{res.provider}</span>
+                    : <span className={design.text.muted}>--</span>;
             case 'region':
                 return res.region
-                    ? <span className="text-slate-600 dark:text-slate-300">{res.region}</span>
-                    : <span className="text-slate-400 dark:text-slate-500">--</span>;
+                    ? <span className={design.text.secondary}>{res.region}</span>
+                    : <span className={design.text.muted}>--</span>;
             case 'owner':
                 return res.owner
-                    ? <span className="text-slate-600 dark:text-slate-300">{res.owner}</span>
-                    : <span className="text-slate-400 dark:text-slate-500">--</span>;
+                    ? <span className={design.text.secondary}>{res.owner}</span>
+                    : <span className={design.text.muted}>--</span>;
             case 'last_check_in_at':
                 return (
                     <span
-                        className="text-slate-500 dark:text-slate-400"
+                        className={design.text.muted}
                         title={new Date(res.last_check_in_at).toLocaleString()}
                     >
                         {formatRelativeTime(res.last_check_in_at)}
                     </span>
                 );
             default:
-                return <span className="text-slate-400 dark:text-slate-500">--</span>;
+                return <span className={design.text.muted}>--</span>;
         }
     };
 
@@ -683,28 +648,28 @@ const ResourceListPage: React.FC = () => {
                     eventDrawerItems.length > 0 ? (
                         <div className="space-y-4">
                             {eventDrawerItems.map(event => {
-                                const tone = EVENT_SEVERITY_STYLES[event.severity];
+                                const descriptor = eventSeverityLookup.get(event.severity);
+                                const badgeClass = descriptor?.badge_class || 'app-badge app-badge--info';
+                                const dotClass = descriptor?.dot_class || 'app-badge__dot';
+                                const severityLabel = descriptor?.label || (event.severity === 'critical' ? '嚴重' : event.severity === 'warning' ? '警告' : '資訊');
                                 return (
-                                    <div
-                                        key={event.id}
-                                        className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition dark:border-slate-700 dark:bg-slate-900"
-                                    >
+                                    <div key={event.id} className={design.surface.inset}>
                                         <div className="flex flex-col gap-2">
                                             <div className="flex items-center justify-between gap-3">
-                                                <span className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-semibold ${tone.badge}`}>
-                                                    <span className={`h-2 w-2 rounded-full ${tone.dot}`} />
-                                                    {tone.label}
+                                                <span className={badgeClass}>
+                                                    <span className={dotClass} />
+                                                    {severityLabel}
                                                 </span>
                                                 <span
-                                                    className="text-xs text-slate-500 dark:text-slate-400"
+                                                    className={`text-xs ${design.text.muted}`}
                                                     title={new Date(event.occurred_at).toLocaleString()}
                                                 >
                                                     {formatRelativeTime(event.occurred_at)}
                                                 </span>
                                             </div>
                                             <div>
-                                                <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{event.title}</h4>
-                                                <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">{event.summary}</p>
+                                                <h4 className={`text-sm font-semibold ${design.text.emphasis}`}>{event.title}</h4>
+                                                <p className={`mt-1 text-sm leading-6 ${design.text.secondary}`}>{event.summary}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -712,7 +677,7 @@ const ResourceListPage: React.FC = () => {
                             })}
                         </div>
                     ) : (
-                        <div className="rounded-lg border border-slate-200 bg-white p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                        <div className={`${design.surface.inset} text-center text-sm ${design.text.muted}`}>
                             最近 24 小時內沒有事件。
                         </div>
                     )
