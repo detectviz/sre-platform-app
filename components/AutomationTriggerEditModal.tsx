@@ -36,7 +36,7 @@ const parseConditionGroups = (expression?: string): ConditionGroup[] => {
         .map(segment => segment.trim())
         .filter(Boolean)
         .map(groupExpression => {
-            const sanitized = groupExpression.replace(/^\(/, '').replace(/\)$/,'').trim();
+            const sanitized = groupExpression.replace(/^\(/, '').replace(/\)$/, '').trim();
             const conditionParts = sanitized.split(/\s+AND\s+/i).filter(Boolean);
             const conditions = conditionParts.map(part => {
                 const match = part.match(/([a-zA-Z0-9_.-]+)\s*(!=|~=|=)\s*(?:"([^"]*)"|'([^']*)'|([^\s]+))/);
@@ -179,7 +179,7 @@ const AutomationTriggerEditModal: React.FC<AutomationTriggerEditModalProps> = ({
             return;
         }
         try {
-            const iterator = parser.parseExpression(cronExpression, { currentDate: new Date() });
+            const iterator = (parser as any).CronExpressionParser.parse(cronExpression, { currentDate: new Date() });
             const next = iterator.next().toDate();
             const formatted = dayjs(next).format('YYYY/MM/DD HH:mm');
             const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;

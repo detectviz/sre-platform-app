@@ -71,15 +71,15 @@ const ResourceOverviewPage: React.FC = () => {
     }, [fetchData]);
 
     const typeDistributionOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
+        tooltip: { trigger: 'item' as const },
         legend: {
-            orient: 'vertical',
+            orient: 'vertical' as const,
             left: 'left',
             textStyle: { color: chartTheme.text.primary }
         },
         series: [{
             name: '資源類型',
-            type: 'pie',
+            type: 'pie' as const,
             radius: ['40%', '70%'],
             avoidLabelOverlap: false,
             itemStyle: {
@@ -96,17 +96,17 @@ const ResourceOverviewPage: React.FC = () => {
     }), [chartTheme, overviewData]);
 
     const providerDistributionOption = useMemo(() => ({
-        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        tooltip: { trigger: 'axis' as const, axisPointer: { type: 'shadow' as const } },
         grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
         xAxis: {
-            type: 'category',
+            type: 'category' as const,
             data: overviewData?.distribution_by_provider.map(p => p.provider) || [],
             axisLine: { lineStyle: { color: chartTheme.grid.axis } }
         },
-        yAxis: { type: 'value', axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
+        yAxis: { type: 'value' as const, axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
         series: [{
             name: '資源數量',
-            type: 'bar',
+            type: 'bar' as const,
             barWidth: '60%',
             data: overviewData?.distribution_by_provider.map(p => p.count) || [],
             itemStyle: { color: chartTheme.resource_distribution.primary }

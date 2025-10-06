@@ -43,7 +43,6 @@ const JsonPreview: React.FC<JsonPreviewProps> = ({ data, title, className = '', 
                     label={isCopied ? '已複製' : '複製 JSON'}
                     tooltip={isCopied ? '內容已複製' : '複製原始 JSON'}
                     onClick={handleCopy}
-                    size="sm"
                 />
             </div>
             <div className="max-h-80 overflow-auto">

@@ -15,7 +15,9 @@ const TableContainer: React.FC<TableContainerProps> = ({ table, footer, classNam
     const resolvedFooter = footer ?? (childArray.length > 1 ? childArray.slice(1) : null);
 
     const shouldPreserveWrapper =
-        React.isValidElement(resolvedTable) && typeof resolvedTable.props.className === 'string'
+        React.isValidElement(resolvedTable) && resolvedTable.props &&
+            typeof resolvedTable.props === 'object' && resolvedTable.props !== null &&
+            'className' in resolvedTable.props && typeof resolvedTable.props.className === 'string'
             ? resolvedTable.props.className.split(' ').includes('app-table-scroll')
             : false;
 

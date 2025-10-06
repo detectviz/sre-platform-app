@@ -137,7 +137,7 @@ const AppRoutes: React.FC = () => {
     <HashRouter>
       <RenderIcons />
       <Routes>
-          <Route path="/" element={<AppLayout />}>
+        <Route path="/" element={<AppLayout />}>
           <Route index element={<Navigate to={ROUTES.HOME} replace />} />
           <Route path="home" element={<DashboardRedirector />} />
           <Route path="dashboard/infrastructure-insights" element={<InfrastructureInsightsPage />} />
@@ -167,8 +167,8 @@ const AppRoutes: React.FC = () => {
             <Route index element={<DashboardListPage />} />
             <Route path="templates" element={<DashboardTemplatesPage />} />
             <Route path="new" element={<DashboardEditorPage />} />
-            <Route path=":dashboardId/edit" element={<DashboardEditorPage />} />
           </Route>
+          <Route path="dashboards/:dashboardId/edit" element={<DashboardEditorPage />} />
 
           <Route path="analyzing" element={<PageWithTabsLayout title={pageLayouts.analysis.title} description={pageLayouts.analysis.description} kpi_page_name={pageLayouts.analysis.kpi_page_name} tabs={tabConfigs?.analysis || []} />}>
             <Route index element={<Navigate to={ROUTES.ANALYSIS_LOGS} replace />} />

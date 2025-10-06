@@ -208,7 +208,7 @@ const Step1 = ({ formData, setFormData }: { formData: Partial<SilenceRule>, setF
     };
 
     const selectedTemplate = templates.find(tpl => tpl.id === selectedTemplateId);
-    const templateDescription = content?.SILENCE_RULE_EDIT_MODAL?.TEMPLATE_DESCRIPTION ?? '選擇範本可快速帶入預設條件、排程與標籤設定。套用後仍可進一步調整。';
+    const templateDescription = '選擇範本可快速帶入預設條件、排程與標籤設定。套用後仍可進一步調整。';
 
     return (
         <div className="space-y-6 px-4 pb-2">
@@ -236,7 +236,7 @@ const Step1 = ({ formData, setFormData }: { formData: Partial<SilenceRule>, setF
                                 className={`group flex h-12 items-center justify-between rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${isSelected
                                     ? 'border-sky-500 bg-sky-500/10 text-sky-100 shadow-[0_0_0_1px_rgba(56,189,248,0.25)]'
                                     : 'border-slate-700 bg-slate-800/50 text-slate-200 hover:border-slate-500 hover:bg-slate-800/70'
-                                }`}
+                                    }`}
                                 aria-pressed={isSelected}
                                 title={tpl.description}
                             >
@@ -254,7 +254,7 @@ const Step1 = ({ formData, setFormData }: { formData: Partial<SilenceRule>, setF
             </div>
             <FormRow
                 label={basicContent?.NAME ?? '規則名稱 *'}
-                description={content?.SILENCE_RULE_EDIT_MODAL?.NAME_DESCRIPTION ?? '此名稱將顯示在靜音規則列表與通知設定中，建議包含範圍與目的。'}
+                description='此名稱將顯示在靜音規則列表與通知設定中，建議包含範圍與目的。'
             >
                 <input
                     type="text"
@@ -266,7 +266,7 @@ const Step1 = ({ formData, setFormData }: { formData: Partial<SilenceRule>, setF
             </FormRow>
             <FormRow
                 label={basicContent?.DESCRIPTION ?? '描述'}
-                description={content?.SILENCE_RULE_EDIT_MODAL?.DESCRIPTION_HELP ?? '補充靜音原因、影響範圍或聯絡人資訊，協助團隊理解背景。'}
+                description='補充靜音原因、影響範圍或聯絡人資訊，協助團隊理解背景。'
             >
                 <textarea
                     value={formData.description}
@@ -433,7 +433,7 @@ const Step2 = ({ formData, setFormData, options }: { formData: Partial<SilenceRu
                             placeholder="0 2 * * *"
                         />
                         <ul className="mt-2 space-y-1 text-xs text-slate-400">
-                            {[scheduleContent?.CRON_EXAMPLE ?? "0 2 * * * → 每天 02:00" , '0 */6 * * * → 每 6 小時', '0 22 * * 5 → 每週五 22:00'].map((example, idx) => (
+                            {[scheduleContent?.CRON_EXAMPLE ?? "0 2 * * * → 每天 02:00", '0 */6 * * * → 每 6 小時', '0 22 * * 5 → 每週五 22:00'].map((example, idx) => (
                                 <li key={idx} className="flex items-start gap-2">
                                     <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-slate-500"></span>
                                     <span className="font-mono">{example}</span>

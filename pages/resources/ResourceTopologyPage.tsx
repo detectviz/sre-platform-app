@@ -166,7 +166,7 @@ const ResourceTopologyPage: React.FC = () => {
             legend: [{
                 data: legendLabels,
                 textStyle: { color: chartTheme.text.primary },
-                orient: 'horizontal',
+                orient: 'horizontal' as const,
                 left: 'center',
                 top: 20,
                 itemGap: 20,
@@ -182,8 +182,8 @@ const ResourceTopologyPage: React.FC = () => {
             animationDurationUpdate: 1500,
             animationEasingUpdate: 'quinticInOut',
             series: [{
-                type: 'graph',
-                layout: layout,
+                type: 'graph' as const,
+                layout: layout as 'force' | 'circular' | 'none',
                 data: nodes,
                 links: links,
                 categories: categories,

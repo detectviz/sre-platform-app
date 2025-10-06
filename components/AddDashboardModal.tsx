@@ -56,7 +56,7 @@ const AddDashboardModal: React.FC<AddDashboardModalProps> = ({ isOpen, onClose, 
 
     useEffect(() => {
         if (dashboardOptions?.categories && dashboardOptions.categories.length > 0) {
-            setDefaultCategory(dashboardOptions.categories[0]);
+            setDefaultCategory(dashboardOptions.categories[0].value);
         } else {
             setDefaultCategory(null);
         }

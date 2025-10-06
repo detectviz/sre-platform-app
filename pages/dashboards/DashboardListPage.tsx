@@ -161,7 +161,7 @@ const DashboardListPage: React.FC = () => {
     };
 
     const handleEditClick = (dashboard: Dashboard) => {
-        if (dashboard.type === 'built-in') {
+        if (dashboard.type === 'built-in' || dashboard.type === 'grafana') {
             navigate(`/dashboards/${dashboard.id}/edit`);
         } else {
             setEditingDashboard(dashboard);

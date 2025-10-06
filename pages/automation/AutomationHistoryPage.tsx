@@ -175,7 +175,7 @@ const AutomationHistoryPage: React.FC = () => {
                                 icon="refresh-cw"
                                 label="重新嘗試"
                                 tooltip="重新嘗試執行"
-                                onClick={(event) => { event.stopPropagation(); handleRetry(ex.id); }}
+                                onClick={() => handleRetry(ex.id)}
                             />
                         )}
                     </div>
@@ -378,10 +378,7 @@ const AutomationHistoryPage: React.FC = () => {
                                                     icon="external-link"
                                                     label="查看詳情"
                                                     tooltip="查看執行輸出"
-                                                    onClick={event => {
-                                                        event.stopPropagation();
-                                                        setSelectedExecution(ex);
-                                                    }}
+                                                    onClick={() => setSelectedExecution(ex)}
                                                 />
                                             </td>
                                         </tr>

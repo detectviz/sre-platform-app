@@ -213,7 +213,7 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
       <FormRow label={globalContent.TYPE}>
         <select value={(filters as ResourceFilters).type || ''} onChange={e => setFilters(prev => ({ ...(prev as ResourceFilters), type: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
           <option value="">{content.ALL_TYPES}</option>
-          {options?.resources.types.map(t => <option key={t} value={t}>{t}</option>)}
+          {options?.resources.types.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
       </FormRow>
       <FormRow label={content.RESOURCES.PROVIDER}>
@@ -300,7 +300,7 @@ const UnifiedSearchModal: React.FC<UnifiedSearchModalProps> = ({ page, isOpen, o
       <FormRow label={content.DASHBOARDS.CATEGORY}>
         <select value={(filters as DashboardFilters).category || ''} onChange={e => setFilters(prev => ({ ...prev, category: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm">
           <option value="">{content.DASHBOARDS.ALL_CATEGORIES}</option>
-          {options?.dashboards.categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+          {options?.dashboards.categories.map(cat => <option key={cat.value} value={cat.value}>{cat.label}</option>)}
         </select>
       </FormRow>
     </>

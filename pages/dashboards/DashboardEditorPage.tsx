@@ -14,7 +14,7 @@ import StatusTag from '../../components/StatusTag';
 import { ROUTES } from '../../constants/routes';
 
 const COLS = 12;
-const ROW_HEIGHT = 80;
+const ROW_HEIGHT = 55; // 精確匹配 KpiCard 高度：h=2 時 → 2*55+10=120px
 const MARGIN: [number, number] = [10, 10];
 
 type InteractionState = {
@@ -34,6 +34,9 @@ const DashboardEditorPage: React.FC = () => {
     const isEditMode = !!dashboardId;
     const pageContent = content?.DASHBOARD_EDITOR;
     const gridRef = useRef<HTMLDivElement>(null);
+
+    // Get dashboard type for dynamic content
+    const [dashboardType, setDashboardType] = useState<string>('built-in');
 
     const [dashboardName, setDashboardName] = useState('');
     const [isNamePristine, setIsNamePristine] = useState(false);
@@ -56,7 +59,7 @@ const DashboardEditorPage: React.FC = () => {
 
     useEffect(() => {
         if (options?.dashboards?.categories?.length) {
-            setDefaultCategory(options.dashboards.categories[0]);
+            setDefaultCategory(options.dashboards.categories[0].value);
         }
     }, [options]);
 
@@ -76,10 +79,16 @@ const DashboardEditorPage: React.FC = () => {
             if (isEditMode) {
                 const { data: dashboardData } = await api.get<Dashboard>(`/dashboards/${dashboardId}`);
                 setDashboardName(dashboardData.name);
+                setDashboardType(dashboardData.type || 'built-in');
                 setLayout(dashboardData.layout || []);
                 const dashboardWidgetIds = (dashboardData.layout || []).map(item => item.i);
                 setWidgets(allFetchedWidgets.filter(w => dashboardWidgetIds.includes(w.id)));
                 setIsNamePristine(false);
+
+                // For Grafana dashboards, show a warning if they don't have layout
+                if (dashboardData.type === 'grafana' && !dashboardData.layout) {
+                    showToast('Grafana 儀表板沒有配置的小工具布局，可能無法正常編輯。', 'warning');
+                }
             } else {
                 const template = location.state?.template as DashboardTemplate | undefined;
                 if (template) {
@@ -181,16 +190,28 @@ const DashboardEditorPage: React.FC = () => {
         }
 
         setIsSaving(true);
-        const dashboardPayload: Partial<Dashboard> = { name: dashboardName, type: 'built-in', layout };
         try {
             if (isEditMode) {
+                // Get current dashboard data to preserve type and grafana_url
+                const { data: currentDashboard } = await api.get<Dashboard>(`/dashboards/${dashboardId}`);
+                const dashboardPayload: Partial<Dashboard> = {
+                    name: dashboardName,
+                    type: currentDashboard.type, // Preserve original type
+                    layout,
+                    grafana_url: currentDashboard.grafana_url // Preserve grafana_url if it exists
+                };
                 const { data: updatedDashboard } = await api.patch<Dashboard>(`/dashboards/${dashboardId}`, dashboardPayload);
                 showToast(pageContent.UPDATE_SUCCESS.replace('{name}', updatedDashboard.name), 'success');
             } else {
-                dashboardPayload.category = defaultCategory as string;
-                dashboardPayload.description = pageContent.DEFAULT_DESCRIPTION;
-                dashboardPayload.owner = currentUser?.name || 'System';
-                dashboardPayload.updated_at = new Date().toISOString().slice(0, 16).replace('T', ' ');
+                const dashboardPayload: Partial<Dashboard> = {
+                    name: dashboardName,
+                    type: 'built-in',
+                    layout,
+                    category: defaultCategory as string,
+                    description: pageContent.DEFAULT_DESCRIPTION,
+                    owner: currentUser?.name || 'System',
+                    updated_at: new Date().toISOString().slice(0, 16).replace('T', ' ')
+                };
                 const { data: createdDashboard } = await api.post<Dashboard>('/dashboards', dashboardPayload);
                 showToast(pageContent.SAVE_SUCCESS.replace('{name}', createdDashboard.name), 'success');
             }
@@ -317,11 +338,19 @@ const DashboardEditorPage: React.FC = () => {
     if (!pageContent) return <div className="flex items-center justify-center h-full"><Icon name="loader-circle" className="w-8 h-8 animate-spin" /></div>;
 
     return (
-        <div className="h-full flex flex-col space-y-4">
+        <div className="h-full flex flex-col space-y-4 relative z-0">
             <div className="flex justify-between items-center shrink-0">
                 <div className="flex items-center space-x-4">
-                    <h1 className="text-3xl font-bold text-slate-400">{isEditMode ? pageContent.EDIT_TITLE : pageContent.CREATE_TITLE}</h1>
-                    <input type="text" value={dashboardName} onChange={e => setDashboardName(e.target.value)} onFocus={handleNameFocus} className="bg-transparent border-b-2 border-slate-700 focus:border-sky-500 text-3xl font-bold focus:outline-none transition-colors w-96" />
+                    <button onClick={() => navigate(ROUTES.DASHBOARDS)} className="p-2 rounded-full hover:bg-slate-700/50" title="返回儀表板列表">
+                        <Icon name="arrow-left" className="w-5 h-5" />
+                    </button>
+                    <h1 className="text-xl font-bold text-slate-400">
+                        {isEditMode
+                            ? (dashboardType === 'grafana' ? '編輯 Grafana 儀表板' : pageContent.EDIT_TITLE)
+                            : pageContent.CREATE_TITLE
+                        }
+                    </h1>
+                    <input type="text" value={dashboardName} onChange={e => setDashboardName(e.target.value)} onFocus={handleNameFocus} className="bg-transparent border-b-2 border-slate-700 focus:border-sky-500 text-xl font-bold focus:outline-none transition-colors w-80" />
                 </div>
                 <div className="flex items-center space-x-2">
                     <button onClick={handleUndo} disabled={history.length === 0} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700/50 hover:bg-slate-700 rounded-md flex items-center disabled:opacity-50 disabled:cursor-not-allowed">
@@ -343,7 +372,7 @@ const DashboardEditorPage: React.FC = () => {
                 </button>
             </div>
 
-            <div ref={gridRef} className="flex-grow glass-card rounded-xl p-4 overflow-auto relative">
+            <div ref={gridRef} className="flex-grow glass-card rounded-xl p-4 overflow-auto relative z-0">
                 {(isLoading || (isLoadingOptions && !isEditMode)) && <div className="h-full flex flex-col items-center justify-center text-slate-500"><Icon name="loader-circle" className="w-12 h-12 animate-spin" /></div>}
                 {error && <div className="h-full flex flex-col items-center justify-center text-red-400"><Icon name="alert-circle" className="w-12 h-12 mb-4" /><p className="font-semibold">{error}</p></div>}
                 {!isLoading && !isLoadingOptions && !error && widgets.length === 0 && (
@@ -394,41 +423,60 @@ const DashboardEditorPage: React.FC = () => {
                         <div
                             key={item.i}
                             onMouseDown={(e) => handleInteractionStart(e, 'drag', item)}
-                            className={`group absolute transition-all duration-200 ease-in-out ${isInteracting ? 'z-20 shadow-2xl opacity-90' : 'z-10'}`}
+                            className={`group absolute transition-all duration-300 ease-out cursor-grab active:cursor-grabbing ${isInteracting
+                                ? 'z-50 shadow-2xl shadow-sky-500/30 opacity-95 scale-105'
+                                : 'z-10 hover:shadow-xl hover:shadow-slate-900/50 hover:-translate-y-1 hover:scale-102'
+                                }`}
                             style={{ top, left, width, height }}
                         >
-                            <div className="pointer-events-none absolute inset-0 rounded-xl border border-slate-700/50" />
-                            <div className="pointer-events-none absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-slate-900/70 px-2 py-1 text-[11px] font-medium text-slate-300 shadow-sm">
-                                <Icon name="grip-vertical" className="h-3.5 w-3.5" />
-                                <span>拖曳調整</span>
-                            </div>
+                            <div className={`pointer-events-none absolute inset-0 rounded-xl transition-all duration-300 ${isInteracting
+                                ? 'border-2 border-sky-400 bg-sky-500/10'
+                                : 'border border-slate-700/50 group-hover:border-slate-600/70'
+                                }`} />
                             <div
-                                className="absolute right-2 top-2 flex items-center gap-2"
-                                onClick={(event) => event.stopPropagation()}
-                                onMouseDown={(event) => event.stopPropagation()}
+                                className="absolute right-2 top-2 flex items-center gap-2 z-20 pointer-events-auto"
+                                onClick={(event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                }}
+                                onMouseDown={(event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                }}
                             >
-                                <IconButton
-                                    icon="x"
-                                    label={pageContent.REMOVE_WIDGET_TITLE}
-                                    tone="danger"
-                                    onClick={() => removeWidget(widget.id)}
-                                    tooltip={pageContent.REMOVE_WIDGET_TITLE}
+                                <button
+                                    type="button"
+                                    onClick={(event) => {
+                                        event?.preventDefault();
+                                        event?.stopPropagation();
+                                        removeWidget(widget.id);
+                                    }}
+                                    className="flex h-5 w-5 items-center justify-center rounded-full bg-red-600/80 text-white hover:bg-red-600 transition-colors duration-200"
+                                    title={pageContent.REMOVE_WIDGET_TITLE}
+                                >
+                                    <Icon name="x" className="h-3 w-3" />
+                                </button>
+                            </div>
+                            <div className={`transition-all duration-200 ${isInteracting ? 'pointer-events-none' : 'pointer-events-auto'}`}>
+                                <KpiCard
+                                    title={widget.name}
+                                    value={data.value}
+                                    unit={data.unit}
+                                    description={renderDescription(data.description)}
+                                    color={data.color}
+                                    trend={data.trend ?? null}
+                                    change={data.change}
                                 />
                             </div>
-                            <KpiCard
-                                title={widget.name}
-                                value={data.value}
-                                unit={data.unit}
-                                description={renderDescription(data.description)}
-                                color={data.color}
-                                trend={data.trend ?? null}
-                                change={data.change}
-                            />
                             <div
                                 onMouseDown={(e) => handleInteractionStart(e, 'resize', item)}
-                                className="absolute bottom-2 right-2 flex h-6 w-6 cursor-se-resize items-center justify-center rounded-md bg-slate-900/80 text-slate-400 opacity-0 transition-opacity group-hover:opacity-100"
+                                className={`absolute bottom-2 right-2 flex h-7 w-7 cursor-se-resize items-center justify-center rounded-lg transition-all duration-200 z-20 ${isInteracting
+                                    ? 'bg-sky-600/90 text-white opacity-100 scale-110 shadow-lg'
+                                    : 'bg-slate-900/80 text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-slate-800/90 hover:text-slate-300 hover:scale-105'
+                                    }`}
+                                title="拖曳調整大小"
                             >
-                                <Icon name="move" className="h-3.5 w-3.5" />
+                                <Icon name="move" className="h-4 w-4" />
                                 <span className="sr-only">調整大小</span>
                             </div>
                         </div>
@@ -443,7 +491,24 @@ const DashboardEditorPage: React.FC = () => {
                     }
                     const { top, left, width, height } = getPixelValues(ghostLayout, gridRef.current.offsetWidth);
                     const isColliding = checkCollision(ghostLayout, layout);
-                    return <div className={`absolute z-10 rounded-xl transition-colors ${isColliding ? 'bg-red-500/30' : 'bg-sky-500/30'} border-2 border-dashed ${isColliding ? 'border-red-400' : 'border-sky-400'}`} style={{ top, left, width, height }} />;
+                    return (
+                        <div
+                            className={`absolute z-40 rounded-xl transition-all duration-200 ${isColliding
+                                ? 'bg-red-500/40 border-2 border-dashed border-red-400 animate-pulse'
+                                : 'bg-sky-500/30 border-2 border-dashed border-sky-400'
+                                }`}
+                            style={{ top, left, width, height }}
+                        >
+                            {isColliding && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="bg-red-600/90 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                                        <Icon name="alert-triangle" className="h-3 w-3" />
+                                        <span>位置衝突</span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    );
                 })()}
 
             </div>

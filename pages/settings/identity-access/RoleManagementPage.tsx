@@ -301,8 +301,8 @@ const RoleManagementPage: React.FC = () => {
                                     ))}
                                     <td className="px-6 py-4 text-center">
                                         <div className="flex items-center justify-center gap-2">
-                                            <IconButton icon="edit-3" label="編輯角色" tooltip="編輯角色" onClick={() => handleEditRole(role)} size="sm" />
-                                            <IconButton icon="trash-2" label="刪除角色" tooltip="刪除角色" tone="danger" onClick={() => handleDeleteClick(role)} size="sm" />
+                                            <IconButton icon="edit-3" label="編輯角色" tooltip="編輯角色" onClick={() => handleEditRole(role)} />
+                                            <IconButton icon="trash-2" label="刪除角色" tooltip="刪除角色" tone="danger" onClick={() => handleDeleteClick(role)} />
                                         </div>
                                     </td>
                                 </tr>

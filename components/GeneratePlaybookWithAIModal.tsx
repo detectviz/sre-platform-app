@@ -1,22 +1,22 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import Modal from './Modal';
 import Icon from './Icon';
-import { ParameterDefinition, AutomationPlaybook } from '../types';
+import { ParameterDefinition, AutomationPlaybook, AutomationPlaybookType } from '../types';
 import FormRow from './FormRow';
 import api from '../services/api';
 import { useContent } from '../contexts/ContentContext';
 import { useOptions } from '../contexts/OptionsContext';
 
 interface GeneratedPlaybook {
-  type: AutomationPlaybook['type'];
-  content: string;
-  parameters: ParameterDefinition[];
+    type: AutomationPlaybook['type'];
+    content: string;
+    parameters: ParameterDefinition[];
 }
 
 interface GeneratePlaybookWithAIModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onApply: (generated: GeneratedPlaybook) => void;
+    isOpen: boolean;
+    onClose: () => void;
+    onApply: (generated: GeneratedPlaybook) => void;
 }
 
 const GeneratePlaybookWithAIModal: React.FC<GeneratePlaybookWithAIModalProps> = ({ isOpen, onClose, onApply }) => {
@@ -60,7 +60,7 @@ const GeneratePlaybookWithAIModal: React.FC<GeneratePlaybookWithAIModalProps> = 
         setError(null);
         try {
             const { data } = await api.post<GeneratedPlaybook>('/ai/automation/generate-script', { prompt, target_type: targetType });
-            setResult({ ...data, type: data.type || targetType });
+            setResult({ ...data, type: (data.type || targetType) as AutomationPlaybookType });
         } catch (e) {
             console.error("AI Generation Error:", e);
             setError(content.ERROR_MESSAGE);
@@ -71,7 +71,7 @@ const GeneratePlaybookWithAIModal: React.FC<GeneratePlaybookWithAIModalProps> = 
 
     const handleApply = () => {
         if (result) {
-            onApply({ ...result, type: targetType || result.type });
+            onApply({ ...result, type: (targetType || result.type) as AutomationPlaybookType });
             onClose();
         }
     };
@@ -111,11 +111,11 @@ const GeneratePlaybookWithAIModal: React.FC<GeneratePlaybookWithAIModalProps> = 
             width="w-2/3 max-w-4xl"
             footer={
                 <div className="flex justify-between w-full">
-                     <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">
+                    <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">
                         {cancelLabel}
                     </button>
                     {result && (
-                         <button onClick={handleApply} className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md flex items-center">
+                        <button onClick={handleApply} className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md flex items-center">
                             <Icon name="check" className="w-4 h-4 mr-2" />
                             {content.APPLY_BUTTON}
                         </button>
@@ -177,7 +177,7 @@ const GeneratePlaybookWithAIModal: React.FC<GeneratePlaybookWithAIModalProps> = 
                         <p className="mt-4 text-slate-300">{content.LOADING_MESSAGE}</p>
                     </div>
                 )}
-                
+
                 {result && (
                     <div
                         ref={resultContainerRef}

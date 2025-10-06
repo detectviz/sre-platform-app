@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Icon from '../../components/Icon';
 import api from '../../services/api';
-import { LoginHistoryRecord } from '../../types';
+import { LoginHistoryRecord, LoginStatus } from '../../types';
 import Pagination from '../../components/Pagination';
 import TableLoader from '../../components/TableLoader';
 import TableError from '../../components/TableError';
@@ -102,7 +102,7 @@ const SecuritySettingsPage: React.FC = () => {
             setIsLoading(false);
         }
     }, [currentPage, pageSize, loginHistoryContent?.ERROR]);
-    
+
     useEffect(() => {
         fetchLoginHistory();
     }, [fetchLoginHistory]);
@@ -136,7 +136,7 @@ const SecuritySettingsPage: React.FC = () => {
         if (passwordStrength.score < 3) {
             showToast(
                 changePasswordContent?.VALIDATION?.INSUFFICIENT_STRENGTH ||
-                    'Use at least 12 characters with upper and lower case letters, numbers, and symbols.',
+                'Use at least 12 characters with upper and lower case letters, numbers, and symbols.',
                 'error'
             );
             return;
@@ -161,14 +161,14 @@ const SecuritySettingsPage: React.FC = () => {
         }
     };
 
-    const statusMapping: Record<LoginHistoryRecord['status'], { label: string; tone: StatusTagProps['tone'] }> = useMemo(() => ({
-        [LOGIN_STATUS.SUCCESS]: {
-            label: loginHistoryContent?.STATUS_LABELS?.[LOGIN_STATUS.SUCCESS] ?? 'Success',
-            tone: LOGIN_STATUS_TONE[LOGIN_STATUS.SUCCESS],
+    const statusMapping: Record<LoginStatus, { label: string; tone: StatusTagProps['tone'] }> = useMemo(() => ({
+        success: {
+            label: loginHistoryContent?.STATUS_LABELS?.success ?? 'Success',
+            tone: LOGIN_STATUS_TONE.success,
         },
-        [LOGIN_STATUS.FAILED]: {
-            label: loginHistoryContent?.STATUS_LABELS?.[LOGIN_STATUS.FAILED] ?? 'Failed',
-            tone: LOGIN_STATUS_TONE[LOGIN_STATUS.FAILED],
+        failed: {
+            label: loginHistoryContent?.STATUS_LABELS?.failed ?? 'Failed',
+            tone: LOGIN_STATUS_TONE.failed,
         },
     }), [loginHistoryContent?.STATUS_LABELS]);
 

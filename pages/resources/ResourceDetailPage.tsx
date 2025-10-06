@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import dayjs from 'dayjs';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Resource, Incident, MetricsData, IncidentSeverity } from '../../types';
 import Icon from '../../components/Icon';
 import EChartsReact from '../../components/EChartsReact';
@@ -13,9 +13,7 @@ import { formatTimestamp, formatRelativeTime } from '../../utils/time';
 import { resolveResourceStatusPresentation } from '../../utils/resource';
 import { ROUTES, buildRoute } from '../../constants/routes';
 
-interface ResourceDetailPageProps {
-  resource_id: string;
-}
+interface ResourceDetailPageProps { }
 
 const InfoItem = ({
   label,
@@ -46,7 +44,21 @@ const INCIDENT_SEVERITY_META: Record<IncidentSeverity, { label: string; tone: 'd
   info: { label: '提示', tone: 'info' },
 };
 
-const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resource_id }) => {
+const ResourceDetailPage: React.FC<ResourceDetailPageProps> = () => {
+  const { resource_id } = useParams<{ resource_id: string }>();
+
+  if (!resource_id) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="text-center">
+          <Icon name="alert-circle" className="mx-auto h-12 w-12 text-red-400" />
+          <h2 className="mt-4 text-xl font-semibold text-white">無效的資源 ID</h2>
+          <p className="mt-2 text-slate-400">無法找到指定的資源。</p>
+        </div>
+      </div>
+    );
+  }
+
   const [resource, setResource] = useState<Resource | null>(null);
   const [relatedIncidents, setRelatedIncidents] = useState<Incident[]>([]);
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
@@ -126,16 +138,15 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resource_id }) 
 
   const getMetricOption = useCallback((title: string, data: [string, number][] | undefined, color: string) => ({
     tooltip: {
-      trigger: 'axis',
+      trigger: 'axis' as const,
       valueFormatter: (value: number | string) => `${value}%`,
       borderColor: '#1e293b',
       backgroundColor: '#0f172a',
       textStyle: { color: '#e2e8f0' },
     },
     xAxis: {
-      type: 'time',
+      type: 'time' as const,
       splitLine: { show: false },
-      boundaryGap: false,
       axisLine: { lineStyle: { color: '#334155' } },
       axisTick: { lineStyle: { color: '#475569' } },
       axisLabel: {
@@ -147,7 +158,7 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resource_id }) 
       },
     },
     yAxis: {
-      type: 'value',
+      type: 'value' as const,
       min: 0,
       max: 100,
       axisLine: { show: false },
@@ -156,7 +167,7 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resource_id }) 
     },
     series: [{
       name: title,
-      type: 'line',
+      type: 'line' as const,
       smooth: true,
       showSymbol: false,
       data: data || [],

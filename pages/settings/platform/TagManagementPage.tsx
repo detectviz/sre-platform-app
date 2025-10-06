@@ -495,27 +495,6 @@ const TagManagementPage: React.FC = () => {
                             return { ...prev, scope: selected as TagManagementFilters['scope'] };
                         });
                     }}
-                    showSearch
-                    placeholder="搜尋標籤鍵或說明"
-                    onSearch={(keyword) => {
-                        const normalized = keyword.trim();
-                        setFilters(prev => {
-                            const nextFilters = { ...prev };
-                            if (normalized) {
-                                if (prev.keyword === normalized) {
-                                    return prev;
-                                }
-                                nextFilters.keyword = normalized;
-                                return nextFilters;
-                            }
-                            if (!prev.keyword) {
-                                return prev;
-                            }
-                            delete nextFilters.keyword;
-                            return nextFilters;
-                        });
-                    }}
-                    searchValue={filters.keyword ?? ''}
                 />
                 <QuickFilterBar
                     label="型別"

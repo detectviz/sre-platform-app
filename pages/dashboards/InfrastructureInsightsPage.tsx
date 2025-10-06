@@ -30,7 +30,7 @@ const InfrastructureInsightsPage: React.FC = () => {
     const [riskError, setRiskError] = useState<string | null>(null);
     const [bookmarkedResources, setBookmarkedResources] = useState<Resource[]>([]);
     const [isBookmarkLoading, setIsBookmarkLoading] = useState(true);
-    
+
     const { options } = useOptions();
     const { theme: chartTheme } = useChartTheme();
     const infraInsightsOptions = options?.infra_insights;
@@ -63,7 +63,7 @@ const InfrastructureInsightsPage: React.FC = () => {
     const fetchBookmarkedResources = useCallback(async () => {
         setIsBookmarkLoading(true);
         try {
-            const { data } = await api.get<{items: Resource[]}>('/resources', { params: { bookmarked: true } });
+            const { data } = await api.get<{ items: Resource[] }>('/resources', { params: { bookmarked: true } });
             setBookmarkedResources(data.items);
         } catch (error) {
             console.error("Failed to fetch bookmarked resources", error);
@@ -113,16 +113,16 @@ const InfrastructureInsightsPage: React.FC = () => {
 
     // Chart Options
     const riskBreakdownOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
+        tooltip: { trigger: 'item' as const },
         legend: {
-            orient: 'vertical',
+            orient: 'vertical' as const,
             left: 'left',
             textStyle: { color: chartTheme.text.primary }
         },
         series: [
             {
                 name: '風險等級',
-                type: 'pie',
+                type: 'pie' as const,
                 radius: '50%',
                 data: [
                     { value: riskPrediction?.risk_breakdown?.high || 0, name: '高風險' },
@@ -157,7 +157,7 @@ const InfrastructureInsightsPage: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 glass-card rounded-xl p-6">
                     <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-bold flex items-center"><Icon name="brain-circuit" className="w-6 h-6 mr-2 text-sky-400"/> AI 風險預測</h2>
+                        <h2 className="text-xl font-bold flex items-center"><Icon name="brain-circuit" className="w-6 h-6 mr-2 text-sky-400" /> AI 風險預測</h2>
                     </div>
                     {isRiskLoading ? (
                         <div className="animate-pulse space-y-4">

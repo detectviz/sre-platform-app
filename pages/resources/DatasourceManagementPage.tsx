@@ -441,8 +441,7 @@ const DatasourceManagementPage: React.FC = () => {
                                 showToast('瀏覽器不支援快速複製，請手動選取連線位址。', 'warning');
                               }
                             }}
-                            tone="neutral"
-                            size="sm"
+                            tone="default"
                           />
                         </div>
                       </td>

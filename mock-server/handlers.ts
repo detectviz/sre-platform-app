@@ -74,7 +74,7 @@ const normalizeHandlerError = (error: unknown, fallbackStatus = 500): MockHandle
         return {
             status: fallbackStatus,
             code: resolveCode(fallbackStatus),
-            message: error.message || STATUS_MESSAGE_MAP[fallbackStatus] ?? STATUS_MESSAGE_MAP[500],
+            message: (error.message || STATUS_MESSAGE_MAP[fallbackStatus]) ?? STATUS_MESSAGE_MAP[500],
         };
     }
 

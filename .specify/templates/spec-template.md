@@ -1,116 +1,70 @@
-# Feature Specification: [FEATURE NAME]
+# 功能規格書（Feature Specification）
 
-**Feature Branch**: `[###-feature-name]`  
-**Created**: [DATE]  
-**Status**: Draft  
-**Input**: User description: "$ARGUMENTS"
-
-## Execution Flow (main)
-```
-1. Parse user description from Input
-   → If empty: ERROR "No feature description provided"
-2. Extract key concepts from description
-   → Identify: actors, actions, data, constraints
-3. For each unclear aspect:
-   → Mark with [NEEDS CLARIFICATION: specific question]
-4. Fill User Scenarios & Testing section
-   → If no clear user flow: ERROR "Cannot determine user scenarios"
-5. Generate Functional Requirements
-   → Each requirement must be testable
-   → Mark ambiguous requirements
-6. Identify Key Entities (if data involved)
-7. Run Review Checklist
-   → If any [NEEDS CLARIFICATION]: WARN "Spec has uncertainties"
-   → If implementation details found: ERROR "Remove tech details"
-8. Return: SUCCESS (spec ready for planning)
-```
+**模組名稱 (Module)**: [必填]  
+**類型 (Type)**: [Module | Component | Common]  
+**來源路徑 (Source Path)**: [例如 pages/incidents/AlertRulesPage.tsx]  
+**建立日期 (Created)**: [DATE]  
+**狀態 (Status)**: Draft  
+**依據憲法條款 (Based on)**: `.specify/memory/constitution.md`
 
 ---
 
-## ⚡ Quick Guidelines
-- ✅ Focus on WHAT users need and WHY
-- ❌ Avoid HOW to implement (no tech stack, APIs, code structure)
-- 👥 Written for business stakeholders, not developers
+## 一、主要使用者情境（User Scenarios & Testing）
 
-### Section Requirements
-- **Mandatory sections**: Must be completed for every feature
-- **Optional sections**: Include only when relevant to the feature
-- When a section doesn't apply, remove it entirely (don't leave as "N/A")
+### 主要使用者故事（Primary User Story）
+描述主要任務流程與使用者目標。
 
-### For AI Generation
-When creating this spec from a user prompt:
-1. **Mark all ambiguities**: Use [NEEDS CLARIFICATION: specific question] for any assumption you'd need to make
-2. **Don't guess**: If the prompt doesn't specify something (e.g., "login system" without auth method), mark it
-3. **Think like a tester**: Every vague requirement should fail the "testable and unambiguous" checklist item
-4. **Common underspecified areas**:
-   - User types and permissions
-   - Data retention/deletion policies  
-   - Performance targets and scale
-   - Error handling behaviors
-   - Integration requirements
-   - Security/compliance needs
+### 驗收情境（Acceptance Scenarios）
+1. **Given** [初始條件]，**When** [操作]，**Then** [期望結果]  
+2. ...
+
+### 邊界案例（Edge Cases）
+- 系統在 [邊界條件] 時應如何反應？  
+- 發生 [錯誤情境] 時應如何通知使用者？  
 
 ---
 
-## User Scenarios & Testing *(mandatory)*
+## 二、功能需求（Functional Requirements）
 
-### Primary User Story
-[Describe the main user journey in plain language]
+- **FR-001**：系統必須（MUST）允許使用者 [具體動作]。  
+- **FR-002**：系統應該（SHOULD）支援 [附加行為]。  
+- **FR-003**：系統可以（MAY）提供 [非必要強化功能]。  
+- **FR-004**：[NEEDS CLARIFICATION: 描述不明確的行為]。  
 
-### Acceptance Scenarios
-1. **Given** [initial state], **When** [action], **Then** [expected outcome]
-2. **Given** [initial state], **When** [action], **Then** [expected outcome]
-
-### Edge Cases
-- What happens when [boundary condition]?
-- How does system handle [error scenario]?
-
-## Requirements *(mandatory)*
-
-### Functional Requirements
-- **FR-001**: System MUST [specific capability, e.g., "allow users to create accounts"]
-- **FR-002**: System MUST [specific capability, e.g., "validate email addresses"]  
-- **FR-003**: Users MUST be able to [key interaction, e.g., "reset their password"]
-- **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
-- **FR-005**: System MUST [behavior, e.g., "log all security events"]
-
-*Example of marking unclear requirements:*
-- **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
-- **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
-
-### Key Entities *(include if feature involves data)*
-- **[Entity 1]**: [What it represents, key attributes without implementation]
-- **[Entity 2]**: [What it represents, relationships to other entities]
+所有需求皆應可測試並具體量化。
 
 ---
 
-## Review & Acceptance Checklist
-*GATE: Automated checks run during main() execution*
-
-### Content Quality
-- [ ] No implementation details (languages, frameworks, APIs)
-- [ ] Focused on user value and business needs
-- [ ] Written for non-technical stakeholders
-- [ ] All mandatory sections completed
-
-### Requirement Completeness
-- [ ] No [NEEDS CLARIFICATION] markers remain
-- [ ] Requirements are testable and unambiguous  
-- [ ] Success criteria are measurable
-- [ ] Scope is clearly bounded
-- [ ] Dependencies and assumptions identified
+## 三、關鍵資料實體（Key Entities）
+| 實體名稱 | 描述 | 關聯 |
+|-----------|------|------|
+| [Entity 1] | 描述 | 關聯對象 |
+| [Entity 2] | 描述 | 關聯對象 |
 
 ---
 
-## Execution Status
-*Updated by main() during processing*
+## 四、觀測性與治理檢查（Observability & Governance Checklist）
 
-- [ ] User description parsed
-- [ ] Key concepts extracted
-- [ ] Ambiguities marked
-- [ ] User scenarios defined
-- [ ] Requirements generated
-- [ ] Entities identified
-- [ ] Review checklist passed
+| 項目 | 狀態 | 說明 |
+|------|------|------|
+| 記錄與追蹤 (Logging/Tracing) | ✅ / ⚠️ / ❌ | |
+| 指標與告警 (Metrics & Alerts) | ✅ / ⚠️ / ❌ | |
+| RBAC 權限與審計 | ✅ / ⚠️ / ❌ | |
+| i18n 文案 | ✅ / ⚠️ / ❌ | |
+| Theme Token 使用 | ✅ / ⚠️ / ❌ | |
 
 ---
+
+## 五、審查與驗收清單（Review & Acceptance Checklist）
+
+- [ ] 無技術實作語句。  
+- [ ] 所有必填段落皆存在。  
+- [ ] 所有 FR 可測試且明確。  
+- [ ] 無未標註的模糊需求。  
+- [ ] 符合 `.specify/memory/constitution.md`。  
+
+---
+
+## 六、模糊與待確認事項（Clarifications）
+
+- [NEEDS CLARIFICATION: 具體問題或條件]

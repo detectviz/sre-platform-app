@@ -3,8 +3,8 @@ import React from 'react';
 export type DeepPartial<T> = T extends Array<infer U>
   ? Array<DeepPartial<U>>
   : T extends object
-    ? { [K in keyof T]?: DeepPartial<T[K]> }
-    : T;
+  ? { [K in keyof T]?: DeepPartial<T[K]> }
+  : T;
 
 // ----- Shared Enumerations (aligned with docs/enums-ssot.md) -----
 export type IncidentStatus = 'new' | 'acknowledged' | 'resolved' | 'silenced';
@@ -29,7 +29,7 @@ export type RetryPolicy = 'none' | 'fixed' | 'exponential';
 
 export type NotificationChannelType = 'email' | 'webhook' | 'slack' | 'line' | 'sms';
 export type NotificationStatus = 'pending' | 'sent' | 'failed';
-export type TestResult = 'success' | 'failed' | 'not_tested';
+export type TestResult = 'success' | 'failed' | 'pending' | 'not_tested';
 
 export type UserRole = 'admin' | 'sre' | 'developer' | 'viewer';
 export type UserStatus = 'active' | 'invited' | 'inactive';
@@ -533,6 +533,7 @@ export interface AlertRule {
   tags?: Record<string, string>;
   created_at: string;
   updated_at: string;
+  lastUpdated?: string;
   labels?: string[];
   condition_groups?: ConditionGroup[];
   title_template?: string;
@@ -606,6 +607,7 @@ export interface AlertRuleTemplate {
 export interface SilenceRuleTemplate {
   id: string;
   name: string;
+  description?: string;
   data: Partial<SilenceRule>;
 }
 

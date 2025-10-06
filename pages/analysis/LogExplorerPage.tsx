@@ -122,7 +122,7 @@ const LogExplorerPage: React.FC = () => {
 
     const histogramOption = useMemo(() => ({
         tooltip: {
-            trigger: 'axis',
+            trigger: 'axis' as const,
             formatter: (params: any[]) => {
                 if (!params?.length) {
                     return '';
@@ -140,23 +140,23 @@ const LogExplorerPage: React.FC = () => {
                 return `${header}${rows}`;
             },
         },
-        legend: { data: Object.values(seriesMeta).map(item => item.label), textStyle: { color: chartTheme.text.primary } },
+        legend: { data: Object.values(seriesMeta).map((item: { label: string; color: string }) => item.label), textStyle: { color: chartTheme.text.primary } },
         grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
         xAxis: {
-            type: 'category',
+            type: 'category' as const,
             data: histogramData.timestamps,
             axisLabel: { show: false },
             axisLine: { lineStyle: { color: chartTheme.grid.axis } },
         },
         yAxis: {
-            type: 'value',
+            type: 'value' as const,
             axisLine: { lineStyle: { color: chartTheme.grid.axis } },
             splitLine: { lineStyle: { color: chartTheme.grid.split_line } },
         },
         series: [
-            { name: seriesMeta.error.label, type: 'bar', stack: 'total', data: histogramData.error, color: seriesMeta.error.color },
-            { name: seriesMeta.warning.label, type: 'bar', stack: 'total', data: histogramData.warning, color: seriesMeta.warning.color },
-            { name: seriesMeta.info.label, type: 'bar', stack: 'total', data: histogramData.info, color: seriesMeta.info.color }
+            { name: seriesMeta.error.label, type: 'bar' as const, stack: 'total', data: histogramData.error, color: seriesMeta.error.color },
+            { name: seriesMeta.warning.label, type: 'bar' as const, stack: 'total', data: histogramData.warning, color: seriesMeta.warning.color },
+            { name: seriesMeta.info.label, type: 'bar' as const, stack: 'total', data: histogramData.info, color: seriesMeta.info.color }
         ]
     }), [chartTheme, histogramData, seriesMeta]);
 
@@ -245,7 +245,7 @@ const LogExplorerPage: React.FC = () => {
                 <div className="flex items-center justify-between px-2 py-1">
                     <p className="text-xs text-slate-400">圖表顏色代表不同的日誌等級與事件數。</p>
                     <div className="flex items-center gap-3 text-xs text-slate-300">
-                        {Object.values(seriesMeta).map(meta => (
+                        {Object.values(seriesMeta).map((meta: { label: string; color: string }) => (
                             <div key={meta.label} className="flex items-center gap-2">
                                 <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: meta.color }} />
                                 <span>{meta.label}</span>

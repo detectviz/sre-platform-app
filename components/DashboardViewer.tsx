@@ -6,7 +6,7 @@ import { useContent } from '../contexts/ContentContext';
 import Icon from './Icon';
 
 interface DashboardViewerProps {
-  dashboard: Dashboard;
+    dashboard: Dashboard;
 }
 
 const DashboardViewer: React.FC<DashboardViewerProps> = ({ dashboard }) => {
@@ -23,7 +23,7 @@ const DashboardViewer: React.FC<DashboardViewerProps> = ({ dashboard }) => {
     const [tvMode, setTvMode] = useState('off');
     const [refresh, setRefresh] = useState('');
     const [timeRange, setTimeRange] = useState('from=now-6h&to=now');
-    
+
     useEffect(() => {
         if (grafanaOptions) {
             if (grafanaOptions.refresh_options.length > 0) {
@@ -62,7 +62,7 @@ const DashboardViewer: React.FC<DashboardViewerProps> = ({ dashboard }) => {
 
         const timeParams = new URLSearchParams(timeRange);
         timeParams.forEach((value, key) => params.set(key, value));
-        
+
         url.search = params.toString();
         url.pathname = url.pathname.replace('/d-solo/', '/d/');
 

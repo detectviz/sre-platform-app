@@ -379,7 +379,7 @@ const BacktestingPage: React.FC = () => {
                     },
                 ];
             })
-            .filter((value): value is [Record<string, unknown>, Record<string, unknown>] => Boolean(value));
+            .filter((value): value is [any, any] => Boolean(value));
 
         const legendItems = ['CPU 使用率過高', '告警閾值', '模擬告警觸發點'];
         if (markAreaData.length > 0) {
@@ -427,8 +427,8 @@ const BacktestingPage: React.FC = () => {
         return {
             backgroundColor: '#e5e7eb',
             tooltip: {
-                trigger: 'axis',
-                axisPointer: { type: 'line' },
+                trigger: 'axis' as const,
+                axisPointer: { type: 'line' as const },
                 formatter: tooltipFormatter,
                 extraCssText: 'box-shadow:0 10px 25px rgba(15,23,42,0.12);border-radius:8px;padding:12px 14px;background:#fff;',
             },
@@ -449,15 +449,15 @@ const BacktestingPage: React.FC = () => {
                 containLabel: false,
             },
             xAxis: {
-                type: 'time',
-                boundaryGap: false,
+                type: 'time' as const,
+                boundaryGap: ['0%', '0%'] as [string, string],
                 axisLabel: {
                     color: '#6b7280',
                     rotate: 35,
                     fontSize: 11,
                     formatter: (value: number | string) => {
                         const parsed = dayjs(value);
-                        return parsed.isValid() ? parsed.format('MM/DD HH:mm') : value;
+                        return parsed.isValid() ? parsed.format('MM/DD HH:mm') : String(value);
                     },
                 },
                 axisLine: { lineStyle: { color: '#d1d5db' } },
@@ -465,24 +465,24 @@ const BacktestingPage: React.FC = () => {
                 splitLine: { show: false },
             },
             yAxis: {
-                type: 'value',
+                type: 'value' as const,
                 name: '數值 (%)',
                 nameTextStyle: { color: '#374151' },
                 axisLabel: { color: '#6b7280' },
                 axisLine: { lineStyle: { color: '#d1d5db' } },
-                splitLine: { lineStyle: { color: '#e5e7eb', type: 'solid' } },
+                splitLine: { lineStyle: { color: '#e5e7eb', type: 'solid' as const } },
             },
             series: [
                 {
                     name: 'CPU 使用率過高',
-                    type: 'line',
+                    type: 'line' as const,
                     data: metricSeries,
                     smooth: true,
                     showSymbol: false,
                     lineStyle: { width: 2, color: '#3b82f6' },
                     areaStyle: {
                         color: {
-                            type: 'linear',
+                            type: 'linear' as const,
                             x: 0, y: 0, x2: 0, y2: 1,
                             colorStops: [
                                 { offset: 0, color: 'rgba(59, 130, 246, 0.2)' },
@@ -499,7 +499,7 @@ const BacktestingPage: React.FC = () => {
                 },
                 {
                     name: '告警閾值',
-                    type: 'line',
+                    type: 'line' as const,
                     data: thresholdSeries,
                     showSymbol: false,
                     itemStyle: {
@@ -513,7 +513,7 @@ const BacktestingPage: React.FC = () => {
                 },
                 {
                     name: '模擬告警觸發點',
-                    type: 'scatter',
+                    type: 'scatter' as const,
                     data: triggerPoints,
                     symbol: 'triangle',
                     symbolSize: 16,

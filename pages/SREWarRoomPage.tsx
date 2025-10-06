@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import EChartsReact from '../components/EChartsReact';
@@ -192,7 +190,7 @@ const SREWarRoomPage: React.FC = () => {
     };
 
     const serviceHealthOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
+        tooltip: { trigger: 'item' as const },
         grid: {
             left: 80,
             right: 20,
@@ -200,16 +198,16 @@ const SREWarRoomPage: React.FC = () => {
             bottom: 80, // 為視覺地圖留出足夠空間
             containLabel: true,
         },
-        xAxis: { type: 'category', data: serviceHealthData?.x_axis_labels || [], axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
-        yAxis: { type: 'category', data: serviceHealthData?.y_axis_labels || [], axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
+        xAxis: { type: 'category' as const, data: serviceHealthData?.x_axis_labels || [], axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
+        yAxis: { type: 'category' as const, data: serviceHealthData?.y_axis_labels || [], axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
         visualMap: {
-            min: 0, max: 100, calculable: true, orient: 'horizontal', left: 'center', bottom: '5%',
+            min: 0, max: 100, calculable: true, orient: 'horizontal' as const, left: 'center', bottom: '5%',
             inRange: { color: [chartTheme.heatmap.critical, chartTheme.heatmap.warning, chartTheme.heatmap.healthy] },
             textStyle: { color: chartTheme.text.primary }
         },
         series: [{
             name: '服務健康度',
-            type: 'heatmap',
+            type: 'heatmap' as const,
             data: serviceHealthData?.heatmap_data || [],
             label: { show: true },
             emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0, 0, 0, 0.5)' } }
@@ -219,11 +217,11 @@ const SREWarRoomPage: React.FC = () => {
     const resourceGroupOption = useMemo(() => {
         if (!resourceGroupData) {
             return {
-                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                tooltip: { trigger: 'axis' as const, axisPointer: { type: 'shadow' as const } },
                 legend: { data: [], textStyle: { color: chartTheme.text.primary } },
                 grid: { left: '3%', right: '4%', bottom: '10%', top: '10%', containLabel: true },
-                xAxis: { type: 'value', axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
-                yAxis: { type: 'category', data: [], axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
+                xAxis: { type: 'value' as const, axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
+                yAxis: { type: 'category' as const, data: [], axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
                 series: [],
             };
         }
@@ -233,18 +231,18 @@ const SREWarRoomPage: React.FC = () => {
             critical: chartTheme.heatmap.critical,
         };
         return {
-            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            tooltip: { trigger: 'axis' as const, axisPointer: { type: 'shadow' as const } },
             legend: { data: resourceGroupData.series.map(s => s.label), textStyle: { color: chartTheme.text.primary } },
             grid: { left: '3%', right: '4%', bottom: '10%', top: '10%', containLabel: true },
-            xAxis: { type: 'value', axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
-            yAxis: { type: 'category', data: resourceGroupData.group_names || [], axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
+            xAxis: { type: 'value' as const, axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
+            yAxis: { type: 'category' as const, data: resourceGroupData.group_names || [], axisLine: { lineStyle: { color: chartTheme.grid.axis } } },
             series: resourceGroupData.series.map(s => ({
                 name: s.label,
-                type: 'bar',
+                type: 'bar' as const,
                 stack: 'total',
                 data: s.data,
                 label: { show: true },
-                emphasis: { focus: 'series' },
+                emphasis: { focus: 'series' as const },
                 color: colorMap[s.key],
             })),
         };

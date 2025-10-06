@@ -352,9 +352,9 @@ const NotificationChannelPage: React.FC = () => {
                                     ))}
                                     <td className="px-6 py-4 text-center">
                                         <div className="flex items-center justify-center gap-2">
-                                            <IconButton icon="refresh-cw" label="測試管道" tooltip="發送測試通知" onClick={() => handleTestChannel(channel.id)} size="sm" />
-                                            <IconButton icon="edit-3" label="編輯管道" tooltip="編輯管道" onClick={() => handleEditChannel(channel)} size="sm" />
-                                            <IconButton icon="trash-2" label="刪除管道" tooltip="刪除管道" tone="danger" onClick={() => handleDeleteClick(channel)} size="sm" />
+                                            <IconButton icon="refresh-cw" label="測試管道" tooltip="發送測試通知" onClick={() => handleTestChannel(channel.id)} />
+                                            <IconButton icon="edit-3" label="編輯管道" tooltip="編輯管道" onClick={() => handleEditChannel(channel)} />
+                                            <IconButton icon="trash-2" label="刪除管道" tooltip="刪除管道" tone="danger" onClick={() => handleDeleteClick(channel)} />
                                         </div>
                                     </td>
                                 </tr>

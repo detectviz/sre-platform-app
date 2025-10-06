@@ -270,7 +270,7 @@ const TeamManagementPage: React.FC = () => {
                                         <IconButton icon="eye" label="檢視團隊" tooltip="檢視團隊詳情" onClick={() => setViewingTeam(team)} />
                                         <IconButton icon="user-cog" label="變更擁有者" tooltip="變更團隊擁有者" onClick={() => openOwnerModal(team)} />
                                         <IconButton icon="edit-3" label="編輯團隊" tooltip="編輯團隊" onClick={() => handleEditTeam(team)} />
-                                        <IconButton icon="trash-2" label="刪除團隊" tone="danger" tooltip="刪除團隊" onClick={(e) => { e.stopPropagation(); handleDeleteClick(team); }} />
+                                        <IconButton icon="trash-2" label="刪除團隊" tone="danger" tooltip="刪除團隊" onClick={() => handleDeleteClick(team)} />
                                     </td>
                                 </tr>
                             ))}

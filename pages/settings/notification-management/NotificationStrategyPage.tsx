@@ -388,9 +388,9 @@ const NotificationStrategyPage: React.FC = () => {
                                     ))}
                                     <td className="px-6 py-4 text-center">
                                         <div className="flex items-center justify-center gap-2">
-                                            <IconButton icon="edit-3" label="編輯策略" tooltip="編輯策略" onClick={() => handleEditStrategy(strategy)} size="sm" />
-                                            <IconButton icon="copy" label="複製策略" tooltip="複製策略" onClick={() => handleDuplicateStrategy(strategy)} size="sm" />
-                                            <IconButton icon="trash-2" label="刪除策略" tooltip="刪除策略" tone="danger" onClick={() => handleDeleteClick(strategy)} size="sm" />
+                                            <IconButton icon="edit-3" label="編輯策略" tooltip="編輯策略" onClick={() => handleEditStrategy(strategy)} />
+                                            <IconButton icon="copy" label="複製策略" tooltip="複製策略" onClick={() => handleDuplicateStrategy(strategy)} />
+                                            <IconButton icon="trash-2" label="刪除策略" tooltip="刪除策略" tone="danger" onClick={() => handleDeleteClick(strategy)} />
                                         </div>
                                     </td>
                                 </tr>
