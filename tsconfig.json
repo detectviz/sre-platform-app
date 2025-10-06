@@ -18,13 +18,21 @@
     "moduleDetection": "force",
     "allowJs": true,
     "jsx": "react-jsx",
+    "baseUrl": "./",
     "paths": {
       "@/*": [
-        "./*"
+        "./src/*"
+      ],
+      "@dev/*": [
+        "./dev/*"
       ]
     },
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  "include": [
+    "src",
+    "dev"
+  ]
 }

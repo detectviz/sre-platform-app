@@ -1,0 +1,15 @@
+export {
+  NotificationRecord,
+  NotificationChannel,
+  NotificationStrategy,
+  NotificationHistoryRecord,
+  NotificationChannelTestResponse,
+  NotificationItem,
+  NotificationStrategyFilters,
+  NotificationChannelFilters,
+  NotificationHistoryFilters,
+  NotificationHistoryOptions,
+  NotificationOptions,
+  NotificationChannelOptions,
+  NotificationStrategyOptions,
+} from '../base';
