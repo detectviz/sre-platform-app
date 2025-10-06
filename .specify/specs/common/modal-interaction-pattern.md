@@ -456,9 +456,9 @@ const cleanExpiredDrafts = () => {
 ## 十、待確認事項
 
 - ✅ ~~[NEEDS CLARIFICATION: Modal 內表單的自動儲存草稿機制]~~ → **已解決: 採用 LocalStorage + 定時儲存,2 秒 debounce,7 天自動清理**
-- [NEEDS CLARIFICATION: Drawer 內容的預載入策略與快取]
+- ✅ ~~[NEEDS CLARIFICATION: Drawer 內容的預載入策略與快取]~~ → **已解決: 參見 `_collaboration-spec.md` § 1**
 - ✅ ~~巢狀 Modal 的最大層級限制與 UX 指引~~ → **已確認：最大 2 層，第 3 層改用 Drawer**
-- [NEEDS CLARIFICATION: Modal 關閉動畫完成前是否允許重新開啟]
+- ✅ ~~[NEEDS CLARIFICATION: Modal 關閉動畫完成前是否允許重新開啟]~~ → **已解決: 參見 `_collaboration-spec.md` § 2**
 
 ---
 

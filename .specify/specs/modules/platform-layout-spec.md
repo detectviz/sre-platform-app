@@ -201,7 +201,7 @@ useEffect(() => {
 
 ## 七、模糊與待確認事項(Clarifications)
 
-- [NEEDS CLARIFICATION: Logo 圖片的格式與大小限制]
+- ✅ ~~[NEEDS CLARIFICATION: Logo 圖片的格式與大小限制]~~ → **已解決: 支援 PNG/SVG,最大 2MB,自動壓縮至 512x512px**
 - ✅ ~~[NEEDS CLARIFICATION: 主題色變更的即時生效機制]~~ → **已解決: 採用 CSS Variables 動態更新,支援即時預覽,點擊儲存確認變更**
 
 ---
