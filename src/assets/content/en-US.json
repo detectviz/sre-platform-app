@@ -1,0 +1,199 @@
+{
+  "GLOBAL": {
+    "SEARCH_PLACEHOLDER": "Search...",
+    "SAVE": "Save",
+    "CANCEL": "Cancel",
+    "CONFIRM": "Confirm",
+    "DELETE": "Delete",
+    "EDIT": "Edit",
+    "IMPORT": "Import",
+    "EXPORT": "Export",
+    "COLUMN_SETTINGS": "Column settings",
+    "OPERATIONS": "Operations",
+    "CONFIRM_DELETE_TITLE": "Delete confirmation",
+    "CONFIRM_DELETE_MESSAGE": "This action cannot be undone.",
+    "NO_DATA_TO_EXPORT": "No data available to export.",
+    "ITEMS_SELECTED": "{count} items selected",
+    "CLEAR_SELECTION": "Clear selection",
+    "ADD_NEW": "Add new",
+    "NA": "—",
+    "MESSAGES": {
+      "LOAD_UI_CONTENT_ERROR": "Failed to load UI content.",
+      "LICENSE_INVALID": "Your license is invalid or has expired. Some features may be limited.",
+      "GENERIC_ERROR": "Something went wrong. Please try again.",
+      "GENERIC_FETCH_ERROR": "Unable to load data right now.",
+      "GENERIC_SAVE_ERROR": "Unable to save your changes.",
+      "GENERIC_UPDATE_ERROR": "Unable to update your changes.",
+      "GENERIC_DELETE_ERROR": "Unable to delete the item.",
+      "GENERIC_BATCH_ACTION_ERROR": "Unable to complete the selected action."
+    },
+    "ACTION_LABELS": {
+      "REFRESH": "Refresh"
+    }
+  },
+  "DASHBOARD_LIST": {
+    "SEARCH_PLACEHOLDER": "Search dashboards...",
+    "ADD_DASHBOARD": "Add dashboard",
+    "DELETE_MODAL_TITLE": "Delete dashboard",
+    "DELETE_MODAL_MESSAGE": "Are you sure you want to delete the \"{name}\" dashboard?",
+    "HOME_BADGE": "Home",
+    "DEFAULT_DASHBOARD_TOOLTIP": "Set as home dashboard",
+    "DEFAULT_DASHBOARD_ACTIVE_TOOLTIP": "Home dashboard",
+    "BUILT_IN_TOOLTIP": "Built-in dashboard",
+    "GRAFANA_TOOLTIP": "Grafana dashboard",
+    "FETCH_ERROR": "Unable to load dashboards.",
+    "SAVE_ERROR": "Unable to save the dashboard.",
+    "DELETE_ERROR": "Unable to delete the dashboard.",
+    "UPDATE_ERROR": "Unable to update the dashboard.",
+    "BATCH_DELETE_ERROR": "Unable to delete the selected dashboards.",
+    "COLUMN_CONFIG_SAVE_SUCCESS": "Column preferences saved.",
+    "COLUMN_CONFIG_SAVE_ERROR": "Unable to save column preferences.",
+    "COLUMN_CONFIG_MISSING_ERROR": "Unable to save column preferences because the page configuration is missing.",
+    "ACTIONS": {
+      "SET_AS_HOME": "Set as home"
+    },
+    "EXPORT": {
+      "FILENAME_PREFIX": "dashboards",
+      "HEADERS": [
+        "id",
+        "name",
+        "type",
+        "category",
+        "description",
+        "owner",
+        "updated_at",
+        "path"
+      ]
+    },
+    "IMPORT": {
+      "ITEM_NAME": "dashboard",
+      "TEMPLATE_FILENAME": "dashboards-template.csv",
+      "TEMPLATE_HEADERS": [
+        "id",
+        "name",
+        "type",
+        "category",
+        "description",
+        "owner"
+      ]
+    },
+    "TYPE_METADATA": {
+      "built-in": {
+        "LABEL": "Built-in dashboard",
+        "TOOLTIP": "First-party dashboard maintained in the platform."
+      },
+      "grafana": {
+        "LABEL": "Grafana dashboard",
+        "TOOLTIP": "Linked from Grafana."
+      },
+      "external": {
+        "LABEL": "External source",
+        "TOOLTIP": "Provided by a third-party system."
+      }
+    }
+  },
+  "IMPORT_MODAL": {
+    "TITLE_TEMPLATE": "Import {itemName} from CSV",
+    "INSTRUCTIONS_TITLE": "How it works",
+    "DOWNLOAD_LINK": "Download the CSV template",
+    "DRAG_TEXT": "Drag your CSV file here",
+    "OR": "or",
+    "CLICK_TO_UPLOAD": "Click to upload",
+    "INVALID_FILE_ERROR": "Please upload a valid CSV file.",
+    "IMPORT_SUCCESS_TEMPLATE": "{itemName} imported successfully.",
+    "IMPORT_ERROR_TEMPLATE": "Could not import {itemName}. Check the file and try again.",
+    "START_IMPORT": "Start import",
+    "IMPORTING": "Importing...",
+    "SUMMARY_TEMPLATE": "{itemName} import completed: {successCount} succeeded, {failCount} failed.",
+    "INSTRUCTIONS_STEPS": [
+      "Download the CSV template",
+      "Fill in your data following the template format.",
+      "Drag the completed CSV here or click to upload."
+    ],
+    "FILE_SIZE_TEMPLATE": "{size} KB"
+  },
+  "PROFILE_SECURITY_SETTINGS": {
+    "CHANGE_PASSWORD": {
+      "TITLE": "Change password",
+      "DESCRIPTION": "Use at least 12 characters mixing upper and lower case letters, numbers, and symbols to protect your account.",
+      "CURRENT_PASSWORD_LABEL": "Current password",
+      "NEW_PASSWORD_LABEL": "New password",
+      "CONFIRM_PASSWORD_LABEL": "Confirm new password",
+      "MISMATCH_HELPER": "The new password and confirmation do not match.",
+      "SUBMIT": "Update password",
+      "SUBMIT_LOADING": "Updating",
+      "VALIDATION": {
+        "FIELDS_REQUIRED": "All fields are required.",
+        "MISMATCH": "New password and confirmation must match.",
+        "INSUFFICIENT_STRENGTH": "Use at least 12 characters with letters, numbers, and symbols."
+      },
+      "TOAST": {
+        "SUCCESS": "Password updated successfully.",
+        "ERROR": "Failed to update the password. Please try again later."
+      },
+      "PASSWORD_STRENGTH": {
+        "LABEL": "Strength indicator",
+        "GOOD": "Strong",
+        "NEEDS_IMPROVEMENT": "Needs improvement",
+        "WEAK": "Weak",
+        "RULES": [
+          "At least 12 characters",
+          "Includes upper and lower case letters",
+          "Includes at least one number and symbol"
+        ]
+      }
+    },
+    "SESSION_MANAGEMENT": {
+      "FORCE_LOGOUT": "Sign out other devices",
+      "FORCE_LOGOUT_LOADING": "Processing",
+      "TOAST": {
+        "SUCCESS": "Other sessions have been signed out.",
+        "ERROR": "Failed to sign out other sessions. Please try again later."
+      }
+    },
+    "LOGIN_HISTORY": {
+      "TITLE": "Recent sign-in activity",
+      "DESCRIPTION": "Review sign-in IPs, devices, and results to spot suspicious behavior.",
+      "TABLE": {
+        "TIME": "Time",
+        "IP": "IP address",
+        "DEVICE": "Device",
+        "STATUS": "Status",
+        "EMPTY": "No sign-in records yet."
+      },
+      "STATUS_LABELS": {
+        "success": "Successful",
+        "failed": "Failed"
+      },
+      "ERROR": "Unable to load sign-in history.",
+      "RELATIVE_TEMPLATE": " ({relative})",
+      "REFRESH": "Refresh"
+    }
+  },
+  "DASHBOARD_VIEW_PAGE": {
+    "BACK_TO_LIST": "Back to dashboards",
+    "REFRESH_LABEL": "Reload data",
+    "OPEN_IN_GRAFANA": "Open in Grafana",
+    "METADATA_TITLE": "Dashboard details",
+    "OWNER_LABEL": "Owner",
+    "CATEGORY_LABEL": "Category",
+    "TYPE_LABEL": "Type",
+    "UPDATED_AT_LABEL": "Last updated",
+    "RESOURCE_COUNT_LABEL": "Linked resources",
+    "RESOURCE_COUNT_BADGE": "{count} resources",
+    "DESCRIPTION_LABEL": "Description",
+    "EMPTY_DESCRIPTION": "No description provided yet.",
+    "EMPTY_VALUE": "—",
+    "ERROR_TITLE": "Unable to load dashboard",
+    "ERROR_NO_ID": "No dashboard identifier provided. Please return to the list and select one again.",
+    "ERROR_NOT_FOUND": "We couldn't find this dashboard. It may have been removed or you may lack access.",
+    "ERROR_LOAD": "We couldn't load the dashboard data. Please try again later.",
+    "RETRY_LABEL": "Retry",
+    "RETURN_TO_LIST": "Return to list",
+    "LAST_UPDATED_PREFIX": "Last updated",
+    "TYPE_BUILT_IN": "Built-in dashboard",
+    "TYPE_GRAFANA": "Grafana dashboard",
+    "TYPE_CUSTOM": "Custom dashboard",
+    "RESOURCE_BADGE_TOOLTIP": "This dashboard links to {count} resources"
+  }
+}

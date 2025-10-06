@@ -1,5 +1,0 @@
-@import 'antd/dist/reset.css';
-
-/* 全域樣式導入 */
-@import './styles/design-system.css';
-@import './components/Select.css';
