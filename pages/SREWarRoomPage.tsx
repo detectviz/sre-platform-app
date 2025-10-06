@@ -12,6 +12,7 @@ import { useContent } from '../contexts/ContentContext';
 import { useChartTheme } from '../contexts/ChartThemeContext';
 import StatusTag from '../components/StatusTag';
 import { formatTimestamp } from '../utils/time';
+import { ROUTES } from '../constants/routes';
 
 interface BriefingData {
     stability_summary: string;
@@ -178,7 +179,7 @@ const SREWarRoomPage: React.FC = () => {
         if (params.componentType === 'series' && serviceHealthData?.y_axis_labels) {
             const serviceName = serviceHealthData.y_axis_labels[params.data[1]];
             if (serviceName) {
-                navigate('/resources', { state: { initialFilters: { type: serviceName } } });
+                navigate(ROUTES.RESOURCES, { state: { initialFilters: { type: serviceName } } });
             }
         }
     };
@@ -186,7 +187,7 @@ const SREWarRoomPage: React.FC = () => {
     const handleResourceGroupClick = (params: any) => {
         if (params.componentType === 'series' && params.name) {
             const groupName = params.name;
-            navigate('/resources/groups', { state: { initialSearchTerm: groupName } });
+            navigate(ROUTES.RESOURCES_GROUPS, { state: { initialSearchTerm: groupName } });
         }
     };
 

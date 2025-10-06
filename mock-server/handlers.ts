@@ -1,6 +1,89 @@
 import { DB, uuidv4 } from './db';
-import type { AlertRule, BacktestingResultsResponse, BacktestingRuleResult, ConnectionStatus, DiscoveryJob, Incident, NotificationStrategy, Resource, ResourceLink, ConfigVersion, TabConfigMap, TagDefinition, NotificationChannelType, RetryPolicy, DatasourceConnectionTestLog, TagBulkImportJob, UserPreferenceExportJob, KpiDataEntry, KpiCardColor } from '../types';
+import type {
+    AlertRule,
+    BacktestingResultsResponse,
+    BacktestingRuleResult,
+    ConnectionStatus,
+    DiscoveryJob,
+    Incident,
+    NotificationStrategy,
+    Resource,
+    ResourceLink,
+    ConfigVersion,
+    TabConfigMap,
+    TagDefinition,
+    NotificationChannelType,
+    RetryPolicy,
+    DatasourceConnectionTestLog,
+    TagBulkImportJob,
+    UserPreferenceExportJob,
+    KpiDataEntry,
+    KpiCardColor,
+} from '../types';
 import { auditLogMiddleware } from './auditLog';
+
+interface MockHandlerError {
+    status: number;
+    code: string;
+    message: string;
+    details?: unknown;
+}
+
+const STATUS_CODE_MAP: Record<number, string> = {
+    400: 'MOCK_BAD_REQUEST',
+    401: 'MOCK_UNAUTHORIZED',
+    403: 'MOCK_FORBIDDEN',
+    404: 'MOCK_NOT_FOUND',
+    409: 'MOCK_CONFLICT',
+    422: 'MOCK_UNPROCESSABLE',
+    429: 'MOCK_RATE_LIMITED',
+    500: 'MOCK_INTERNAL_ERROR',
+};
+
+const STATUS_MESSAGE_MAP: Record<number, string> = {
+    400: 'Bad request',
+    401: 'Unauthorized',
+    403: 'Forbidden',
+    404: 'Resource not found',
+    409: 'Conflict detected',
+    422: 'Unprocessable entity',
+    429: 'Too many requests',
+    500: 'Internal Server Error',
+};
+
+const resolveCode = (status: number): string => STATUS_CODE_MAP[status] ?? (status >= 500 ? 'MOCK_INTERNAL_ERROR' : 'MOCK_BAD_REQUEST');
+
+const normalizeHandlerError = (error: unknown, fallbackStatus = 500): MockHandlerError => {
+    if (error && typeof error === 'object') {
+        const status = typeof (error as { status?: number }).status === 'number' ? (error as { status?: number }).status : fallbackStatus;
+        const codeValue = (error as { code?: string }).code;
+        const messageValue = (error as { message?: string }).message;
+        const detailsValue = (error as { details?: unknown; data?: unknown }).details ?? (error as { details?: unknown; data?: unknown }).data;
+
+        const fallbackMessage = STATUS_MESSAGE_MAP[status] ?? STATUS_MESSAGE_MAP[status >= 500 ? 500 : 400];
+
+        return {
+            status,
+            code: typeof codeValue === 'string' && codeValue.trim() ? codeValue : resolveCode(status),
+            message: typeof messageValue === 'string' && messageValue.trim() ? messageValue : fallbackMessage,
+            ...(detailsValue !== undefined ? { details: detailsValue } : {}),
+        };
+    }
+
+    if (error instanceof Error) {
+        return {
+            status: fallbackStatus,
+            code: resolveCode(fallbackStatus),
+            message: error.message || STATUS_MESSAGE_MAP[fallbackStatus] ?? STATUS_MESSAGE_MAP[500],
+        };
+    }
+
+    return {
+        status: fallbackStatus,
+        code: resolveCode(fallbackStatus),
+        message: STATUS_MESSAGE_MAP[fallbackStatus] ?? STATUS_MESSAGE_MAP[500],
+    };
+};
 
 type HttpMethod = 'get' | 'post' | 'put' | 'patch' | 'delete';
 
@@ -4096,11 +4179,11 @@ const handleRequest = async (method: HttpMethod, url: string, params: any, body:
                 throw { status: 404, message: 'Backtesting task not found' };
             }
         }
-    } catch (e: any) {
-        throw e;
+    } catch (error: unknown) {
+        throw normalizeHandlerError(error);
     }
 
-    throw { status: 404, message: `[Mock] Endpoint Not Found: ${method} ${url}` };
+    throw normalizeHandlerError({ status: 404, message: `[Mock] Endpoint Not Found: ${method} ${url}` }, 404);
 };
 
 export { handleRequest };

@@ -207,12 +207,14 @@ const server = createServer(async (req, res) => {
       sendJson(res, 200, result ?? {});
     } catch (error) {
       const status = typeof error?.status === 'number' ? error.status : 500;
-      const message = error?.message || 'Internal Server Error';
-      const payload = { message };
-      if (error?.data) {
-        payload.data = error.data;
+      const code = typeof error?.code === 'string' && error.code.trim() ? error.code : `HTTP_${status}`;
+      const message = typeof error?.message === 'string' && error.message.trim() ? error.message : 'Internal Server Error';
+      const details = error?.details ?? error?.data;
+      const payload = { code, message };
+      if (details !== undefined) {
+        payload.details = details;
       }
-      console.error(`\u26A0\ufe0f  [Mock API] ${method} ${pathname}`, error);
+      console.error(`\u26A0\ufe0f  [Mock API] ${method} ${pathname}`, payload);
       sendJson(res, status, payload);
     }
   });

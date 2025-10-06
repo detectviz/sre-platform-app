@@ -9,6 +9,7 @@ import { ResourceOverviewData } from '../../types';
 import api from '../../services/api';
 import { useChartTheme } from '../../contexts/ChartThemeContext';
 import { formatRelativeTime, formatTimestamp } from '../../utils/time';
+import { ROUTES } from '../../constants/routes';
 
 const ResourceOverviewPage: React.FC = () => {
     const [overviewData, setOverviewData] = useState<ResourceOverviewData | null>(null);
@@ -186,7 +187,7 @@ const ResourceOverviewPage: React.FC = () => {
                             isLoading={isRefreshing}
                         />
                         <Link
-                            to="/resources/list"
+                            to={ROUTES.RESOURCES_LIST}
                             className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-700/70 px-3 text-sm font-medium text-slate-200 transition-colors hover:border-sky-500/60 hover:text-sky-200"
                         >
                             <Icon name="list" className="h-4 w-4" />
@@ -291,7 +292,7 @@ const ResourceOverviewPage: React.FC = () => {
                                         <Icon name="chevron-right" className="h-5 w-5 text-slate-500" />
                                     </div>
                                     <Link
-                                        to="/resources/groups"
+                                        to={ROUTES.RESOURCES_GROUPS}
                                         className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-sky-300 transition-colors hover:text-sky-200"
                                     >
                                         檢視群組詳情

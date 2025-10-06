@@ -110,9 +110,7 @@ const createTagDefinition = (entry) => {
         usage_count: 0,
     };
 };
-export const TAG_REGISTRY = registry;
 export const createTagDefinitions = () => registry.map(entry => createTagDefinition(entry));
-export const getTagRegistryEntry = (key) => registry.find(entry => entry.key === key);
 export const getEnumValuesForTag = (key) => {
     // 為系統標籤提供預設值
     const defaultValues = {
@@ -127,6 +125,4 @@ export const getEnumValuesForTag = (key) => {
     };
     return defaultValues[key] ?? [];
 };
-// 按類別獲取標籤
-export const getCoreTagDefinitions = () => CORE_TAGS.map(createTagDefinition);
-export const getExtendedTagDefinitions = () => EXTENDED_TAGS.map(createTagDefinition);
+

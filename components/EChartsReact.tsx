@@ -1,32 +1,45 @@
+import { useEffect, useRef } from 'react';
+import type { EChartsType } from 'echarts';
+import type { AnyEChartsOption } from '../types/echarts';
 
-import React, { useRef, useEffect } from 'react';
+type EChartsEventHandler = (params: unknown) => void;
+
+type EventMap = Record<string, EChartsEventHandler>;
 
 declare global {
   interface Window {
-    echarts: any;
+    echarts?: {
+      init: (dom: HTMLDivElement, theme?: string) => EChartsType;
+    };
   }
 }
 
-interface EChartsReactProps {
-  option: any;
+interface EChartsReactProps<Option extends AnyEChartsOption = AnyEChartsOption, Events extends EventMap = EventMap> {
+  option: Option;
   style?: React.CSSProperties;
   className?: string;
-  onEvents?: Record<string, (params: any) => void>;
+  onEvents?: Partial<Events>;
 }
 
-const EChartsReact: React.FC<EChartsReactProps> = ({ option, style, className, onEvents }) => {
+const EChartsReact = <Option extends AnyEChartsOption, Events extends EventMap>({
+  option,
+  style,
+  className,
+  onEvents
+}: EChartsReactProps<Option, Events>) => {
   const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    let chartInstance: any | null = null;
+    let chartInstance: EChartsType | undefined;
     if (chartRef.current && window.echarts) {
       chartInstance = window.echarts.init(chartRef.current, 'dark');
-      chartInstance.setOption(option, true); // Use `true` to not merge with previous options
+      chartInstance.setOption(option, true);
 
-      // Add event listeners
       if (onEvents) {
         Object.entries(onEvents).forEach(([eventName, handler]) => {
-          chartInstance.on(eventName, handler);
+          if (handler) {
+            chartInstance?.on(eventName, handler as (params: unknown) => void);
+          }
         });
       }
     }

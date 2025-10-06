@@ -18,6 +18,7 @@ import ColumnSettingsModal from '../../components/ColumnSettingsModal';
 import { showToast } from '../../services/toast';
 import { exportToCsv } from '../../services/export';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
+import { ROUTES } from '../../constants/routes';
 import { useUser } from '../../contexts/UserContext';
 import { useOptions } from '../../contexts/OptionsContext';
 import AssignIncidentModal from '../../components/AssignIncidentModal';
@@ -410,7 +411,7 @@ const IncidentListPage: React.FC = () => {
                 </TableContainer>
             </div>
 
-            <Drawer isOpen={!!incident_id} onClose={() => navigate('/incidents')} title={`事故詳情: ${incident_id}`} width="w-3/5">
+            <Drawer isOpen={!!incident_id} onClose={() => navigate(ROUTES.INCIDENTS)} title={`事故詳情: ${incident_id}`} width="w-3/5">
                 {incident_id && <IncidentDetailPage incident_id={incident_id} onUpdate={fetchIncidents} currentUser={currentUser} />}
             </Drawer>
 

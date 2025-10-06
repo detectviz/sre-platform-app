@@ -13,11 +13,13 @@ import ColumnSettingsModal from '../../components/ColumnSettingsModal';
 import { usePageMetadata } from '../../contexts/PageMetadataContext';
 import { showToast } from '../../services/toast';
 import { useOptions } from '../../contexts/OptionsContext';
+import { useContentSection } from '../../contexts/ContentContext';
 import StatusTag from '../../components/StatusTag';
 import IconButton from '../../components/IconButton';
 import { formatRelativeTime } from '../../utils/time';
 import SortableColumnHeaderCell from '../../components/SortableColumnHeaderCell';
 import useTableSorting from '../../hooks/useTableSorting';
+import { formatContentString } from '../../utils/content';
 
 const PAGE_IDENTIFIER = 'automation_playbooks';
 
@@ -43,6 +45,17 @@ const AutomationPlaybooksPage: React.FC = () => {
     const { metadata: pageMetadata } = usePageMetadata();
     const pageKey = pageMetadata?.[PAGE_IDENTIFIER]?.column_config_key;
     const { options } = useOptions();
+    const globalContent = useContentSection('GLOBAL');
+    const pageContent = useContentSection('AUTOMATION_PLAYBOOKS');
+
+    const fetchErrorMessage = pageContent?.FETCH_ERROR ?? '無法獲取自動化腳本。';
+    const missingColumnsError = pageContent?.ERRORS?.MISSING_COLUMNS ?? '欄位定義缺失';
+    const columnConfigMissingMessage = pageContent?.TOASTS?.COLUMN_CONFIG_MISSING ?? '無法儲存欄位設定：頁面設定遺失。';
+    const columnConfigSaveSuccessMessage = pageContent?.TOASTS?.COLUMN_SAVE_SUCCESS ?? '欄位設定已儲存。';
+    const columnConfigSaveErrorMessage = pageContent?.TOASTS?.COLUMN_SAVE_ERROR ?? '無法儲存欄位設定。';
+    const playbookSaveErrorMessage = pageContent?.TOASTS?.PLAYBOOK_SAVE_ERROR ?? '儲存自動化手冊失敗，請稍後再試。';
+    const deleteErrorMessage = pageContent?.TOASTS?.DELETE_ERROR ?? '刪除自動化手冊失敗，請稍後再試。';
+    const batchDeleteErrorMessage = pageContent?.TOASTS?.BATCH_DELETE_ERROR ?? '批次刪除自動化手冊失敗，請稍後再試。';
 
     const statusDescriptors = useMemo(() => options?.automation_executions?.statuses ?? [], [options?.automation_executions?.statuses]);
     const statusMeta = useMemo(() => {
@@ -83,7 +96,7 @@ const AutomationPlaybooksPage: React.FC = () => {
                 api.get<TableColumn[]>(`/pages/columns/${pageKey}`)
             ]);
             if (allColumnsRes.data.length === 0) {
-                throw new Error('欄位定義缺失');
+                throw new Error(missingColumnsError);
             }
             setPlaybooks(playbooksRes.data.items);
             setTotal(playbooksRes.data.total);
@@ -93,11 +106,11 @@ const AutomationPlaybooksPage: React.FC = () => {
                 : allColumnsRes.data.map(c => c.key);
             setVisibleColumns(resolvedVisibleColumns);
         } catch (err) {
-            setError('無法獲取自動化腳本。');
+            setError(fetchErrorMessage);
         } finally {
             setIsLoading(false);
         }
-    }, [pageKey, currentPage, pageSize, sortParams]);
+    }, [pageKey, currentPage, pageSize, sortParams, missingColumnsError, fetchErrorMessage]);
 
     useEffect(() => {
         if (pageKey) {
@@ -107,15 +120,15 @@ const AutomationPlaybooksPage: React.FC = () => {
 
     const handleSaveColumnConfig = async (newColumnKeys: string[]) => {
         if (!pageKey) {
-            showToast('無法儲存欄位設定：頁面設定遺失。', 'error');
+            showToast(columnConfigMissingMessage, 'error');
             return;
         }
         try {
             await api.put(`/settings/column-config/${pageKey}`, newColumnKeys);
             setVisibleColumns(newColumnKeys);
-            showToast('欄位設定已儲存。', 'success');
+            showToast(columnConfigSaveSuccessMessage, 'success');
         } catch (err) {
-            showToast('無法儲存欄位設定。', 'error');
+            showToast(columnConfigSaveErrorMessage, 'error');
         } finally {
             setIsColumnSettingsModalOpen(false);
         }
@@ -147,7 +160,7 @@ const AutomationPlaybooksPage: React.FC = () => {
             setCurrentPage(1); // Reset to first page when adding new item
             fetchPlaybooks();
         } catch (err) {
-            showToast('儲存自動化手冊失敗，請稍後再試。', 'error');
+            showToast(playbookSaveErrorMessage, 'error');
         }
     };
 
@@ -168,7 +181,7 @@ const AutomationPlaybooksPage: React.FC = () => {
                 }
                 fetchPlaybooks();
             } catch (err) {
-                showToast('刪除自動化手冊失敗，請稍後再試。', 'error');
+                showToast(deleteErrorMessage, 'error');
             }
         }
     };
@@ -179,7 +192,7 @@ const AutomationPlaybooksPage: React.FC = () => {
             setSelectedIds([]);
             fetchPlaybooks();
         } catch (err) {
-            showToast('批次刪除自動化手冊失敗，請稍後再試。', 'error');
+            showToast(batchDeleteErrorMessage, 'error');
         }
     };
 
@@ -195,7 +208,12 @@ const AutomationPlaybooksPage: React.FC = () => {
     const isIndeterminate = selectedIds.length > 0 && selectedIds.length < playbooks.length;
 
     const batchActions = (
-        <ToolbarButton icon="trash-2" text="刪除" danger onClick={handleBatchDelete} />
+        <ToolbarButton
+            icon="trash-2"
+            text={globalContent?.DELETE ?? '刪除'}
+            danger
+            onClick={handleBatchDelete}
+        />
     );
 
     const renderCellContent = (pb: AutomationPlaybook, columnKey: string) => {
@@ -203,83 +221,132 @@ const AutomationPlaybooksPage: React.FC = () => {
             case 'name': {
                 const typeLabel = scriptTypeMap.get(pb.type) || pb.type.toUpperCase();
                 const parameterCount = pb.parameters?.length ?? 0;
+                const parameterCountLabel = formatContentString(pageContent?.TABLE_CELL?.PARAMETERS_COUNT, {
+                    count: parameterCount,
+                }) ?? `${parameterCount} 個參數`;
+                const parameterTooltip = formatContentString(pageContent?.TOOLTIPS?.PARAMETERS, {
+                    count: parameterCount,
+                }) ?? `此腳本需要 ${parameterCount} 個輸入參數`;
+                const typeTooltip = formatContentString(pageContent?.TOOLTIPS?.SCRIPT_TYPE, {
+                    type: typeLabel,
+                }) ?? `腳本類型：${typeLabel}`;
                 return (
                     <div className="space-y-2">
-                        <div className="flex flex-wrap items-center gap-2 text-white">
-                            <span className="font-medium">{pb.name}</span>
-                            <StatusTag label={typeLabel} tone="info" dense tooltip={`腳本類型：${typeLabel}`} />
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-medium app-text-emphasis">{pb.name}</span>
+                            <StatusTag label={typeLabel} tone="info" dense tooltip={typeTooltip} />
                             {parameterCount > 0 && (
                                 <StatusTag
-                                    label={`${parameterCount} 個參數`}
+                                    label={parameterCountLabel}
                                     tone="neutral"
                                     dense
-                                    tooltip={`此腳本需要 ${parameterCount} 個輸入參數`}
+                                    tooltip={parameterTooltip}
                                 />
                             )}
                         </div>
                         {pb.description && (
-                            <p className="text-xs text-slate-400">{pb.description}</p>
+                            <p className="text-xs app-text-muted">{pb.description}</p>
                         )}
                     </div>
                 );
             }
-            case 'trigger':
+            case 'trigger': {
+                const triggerTooltip = formatContentString(pageContent?.TOOLTIPS?.DEFAULT_TRIGGER, {
+                    trigger: pb.trigger,
+                }) ?? `預設觸發來源：${pb.trigger}`;
                 return (
                     <StatusTag
                         label={pb.trigger}
                         tone="neutral"
                         dense
-                        tooltip={`預設觸發來源：${pb.trigger}`}
-                    />
-                );
-            case 'last_run_status': {
-                const descriptor = statusMeta.get(pb.last_run_status);
-                return (
-                    <StatusTag
-                        label={descriptor?.label || pb.last_run_status}
-                        className={descriptor?.className}
-                        dense
-                        tooltip={`最近執行狀態：${descriptor?.label || pb.last_run_status}`}
+                        tooltip={triggerTooltip}
                     />
                 );
             }
-            case 'last_run_at':
+            case 'last_run_status': {
+                const descriptor = statusMeta.get(pb.last_run_status);
+                const statusLabel = descriptor?.label || pb.last_run_status;
+                const statusTooltip = formatContentString(pageContent?.TOOLTIPS?.LAST_RUN_STATUS, {
+                    status: statusLabel,
+                }) ?? `最近執行狀態：${statusLabel}`;
                 return (
-                    <div className="flex items-center text-sm">
-                        <span className="font-medium text-white">{formatRelativeTime(pb.last_run_at)}</span>
+                    <StatusTag
+                        label={statusLabel}
+                        className={descriptor?.className}
+                        dense
+                        tooltip={statusTooltip}
+                    />
+                );
+            }
+            case 'last_run_at': {
+                const relative = formatRelativeTime(pb.last_run_at);
+                const display = relative || globalContent?.NA || '--';
+                return (
+                    <div className="flex items-center text-sm app-text-secondary">
+                        <span className="font-medium app-text-emphasis">{display}</span>
                     </div>
                 );
-            case 'run_count':
-                return (
-                    <span className="font-medium text-white">{numberFormatter.format(pb.run_count)} 次</span>
-                );
+            }
+            case 'run_count': {
+                const formattedCount = numberFormatter.format(pb.run_count);
+                const runCountLabel = formatContentString(pageContent?.TABLE_CELL?.RUN_COUNT, {
+                    count: formattedCount,
+                }) ?? `${formattedCount} 次`;
+                return <span className="font-medium app-text-emphasis">{runCountLabel}</span>;
+            }
             default:
-                return <span className="text-slate-500">--</span>;
+                return <span className="app-text-muted">{globalContent?.NA ?? '--'}</span>;
         }
     };
 
+
+    const columnSettingsLabel = globalContent?.COLUMN_SETTINGS ?? '欄位設定';
+    const addScriptLabel = pageContent?.ADD_SCRIPT ?? '新增腳本';
+    const operationsHeaderLabel = globalContent?.ACTIONS ?? '操作';
+    const cancelLabel = globalContent?.CANCEL ?? '取消';
+    const deleteLabel = globalContent?.DELETE ?? '刪除';
+    const confirmDeleteTitle = globalContent?.CONFIRM_DELETE_TITLE ?? '確認刪除';
+    const confirmDeleteMessage = globalContent?.CONFIRM_DELETE_MESSAGE ?? '此操作無法復原。';
+    const runActionLabel = pageContent?.ACTIONS?.RUN ?? '執行腳本';
+    const editActionLabel = pageContent?.ACTIONS?.EDIT ?? '編輯腳本';
+    const deleteActionLabel = pageContent?.ACTIONS?.DELETE ?? '刪除腳本';
+    const runActionTooltip = pageContent?.TOOLTIPS?.RUN_ACTION ?? '立即執行腳本';
+    const editActionTooltip = pageContent?.TOOLTIPS?.EDIT_ACTION ?? '編輯腳本設定';
+    const deleteActionTooltip = pageContent?.TOOLTIPS?.DELETE_ACTION ?? '刪除腳本';
+    const deleteModalMessage = deletingPlaybook
+        ? formatContentString(pageContent?.DELETE_MODAL_MESSAGE, { name: deletingPlaybook.name })
+            ?? `您確定要刪除腳本 ${deletingPlaybook.name} 嗎？`
+        : formatContentString(pageContent?.DELETE_MODAL_MESSAGE, { name: '' }) ?? '您確定要刪除腳本嗎？';
 
     return (
         <div className="h-full flex flex-col">
             <Toolbar
                 rightActions={
                     <>
-                        <ToolbarButton icon="settings-2" text="欄位設定" onClick={() => setIsColumnSettingsModalOpen(true)} />
-                        <ToolbarButton icon="plus" text="新增腳本" primary onClick={handleNewPlaybook} />
+                        <ToolbarButton icon="settings-2" text={columnSettingsLabel} onClick={() => setIsColumnSettingsModalOpen(true)} />
+                        <ToolbarButton icon="plus" text={addScriptLabel} primary onClick={handleNewPlaybook} />
                     </>
                 }
                 selectedCount={selectedIds.length}
                 onClearSelection={() => setSelectedIds([])}
                 batchActions={batchActions}
             />
-            <TableContainer>
-                <div className="h-full overflow-y-auto">
-                    <table className="w-full text-sm text-left text-slate-300">
-                        <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
-                            <tr>
-                                <th scope="col" className="p-4 w-12">
-                                    <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
-                                        checked={isAllSelected} ref={el => { if (el) el.indeterminate = isIndeterminate; }} onChange={handleSelectAll} />
+            <TableContainer
+                table={(
+                    <table className="app-table text-sm">
+                        <thead className="app-table__head">
+                            <tr className="app-table__head-row">
+                                <th scope="col" className="app-table__checkbox-cell">
+                                    <input
+                                        type="checkbox"
+                                        className="app-checkbox"
+                                        checked={isAllSelected}
+                                        ref={el => {
+                                            if (el) el.indeterminate = isIndeterminate;
+                                        }}
+                                        onChange={handleSelectAll}
+                                        aria-label={globalContent?.SELECT_ALL ?? 'Select all'}
+                                    />
                                 </th>
                                 {visibleColumns.map(key => {
                                     const column = allColumns.find(c => c.key === key);
@@ -293,7 +360,9 @@ const AutomationPlaybooksPage: React.FC = () => {
                                         />
                                     );
                                 })}
-                                <th scope="col" className="px-6 py-3 text-center">操作</th>
+                                <th scope="col" className="app-table__header-cell app-table__header-cell--center">
+                                    {operationsHeaderLabel}
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -301,52 +370,65 @@ const AutomationPlaybooksPage: React.FC = () => {
                                 <TableLoader colSpan={visibleColumns.length + 2} />
                             ) : error ? (
                                 <TableError colSpan={visibleColumns.length + 2} message={error} onRetry={fetchPlaybooks} />
-                            ) : playbooks.map((pb) => (
-                                <tr key={pb.id} className={`border-b border-slate-800 ${selectedIds.includes(pb.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
-                                    <td className="p-4 w-12">
-                                        <input type="checkbox" className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
-                                            checked={selectedIds.includes(pb.id)} onChange={(e) => handleSelectOne(e, pb.id)} />
-                                    </td>
-                                    {visibleColumns.map(key => (
-                                        <td key={key} className="px-6 py-4">{renderCellContent(pb, key)}</td>
-                                    ))}
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <IconButton
-                                                icon="play"
-                                                label="執行腳本"
-                                                tooltip="立即執行腳本"
-                                                onClick={() => handleRunClick(pb)}
-                                                tone="primary"
-                                            />
-                                            <IconButton
-                                                icon="edit-3"
-                                                label="編輯腳本"
-                                                tooltip="編輯腳本設定"
-                                                onClick={() => handleEditPlaybook(pb)}
-                                            />
-                                            <IconButton
-                                                icon="trash-2"
-                                                label="刪除腳本"
-                                                tooltip="刪除腳本"
-                                                onClick={() => handleDeleteClick(pb)}
-                                                tone="danger"
-                                            />
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                            ) : (
+                                playbooks.map(pb => {
+                                    const isSelected = selectedIds.includes(pb.id);
+                                    const rowClassName = isSelected ? 'app-table__row app-table__row--selected' : 'app-table__row';
+                                    return (
+                                        <tr key={pb.id} className={rowClassName}>
+                                            <td className="app-table__checkbox-cell">
+                                                <input
+                                                    type="checkbox"
+                                                    className="app-checkbox"
+                                                    checked={isSelected}
+                                                    onChange={e => handleSelectOne(e, pb.id)}
+                                                    aria-label={globalContent?.SELECT_OPTION ?? 'Select row'}
+                                                />
+                                            </td>
+                                            {visibleColumns.map(key => (
+                                                <td key={key} className="app-table__cell">{renderCellContent(pb, key)}</td>
+                                            ))}
+                                            <td className="app-table__cell app-table__cell--center">
+                                                <div className="app-table__actions">
+                                                    <IconButton
+                                                        icon="play"
+                                                        label={runActionLabel}
+                                                        tooltip={runActionTooltip}
+                                                        onClick={() => handleRunClick(pb)}
+                                                        tone="primary"
+                                                    />
+                                                    <IconButton
+                                                        icon="edit-3"
+                                                        label={editActionLabel}
+                                                        tooltip={editActionTooltip}
+                                                        onClick={() => handleEditPlaybook(pb)}
+                                                    />
+                                                    <IconButton
+                                                        icon="trash-2"
+                                                        label={deleteActionLabel}
+                                                        tooltip={deleteActionTooltip}
+                                                        onClick={() => handleDeleteClick(pb)}
+                                                        tone="danger"
+                                                    />
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
                         </tbody>
                     </table>
-                </div>
-                <Pagination
-                    total={total}
-                    page={currentPage}
-                    pageSize={pageSize}
-                    onPageChange={setCurrentPage}
-                    onPageSizeChange={setPageSize}
-                />
-            </TableContainer>
+                )}
+                footer={(
+                    <Pagination
+                        total={total}
+                        page={currentPage}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={setPageSize}
+                    />
+                )}
+            />
             <RunPlaybookModal
                 isOpen={isRunModalOpen}
                 onClose={() => setIsRunModalOpen(false)}
@@ -364,17 +446,17 @@ const AutomationPlaybooksPage: React.FC = () => {
             <Modal
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
-                title="確認刪除"
+                title={confirmDeleteTitle}
                 width="w-1/3"
                 footer={
-                    <div className="flex justify-end space-x-2">
-                        <button onClick={() => setIsDeleteModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-md">取消</button>
-                        <button onClick={handleConfirmDelete} className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md">刪除</button>
+                    <div className="flex justify-end gap-2">
+                        <button onClick={() => setIsDeleteModalOpen(false)} className="app-btn app-btn--ghost">{cancelLabel}</button>
+                        <button onClick={handleConfirmDelete} className="app-btn app-btn--danger">{deleteLabel}</button>
                     </div>
                 }
             >
-                <p>您確定要刪除腳本 <strong className="text-amber-400">{deletingPlaybook?.name}</strong> 嗎？</p>
-                <p className="mt-2 text-slate-400">此操作無法復原。</p>
+                <p className="app-text-primary">{deleteModalMessage}</p>
+                <p className="mt-2 text-sm app-text-muted">{confirmDeleteMessage}</p>
             </Modal>
             <ColumnSettingsModal
                 isOpen={isColumnSettingsModalOpen}

@@ -1,13 +1,14 @@
-
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import EChartsReact from '../../components/EChartsReact';
-import { Resource, TopologyOptions } from '../../types';
+import { Resource } from '../../types';
 import Icon from '../../components/Icon';
 import StatusTag from '../../components/StatusTag';
-import api from '../../services/api';
+import api, { isApiError } from '../../services/api';
 import { useOptions } from '../../contexts/OptionsContext';
 import { useChartTheme } from '../../contexts/ChartThemeContext';
+import { ROUTES, buildRoute } from '../../constants/routes';
+import type { GraphEventHandlers, GraphInteractionEvent } from '../../types/echarts';
 
 interface TopologyData {
     nodes: Resource[];
@@ -32,7 +33,7 @@ const ResourceTopologyPage: React.FC = () => {
         visible: boolean;
         x: number;
         y: number;
-        nodeData: any | null;
+        nodeData: Resource | null;
     }>({ visible: false, x: 0, y: 0, nodeData: null });
 
     const contextMenuRef = useRef<HTMLDivElement>(null);
@@ -68,8 +69,12 @@ const ResourceTopologyPage: React.FC = () => {
         try {
             const { data } = await api.get<TopologyData>('/resources/topology');
             setTopologyData(data);
-        } catch (err) {
-            setError('無法獲取拓撲資料。');
+        } catch (err: unknown) {
+            if (isApiError(err)) {
+                setError(err.message || '無法獲取拓撲資料。');
+            } else {
+                setError('無法獲取拓撲資料。');
+            }
         } finally {
             setIsLoading(false);
         }
@@ -205,10 +210,11 @@ const ResourceTopologyPage: React.FC = () => {
         };
     }, [topologyData, filterType, layout, statusColorMap, chartTheme]);
 
-    const echartsEvents = {
-        contextmenu: (params: any) => {
-            params.event.event.preventDefault();
-            if (params.dataType === 'node') {
+    const echartsEvents: GraphEventHandlers<Resource> = {
+        contextmenu: (params: GraphInteractionEvent<Resource>) => {
+            params.event.preventDefault?.();
+            params.event.event?.preventDefault?.();
+            if (params.dataType === 'node' && params.data) {
                 setContextMenu({
                     visible: true,
                     x: params.event.offsetX,
@@ -233,13 +239,13 @@ const ResourceTopologyPage: React.FC = () => {
 
         switch (action) {
             case 'details':
-                navigate(`/resources/list/${resource_id}`);
+                navigate(buildRoute.resourceDetails(resource_id));
                 break;
             case 'incidents':
-                navigate('/incidents');
+                navigate(ROUTES.INCIDENTS);
                 break;
             case 'automation':
-                navigate('/automation');
+                navigate(ROUTES.AUTOMATION);
                 break;
         }
         setContextMenu(prev => ({ ...prev, visible: false }));

@@ -29,6 +29,3 @@ export const DATASOURCE_STATUS_META: Record<ConnectionStatus, DatasourceStatusMe
   },
 };
 
-export const getDatasourceStatusMeta = (status: ConnectionStatus): DatasourceStatusMeta =>
-  DATASOURCE_STATUS_META[status] ?? DATASOURCE_STATUS_META.pending;
-

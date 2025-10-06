@@ -284,11 +284,11 @@ const ResourceGroupPage: React.FC = () => {
                 rightActions={rightActions}
             />
 
-            <TableContainer>
-                <div className="h-full overflow-y-auto">
-                    <table className="w-full text-sm text-left text-slate-300">
-                        <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
-                            <tr>
+            <TableContainer
+                table={(
+                    <table className="app-table text-sm">
+                        <thead className="app-table__head">
+                            <tr className="app-table__head-row">
                                 {visibleColumns.map(key => {
                                     const column = allColumns.find(c => c.key === key);
                                     return (
@@ -301,7 +301,7 @@ const ResourceGroupPage: React.FC = () => {
                                         />
                                     );
                                 })}
-                                <th scope="col" className="px-6 py-3 text-center">操作</th>
+                                <th scope="col" className="app-table__header-cell app-table__header-cell--center">操作</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -309,47 +309,51 @@ const ResourceGroupPage: React.FC = () => {
                                 <TableLoader colSpan={visibleColumns.length + 1} />
                             ) : error ? (
                                 <TableError colSpan={visibleColumns.length + 1} message={error} onRetry={fetchGroups} />
-                            ) : groups.map((group) => (
-                                <tr key={group.id} className="border-b border-slate-800 hover:bg-slate-800/40">
-                                    {visibleColumns.map(key => (
-                                        <td key={key} className="px-6 py-4">{renderCellContent(group, key)}</td>
-                                    ))}
-                                    <td className="px-6 py-4 text-center">
-                                        <div className="flex items-center justify-center gap-1.5">
-                                            <IconButton
-                                                icon="eye"
-                                                label="檢視群組"
-                                                tooltip="檢視群組 View group"
-                                                onClick={() => handleViewGroup(group)}
-                                            />
-                                            <IconButton
-                                                icon="edit-3"
-                                                label="編輯群組"
-                                                tooltip="編輯群組 Edit group"
-                                                onClick={() => handleEditGroup(group)}
-                                            />
-                                            <IconButton
-                                                icon="trash-2"
-                                                label="刪除群組"
-                                                tooltip="刪除群組 Delete group"
-                                                onClick={() => handleDeleteClick(group)}
-                                                tone="danger"
-                                            />
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                            ) : (
+                                groups.map(group => (
+                                    <tr key={group.id} className="app-table__row">
+                                        {visibleColumns.map(key => (
+                                            <td key={key} className="app-table__cell">{renderCellContent(group, key)}</td>
+                                        ))}
+                                        <td className="app-table__cell app-table__cell--center">
+                                            <div className="app-table__actions">
+                                                <IconButton
+                                                    icon="eye"
+                                                    label="檢視群組"
+                                                    tooltip="檢視群組 View group"
+                                                    onClick={() => handleViewGroup(group)}
+                                                />
+                                                <IconButton
+                                                    icon="edit-3"
+                                                    label="編輯群組"
+                                                    tooltip="編輯群組 Edit group"
+                                                    onClick={() => handleEditGroup(group)}
+                                                />
+                                                <IconButton
+                                                    icon="trash-2"
+                                                    label="刪除群組"
+                                                    tooltip="刪除群組 Delete group"
+                                                    onClick={() => handleDeleteClick(group)}
+                                                    tone="danger"
+                                                />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
-                </div>
-                <Pagination
-                    total={total}
-                    page={currentPage}
-                    pageSize={pageSize}
-                    onPageChange={setCurrentPage}
-                    onPageSizeChange={setPageSize}
-                />
-            </TableContainer>
+                )}
+                footer={(
+                    <Pagination
+                        total={total}
+                        page={currentPage}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={setPageSize}
+                    />
+                )}
+            />
 
             {isModalOpen && (
                 <ResourceGroupEditModal

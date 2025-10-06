@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
+import { ROUTES } from '../constants/routes';
 import DashboardViewer from '../components/DashboardViewer';
 import { Dashboard } from '../types';
 import api from '../services/api';
@@ -9,20 +10,15 @@ import Icon from '../components/Icon';
 import GenericBuiltInDashboardPage from './dashboards/GenericBuiltInDashboardPage';
 import StatusTag from '../components/StatusTag';
 import IconButton from '../components/IconButton';
-import { useContentSection } from '../contexts/ContentContext';
+import { useContent, useContentSection } from '../contexts/ContentContext';
 import { formatTimestamp } from '../utils/time';
 
 type DashboardErrorKey = 'missingId' | 'notFound' | 'loadFailed';
 
-const FALLBACK_ERROR_MESSAGES: Record<DashboardErrorKey, string> = {
-  missingId: '未提供儀表板識別碼，請回到列表重新選取。',
-  notFound: '找不到對應的儀表板，可能已被移除或權限不足。',
-  loadFailed: '無法載入儀表板資料，請稍後再試一次。',
-};
-
 const DashboardViewPage: React.FC = () => {
   const { dashboardId } = useParams<{ dashboardId: string }>();
   const navigate = useNavigate();
+  const { locale } = useContent();
   const pageContent = useContentSection('DASHBOARD_VIEW_PAGE');
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,8 +52,8 @@ const DashboardViewPage: React.FC = () => {
   }, [loadDashboard]);
 
   const relativeFormatter = useMemo(
-    () => new Intl.RelativeTimeFormat('zh-TW', { numeric: 'auto' }),
-    [],
+    () => new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }),
+    [locale],
   );
 
   const formatRelativeFromNow = useCallback(
@@ -88,7 +84,7 @@ const DashboardViewPage: React.FC = () => {
   );
 
   const handleBack = useCallback(() => {
-    navigate('/dashboards');
+    navigate(ROUTES.DASHBOARDS);
   }, [navigate]);
 
   const handleRetry = useCallback(() => {
@@ -188,7 +184,11 @@ const DashboardViewPage: React.FC = () => {
         : derivedKey === 'notFound'
           ? pageContent.ERROR_NOT_FOUND
           : pageContent.ERROR_LOAD
-      : FALLBACK_ERROR_MESSAGES[derivedKey];
+      : derivedKey === 'missingId'
+        ? 'No dashboard identifier provided. Please return to the list and select one again.'
+        : derivedKey === 'notFound'
+          ? 'We could not find the dashboard. It may have been removed or you may not have access.'
+          : 'We could not load the dashboard data. Please try again later.';
     const errorTitle = pageContent?.ERROR_TITLE ?? '無法載入儀表板';
 
     return (
@@ -224,9 +224,9 @@ const DashboardViewPage: React.FC = () => {
 
   if (dashboard.type === 'built-in') {
     if (
-      dashboard.path === '/sre-war-room' ||
-      dashboard.path === '/dashboard/infrastructure-insights' ||
-      dashboard.path === '/dashboard/resource-overview'
+      dashboard.path === ROUTES.SRE_WAR_ROOM ||
+      dashboard.path === ROUTES.DASHBOARD_INFRASTRUCTURE_INSIGHTS ||
+      dashboard.path === ROUTES.DASHBOARD_RESOURCE_OVERVIEW
     ) {
       return <Navigate to={dashboard.path} replace />;
     }
@@ -241,7 +241,7 @@ const DashboardViewPage: React.FC = () => {
       );
     }
 
-    return <Navigate to="/home" replace />;
+    return <Navigate to={ROUTES.HOME} replace />;
   }
 
   const backLabel = pageContent?.BACK_TO_LIST ?? '返回儀表板列表';

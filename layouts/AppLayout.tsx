@@ -12,6 +12,7 @@ import { useUIConfig } from '../contexts/UIConfigContext';
 import { useUser } from '../contexts/UserContext';
 import { useContent, useContentSection } from '../contexts/ContentContext';
 import UserAvatar from '../components/UserAvatar';
+import { ROUTES } from '../constants/routes';
 
 const AppLayout: React.FC = () => {
   const { navItems, tabConfigs, isLoading: isNavLoading } = useUIConfig();
@@ -90,13 +91,18 @@ const AppLayout: React.FC = () => {
   const getActiveKey = () => {
     const path = location.pathname;
 
-    if (path.startsWith('/dashboard/') || path.startsWith('/sre-war-room') || path === '/' || path === '/home') {
+    if (
+      path.startsWith(`${ROUTES.DASHBOARD}/`) ||
+      path.startsWith(ROUTES.SRE_WAR_ROOM) ||
+      path === ROUTES.ROOT ||
+      path === ROUTES.HOME
+    ) {
       return 'home';
     }
 
     const bestMatch = findLongestPrefixMatch(path, navItems);
 
-    if (path.startsWith('/profile')) {
+    if (path.startsWith(ROUTES.PROFILE)) {
       return 'profile';
     }
 
@@ -208,8 +214,8 @@ const AppLayout: React.FC = () => {
 
     const crumbs = useMemo(() => {
       if (!appLayoutContent) return [];
-      const result: { label: string; path: string }[] = [{ label: appLayoutContent.HOME_BREADCRUMB, path: '/home' }];
-      if (pathname === '/home' || pathname === '/') return result;
+      const result: { label: string; path: string }[] = [{ label: appLayoutContent.HOME_BREADCRUMB, path: ROUTES.HOME }];
+      if (pathname === ROUTES.HOME || pathname === ROUTES.ROOT) return result;
 
       const tempCrumbs: { label: string; path: string }[] = [];
       let current = pathname;
@@ -377,7 +383,7 @@ const AppLayout: React.FC = () => {
                     <div className="text-sm text-slate-400 mt-1 leading-relaxed">{currentUser?.email}</div>
                   </div>
                   <div className="py-2">
-                    <Link to="/profile" onClick={() => setIsProfileMenuOpen(false)} className="flex items-center w-full px-4 py-2.5 text-sm rounded-md text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
+                    <Link to={ROUTES.PROFILE} onClick={() => setIsProfileMenuOpen(false)} className="flex items-center w-full px-4 py-2.5 text-sm rounded-md text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
                       <Icon name="user-cog" className="w-4 h-4 mr-3 shrink-0" />
                       <span>{appLayoutContent.PROFILE_MENU.SETTINGS}</span>
                     </Link>

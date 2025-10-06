@@ -9,6 +9,7 @@ import { Dashboard } from '../types';
 import api from '../services/api';
 import { useUser } from '../contexts/UserContext';
 import { useOptions } from '../contexts/OptionsContext';
+import { ROUTES } from '../constants/routes';
 
 interface AvailableGrafanaDashboard {
     uid: string;
@@ -64,7 +65,7 @@ const AddDashboardModal: React.FC<AddDashboardModalProps> = ({ isOpen, onClose, 
 
     const handleSelectType = (type: 'built-in' | 'grafana') => {
         if (type === 'built-in') {
-            navigate('/dashboards/new');
+            navigate(ROUTES.DASHBOARDS_NEW);
             onClose();
         } else {
             setStep(2);

@@ -11,6 +11,7 @@ import IconButton from '../../components/IconButton';
 import { useOptions } from '../../contexts/OptionsContext';
 import { formatTimestamp, formatRelativeTime } from '../../utils/time';
 import { resolveResourceStatusPresentation } from '../../utils/resource';
+import { ROUTES, buildRoute } from '../../constants/routes';
 
 interface ResourceDetailPageProps {
   resource_id: string;
@@ -275,7 +276,7 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resource_id }) 
               icon="external-link"
               label="在資源列表開啟"
               tone="primary"
-              onClick={() => navigate(`/resources/list/${resource.id}`)}
+              onClick={() => navigate(buildRoute.resourceDetails(resource.id))}
               tooltip="在資源列表開啟"
             />
           </div>
@@ -316,7 +317,7 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resource_id }) 
             <p className="text-xs text-slate-500">最新事件彙總，協助快速追蹤。</p>
           </div>
           <Link
-            to="/incidents/list"
+            to={ROUTES.INCIDENTS}
             className="inline-flex items-center gap-1 text-xs font-medium text-sky-300 transition-colors hover:text-sky-200"
           >
             查看全部
@@ -332,7 +333,7 @@ const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({ resource_id }) 
 
               return (
                 <Link
-                  to={`/incidents/${incident.id}`}
+                  to={buildRoute.incidentDetails(incident.id)}
                   key={incident.id}
                   className="group grid gap-1.5 rounded-xl border border-slate-800/80 bg-slate-950/45 p-2.5 transition-colors hover:border-sky-500/50 hover:bg-slate-900/75"
                 >

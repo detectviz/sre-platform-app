@@ -206,25 +206,27 @@ const DiscoveryJobResultDrawer: React.FC<DiscoveryJobResultDrawerProps> = ({ job
             <p className="mb-3 text-xs text-slate-400">
                 可勾選多筆「新發現」資源進行匯入或批次標籤；已匯入 / 已忽略的項目會自動停用勾選。
             </p>
-            <TableContainer>
-                <div className="h-full overflow-y-auto">
-                    <table className="w-full text-sm text-left text-slate-300">
-                        <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
-                            <tr>
-                                <th className="p-4 w-12">
-                                     <input
-                                         type="checkbox"
-                                         className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
-                                         checked={isAllSelected}
-                                         ref={el => { if(el) el.indeterminate = isIndeterminate; }}
-                                         onChange={handleSelectAll}
-                                         aria-label="全選新發現資源"
-                                     />
+            <TableContainer
+                table={(
+                    <table className="app-table text-sm">
+                        <thead className="app-table__head">
+                            <tr className="app-table__head-row">
+                                <th className="app-table__checkbox-cell">
+                                    <input
+                                        type="checkbox"
+                                        className="app-checkbox"
+                                        checked={isAllSelected}
+                                        ref={el => {
+                                            if (el) el.indeterminate = isIndeterminate;
+                                        }}
+                                        onChange={handleSelectAll}
+                                        aria-label="全選新發現資源"
+                                    />
                                 </th>
-                                <th className="px-6 py-3">名稱 / IP</th>
-                                <th className="px-6 py-3">類型</th>
-                                <th className="px-6 py-3">標籤</th>
-                                <th className="px-6 py-3">狀態</th>
+                                <th className="app-table__header-cell">名稱 / IP</th>
+                                <th className="app-table__header-cell">類型</th>
+                                <th className="app-table__header-cell">標籤</th>
+                                <th className="app-table__header-cell">狀態</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -232,35 +234,46 @@ const DiscoveryJobResultDrawer: React.FC<DiscoveryJobResultDrawerProps> = ({ job
                                 <TableLoader colSpan={5} />
                             ) : error ? (
                                 <TableError colSpan={5} message={error} onRetry={fetchResults} />
-                            ) : results.map((res) => (
-                                <tr key={res.id} className={`border-b border-slate-800 ${selectedIds.includes(res.id) ? 'bg-sky-900/50' : 'hover:bg-slate-800/40'}`}>
-                                    <td className="p-4 w-12">
-                                        <input
-                                            type="checkbox"
-                                            className="form-checkbox h-4 w-4 bg-slate-800 border-slate-600"
-                                            checked={selectedIds.includes(res.id)}
-                                            onChange={(e) => handleSelectOne(e, res.id)}
-                                            disabled={res.status !== 'new'}
-                                            aria-label={`選擇 ${res.name} 資源`}
-                                        />
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="font-medium text-white">{res.name}</div>
-                                        <div className="text-xs text-slate-400 font-mono">{res.ip}</div>
-                                    </td>
-                                    <td className="px-6 py-4">{res.type}</td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex flex-wrap gap-1">
-                                            {res.tags.map(t => <span key={t.id} className="px-2 py-0.5 text-xs bg-slate-700 rounded-full">{t.key}:{t.value}</span>)}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">{getStatusIndicator(res.status)}</td>
-                                </tr>
-                            ))}
+                            ) : (
+                                results.map(res => {
+                                    const rowClassName = selectedIds.includes(res.id)
+                                        ? 'app-table__row app-table__row--selected'
+                                        : 'app-table__row';
+                                    return (
+                                        <tr key={res.id} className={rowClassName}>
+                                            <td className="app-table__checkbox-cell">
+                                                <input
+                                                    type="checkbox"
+                                                    className="app-checkbox"
+                                                    checked={selectedIds.includes(res.id)}
+                                                    onChange={e => handleSelectOne(e, res.id)}
+                                                    disabled={res.status !== 'new'}
+                                                    aria-label={`選擇 ${res.name} 資源`}
+                                                />
+                                            </td>
+                                            <td className="app-table__cell">
+                                                <div className="font-medium app-text-emphasis">{res.name}</div>
+                                                <div className="app-text-muted text-xs font-mono">{res.ip}</div>
+                                            </td>
+                                            <td className="app-table__cell">{res.type}</td>
+                                            <td className="app-table__cell">
+                                                <div className="flex flex-wrap gap-1">
+                                                    {res.tags.map(tag => (
+                                                        <span key={tag.id} className="rounded-full bg-slate-700/60 px-2 py-0.5 text-xs">
+                                                            {tag.key}:{tag.value}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </td>
+                                            <td className="app-table__cell">{getStatusIndicator(res.status)}</td>
+                                        </tr>
+                                    );
+                                })
+                            )}
                         </tbody>
                     </table>
-                </div>
-            </TableContainer>
+                )}
+            />
             {isImportModalOpen && job && (
                 <ImportResourceModal
                     isOpen={isImportModalOpen}

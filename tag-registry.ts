@@ -135,12 +135,7 @@ const createTagDefinition = (entry: TagRegistryEntry): TagDefinition => {
   };
 };
 
-export const TAG_REGISTRY = registry;
-
 export const createTagDefinitions = (): TagDefinition[] => registry.map(entry => createTagDefinition(entry));
-
-export const getTagRegistryEntry = (key: string): TagRegistryEntry | undefined => registry.find(entry => entry.key === key);
-
 export const getEnumValuesForTag = (key: string): string[] => {
   // 為系統標籤提供預設值
   const defaultValues: Record<string, string[]> = {
@@ -155,7 +150,3 @@ export const getEnumValuesForTag = (key: string): string[] => {
   };
   return defaultValues[key] ?? [];
 };
-
-// 按類別獲取標籤
-export const getCoreTagDefinitions = (): TagDefinition[] => CORE_TAGS.map(createTagDefinition);
-export const getExtendedTagDefinitions = (): TagDefinition[] => EXTENDED_TAGS.map(createTagDefinition);

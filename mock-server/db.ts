@@ -129,6 +129,16 @@ const PAGE_CONTENT = {
         NA: 'N/A',
         CLEAR_SELECTION: '取消選擇',
         ITEMS_SELECTED: '已選擇 {count} 項',
+        TABLE_ERROR_HINT: '請稍後再試，或聯絡支援團隊。',
+        SELECT_ALL: '全選',
+        SELECT_OPTION: '選取資料列',
+        MESSAGES: {
+            LOAD_UI_CONTENT_ERROR: '載入介面文案失敗。',
+            LICENSE_INVALID: '您的 License 無效或已過期，部分功能可能受限。',
+        },
+        ACTION_LABELS: {
+            REFRESH: '重新整理',
+        },
     },
 
     APP: {
@@ -363,11 +373,72 @@ const PAGE_CONTENT = {
         IMPORT_ERROR_TEMPLATE: '無法匯入 {itemName}。請檢查檔案格式並再試一次。',
         START_IMPORT: '開始匯入',
         IMPORTING: '匯入中...',
+        SUMMARY_TEMPLATE: '{itemName} 匯入完成：{successCount} 筆成功、{failCount} 筆失敗。',
         INSTRUCTIONS_STEPS: [
             '下載 CSV 範本檔案',
             '根據範本格式填寫您的資料。',
             '將填寫好的 CSV 檔案拖曳至下方區域或點擊上傳。',
         ],
+        FILE_SIZE_TEMPLATE: '{size} KB',
+    },
+
+    PROFILE_SECURITY_SETTINGS: {
+        CHANGE_PASSWORD: {
+            TITLE: '變更密碼',
+            DESCRIPTION: '請設定至少 12 碼並混合大小寫、數字與符號，以保護帳號安全。',
+            CURRENT_PASSWORD_LABEL: '舊密碼',
+            NEW_PASSWORD_LABEL: '新密碼',
+            CONFIRM_PASSWORD_LABEL: '確認新密碼',
+            MISMATCH_HELPER: '新密碼與確認密碼不一致。',
+            SUBMIT: '更新密碼',
+            SUBMIT_LOADING: '更新中',
+            VALIDATION: {
+                FIELDS_REQUIRED: '所有欄位皆為必填。',
+                MISMATCH: '新密碼與確認密碼不符。',
+                INSUFFICIENT_STRENGTH: '請設定至少 12 碼並包含大小寫、數字與符號的強密碼。',
+            },
+            TOAST: {
+                SUCCESS: '密碼已成功更新。',
+                ERROR: '更新密碼失敗，請稍後再試。',
+            },
+            PASSWORD_STRENGTH: {
+                LABEL: '強度指標',
+                GOOD: '強度良好',
+                NEEDS_IMPROVEMENT: '建議再加強',
+                WEAK: '風險較高',
+                RULES: [
+                    '至少 12 個字元',
+                    '包含大小寫英文字母',
+                    '至少一個數字與特殊符號',
+                ],
+            },
+        },
+        SESSION_MANAGEMENT: {
+            FORCE_LOGOUT: '強制登出其他裝置',
+            FORCE_LOGOUT_LOADING: '處理中',
+            TOAST: {
+                SUCCESS: '已強制登出其他裝置。',
+                ERROR: '強制登出其他裝置失敗，請稍後再試。',
+            },
+        },
+        LOGIN_HISTORY: {
+            TITLE: '最近登入活動',
+            DESCRIPTION: '檢視最近的登入 IP、裝置與結果，辨識是否有可疑行為。',
+            TABLE: {
+                TIME: '時間',
+                IP: 'IP 位址',
+                DEVICE: '裝置',
+                STATUS: '狀態',
+                EMPTY: '尚無登入紀錄。',
+            },
+            STATUS_LABELS: {
+                success: '成功',
+                failed: '失敗',
+            },
+            ERROR: '無法獲取登入歷史。',
+            RELATIVE_TEMPLATE: '（{relative}）',
+            REFRESH: '重新整理',
+        },
     },
 
     // Pages & Modals
@@ -854,7 +925,28 @@ const PAGE_CONTENT = {
             RUN: '運行',
             EDIT: '編輯',
             DELETE: '刪除',
-        }
+        },
+        TABLE_CELL: {
+            PARAMETERS_COUNT: '{count} 個參數',
+            RUN_COUNT: '{count} 次',
+        },
+        TOOLTIPS: {
+            SCRIPT_TYPE: '腳本類型：{type}',
+            PARAMETERS: '此腳本需要 {count} 個輸入參數',
+            DEFAULT_TRIGGER: '預設觸發來源：{trigger}',
+            LAST_RUN_STATUS: '最近執行狀態：{status}',
+            RUN_ACTION: '立即執行腳本',
+            EDIT_ACTION: '編輯腳本設定',
+            DELETE_ACTION: '刪除腳本',
+        },
+        TOASTS: {
+            COLUMN_CONFIG_MISSING: '無法儲存欄位設定：頁面設定遺失。',
+            COLUMN_SAVE_SUCCESS: '欄位設定已儲存。',
+            COLUMN_SAVE_ERROR: '無法儲存欄位設定。',
+            PLAYBOOK_SAVE_ERROR: '儲存自動化手冊失敗，請稍後再試。',
+            DELETE_ERROR: '刪除自動化手冊失敗，請稍後再試。',
+            BATCH_DELETE_ERROR: '批次刪除自動化手冊失敗，請稍後再試。',
+        },
     },
     PERSONNEL_MANAGEMENT: {
         SEARCH_PLACEHOLDER: '依名稱、Email、角色搜尋...',
@@ -2920,29 +3012,66 @@ const MOCK_ALERT_RULE_OPTIONS: AlertRuleOptions = {
 
 const MOCK_RESOURCE_OPTIONS: ResourceOptions = {
     statuses: [
-        { value: 'healthy', label: '正常', class_name: 'bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 backdrop-blur-sm shadow-sm' },
-        { value: 'warning', label: '警告', class_name: 'bg-amber-950/40 border border-amber-500/40 text-amber-300 backdrop-blur-sm shadow-sm' },
-        { value: 'critical', label: '嚴重', class_name: 'bg-red-950/40 border border-red-500/40 text-red-300 backdrop-blur-sm shadow-sm' },
-        { value: 'offline', label: '離線', class_name: 'bg-slate-950/40 border border-slate-500/40 text-slate-300 backdrop-blur-sm shadow-sm' },
-        { value: 'unknown', label: '未知', class_name: 'bg-slate-800/40 border border-slate-600/40 text-slate-200 backdrop-blur-sm shadow-sm' },
+        { value: 'healthy', label: '正常', class_name: 'app-status-pill app-status-pill--success' },
+        { value: 'warning', label: '警告', class_name: 'app-status-pill app-status-pill--warning' },
+        { value: 'critical', label: '嚴重', class_name: 'app-status-pill app-status-pill--danger' },
+        { value: 'offline', label: '離線', class_name: 'app-status-pill app-status-pill--muted' },
+        { value: 'unknown', label: '未知', class_name: 'app-status-pill app-status-pill--muted' },
     ],
     status_colors: [
-        { value: 'healthy', label: '正常', color: '#10b981' },
-        { value: 'warning', label: '警告', color: '#f97316' },
-        { value: 'critical', label: '嚴重', color: '#dc2626' },
-        { value: 'offline', label: '離線', color: '#64748b' },
-        { value: 'unknown', label: '未知', color: '#94a3b8' },
+        { value: 'healthy', label: '正常', color: 'var(--status-healthy-dot)' },
+        { value: 'warning', label: '警告', color: 'var(--status-warning-dot)' },
+        { value: 'critical', label: '嚴重', color: 'var(--status-critical-dot)' },
+        { value: 'offline', label: '離線', color: 'var(--status-neutral-dot)' },
+        { value: 'unknown', label: '未知', color: 'var(--status-muted-dot)' },
     ],
     types: [
-        { value: 'API Gateway', label: 'API Gateway', class_name: 'bg-blue-950/40 border border-blue-500/40 text-blue-300 backdrop-blur-sm shadow-sm' },
-        { value: 'RDS Database', label: 'RDS Database', class_name: 'bg-green-950/40 border border-green-500/40 text-green-300 backdrop-blur-sm shadow-sm' },
-        { value: 'EKS Cluster', label: 'EKS Cluster', class_name: 'bg-purple-950/40 border border-purple-500/40 text-purple-300 backdrop-blur-sm shadow-sm' },
-        { value: 'EC2 Instance', label: 'EC2 Instance', class_name: 'bg-orange-950/40 border border-orange-500/40 text-orange-300 backdrop-blur-sm shadow-sm' },
-        { value: 'Kubernetes', label: 'Kubernetes', class_name: 'bg-cyan-950/40 border border-cyan-500/40 text-cyan-300 backdrop-blur-sm shadow-sm' }
+        { value: 'API Gateway', label: 'API Gateway', class_name: 'app-badge app-badge--info' },
+        { value: 'RDS Database', label: 'RDS Database', class_name: 'app-badge app-badge--success' },
+        { value: 'EKS Cluster', label: 'EKS Cluster', class_name: 'app-badge app-badge--info' },
+        { value: 'EC2 Instance', label: 'EC2 Instance', class_name: 'app-badge app-badge--warning' },
+        { value: 'Kubernetes', label: 'Kubernetes', class_name: 'app-badge app-badge--neutral' }
     ],
     providers: ['AWS', 'GCP', 'Azure', 'On-Premise'],
     regions: ['us-east-1', 'us-west-2', 'eu-central-1', 'ap-northeast-1'],
     owners: ['SRE Team', 'DBA Team', 'Web Team', 'API Services'],
+    utilization_bands: [
+        { id: 'critical', label: '過載', min: 80, fill_class: 'app-meter-bar__fill app-meter-bar__fill--danger', text_class: 'app-text-danger' },
+        { id: 'warning', label: '注意', min: 60, max: 79.9, fill_class: 'app-meter-bar__fill app-meter-bar__fill--warning', text_class: 'app-text-warning' },
+        { id: 'healthy', label: '穩定', min: 0, max: 59.9, fill_class: 'app-meter-bar__fill app-meter-bar__fill--success', text_class: 'app-text-success' },
+        { id: 'unknown', label: '無資料', fill_class: 'app-meter-bar__fill app-meter-bar__fill--inactive', text_class: 'app-text-muted' },
+    ],
+    event_volume_bands: [
+        { id: 'none', label: '無事件', max: 0, badge_class: 'app-badge app-badge--muted app-badge--interactive', dot_class: 'app-badge__dot' },
+        { id: 'single', label: '單筆事件', min: 1, max: 1, badge_class: 'app-badge app-badge--warning app-badge--interactive', dot_class: 'app-badge__dot' },
+        { id: 'multiple', label: '多筆事件', min: 2, badge_class: 'app-badge app-badge--danger app-badge--interactive', dot_class: 'app-badge__dot' },
+    ],
+    event_severities: [
+        {
+            severity: 'critical',
+            label: '嚴重',
+            badge_class: 'app-badge app-badge--danger',
+            dot_class: 'app-badge__dot',
+            title_template: '{severityLabel}事件',
+            summary_template: '{resourceName} 在最近 24 小時觸發 {severityLabel} 告警，請立即處理。'
+        },
+        {
+            severity: 'warning',
+            label: '警告',
+            badge_class: 'app-badge app-badge--warning',
+            dot_class: 'app-badge__dot',
+            title_template: '{severityLabel}事件',
+            summary_template: '{resourceName} 在最近 24 小時產生 {severityLabel} 訊號，建議安排追蹤。'
+        },
+        {
+            severity: 'info',
+            label: '資訊',
+            badge_class: 'app-badge app-badge--info',
+            dot_class: 'app-badge__dot',
+            title_template: '{severityLabel}訊息',
+            summary_template: '{resourceName} 產生 {severityLabel} 訊息，建議納入趨勢觀察。'
+        }
+    ],
 };
 
 const MOCK_AUTOMATION_SCRIPT_OPTIONS: AutomationScriptOptions = {
