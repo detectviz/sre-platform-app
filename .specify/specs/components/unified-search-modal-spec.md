@@ -1,387 +1,66 @@
-# 元件規格書 (Component Specification)
+# 功能規格書（Feature Specification）
 
-**元件名稱 (Component)**: 統一搜尋模態框
+**模組名稱 (Module)**: UnifiedSearchModal
 **類型 (Type)**: Component
-**來源路徑 (Source Path)**: components/UnifiedSearchModal.tsx
+**來源路徑 (Source Path)**: `components/UnifiedSearchModal.tsx`
 **建立日期 (Created)**: 2025-10-06
 **狀態 (Status)**: Draft
-**依據憲法條款 (Based on)**: `.specify/memory/constitution.md`
-**使用次數**: 10 次
-**使用模組**: incidents-list, alert-rules, silence-rules, resources-list, resource-groups
+**依據憲法條款 (Based on)**: `.specify/memory/constitution.md` (v1.2.0)
 
 ---
 
-## 一、功能概述 (Functional Overview)
+## 一、主要使用者情境（User Scenarios & Testing）
 
-提供統一的搜尋與篩選介面,支援多種頁面與條件組合
+### 主要使用者故事（Primary User Story）
+作為一名使用者，當我需要在任何一個列表頁面進行複雜的資料篩選時，我希望能有一個功能強大且體驗一致的進階搜尋介面。我希望點擊「搜尋」按鈕後，能彈出一個針對當前頁面內容的、包含多個篩選條件的表單，讓我可以精確地定位到我需要的資料。
 
----
+### 驗收情境（Acceptance Scenarios）
+1.  **Given** 我正在「事件列表」頁面。
+    **When** 我點擊工具列上的「搜尋和篩選」按鈕。
+    **Then** 系統必須彈出一個模態框，其中包含專門用於篩選**事件**的欄位，例如「狀態」、「嚴重性」和「指派人」。
 
-## 二、操作邏輯 (User Flow)
+2.  **Given** 我正在「審計日誌」頁面。
+    **When** 我點擊工具列上的「檢索和篩選」按鈕。
+    **Then** 系統必須彈出同一個模態框，但其內容應變為專門用於篩選**審計日誌**的欄位，例如「操作人員」、「動作類型」和「時間範圍」。
 
-### 主要使用流程
-1. 使用者點擊「搜尋和篩選」按鈕
-2. 系統開啟模態框,載入可用篩選條件
-3. 使用者選擇條件並輸入值
-4. 使用者點擊「搜尋」
-5. 系統關閉模態框,回傳篩選條件至父元件
-6. 父元件依條件重新載入資料
+3.  **Given** 我在搜尋模態框中設定了多個篩選條件。
+    **When** 我點擊模態框右下角的「搜尋」按鈕。
+    **Then** `onSearch` 回呼函式必須被觸發，並傳出一個包含我所設定的所有篩選條件的物件，同時模態框應自動關閉。
 
-### 互動事件
-- `onClose`: 關閉模態框
-- `onSearch`: 使用者點擊搜尋,回傳篩選條件物件
-- `onReset`: 使用者重置篩選條件
-- 各條件欄位的 onChange 事件
-
----
-
-## 三、狀態管理 (State Management)
-
-### 內部狀態
-- `filters`: 當前篩選條件物件
-- `tempFilters`: 暫存篩選條件(未套用前)
-- `availableOptions`: 可用的篩選選項(從 API 或 Context 取得)
-
-### 外部控制
-- `isOpen`: 控制顯示/隱藏(由父元件管理)
-- `initialFilters`: 初始篩選條件(由父元件傳入)
+### 邊界案例（Edge Cases）
+- 如果 `useOptions` hook 尚未載入完成，模態框應顯示一個載入中狀態，而不是顯示空的下拉選單。
+- 如果為某個 `page` 傳入了 `initialFilters`，模態框打開時應正確地預先填寫這些篩選條件。
+- 點擊「清除篩選」按鈕應能將表單內所有欄位重設為空值。
 
 ---
 
-## 四、可配置屬性 (Props)
+## 二、功能需求（Functional Requirements）
 
-| 屬性名稱 | 類型 | 必填 | 預設值 | 說明 |
-|----------|------|------|--------|------|
-| isOpen | boolean | ✅ | - | 控制顯示/隱藏 |
-| onClose | () => void | ✅ | - | 關閉事件 |
-| onSearch | (filters) => void | ✅ | - | 搜尋事件 |
-| page | string | ✅ | - | 頁面識別碼 |
-| initialFilters | object | ❌ | {} | 初始篩選條件 |
-
----
-
-## 五、錯誤與例外處理 (Error Handling)
-
-- 當 API 載入篩選選項失敗時,顯示錯誤訊息並提供重試按鈕
-- 當必填篩選條件未填寫時,標記欄位錯誤並阻止搜尋
-- 當搜尋條件組合無效時,顯示提示訊息
+- **FR-001**：元件必須（MUST）是一個模態框（Modal）對話方塊。
+- **FR-002**：元件必須（MUST）接受一個 `page` 屬性，並根據此屬性的值，動態地渲染出對應的篩選表單。
+- **FR-003**：元件必須（MUST）為不同的 `page` 提供不同的、上下文感知的篩選欄位集合。
+- **FR-004**：元件必須（MUST）從 `useOptions` hook 或其他 API 獲取篩選欄位的下拉選單選項，以確保選項的中心化管理。
+- **FR-005**：當使用者確認搜尋時，元件必須（MUST）透過 `onSearch` 回呼函式將當前的篩選條件物件傳遞給父元件。
+- **FR-006**：元件必須（MUST）提供一個「清除篩選」按鈕，用於重設當前模態框內的篩選條件。
+- **FR-007**：[NEEDS CLARIFICATION: 目前元件的篩選器註冊邏輯是硬式編碼在元件內部的 `render...Filters` 函式中。這使得新增一個新的可篩選頁面需要直接修改此元件。應考慮將篩選器的「定義」與元件本身解耦，例如透過一個可注入的設定物件。]
 
 ---
 
-## 六、關聯模組 (Related Modules)
+## 三、可配置屬性（Props）
 
-以下模組使用此元件:
-- **incidents-list**
-- **alert-rules**
-- **silence-rules**
-- **resources-list**
-- **resource-groups**
-
----
-
-## 七、設計原則遵循 (Design Principles)
-
-| 項目 | 狀態 | 說明 |
-|------|------|------|
-| 可重用性 (Reusability) | ✅ | 元件設計為通用,可跨多個模組使用 |
-| 一致性 (Consistency) | ✅ | 遵循統一的 UI 設計系統與互動模式 |
-| 可存取性 (Accessibility) | ✅ | 支援鍵盤導航與 ARIA 屬性 |
-| 主題支援 (Theme Support) | ✅ | 使用 Theme Token,支援深淺色主題 |
-| i18n 支援 (i18n) | ✅ | 所有文案透過 useContent 存取 |
+| 屬性名 | 類型 | 必填 | 描述 |
+|---|---|---|---|
+| `page` | `string` | 是 | 指定當前頁面的標識符，用於決定渲染哪一套篩選欄位。 |
+| `isOpen` | `boolean` | 是 | 控制模態框的開啟或關閉狀態。 |
+| `onClose` | `() => void` | 是 | 當使用者請求關閉模態框時觸發的回呼函式。 |
+| `onSearch` | `(filters: Filters) => void`| 是 | 當使用者點擊「搜尋」按鈕時觸發的回呼函式，傳出最終的篩選條件物件。 |
+| `initialFilters` | `Filters` | 是 | 用於初始化模態框內表單的篩選條件。 |
 
 ---
 
-## 四、篩選條件格式統一機制 (Filter Schema Unification)
+## 四、關聯模組（Associated Modules）
 
-### 4.1 JSON Schema 定義篩選欄位
-
-為確保不同頁面的篩選條件格式統一,採用 **JSON Schema** 定義篩選欄位結構。
-
-#### Filter Schema 結構
-
-```typescript
-interface FilterSchema {
-  fields: FilterField[];
-}
-
-interface FilterField {
-  key: string;                    // 欄位唯一識別碼
-  label: string;                  // 顯示標籤
-  type: FieldType;                // 欄位類型
-  options?: SelectOption[];       // 選項(select 類型)
-  multiple?: boolean;             // 是否多選
-  defaultValue?: any;             // 預設值
-  placeholder?: string;           // 提示文字
-  api?: string;                   // API 端點(動態選項)
-}
-
-type FieldType = 'select' | 'user-select' | 'date-range' | 'text' | 'number';
-```
-
-#### 使用範例
-
-**事件列表篩選 Schema**:
-```typescript
-export const incidentFilterSchema: FilterSchema = {
-  fields: [
-    {
-      key: 'status',
-      label: '狀態',
-      type: 'select',
-      options: [
-        { value: 'open', label: '進行中' },
-        { value: 'resolved', label: '已解決' },
-        { value: 'closed', label: '已關閉' },
-      ],
-      multiple: true,
-      defaultValue: ['open'],
-    },
-    {
-      key: 'severity',
-      label: '嚴重性',
-      type: 'select',
-      options: [
-        { value: 'critical', label: 'Critical' },
-        { value: 'high', label: 'High' },
-      ],
-      multiple: true,
-    },
-    {
-      key: 'assignee',
-      label: '負責人',
-      type: 'user-select',
-      multiple: true,
-      api: '/api/v1/users',
-    },
-    {
-      key: 'created_at',
-      label: '建立時間',
-      type: 'date-range',
-      defaultValue: { start: 'now-7d', end: 'now' },
-    },
-  ],
-};
-```
-
-### 4.2 動態渲染表單元件
-
-根據 Schema 動態渲染對應的表單元件:
-
-- `select`: 下拉選單 (Ant Design Select)
-- `user-select`: 使用者選擇器 (支援搜尋)
-- `date-range`: 日期範圍選擇器
-- `text`: 文字輸入框
-- `number`: 數值輸入框
-
-### 4.3 後端 API 格式統一
-
-**請求格式**:
-```
-GET /api/v1/incidents?filters={"status":["open"],"severity":["critical"]}
-GET /api/v1/resources?filters={"type":["server"],"status":["online"]}
-```
-
-**後端解析**:
-```typescript
-interface FilterParams {
-  [key: string]: string | string[] | number | DateRange;
-}
-```
-
-### 4.4 前後端分工
-
-| 項目 | 前端 | 後端 |
-|------|------|------|
-| Filter Schema 定義 | ✅ | - |
-| 動態表單渲染 | ✅ | - |
-| 篩選條件驗證 | ✅ | ✅ |
-| API 端點提供選項資料 | - | ✅ |
-| 篩選邏輯執行 | - | ✅ |
-
----
-
-## 五、進階搜尋支援範圍 (Advanced Search)
-
-### 5.1 第一階段: 簡化版 (AND 邏輯)
-
-**推薦優先實作** - 所有篩選條件使用 AND 邏輯組合
-
-**邏輯範例**:
-```
-status = "open" AND severity IN ["critical", "high"] AND assignee = "Alice"
-```
-
-**UI 設計**:
-```
-┌─────────────────────────────────────┐
-│ 進階搜尋                        [✕] │
-├─────────────────────────────────────┤
-│ 狀態:    ☑ 進行中 ☐ 已解決 ☐ 已關閉│
-│ 嚴重性:  ☑ Critical ☑ High ☐ Medium│
-│ 負責人:  [Alice ▼]                  │
-│ 建立時間: [最近 7 天 ▼]             │
-│ 關鍵字:  [___________________]      │
-├─────────────────────────────────────┤
-│ 所有條件需同時滿足 (AND 邏輯)        │
-├─────────────────────────────────────┤
-│           [重置]  [搜尋]            │
-└─────────────────────────────────────┘
-```
-
-**特點**:
-- 簡單直覺,符合大多數使用場景
-- 降低學習成本
-- 實作簡單,維護容易
-
-### 5.2 第二階段: 進階版 (AND/OR/NOT)
-
-**未來擴展** - 支援複雜邏輯組合,適用於進階使用者
-
-**邏輯範例**:
-```
-(status = "open" OR status = "in_progress")
-AND
-(severity = "critical" OR assignee = "Alice")
-AND NOT
-(team = "Platform")
-```
-
-**UI 設計**:
-```
-┌─────────────────────────────────────┐
-│ 進階搜尋 (條件建構器)           [✕] │
-├─────────────────────────────────────┤
-│ ┌─ 條件群組 1 ─────────────────┐   │
-│ │ AND/OR: [AND ▼]              │   │
-│ │                              │   │
-│ │ • 狀態 = [進行中 ▼]           │   │
-│ │ • 嚴重性 IN [Critical, High]  │   │
-│ │                              │   │
-│ │ [+ 新增條件] [✕ 刪除群組]     │   │
-│ └──────────────────────────────┘   │
-│                                     │
-│ [AND ▼] (群組間邏輯)                │
-│                                     │
-│ ┌─ 條件群組 2 ─────────────────┐   │
-│ │ AND/OR: [OR ▼]               │   │
-│ │                              │   │
-│ │ • 負責人 = [Alice ▼]          │   │
-│ │ • 團隊 = [SRE ▼]              │   │
-│ │                              │   │
-│ │ [+ 新增條件]                  │   │
-│ └──────────────────────────────┘   │
-│                                     │
-│ [+ 新增群組]                        │
-├─────────────────────────────────────┤
-│ SQL 預覽:                           │
-│ WHERE (status = 'open' AND          │
-│        severity IN ('critical'))    │
-│   AND (assignee = 'Alice' OR        │
-│        team = 'SRE')                │
-├─────────────────────────────────────┤
-│           [重置]  [搜尋]            │
-└─────────────────────────────────────┘
-```
-
-**資料結構**:
-```typescript
-interface FilterQuery {
-  operator: 'AND' | 'OR';
-  conditions: Array<{
-    field: string;
-    operator: '=' | '!=' | 'IN' | 'NOT IN' | '>' | '<';
-    value: any;
-  } | FilterQuery>; // 支援巢狀
-}
-```
-
-### 5.3 實作建議
-
-1. **第一階段** (MVP): 實作簡化版 (AND 邏輯)
-2. **第二階段** (可選): 基於使用者反饋決定是否實作進階版
-
-### 5.4 前後端分工
-
-| 項目 | 前端 | 後端 |
-|------|------|------|
-| 簡化版篩選 UI | ✅ | - |
-| 進階版條件建構器 | ✅ | - |
-| AND 邏輯組合 | ✅ | ✅ |
-| OR/NOT 邏輯組合 | ✅ | ✅ |
-| SQL 預覽生成 | ✅ | - |
-| 條件驗證與執行 | - | ✅ |
-
----
-
-## 六、關聯模組 (Related Modules)
-
-以下模組使用此元件:
-- **incidents-list**
-- **alert-rules**
-- **silence-rules**
-- **resources-list**
-- **resource-groups**
-
----
-
-## 七、設計原則遵循 (Design Principles)
-
-| 項目 | 狀態 | 說明 |
-|------|------|------|
-| 可重用性 (Reusability) | ✅ | 元件設計為通用,可跨多個模組使用 |
-| 一致性 (Consistency) | ✅ | 遵循統一的 UI 設計系統與互動模式 |
-| 可存取性 (Accessibility) | ✅ | 支援鍵盤導航與 ARIA 屬性 |
-| 主題支援 (Theme Support) | ✅ | 使用 Theme Token,支援深淺色主題 |
-| i18n 支援 (i18n) | ✅ | 所有文案透過 useContent 存取 |
-
----
-
-## 八、待確認事項 (Clarifications)
-
-- ✅ ~~[NEEDS CLARIFICATION: 不同頁面的篩選條件來源與格式統一機制]~~ → **已解決: 採用 JSON Schema 定義篩選欄位**
-- ✅ ~~[NEEDS CLARIFICATION: 進階搜尋(複雜條件組合)的支援範圍]~~ → **已解決: 第一階段實作簡化版 (AND 邏輯),第二階段可選進階版 (AND/OR/NOT)**
-
----
-
-## 九、決策記錄 (Decision Records)
-
-### DR-001: 篩選條件格式統一
-
-**決策日期**: 2025-10-06
-**決策依據**: `_resolution-plan-phase2.md` § 1.6.1
-**決策者**: Spec Architect
-
-**決策內容**:
-- 採用 JSON Schema 定義篩選欄位
-- 支援動態表單渲染
-- 統一後端 API 格式
-
-**理由**:
-- 確保不同頁面篩選格式一致
-- 降低維護成本
-- 提升開發效率
-
-**前後端分工**:
-- 前端: Schema 定義、動態表單渲染、條件驗證
-- 後端: API 端點提供選項資料、篩選邏輯執行
-
----
-
-### DR-002: 進階搜尋支援範圍
-
-**決策日期**: 2025-10-06
-**決策依據**: `_resolution-plan-phase2.md` § 1.6.2
-**決策者**: Spec Architect
-
-**決策內容**:
-- 第一階段: 實作簡化版 (AND 邏輯)
-- 第二階段: 基於反饋實作進階版 (AND/OR/NOT)
-
-**理由**:
-- 簡化版滿足大多數使用場景
-- 降低學習成本與實作複雜度
-- 預留進階功能擴展空間
-
-**前後端分工**:
-- 前端: 條件建構器 UI、SQL 預覽生成
-- 後端: 複雜邏輯執行、條件驗證
+此元件是平台級的搜尋解決方案，被絕大多數的管理和列表頁面所使用，是確保篩選體驗一致性的核心。
+- 所有 `...ListPage.tsx` 頁面
+- 所有 `...HistoryPage.tsx` 頁面
+- 所有 `...ManagementPage.tsx` 頁面

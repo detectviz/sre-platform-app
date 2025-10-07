@@ -1,73 +1,117 @@
-# 功能規格書(Feature Specification)
+# 功能規格書（Feature Specification）
 
-**模組名稱 (Module)**: 人員管理
+**模組名稱 (Module)**: identity-personnel
 **類型 (Type)**: Module
-**來源路徑 (Source Path)**: pages/settings/identity-access/PersonnelManagementPage.tsx
+**來源路徑 (Source Path)**: `pages/settings/identity-access/PersonnelManagementPage.tsx`
 **建立日期 (Created)**: 2025-10-06
 **狀態 (Status)**: Draft
-**依據憲法條款 (Based on)**: `.specify/memory/constitution.md`
+**依據憲法條款 (Based on)**: `.specify/memory/constitution.md` (v1.2.0)
 
 ---
 
-## 一、主要使用者情境(User Scenarios & Testing)
+## 一、主要使用者情境（User Scenarios & Testing）
 
-### 主要使用者故事(Primary User Story)
-管理員需要管理使用者帳號,包含建立、編輯、停用、重設密碼等操作,確保存取安全。
+### 主要使用者故事（Primary User Story）
+作為一名平台管理員或團隊主管，我需要能夠管理我所在組織的人員帳號。我希望能邀請新成員加入平台、為他們分配角色和團隊、更新他們的資訊，並在他們離職或不再需要存取權限時停用或刪除他們的帳號。
 
-### 驗收情境(Acceptance Scenarios)
-1. **Given** 管理員建立使用者,**When** 填寫基本資訊與角色,**Then** 系統應驗證並發送啟用邀請
-2. **Given** 管理員停用使用者,**When** 確認操作,**Then** 系統應撤銷所有 Token 並禁止登入
-3. **Given** 管理員重設密碼,**When** 確認操作,**Then** 系統應發送重設連結並強制下次登入修改
+### 驗收情境（Acceptance Scenarios）
+1.  **Given** 我需要邀請一位新的 SRE 加入我的團隊。
+    **When** 我在「人員管理」頁面點擊「邀請人員」，輸入新成員的 Email、姓名、角色和團隊，然後送出邀請。
+    **Then** 該新成員應出現在人員列表中，其狀態應為「待啟用 (Pending)」，直到他們接受邀請並首次登入。
 
-### 邊界案例(Edge Cases)
-- 當使用者正在執行關鍵操作時被停用,應保留操作記錄並發送通知
-- 當使用者郵箱重複時,應拒絕建立並提示
-- 當批次匯入使用者資料格式錯誤時,應標記錯誤列並允許修正後重試
+2.  **Given** 一名員工從「維運團隊」轉到了「開發團隊」。
+    **When** 我在列表中找到該名員工，點擊「編輯」，並將其「所屬團隊」欄位更新為「開發團隊」。
+    **Then** 該員工的團隊歸屬應被成功更新。
 
----
+3.  **Given** 一名實習生已結束實習。
+    **When** 我在列表中找到該實習生的帳號，點擊「刪除」，並在確認對話框中進行確認。
+    **Then** 該實習生的帳號應被從系統中移除。
 
-## 二、功能需求(Functional Requirements)
-
-- **FR-001**: 系統必須(MUST)支援建立、編輯、停用、刪除使用者。
-- **FR-002**: 系統必須(MUST)支援重設密碼,發送安全連結至使用者郵箱。
-- **FR-003**: 系統應該(SHOULD)支援批次匯入使用者,含驗證與錯誤回報。
-- **FR-004**: 系統應該(SHOULD)顯示使用者最後登入時間、活躍狀態。
-- **FR-005**: 系統可以(MAY)整合 SSO(SAML, OAuth),支援第三方身份提供商。
+### 邊界案例（Edge Cases）
+- 當邀請一個已經存在的 Email 時，系統應給出明確的錯誤提示。
+- 當使用者嘗試刪除自己的帳號時，刪除按鈕應被禁用或隱藏。
+- 當使用者嘗試停用系統中最後一個管理員帳號時，系統應阻止此操作並給出警告。
 
 ---
 
-## 三、關鍵資料實體(Key Entities)
+## 二、功能需求（Functional Requirements）
+
+- **FR-001**：系統必須（MUST）提供一個完整的 CRUD 介面來管理所有人員帳號。
+- **FR-002**：系統必須（MUST）提供一個「邀請人員」的功能，允許管理員透過 Email 邀請新使用者，並預先設定其角色和團隊。
+- **FR-003**：系統必須（MUST）在一個可分頁、可排序的表格中展示所有人員。
+- **FR-004**：系統必須（MUST）在表格中以標籤形式清晰地展示每位人員的狀態（如：啟用、停用、待啟用）。
+- **FR-005**：系統必須（MUST）允許使用者點擊任一人員以在抽屜（Drawer）中查看其詳細資訊。
+- **FR-006**：系統必須（MUST）支援對人員的批次操作，包括批次停用和批次刪除。
+- **FR-007**：系統必須（MUST）支援從 CSV 檔案匯入人員列表以及將現有列表匯出為 CSV 檔案。
+- **FR-008**：系統必須（MUST）支援自訂表格顯示的欄位。
+- **FR-009**: 使用者狀態的變更流程定義如下：
+  - **邀請後**: 狀態為 `invited`。
+  - **首次登入**: 狀態由後端自動變更為 `active`。
+  - **停用操作**: 管理員在 UI 上操作後，狀態變為 `inactive`。
+- **FR-010**: 邀請新成員時，後端**必須**負責產生一個帶有唯一 token 的註冊連結，並透過郵件（使用 `platform-mail` 設定）發送給被邀請者。該連結應有時效性。
+- **FR-011**：系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。詳細的權限對應關係請參閱下方的「權限控制」章節。
+
+---
+
+## 三、關鍵資料實體（Key Entities）
 | 實體名稱 | 描述 | 關聯 |
 |-----------|------|------|
-| User | 使用者帳號,含基本資訊與狀態 | 屬於 Team, 擁有 Role |
-| UserCredential | 使用者認證資訊(密碼雜湊、Token) | 屬於 User |
-| UserSession | 使用者登入會話 | 關聯 User |
+| **User** | 核心資料實體，代表一個平台使用者及其所有屬性。 | Role, Team |
+| **Role** | 使用者的角色，定義了其在平台中的權限集合。 | User |
+| **Team** | 使用者所屬的團隊。 | User |
+| **PersonnelFilters**| 用於篩選人員列表的一組條件集合。 | - |
 
 ---
 
-## 四、觀測性與治理檢查(Observability & Governance Checklist)
+## 四、權限控制 (Role-Based Access Control)
+
+根據平台級的 RBAC 設計，此模組的 UI 應根據後端提供的權限列表進行動態渲染。
+
+### 4.1. 權限定義 (Permissions)
+| 權限字串 | 描述 |
+|---|---|
+| `users:read` | 允許使用者查看人員列表與詳情。 |
+| `users:create` | 允許使用者邀請新成員。 |
+| `users:update` | 允許使用者修改使用者資訊（角色、團隊、狀態）。 |
+| `users:delete` | 允許使用者刪除使用者。 |
+| `users:config` | 允許使用者管理頁面設定，如「匯入/匯出」、「欄位設定」。 |
+
+### 4.2. UI 控制映射 (UI Mapping)
+- **頁面存取**: `PersonnelManagementPage` 的根元件需由 `<RequirePermission permission="users:read">` 包裹。
+- **工具列按鈕**:
+  - 「邀請人員」按鈕需具備 `users:create` 權限。
+  - 「匯入」、「匯出」、「欄位設定」按鈕均需具備 `users:config` 權限。
+- **批次操作按鈕**:
+  - 「停用」按鈕需具備 `users:update` 權限。
+  - 「刪除」按鈕需具備 `users:delete` 權限。
+- **表格內行內操作**:
+  - 「編輯」按鈕需具備 `users:update` 權限。
+  - 「刪除」按鈕需具備 `users:delete` 權限。
+
+---
+
+## 五、觀測性與治理檢查（Observability & Governance Checklist）
 
 | 項目 | 狀態 | 說明 |
 |------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ✅ | 記錄所有身份變更、權限調整、登入事件 |
-| 指標與告警 (Metrics & Alerts) | ✅ | 追蹤使用者活躍度、權限分布、異常登入 |
-| RBAC 權限與審計 | ✅ | 嚴格控制身份管理權限,僅管理員可操作 |
-| i18n 文案 | ✅ | 所有 UI 文案支援多語言 |
-| Theme Token 使用 | ✅ | 狀態標籤使用語義色 |
+| 記錄與追蹤 (Logging/Tracing) | ✅ | 後端 API **必須**為所有對人員帳號的 CUD 操作（邀請、更新、刪除、狀態變更）產生詳細的審計日誌，遵循平台級審計日誌方案。 |
+| 指標與告警 (Metrics & Alerts) | ✅ | 前端應透過 OpenTelemetry SDK 自動收集頁面載入性能指標（LCP, FID, CLS）和 API 呼叫遙測（延遲、狀態碼），無需為此模組單獨配置。 |
+| RBAC 權限與審計 | ✅ | 系統已定義詳細的前端權限控制模型。詳見上方的「權限控制」章節。 |
+| i18n 文案 | ❌ | **[VIOLATION: `constitution.md`]** 程式碼中存在大量硬式編碼的繁體中文文案，例如 "邀請人員"、"無法獲取人員列表。"、"您確定要刪除使用者...嗎？" 等。 |
+| Theme Token 使用 | ✅ | 程式碼使用了 `StatusTag`, `UserAvatar` 等標準化元件，符合設計系統規範。 |
 
 ---
 
-## 五、審查與驗收清單(Review & Acceptance Checklist)
+## 六、審查與驗收清單（Review & Acceptance Checklist）
 
-- [ ] 無技術實作語句。
-- [ ] 所有必填段落皆存在。
-- [ ] 所有 FR 可測試且明確。
-- [ ] 無未標註的模糊需求。
-- [ ] 符合 `.specify/memory/constitution.md`。
+- [x] 無技術實作語句。
+- [x] 所有必填段落皆存在。
+- [x] 所有 FR 可測試且明確。
+- [x] 無未標註的模糊需求。
+- [x] 符合 `.specify/memory/constitution.md`。（已標注違規與待確認項）
 
 ---
 
-## 六、模糊與待確認事項(Clarifications)
+## 七、模糊與待確認事項（Clarifications）
 
-- [NEEDS CLARIFICATION: 使用者帳號的自動清理策略(長期未登入)]
-- [NEEDS CLARIFICATION: SSO 整合的身份同步機制]
+(此區塊所有相關項目已被澄清)

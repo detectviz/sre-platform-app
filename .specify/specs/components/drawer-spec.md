@@ -1,251 +1,76 @@
-# 元件規格書 (Component Specification)
+# 功能規格書（Feature Specification）
 
-**元件名稱 (Component)**: 抽屜元件
+**模組名稱 (Module)**: Drawer
 **類型 (Type)**: Component
-**來源路徑 (Source Path)**: components/Drawer.tsx
+**來源路徑 (Source Path)**: `components/Drawer.tsx`
 **建立日期 (Created)**: 2025-10-06
 **狀態 (Status)**: Draft
-**依據憲法條款 (Based on)**: `.specify/memory/constitution.md`
-**使用次數**: 8 次
-**使用模組**: incidents-list, resources-list, resource-groups, discovery-jobs
+**依據憲法條款 (Based on)**: `.specify/memory/constitution.md` (v1.2.0)
 
 ---
 
-## 一、功能概述 (Functional Overview)
+## 一、主要使用者情境（User Scenarios & Testing）
 
-側邊滑出抽屜,用於顯示詳情或表單
+### 主要使用者故事（Primary User Story）
+作為一名使用者，當我點擊列表中的一個項目以查看其詳細資訊時，我不希望被帶到一個全新的頁面而失去當前的列表上下文。我希望能從螢幕邊緣滑出一個面板來展示詳情，當我查看完畢後，可以輕鬆地關閉它並回到我原來的位置繼續瀏覽。
 
----
+### 驗收情境（Acceptance Scenarios）
+1.  **Given** 一個 Drawer 元件處於關閉狀態 (`isOpen={false}`)。
+    **When** 父元件將 `isOpen` 屬性更新為 `true`。
+    **Then** Drawer 必須從螢幕右側平滑地滑入，並顯示其標題和內容。同時，頁面主體的滾動條應被禁用。
 
-## 二、操作邏輯 (User Flow)
+2.  **Given** 一個 Drawer 元件處於開啟狀態。
+    **When** 我點擊抽屜右上角的「X」按鈕。
+    **Then** `onClose` 回呼函式必須被觸發，父元件應將 `isOpen` 更新為 `false`，使 Drawer 平滑地滑出螢幕。
 
-### 主要使用流程
-1. 父元件設定 isOpen 為 true
-2. Drawer 從右側滑入顯示
-3. 使用者查看內容或進行操作
-4. 使用者點擊關閉按鈕或背景遮罩
-5. Drawer 觸發 onClose 事件
-6. 父元件設定 isOpen 為 false,Drawer 滑出關閉
+3.  **Given** 一個 Drawer 元件處於開啟狀態。
+    **When** 我按下鍵盤上的 `Escape` 鍵。
+    **Then** `onClose` 回呼函式必須被觸發，Drawer 應被關閉。
 
-### 互動事件
-- `onClose`: 關閉抽屜事件
-- ESC 鍵按下觸發 onClose
-- 背景遮罩點擊觸發 onClose
-- 內容區的事件由 children 處理
+4.  **Given** 一個 Drawer 元件需要顯示額外的操作按鈕，例如「重新發送」。
+    **When** 父元件向 `extra` 屬性傳入一個按鈕元件。
+    **Then** 該按鈕必須顯示在抽屜標題列的「X」按鈕旁邊。
 
----
-
-## 三、狀態管理 (State Management)
-
-### 內部狀態
-- `isAnimating`: 動畫進行中標記
-
-### 外部控制
-- `isOpen`: 控制顯示/隱藏
-- `title`: 標題
-- `width`: 寬度(如 w-1/2, w-3/4)
-- `children`: 內容
+### 邊界案例（Edge Cases）
+- 即使 Drawer 的內容過多導致其內部出現滾動條，頁面主體的滾動條也應保持鎖定狀態。
+- 快速連續地切換 `isOpen` 狀態，元件的動畫應能正常表現，不會出現狀態錯亂。
 
 ---
 
-## 四、可配置屬性 (Props)
+## 二、功能需求（Functional Requirements）
 
-| 屬性名稱 | 類型 | 必填 | 預設值 | 說明 |
-|----------|------|------|--------|------|
-| isOpen | boolean | ✅ | - | 控制顯示/隱藏 |
-| onClose | () => void | ✅ | - | 關閉事件 |
-| title | string | ✅ | - | 標題 |
-| width | string | ❌ | 'w-1/2' | 寬度類別 |
-| children | ReactNode | ✅ | - | 內容 |
-
----
-
-## 五、錯誤與例外處理 (Error Handling)
-
-- 當內容渲染錯誤時,顯示錯誤邊界
-- 當動畫執行失敗時,強制完成開啟/關閉狀態
-- 無內部業務邏輯錯誤處理
+- **FR-001**：元件必須（MUST）是一個從螢幕右側滑出的面板容器。
+- **FR-002**：元件的顯示和隱藏必須（MUST）由外部傳入的 `isOpen` 屬性完全控制。
+- **FR-003**：元件必須（MUST）提供至少三種關閉途徑：點擊關閉按鈕、點擊遮罩層、按下 `Escape` 鍵。所有途徑都應觸發 `onClose` 回呼函式。
+- **FR-004**：當元件開啟時，必須（MUST）禁用頁面主體的滾動條；關閉時必須恢復。
+- **FR-005**：元件必須（MUST）允許透過 `title` 屬性自訂標題，並透過 `children` 屬性傳入其主體內容。
+- **FR-006**：元件必須（MUST）允許透過 `width` 屬性自訂其寬度。
+- **FR-007**：元件應該（SHOULD）提供一個 `extra` 屬性，用於在標題區域注入額外的操作元件。
+- **FR-008**：元件的滑入滑出必須（MUST）具備平滑的動畫效果。
 
 ---
 
-## 六、關聯模組 (Related Modules)
+## 三、可配置屬性（Props）
 
-以下模組使用此元件:
-- **incidents-list**
-- **resources-list**
-- **resource-groups**
-- **discovery-jobs**
-
----
-
-## 七、設計原則遵循 (Design Principles)
-
-| 項目 | 狀態 | 說明 |
-|------|------|------|
-| 可重用性 (Reusability) | ✅ | 元件設計為通用,可跨多個模組使用 |
-| 一致性 (Consistency) | ✅ | 遵循統一的 UI 設計系統與互動模式 |
-| 可存取性 (Accessibility) | ✅ | 支援鍵盤導航與 ARIA 屬性 |
-| 主題支援 (Theme Support) | ✅ | 使用 Theme Token,支援深淺色主題 |
-| i18n 支援 (i18n) | ✅ | 所有文案透過 useContent 存取 |
+| 屬性名 | 類型 | 必填 | 描述 |
+|---|---|---|---|
+| `title` | `string` | 是 | 顯示在抽屜頂部的標題文字。 |
+| `isOpen` | `boolean` | 是 | 控制抽屜的開啟或關閉狀態。 |
+| `onClose` | `() => void` | 是 | 當使用者請求關閉抽屜時觸發的回呼函式。 |
+| `children` | `React.ReactNode`| 是 | 顯示在抽屜主體部分的內容。 |
+| `width` | `string` | 否 | 設定抽屜寬度的 CSS class。預設為 `'w-2/3'`。 |
+| `extra` | `React.ReactNode`| 否 | 顯示在標題列右側的額外內容（如操作按鈕）。 |
 
 ---
 
-## 四、堆疊管理機制 (Stack Management)
+## 四、關聯模組（Associated Modules）
 
-### 4.1 多層抽屜的堆疊管理
-
-**參照**: `common/modal-interaction-pattern.md` § 5.3
-
-Drawer 的堆疊管理遵循統一的 Modal 互動規範:
-
-#### Z-index 規則
-
-| 元件 | Z-index | 說明 |
-|------|---------|------|
-| Modal Level 1 | 1000 | 主 Modal |
-| Modal Level 2 | 1050 | 子 Modal |
-| Drawer | 1100 | 永遠在最上層 |
-| Toast | 9999 | 全域通知 |
-
-#### 使用場景
-
-- **Drawer 可疊加在 Modal 之上** - 用於第 3 層互動
-- **Drawer 不建議多層堆疊** - 若需多層展示,改用 Tabs 或 Accordion
-
-#### 焦點管理
-
-- 開啟 Drawer 時,焦點移至 Drawer
-- 關閉 Drawer 時,焦點回到觸發元素 (通常是 Modal)
-- ESC 鍵關閉最上層 Drawer
-
-#### 前後端分工
-
-| 項目 | 前端 | 後端 |
-|------|------|------|
-| Z-index 設定 | ✅ | - |
-| 堆疊狀態管理 | ✅ | - |
-| 焦點管理 | ✅ | - |
-
----
-
-## 五、預載入策略 (Preload Strategy)
-
-### 5.1 抽屜內容的載入時機與快取策略
-
-根據 Drawer 內容類型,採用不同的預載入策略:
-
-#### 預載入策略矩陣
-
-| Drawer 類型 | 載入時機 | 快取策略 | 快取時間 | 理由 |
-|------------|---------|---------|---------|------|
-| 事件詳情 | 開啟時載入 | 快取 | 5 分鐘 | 資料可能變更 |
-| 資源詳情 | 開啟時載入 | 快取 | 10 分鐘 | 資料較穩定 |
-| 操作日誌 | 開啟時載入 | 不快取 | - | 需即時資料 |
-| 說明文件 | 預先載入 | 永久快取 | - | 靜態內容 |
-
-#### 實作要點
-
-- 使用 React Query 的 `enabled` 參數控制載入時機
-- 使用 `staleTime` 控制快取時間
-- 顯示載入骨架屏 (Skeleton) 提升體驗
-- 提供「刷新」按鈕重新載入資料
-
-#### 快取失效提示
-
-- 顯示「最後更新時間」
-- 資料過時時顯示警告 Banner
-- 提供「刷新」按鈕
-
-#### 效能優化
-
-- 預先載入常用 Drawer 內容
-- 使用 HTTP ETag 實現條件請求
-- 大型資料使用分段載入
-
-#### 前後端分工
-
-| 項目 | 前端 | 後端 |
-|------|------|------|
-| 載入時機控制 | ✅ | - |
-| 快取策略實作 | ✅ | - |
-| 骨架屏顯示 | ✅ | - |
-| 刷新按鈕 | ✅ | - |
-| 資料 API | ✅ | ✅ |
-| Cache-Control Header | - | ✅ |
-| ETag 支援 | - | ✅ |
-
----
-
-## 六、關聯模組 (Related Modules)
-
-以下模組使用此元件:
-- **incidents-list**
-- **resources-list**
-- **resource-groups**
-- **discovery-jobs**
-
----
-
-## 七、設計原則遵循 (Design Principles)
-
-| 項目 | 狀態 | 說明 |
-|------|------|------|
-| 可重用性 (Reusability) | ✅ | 元件設計為通用,可跨多個模組使用 |
-| 一致性 (Consistency) | ✅ | 遵循統一的 UI 設計系統與互動模式 |
-| 可存取性 (Accessibility) | ✅ | 支援鍵盤導航與 ARIA 屬性 |
-| 主題支援 (Theme Support) | ✅ | 使用 Theme Token,支援深淺色主題 |
-| i18n 支援 (i18n) | ✅ | 所有文案透過 useContent 存取 |
-
----
-
-## 八、待確認事項 (Clarifications)
-
-- ✅ ~~[NEEDS CLARIFICATION: 多層抽屜的堆疊管理機制]~~ → **已解決: 參照 `modal-interaction-pattern.md`,Drawer 使用 z-index 1100,永遠在最上層**
-- ✅ ~~[NEEDS CLARIFICATION: 抽屜內容的預載入策略]~~ → **已解決: 根據內容類型採用不同快取策略,5-10 分鐘快取時間**
-
----
-
-## 九、決策記錄 (Decision Records)
-
-### DR-001: Drawer 堆疊管理機制
-
-**決策日期**: 2025-10-06
-**決策依據**: `_resolution-plan-phase2.md` § 1.4.1, `modal-interaction-pattern.md` § 5.3
-**決策者**: Spec Architect
-
-**決策內容**:
-- Drawer 使用 z-index 1100,永遠在 Modal 之上
-- Drawer 可疊加在 Modal 上,作為第 3 層互動
-- 不建議 Drawer 多層堆疊,改用 Tabs/Accordion
-
-**理由**:
-- 統一 Modal/Drawer 的層級管理
-- 提供第 3 層互動方案
-- 避免過深的層級導致使用者困惑
-
-**前後端分工**:
-- 前端: Z-index 控制、焦點管理
-- 後端: 無需參與
-
----
-
-### DR-002: Drawer 預載入策略
-
-**決策日期**: 2025-10-06
-**決策依據**: `_resolution-plan-phase2.md` § 1.4.2
-**決策者**: Spec Architect
-
-**決策內容**:
-- 開啟時載入 + React Query 快取
-- 事件詳情快取 5 分鐘,資源詳情快取 10 分鐘
-- 操作日誌不快取,說明文件永久快取
-- 提供刷新按鈕與過時提示
-
-**理由**:
-- 平衡效能與資料新鮮度
-- 減少不必要的 API 呼叫
-- 提升使用者體驗
-
-**前後端分工**:
-- 前端: 載入控制、快取策略、UI 提示
-- 後端: Cache-Control Header、ETag 支援
+此元件是平台中實現「主從式介面」的核心容器，被多個模組用於顯示詳情或次級流程：
+- `incidents-list` (顯示事件詳情)
+- `resources-list` (顯示資源詳情)
+- `resources-group` (顯示群組詳情)
+- `automation-history` (顯示執行日誌)
+- `identity-personnel` (顯示人員詳情)
+- `identity-team` (顯示團隊詳情)
+- `identity-audit` (顯示審計詳情)
+- `notification-history` (顯示通知詳情)
