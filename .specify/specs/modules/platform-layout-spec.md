@@ -42,6 +42,7 @@
 - **FR-004**：在編輯模態框中，使用者必須（MUST）能夠透過拖曳或上下按鈕來調整已選小工具的顯示順序。
 - **FR-005**：在編輯模態框中，使用者必須（MUST）能夠為每個已選的 KPI 小工具獨立設定其顏色主題（如預設、成功、警告、錯誤等）。
 - **FR-006**：編輯模態框中必須（MUST）提供一個即時預覽區域，展示所選 KPI 卡片在套用其真實資料和所選顏色主題後的外觀。
+- **FR-012**：顏色主題調整採用「預覽後儲存」策略：使用者於模態中即時預覽 token 更新，但僅在按下「儲存」後才將 CSS 變數寫回全域佈景，並支援一鍵還原預設。
 - **FR-007**：系統必須（MUST）支援將所有版面配置設定匯出為單一的 JSON 檔案。
 - **FR-008**: 所有可用的 KPI 小工具定義（`LayoutWidget`）及其預覽資料（`KpiDataEntry`），**必須**由後端 API 動態提供。前端**不應**硬式編碼任何小工具定義。
 - **FR-009**: 所有可進行版面配置的頁面列表，**必須**由後端 API 動態提供，以確保其可擴展性。
@@ -82,11 +83,11 @@
 
 | 項目 | 狀態 | 說明 |
 |------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ✅ | 後端 API **必須**為所有對版面配置的更新操作 (`settings:layout:update`) 產生詳細的審計日誌，記錄修改者、目標頁面以及變更前後的配置，遵循平台級審計日誌方案。 |
-| 指標與告警 (Metrics & Alerts) | ✅ | 前端應透過平台級 OpenTelemetry SDK 自動收集頁面載入性能指標（LCP, FID, CLS）和 API 呼叫遙測（延遲、狀態碼），無需為此模組單獨配置。 |
-| RBAC 權限與審計 | ✅ | 系統已定義詳細的前端權限控制模型。詳見上方的「權限控制」章節。 |
-| i18n 文案 | ⚠️ | **[PARTIAL VIOLATION: `constitution.md`]** 此頁面已使用 `useContent` hook，但仍存在後備的硬式編碼英文字串，例如 `'無法獲取版面配置資料。'`。 |
-| Theme Token 使用 | ✅ | 程式碼使用了 Ant Design 的 `theme.useToken()` 和自訂的 `useTheme` hook，符合設計系統規範。 |
+| 記錄與追蹤 (Logging/Tracing) | ❌ | `pages/settings/platform/LayoutSettingsPage.tsx` 未串接遙測或審計 API，僅以本地狀態與 toast 呈現結果。 |
+| 指標與告警 (Metrics & Alerts) | ❌ | 頁面缺少 OpenTelemetry 或自訂指標，所有 API 呼叫僅透過共享客戶端發送。 |
+| RBAC 權限與審計 | ❌ | UI 未使用 `usePermissions` 或 `<RequirePermission>`，所有操作目前對所有登入者可見，需依《common/rbac-observability-audit-governance.md》導入守衛。 |
+| i18n 文案 | ⚠️ | 主要字串透過內容 context 取得，但錯誤與提示訊息仍有中文 fallback，需要補強內容來源。 |
+| Theme Token 使用 | ⚠️ | 介面混用 `app-*` 樣式與 Tailwind 色票（如 `bg-slate-*`），尚未完全以設計 token 命名。 |
 
 ---
 
@@ -102,4 +103,5 @@
 
 ## 七、模糊與待確認事項（Clarifications）
 
-（無）
+- 主題色調整採先預覽後儲存：模態內即時更新預覽區的 CSS 變數，按下儲存後才寫回全域佈景並觸發重新整理提示。
+- [RESOLVED - 2025-10-07] 已採納《common/rbac-observability-audit-governance.md》定義的權限守衛與審計方案；此模組必須導入 `usePermissions`/`<RequirePermission>` 並依規範等待後端審計 API。

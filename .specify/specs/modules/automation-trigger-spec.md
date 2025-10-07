@@ -41,8 +41,8 @@
 - **FR-003**：系統必須（MUST）允許使用者在建立或編輯觸發器時，從現有的自動化腳本庫中選擇一個進行綁定。
 - **FR-004**：系統必須（MUST）支援不同類型的觸發器，至少包括：基於時間的「排程」觸發器和基於系統事件的「事件」觸發器。
 - **FR-005**：系統必須（MUST）允許使用者啟用或禁用一個觸發器，以控制其是否生效。支援單獨和批次操作。
-- **FR-006**：系統必須（MUST）在表格中展示與該觸發器關聯的腳本的「最近一次執行狀態」。
-- **FR-007**: 後端 API 回傳的 `AutomationTrigger` 物件中，**必須**包含一個 `last_execution` 物件，其中包含由**該特定觸發器**所觸發的最近一次執行的狀態和時間，以避免混淆。
+- **FR-006 (AS-IS)**：系統必須（MUST）在表格中展示與該觸發器綁定腳本的最近執行狀態，資料來源為 `/automation/executions` API 依 `playbook_id` 匯總後的結果；若缺少對應執行紀錄則顯示 `N/A`。
+- **FR-007 (FUTURE)**：後端 API 回傳的 `AutomationTrigger` 物件應包含 `last_execution` 物件，需紀錄由該特定觸發器觸發的最近一次執行狀態與時間，以避免同一腳本多觸發器時的混淆。
 - **FR-008**: 對於「事件」類型的觸發器，編輯模態框中**必須**提供一個結構化的條件產生器，允許使用者選擇事件來源（如 `AlertRule`）並設定過濾條件（如 `rule_id`, `severity`）。
 - **FR-009**：系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。詳細的權限對應關係請參閱下方的「權限控制」章節。
 
@@ -51,7 +51,7 @@
 ## 三、關鍵資料實體（Key Entities）
 | 實體名稱 | 描述 | 關聯 |
 |-----------|------|------|
-| **AutomationTrigger** | 核心資料實體，定義了觸發一個自動化腳本的條件。包含結構化的 `conditions` 和 `last_execution` 物件。 | AutomationPlaybook |
+| **AutomationTrigger** | 核心資料實體，定義了觸發一個自動化腳本的條件。MVP 僅提供 `config`（CRON/事件條件）與 `last_triggered_at` 字串，未內建 `last_execution` 物件。 | AutomationPlaybook |
 | **AutomationExecution**| 一次自動化腳本的執行紀錄，用於在本模組中展示執行狀態。 | AutomationPlaybook, AutomationTrigger |
 | **AutomationTriggerFilters** | 用於篩選觸發器列表的一組條件集合。 | - |
 
@@ -87,11 +87,11 @@
 
 | 項目 | 狀態 | 說明 |
 |------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ✅ | 後端 API **必須**為所有對觸發器的 CUD 操作（建立、更新、刪除、啟用/停用）產生詳細的審計日誌，遵循平台級審計日誌方案。 |
-| 指標與告警 (Metrics & Alerts) | ✅ | 前端應透過 OpenTelemetry SDK 自動收集頁面載入性能指標（LCP, FID, CLS）和 API 呼叫遙測（延遲、狀態碼），無需為此模組單獨配置。 |
-| RBAC 權限與審計 | ✅ | 系統已定義詳細的前端權限控制模型。詳見上方的「權限控制」章節。 |
-| i18n 文案 | ❌ | **[VIOLATION: `constitution.md`]** 程式碼中存在大量硬式編碼的英文字串，例如 `'Failed to fetch triggers or playbooks.'`、`'欄位定義缺失'` 等。 |
-| Theme Token 使用 | ✅ | 程式碼使用了 `StatusTag` 和中央化的 `options` 來管理狀態和類型顯示，符合設計系統規範。 |
+| 記錄與追蹤 (Logging/Tracing) | ❌ | `pages/automation/AutomationTriggersPage.tsx` 未串接遙測或審計 API，僅以本地狀態與 toast 呈現結果。 |
+| 指標與告警 (Metrics & Alerts) | ❌ | 頁面缺少 OpenTelemetry 或自訂指標，所有 API 呼叫僅透過共享客戶端發送。 |
+| RBAC 權限與審計 | ❌ | UI 未使用 `usePermissions` 或 `<RequirePermission>`，所有操作目前對所有登入者可見，需依《common/rbac-observability-audit-governance.md》導入守衛。 |
+| i18n 文案 | ⚠️ | 主要字串透過內容 context 取得，但錯誤與提示訊息仍有中文 fallback，需要補強內容來源。 |
+| Theme Token 使用 | ⚠️ | 介面混用 `app-*` 樣式與 Tailwind 色票（如 `bg-slate-*`），尚未完全以設計 token 命名。 |
 
 ---
 
@@ -107,4 +107,6 @@
 
 ## 七、模糊與待確認事項（Clarifications）
 
-(此區塊所有相關項目已被澄清)
+- [RESOLVED - 2025-10-07] 已採納《common/rbac-observability-audit-governance.md》定義的權限守衛與審計方案；此模組必須導入 `usePermissions`/`<RequirePermission>` 並依規範等待後端審計 API。
+- 「最近執行狀態」須改為顯示每個觸發器的 `last_execution` 資料；後端需提供 `trigger_id` 維度的執行紀錄，前端以時間軸抽屜呈現完整歷程。
+- 事件觸發條件採結構化產生器：UI 依 `EventTriggerSchema` 提供欄位選擇與驗證，提交時回傳結構化 JSON（不接受自由字串）。

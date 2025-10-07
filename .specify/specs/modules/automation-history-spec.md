@@ -43,17 +43,17 @@
 - **FR-005**：系統必須（MUST）為執行失敗的任務提供一個「重試」功能。
 - **FR-006**：系統必須（MUST）支援將執行歷史列表匯出為 CSV 檔案。
 - **FR-007**：系統必須（MUST）支援自訂表格顯示的欄位。
-- **FR-008**: 後端 API 回傳的 `AutomationExecution` 物件中，`triggered_by` 欄位**必須**是一個包含 `type: 'user' | 'trigger'` 和 `name: string` 的物件。
-- **FR-009**: `ExecutionLogDetail` 抽屜中顯示的日誌內容**必須**包含 `stdout`、`stderr`、`exit_code` 和一個包含各步驟計時的 `steps` 陣列。
-- **FR-010**：系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面，並在後端過濾可見的歷史紀錄。詳細的權限對應關係請參閱下方的「權限控制」章節。
-- **FR-011**: 根據平台資料治理策略，執行歷史紀錄的線上資料保留期限為 90 天。後端**必須**自動清除所有超過 90 天的歷史紀錄。
+- **FR-008 (AS-IS)**：後端 API 回傳的 `AutomationExecution` 物件中，`triggered_by` 欄位為一個描述觸發者的字串（例如使用者名稱或觸發器識別字），前端必須直接渲染此字串；目前沒有結構化的 `type/name` 物件。
+- **FR-009 (AS-IS)**：`ExecutionLogDetail` 抽屜僅顯示 `logs.stdout` 與 `logs.stderr` 內容；不存在 `exit_code` 或 `steps` 陣列，前端必須依原始字串呈現執行輸出。
+- **FR-010 (FUTURE)**：系統應根據使用者的權限，動態顯示或禁用對應的操作介面，並在後端過濾可見的歷史紀錄。詳細的權限對應關係請參閱下方的「權限控制」章節。
+- **FR-011 (FUTURE)**：根據平台資料治理策略，執行歷史紀錄的線上資料保留期限為 90 天。後端應自動清除所有超過 90 天的歷史紀錄。
 
 ---
 
 ## 三、關鍵資料實體（Key Entities）
 | 實體名稱 | 描述 | 關聯 |
 |-----------|------|------|
-| **AutomationExecution** | 核心資料實體，代表一次自動化腳本的執行紀錄。包含結構化的 `triggered_by` 和 `steps` 物件。 | AutomationPlaybook, AutomationTrigger |
+| **AutomationExecution** | 核心資料實體，代表一次自動化腳本的執行紀錄。MVP 僅提供字串型 `triggered_by` 與 `logs.stdout/stderr`。 | AutomationPlaybook, AutomationTrigger |
 | **AutomationHistoryFilters** | 用於篩選執行歷史列表的一組條件集合。 | - |
 
 ---
@@ -84,11 +84,11 @@
 
 | 項目 | 狀態 | 說明 |
 |------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ✅ | 此模組本身即為自動化操作的審計日誌，滿足了對自動化行為的追蹤要求。 |
-| 指標與告警 (Metrics & Alerts) | ✅ | 前端應透過 OpenTelemetry SDK 自動收集頁面載入性能指標（LCP, FID, CLS）和 API 呼叫遙測（延遲、狀態碼），無需為此模組單獨配置。 |
-| RBAC 權限與審計 | ✅ | 系統已定義詳細的前端權限控制模型與後端資料過濾原則。詳見上方的「權限控制」章節。 |
-| i18n 文案 | ❌ | **[VIOLATION: `constitution.md`]** 程式碼中存在大量硬式編碼的英文字串，例如 `'Failed to fetch triggers or playbooks.'`、`'欄位定義缺失'` 等。 |
-| Theme Token 使用 | ✅ | 程式碼使用了 `StatusTag` 和中央化的 `options` 來管理狀態顯示，符合設計系統規範。 |
+| 記錄與追蹤 (Logging/Tracing) | ❌ | `pages/automation/AutomationHistoryPage.tsx` 未串接遙測或審計 API，僅以本地狀態與 toast 呈現結果。 |
+| 指標與告警 (Metrics & Alerts) | ❌ | 頁面缺少 OpenTelemetry 或自訂指標，所有 API 呼叫僅透過共享客戶端發送。 |
+| RBAC 權限與審計 | ❌ | UI 未使用 `usePermissions` 或 `<RequirePermission>`，所有操作目前對所有登入者可見，需依《common/rbac-observability-audit-governance.md》導入守衛。 |
+| i18n 文案 | ⚠️ | 主要字串透過內容 context 取得，但錯誤與提示訊息仍有中文 fallback，需要補強內容來源。 |
+| Theme Token 使用 | ⚠️ | 介面混用 `app-*` 樣式與 Tailwind 色票（如 `bg-slate-*`），尚未完全以設計 token 命名。 |
 
 ---
 
@@ -104,4 +104,6 @@
 
 ## 七、模糊與待確認事項（Clarifications）
 
-（無）
+- [RESOLVED - 2025-10-07] 已採納《common/rbac-observability-audit-governance.md》定義的權限守衛與審計方案；此模組必須導入 `usePermissions`/`<RequirePermission>` 並依規範等待後端審計 API。
+- `/automation/executions` 需回傳結構化觸發來源（`trigger_id`, `trigger_name`, `actor`）與步驟時間軸，抽屜以時間線呈現並支援依步驟展開日誌。
+- 重試功能須在彈出視窗允許調整輸入參數並要求填寫重試原因，提交時呼叫 `/automation/executions/{id}/retry` 並傳遞 `override_parameters` 與審批 metadata，以利後端記錄。

@@ -38,20 +38,15 @@
 
 - **FR-001**：系統必須（MUST）提供一個完整的 CRUD 介面來管理通知管道。
 - **FR-002**：系統必須（MUST）在一個可分頁、可排序的表格中展示所有已設定的通知管道。
-- **FR-003**：系統必須（MUST）允許使用者透過一個模態框來新增或編輯管道，其設定欄位應根據所選的管道類型（如 Slack, Email, Webhook）動態變化。
+- **FR-003**：系統必須（MUST）提供新增/編輯模態框，並依管道類型顯示預先定義的欄位群組（Email 多收件人、Webhook URL、Slack Mention、LINE Token、SMS 電話等）。
 - **FR-004**：系統必須（MUST）為每個管道提供一個「測試」功能，用於驗證其連線和配置的正確性。
 - **FR-005**：系統必須（MUST）在表格中清晰地展示每個管道的啟用狀態、類型和最近一次的測試結果（成功/失敗/未測試）。
 - **FR-006**：系統必須（MUST）支援對管道的批次啟用、禁用和刪除。
-- **FR-007**：系統必須（MUST）支援自訂表格顯示的欄位。
-- **FR-008**：頁面必須（MUST）每 30 秒自動刷新一次資料。
-- **FR-009**: 後端 API **必須**透過一個專門的端點（如 `/options/notification-channel-types`）提供所有可用通知管道的綱要。
-    - 此 API 回應的列表中，每個物件**必須**包含：
-        - `type`: (string) 唯一的類型識別碼，如 "slack" 或 "email"。
-        - `name`: (string) 用於在 UI 上顯示的類型名稱，如 "Slack"。
-        - `schema`: (JSON Schema) 一個定義了該類型所需設定欄位的標準 JSON Schema，包含欄位名、類型、標籤、是否必填、預設值等資訊。
-    - 前端的新增/編輯模態框**必須**完全基於此動態獲取的綱要來動態渲染表單欄位。
-- **FR-010**: 「測試管道」功能**必須**發送一條標準化、不可自訂的測試訊息，其內容應包含固定的標題和一個唯一的測試 ID。
-- **FR-011**：系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。詳細的權限對應關係請參閱下方的「權限控制」章節。
+- **FR-007**：系統必須（MUST）支援自訂表格顯示的欄位並透過 `/settings/column-config/{pageKey}` 儲存偏好。
+- **FR-008**：頁面必須（MUST）每 30 秒自動重新取得列表資料，以反映外部變更。
+- **FR-009**：系統必須（MUST）在工具列提供搜尋模態，以設定 `NotificationChannelFilters` 並重新載入資料。
+- **FR-010**：「測試管道」功能必須（MUST）呼叫 `/settings/notification-channels/{id}/test`，並在提交後暫時標記狀態為 `pending`。
+- **FR-011**：批次操作 API (`/settings/notification-channels/batch-actions`) 必須（MUST）支援啟用、停用與刪除選取的管道。
 
 ---
 
@@ -93,11 +88,11 @@
 
 | 項目 | 狀態 | 說明 |
 |------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ✅ | 後端 API **必須**為所有對通知管道的 CUD 操作及測試操作產生詳細的審計日誌，遵循平台級審計日誌方案。 |
-| 指標與告警 (Metrics & Alerts) | ✅ | 前端應透過 OpenTelemetry SDK 自動收集頁面載入性能指標（LCP, FID, CLS）和 API 呼叫遙測（延遲、狀態碼），無需為此模組單獨配置。 |
-| RBAC 權限與審計 | ✅ | 系統已定義詳細的前端權限控制模型。詳見上方的「權限控制」章節。 |
-| i18n 文案 | ❌ | **[VIOLATION: `constitution.md`]** 程式碼中存在大量硬式編碼的繁體中文文案，例如 "新增管道"、"無法獲取通知管道。"、"您確定要刪除管道...嗎？" 等。 |
-| Theme Token 使用 | ✅ | 程式碼符合設計系統規範。 |
+| 記錄與追蹤 (Logging/Tracing) | ❌ | `pages/settings/notification-management/NotificationChannelPage.tsx` 未串接遙測或審計 API，僅以本地狀態與 toast 呈現結果。 |
+| 指標與告警 (Metrics & Alerts) | ❌ | 頁面缺少 OpenTelemetry 或自訂指標，所有 API 呼叫僅透過共享客戶端發送。 |
+| RBAC 權限與審計 | ❌ | UI 未使用 `usePermissions` 或 `<RequirePermission>`，所有操作目前對所有登入者可見，需依《common/rbac-observability-audit-governance.md》導入守衛。 |
+| i18n 文案 | ⚠️ | 主要字串透過內容 context 取得，但錯誤與提示訊息仍有中文 fallback，需要補強內容來源。 |
+| Theme Token 使用 | ⚠️ | 介面混用 `app-*` 樣式與 Tailwind 色票（如 `bg-slate-*`），尚未完全以設計 token 命名。 |
 
 ---
 
@@ -113,4 +108,9 @@
 
 ## 七、模糊與待確認事項（Clarifications）
 
-（無）
+- **[CLARIFICATION]** 模態欄位為前端硬編排邏輯，尚未導入 JSON Schema；若需全動態欄位需重新設計 `options` API 與表單組件。
+- **[CLARIFICATION]** 刪除前未檢查與通知策略的關聯，僅顯示靜態警告文字；若需實際阻擋需整合依賴檢查。
+- **[CLARIFICATION]** 測試通知訊息僅帶入固定文字與可選收件人，不會產生唯一測試 ID；若有稽核需求需擴充 payload。
+- **[CLARIFICATION]** 批次操作缺少成功/失敗逐項回饋，目前僅顯示整體錯誤提示。
+- **[CLARIFICATION]** 欄位設定與自動刷新皆未考量 RBAC，權限表目前僅為目標狀態。
+- [RESOLVED - 2025-10-07] 已採納《common/rbac-observability-audit-governance.md》定義的權限守衛與審計方案；此模組必須導入 `usePermissions`/`<RequirePermission>` 並依規範等待後端審計 API。

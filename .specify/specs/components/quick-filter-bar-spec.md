@@ -42,10 +42,20 @@
 - **FR-005**：當選項被點擊時，必須（MUST）觸發 `onChange` 回呼函式，並傳出包含所有選中項 `value` 的陣列。
 - **FR-006**：每個篩選按鈕可以選擇性地顯示圖示（`icon`）和統計數量（`count`）。
 - **FR-007**：元件可以選擇性地在左側顯示一個標籤（`label`）。
+- **FR-008**：元件必須（MUST）提供 `syncToUrl` 設定，預設開啟時會將目前選中值同步至共享查詢狀態與 URL Query，並支援個別頁面關閉 URL 序列化但保留共享狀態同步。
 
 ---
 
-## 三、可配置屬性（Props）
+## 三、關鍵資料實體（Key Entities）
+
+| 實體名稱 | 描述 | 關聯 |
+|---|---|---|
+| **QuickFilterOption** | 快速篩選按鈕的語義定義，包含值、標籤、圖示與計數。 | UnifiedSearchSchema |
+| **QuickFilterState** | 目前已啟用的快速篩選集合，需與進階搜尋狀態協調。 | UnifiedSearchModal |
+
+---
+
+## 四、可配置屬性（Props）
 
 | 屬性名 | 類型 | 必填 | 描述 |
 |---|---|---|---|
@@ -58,13 +68,43 @@
 | `label` | `React.ReactNode` | 否 | 顯示在篩選列左側的標籤。 |
 | `className` | `string` | 否 | 附加到主容器上的額外 CSS class。 |
 | `emptyText` | `string` | 否 | 當 `options` 為空時顯示的提示文字。 |
+| `syncToUrl` | `boolean` | 否 | 是否將目前選中值序列化至 URL Query。預設為 `true`。 |
 
 ---
 
-## 四、關聯模組（Associated Modules）
+## 五、關聯模組（Associated Modules）
 
 此元件通常用於提供主要篩選維度的快速存取，是對 `UnifiedSearchModal` 的補充。
 - `AutomationHistoryPage`
 - `NotificationHistoryPage`
 - `TagManagementPage`
 - ... 以及其他需要快速篩選功能的列表頁。
+
+---
+
+## 六、觀測性與治理檢查（Observability & Governance Checklist）
+
+| 項目 | 狀態 | 說明 |
+|------|------|------|
+| 記錄與追蹤 (Logging/Tracing) | ✅ | 快速篩選變更需與進階搜尋共用遙測欄位，以追蹤常用條件與轉換。 |
+| 指標與告警 (Metrics & Alerts) | ✅ | 透過平台遙測監控篩選 API 失敗率與回應時間。 |
+| RBAC 權限與審計 | ✅ | 篩選為查詢行為，仍需保留與模組審計記錄的關聯識別。 |
+| i18n 文案 | ✅ | 選項標籤與提示文字必須源自內容字典或後端設定。 |
+| Theme Token 使用 | ✅ | 按鈕樣式與狀態顏色需沿用設計系統提供的 token。 |
+
+---
+
+## 七、審查與驗收清單（Review & Acceptance Checklist）
+
+- [x] 無技術實作語句。
+- [x] 所有必填段落皆存在。
+- [x] 所有 FR 可測試且明確。
+- [x] 無未標註的模糊需求。
+- [x] 符合 `.specify/memory/constitution.md`。
+
+---
+
+## 八、模糊與待確認事項（Clarifications）
+
+- 快速篩選與進階搜尋使用共享狀態容器；當任何快速篩選值變更時，必須立即反映於進階搜尋表單並觸發共用查詢更新事件。
+- 篩選狀態需透過 `syncToUrl` 設定控制：預設開啟時會將目前快速篩選值序列化到 URL Query，頁面重新整理或分享連結時需還原；若個別頁面關閉此設定，仍須保留與進階搜尋的同步但不寫入 URL。

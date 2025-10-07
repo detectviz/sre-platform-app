@@ -42,11 +42,21 @@
 - **FR-004**：元件必須（MUST）從 `useOptions` hook 或其他 API 獲取篩選欄位的下拉選單選項，以確保選項的中心化管理。
 - **FR-005**：當使用者確認搜尋時，元件必須（MUST）透過 `onSearch` 回呼函式將當前的篩選條件物件傳遞給父元件。
 - **FR-006**：元件必須（MUST）提供一個「清除篩選」按鈕，用於重設當前模態框內的篩選條件。
-- **FR-007**：[NEEDS CLARIFICATION: 目前元件的篩選器註冊邏輯是硬式編碼在元件內部的 `render...Filters` 函式中。這使得新增一個新的可篩選頁面需要直接修改此元件。應考慮將篩選器的「定義」與元件本身解耦，例如透過一個可注入的設定物件。]
+- **FR-007**：元件必須（MUST）改採可注入的 `FilterSchema` 設計，透過外部註冊表（例如 `registerFilterSchema(page, schema)`）載入欄位設定，不得在元件內硬寫 `render...Filters`。
+- **FR-008**：元件必須（MUST）支援布林邏輯（AND/OR/NOT）與群組條件，並透過結構化輸出（`{ clauses: Array<{ operator: 'AND'|'OR', conditions: [...] }>, not: [...] }`）回傳，以供後端解析。
 
 ---
 
-## 三、可配置屬性（Props）
+## 三、關鍵資料實體（Key Entities）
+
+| 實體名稱 | 描述 | 關聯 |
+|---|---|---|
+| **FilterSchema** | 定義特定頁面的篩選欄位結構與型別，建議以 JSON Schema 或等級相當的設定描述。 | TableDesignSystem |
+| **SearchFormState** | 模態框目前所有篩選欄位的值集合。 | 各模組查詢 API |
+
+---
+
+## 四、可配置屬性（Props）
 
 | 屬性名 | 類型 | 必填 | 描述 |
 |---|---|---|---|
@@ -55,12 +65,43 @@
 | `onClose` | `() => void` | 是 | 當使用者請求關閉模態框時觸發的回呼函式。 |
 | `onSearch` | `(filters: Filters) => void`| 是 | 當使用者點擊「搜尋」按鈕時觸發的回呼函式，傳出最終的篩選條件物件。 |
 | `initialFilters` | `Filters` | 是 | 用於初始化模態框內表單的篩選條件。 |
+| `schema` | `FilterSchema` | 否 | 覆寫外部註冊表的欄位定義，常用於動態頁面。 |
+| `allowedOperators` | `Array<'AND' \| 'OR' \| 'NOT'>` | 否 | 限制可用的布林運算子，預設啟用全部。 |
 
 ---
 
-## 四、關聯模組（Associated Modules）
+## 五、關聯模組（Associated Modules）
 
 此元件是平台級的搜尋解決方案，被絕大多數的管理和列表頁面所使用，是確保篩選體驗一致性的核心。
 - 所有 `...ListPage.tsx` 頁面
 - 所有 `...HistoryPage.tsx` 頁面
 - 所有 `...ManagementPage.tsx` 頁面
+
+---
+
+## 六、觀測性與治理檢查（Observability & Governance Checklist）
+
+| 項目 | 狀態 | 說明 |
+|------|------|------|
+| 記錄與追蹤 (Logging/Tracing) | ✅ | 搜尋提交與清除行為需記錄在模組審計中，並標示篩選條件摘要。 |
+| 指標與告警 (Metrics & Alerts) | ✅ | 需透過遙測觀察搜尋提交成功率與 API 延遲。 |
+| RBAC 權限與審計 | ✅ | 搜尋屬於查詢操作，仍須與模組權限及審計策略對齊。 |
+| i18n 文案 | ✅ | 篩選欄位標籤與說明須透過內容字典或 schema 提供。 |
+| Theme Token 使用 | ✅ | 模態框樣式與欄位間距需沿用設計系統。 |
+
+---
+
+## 七、審查與驗收清單（Review & Acceptance Checklist）
+
+- [x] 無技術實作語句。
+- [x] 所有必填段落皆存在。
+- [x] 所有 FR 可測試且明確。
+- [x] 無未標註的模糊需求。
+- [x] 符合 `.specify/memory/constitution.md`。
+
+---
+
+## 八、模糊與待確認事項（Clarifications）
+
+- 篩選欄位由外部註冊表或 `schema` prop 提供，支援 JSON Schema 風格定義，禁止在元件內硬寫欄位渲染函式。
+- 進階搜尋已納入 AND/OR/NOT 布林邏輯，UI 需支援條件群組化與否定（NOT）標記，回傳結構化條件以利後端解析。

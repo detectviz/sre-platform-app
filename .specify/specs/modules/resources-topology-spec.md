@@ -44,9 +44,10 @@
 - **FR-006**：系統必須（MUST）在使用者右鍵點擊任一資源節點時，顯示一個包含快捷操作的上下文選單（Context Menu）。
 - **FR-007**：上下文選單必須（MUST）至少包含以下操作：「查看資源詳情」、「檢視相關事件」、「執行腳本」。
 - **FR-008**：系統應該（SHOULD）在滑鼠懸浮於節點上時，顯示一個包含該資源關鍵資訊（名稱、類型、狀態、擁有者）的提示框（Tooltip）。
-- **FR-009**: 右鍵選單中的所有導航操作**必須**是上下文感知的。例如，在節點 A 上點擊「檢視相關事件」，必須導航至一個已按節點 A 的 ID 預先篩選好的事件列表頁面。
+- **FR-009 (UPDATE)**：右鍵選單的導航操作需帶入節點上下文（`resourceId`, `teamId`, `provider`）作為路由參數或 Query，確保目的頁面直接聚焦相關資料。
+- **FR-012**：`執行腳本` 操作需直接打開 `RunPlaybookModal`，預填節點資訊並呼叫 `/automation/scripts/{id}/execute`，同時回寫 `auditId`。
 - **FR-010**: 對於超大規模拓撲（如超過 1000 個節點），當前的單次載入機制存在潛在效能瓶頸。規格承認此問題，並將漸進式載入、按需聚合/展開等優化策略納入未來技術路線圖。
-- **FR-011**：系統必須（MUST）根據使用者的權限，過濾拓撲圖中可見的節點和連線。詳細的權限對應關係請參閱下方的「權限控制」章節。
+- **FR-011 (FUTURE)**：系統應根據使用者的權限，過濾拓撲圖中可見的節點和連線。詳細的權限對應關係請參閱下方的「權限控制」章節。
 
 ---
 
@@ -81,11 +82,11 @@
 
 | 項目 | 狀態 | 說明 |
 |------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ✅ | 後端 API **必須**為所有從此頁面觸發的關鍵操作（如執行腳本）產生審計日誌。單純的 UI 互動（如佈局切換、篩選）無需記錄。 |
-| 指標與告警 (Metrics & Alerts) | ✅ | 前端應透過 OpenTelemetry SDK 自動收集頁面載入性能指標和 API 呼叫遙測。此外，應使用自訂性能標記來測量拓撲圖的初始渲染時間。 |
-| RBAC 權限與審計 | ✅ | 系統已定義詳細的前端權限控制模型與後端資料過濾原則。詳見上方的「權限控制」章節。 |
-| i18n 文案 | ❌ | **[VIOLATION: `constitution.md`]** 程式碼中存在硬式編碼的繁體中文文案，例如 "佈局模式"、"篩選類型"、"快捷操作" 等。 |
-| Theme Token 使用 | ✅ | 程式碼透過 `useChartTheme` hook 獲取圖表主題，並使用 `statusColorMap` 映射狀態顏色，符合設計系統規範。 |
+| 記錄與追蹤 (Logging/Tracing) | ❌ | `pages/resources/ResourceTopologyPage.tsx` 未串接遙測或審計 API，僅以本地狀態與 toast 呈現結果。 |
+| 指標與告警 (Metrics & Alerts) | ❌ | 頁面缺少 OpenTelemetry 或自訂指標，所有 API 呼叫僅透過共享客戶端發送。 |
+| RBAC 權限與審計 | ❌ | UI 未使用 `usePermissions` 或 `<RequirePermission>`，所有操作目前對所有登入者可見，需依《common/rbac-observability-audit-governance.md》導入守衛。 |
+| i18n 文案 | ⚠️ | 主要字串透過內容 context 取得，但錯誤與提示訊息仍有中文 fallback，需要補強內容來源。 |
+| Theme Token 使用 | ⚠️ | 介面混用 `app-*` 樣式與 Tailwind 色票（如 `bg-slate-*`），尚未完全以設計 token 命名。 |
 
 ---
 
@@ -101,4 +102,6 @@
 
 ## 七、模糊與待確認事項（Clarifications）
 
-（無）
+- [RESOLVED - 2025-10-07] 已採納《common/rbac-observability-audit-governance.md》定義的權限守衛與審計方案；此模組必須導入 `usePermissions`/`<RequirePermission>` 並依規範等待後端審計 API。
+- 右鍵選單操作須傳遞節點上下文至目標頁面（資源詳情、事件列表），以便預設篩選並保留拓撲來源資訊。
+- 「執行腳本」選項需直接開啟 `RunPlaybookModal`，預填節點資訊並呼叫腳本 API，避免使用者另外導航。

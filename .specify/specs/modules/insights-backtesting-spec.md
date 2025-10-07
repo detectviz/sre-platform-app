@@ -46,14 +46,15 @@
     - 模擬的告警觸發點（Trigger Points）
     - 使用者手動標記的實際事件區間（Marked Areas）
 - **FR-006**：系統必須（MUST）在回測完成後，展示量化的統計結果，包括總數據點、觸發次數和觸發率。
-- **FR-007**: 當使用者提供了「實際事件」進行比對時，後端**必須**計算並回傳規則的 Precision, Recall, F1 Score 等進階效能指標。其計算邏輯遵循以下定義：
+- **FR-007 (UPDATE)**：當使用者提供「實際事件」時顯示 Precision、Recall、F1 Score；若無樣本需顯示「未提供樣本」訊息並隱藏指標值。
     - **True Positive (TP)**: 一個模擬的告警觸發點，其時間戳落在任一使用者手動標記的「實際事件」時間區間內。
     - **False Positive (FP)**: 一個模擬的告警觸發點，其時間戳**不**落在任何使用者手動標記的「實際事件」時間區間內。
     - **False Negative (FN)**: 一個使用者手動標記的「實際事件」時間區間，其內部**完全沒有**任何模擬的告警觸發點。
     - **Precision** 的計算公式為 `TP / (TP + FP)`。
     - **Recall** 的計算公式為 `TP / (TP + FN)`。
 - **FR-008**：前端在輪詢任務結果時，應採用固定的 5 秒間隔，並在任務完成或失敗時立即停止。
-- **FR-009**：系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。詳細的權限對應關係請參閱下方的「權限控制」章節。
+- **FR-010**：系統需支援同時多個回測任務；前端顯示任務列表與狀態，允許使用者切換查看結果並終止特定任務。
+- **FR-009 (FUTURE)**：系統應根據使用者的權限，動態顯示或禁用對應的操作介面。詳細的權限對應關係請參閱下方的「權限控制」章節。
 
 ---
 
@@ -88,11 +89,11 @@
 
 | 項目 | 狀態 | 說明 |
 |------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ✅ | 後端 API **必須**為 `POST /backtesting/run` 的成功呼叫產生審計日誌，記錄執行者、目標規則和時間範圍，遵循平台級審計方案。 |
-| 指標與告警 (Metrics & Alerts) | ✅ | 前端應透過 OpenTelemetry SDK 自動收集頁面載入性能指標和 API 呼叫遙測。此外，應使用自訂性能標記來測量 ECharts 圖表的渲染時間。 |
-| RBAC 權限與審計 | ✅ | 系統已定義詳細的前端權限控制模型。詳見上方的「權限控制」章節。 |
-| i18n 文案 | ❌ | **[VIOLATION: `constitution.md`]** 程式碼中存在大量硬式編碼的繁體中文文案，例如 "選擇告警規則"、"開始回放"、"實際事件比對" 等。 |
-| Theme Token 使用 | ✅ | 程式碼在圖表配置中使用了硬式編碼的顏色值（如 `#e5e7eb`），但主要樣式似乎與 Ant Design 或其他 UI 框架結合，整體上可接受。 |
+| 記錄與追蹤 (Logging/Tracing) | ❌ | `pages/analysis/BacktestingPage.tsx` 未串接遙測或審計 API，僅以本地狀態與 toast 呈現結果。 |
+| 指標與告警 (Metrics & Alerts) | ❌ | 頁面缺少 OpenTelemetry 或自訂指標，所有 API 呼叫僅透過共享客戶端發送。 |
+| RBAC 權限與審計 | ❌ | UI 未使用 `usePermissions` 或 `<RequirePermission>`，所有操作目前對所有登入者可見，需依《common/rbac-observability-audit-governance.md》導入守衛。 |
+| i18n 文案 | ⚠️ | 主要字串透過內容 context 取得，但錯誤與提示訊息仍有中文 fallback，需要補強內容來源。 |
+| Theme Token 使用 | ⚠️ | 介面混用 `app-*` 樣式與 Tailwind 色票（如 `bg-slate-*`），尚未完全以設計 token 命名。 |
 
 ---
 
@@ -108,4 +109,6 @@
 
 ## 七、模糊與待確認事項（Clarifications）
 
-（無）
+- [RESOLVED - 2025-10-07] 已採納《common/rbac-observability-audit-governance.md》定義的權限守衛與審計方案；此模組必須導入 `usePermissions`/`<RequirePermission>` 並依規範等待後端審計 API。
+- 無手動事件時需顯示「未提供樣本」空狀態並提供導引以新增事件樣本。
+- 回測任務支援併行：頁面需顯示任務列表、歷史結果並允許終止或切換檢視特定任務。

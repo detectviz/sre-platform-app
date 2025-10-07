@@ -43,6 +43,9 @@
 - **FR-005**：只有在設定被修改後，「儲存變更」按鈕才應變為可點擊狀態。
 - **FR-006**：系統必須（MUST）提供「重置為預設」的功能，允許使用者一鍵恢復到系統預設的偏好設定。
 - **FR-007**: 系統**必須**提供「匯出偏好設定」的功能，允許使用者將其當前設定下載為一個 JSON 檔案。此功能主要用於個人備份或在不同環境間遷移設定。
+- **FR-010**：語言切換必須（MUST）即時套用於介面，並顯示重新載入提示以重新整理緩存的內容字典。
+- **FR-011**：頁面需提供草稿自動儲存：編輯後 3 秒內未儲存則寫入 localStorage，回到頁面時可選擇恢復或丟棄草稿。
+- **FR-012**：匯出功能應優先採用目前表單草稿內容，若存在未儲存變更需提示使用者是否包含草稿。
 - **FR-008**: 若未來實現對應的「匯入」功能，其行為**必須**是完全覆寫當前使用者的所有偏好設定。
 - **FR-009**: 系統管理員設定全域「預設偏好」的功能，**必須**在一個獨立的、更高權限的管理模組中提供，其規格不在此文件定義範圍內。本頁面的「重置為預設」按鈕將讀取該全域設定。
 
@@ -56,15 +59,15 @@
 
 ---
 
-## 四、觀測性與治理檢查（Observability & Governance Checklist）
+## 五、觀測性與治理檢查（Observability & Governance Checklist）
 
 | 項目 | 狀態 | 說明 |
 |------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ✅ | 後端 API **必須**為使用者儲存其偏好設定的更新操作產生審計日誌，遵循平台級審計日誌方案。 |
-| 指標與告警 (Metrics & Alerts) | ✅ | 前端應透過平台級 OpenTelemetry SDK 自動收集頁面載入性能指標（LCP, FID, CLS）和 API 呼叫遙測（延遲、狀態碼），無需為此模組單獨配置。 |
-| RBAC 權限與審計 | ✅ | 此頁面僅用於修改使用者自身的設定，不涉及對其他使用者或系統的變更，權限模型簡單清晰。 |
-| i18n 文案 | ❌ | **[VIOLATION: `constitution.md`]** 程式碼中存在大量硬式編碼的繁體中文文案，例如 `THEME_HINTS` 和 `LANGUAGE_HINTS` 物件，以及各種 Toast 提示訊息。 |
-| Theme Token 使用 | ✅ | 程式碼符合設計系統規範。 |
+| 記錄與追蹤 (Logging/Tracing) | ❌ | `pages/profile/PreferenceSettingsPage.tsx` 未串接遙測或審計 API，僅以本地狀態與 toast 呈現結果。 |
+| 指標與告警 (Metrics & Alerts) | ❌ | 頁面缺少 OpenTelemetry 或自訂指標，所有 API 呼叫僅透過共享客戶端發送。 |
+| RBAC 權限與審計 | ❌ | UI 未使用 `usePermissions` 或 `<RequirePermission>`，所有操作目前對所有登入者可見，需依《common/rbac-observability-audit-governance.md》導入守衛。 |
+| i18n 文案 | ⚠️ | 主要字串透過內容 context 取得，但錯誤與提示訊息仍有中文 fallback，需要補強內容來源。 |
+| Theme Token 使用 | ⚠️ | 介面混用 `app-*` 樣式與 Tailwind 色票（如 `bg-slate-*`），尚未完全以設計 token 命名。 |
 
 ---
 
@@ -80,4 +83,7 @@
 
 ## 六、模糊與待確認事項（Clarifications）
 
-（無）
+- 語言切換需即時套用並彈出重新載入提示，以刷新 i18n 緩存並紀錄審計事件。
+- 偏好儲存需保留草稿自動儲存與審計欄位：送出時傳遞 `auditReason` 並記錄操作者資訊。
+- 匯出流程可選擇使用目前草稿或最後儲存狀態，預設提示包含草稿內容並保留既有編輯。
+- [RESOLVED - 2025-10-07] 偏好頁須依《common/rbac-observability-audit-governance.md》導入 `profile:preferences:*` 權限守衛，僅允許本人修改，相關審計交由後端提供 `auditId`。

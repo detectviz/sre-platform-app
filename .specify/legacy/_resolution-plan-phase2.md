@@ -81,7 +81,7 @@ const Modal: React.FC<ModalProps> = ({ children, ...props }) => {
 };
 ```
 
-**更新 SPEC**: `components/modal-spec.md` § 5
+**更新 SPEC**: `../specs/common/modal-interaction-pattern.md` § 5
 
 ---
 
@@ -136,7 +136,7 @@ const Modal: React.FC<ModalProps> = ({
 - 保留 DOM 優勢: 快速重新開啟，保留表單狀態
 - 卸載 DOM 優勢: 釋放記憶體，確保資料最新
 
-**更新 SPEC**: `components/modal-spec.md` § 6
+**更新 SPEC**: `../specs/common/modal-interaction-pattern.md` § 6
 
 ---
 
@@ -210,7 +210,7 @@ const saveColumnSettings = async (settings: ColumnConfig) => {
 }
 ```
 
-**更新 SPEC**: `components/column-settings-modal-spec.md` § 4
+**更新 SPEC**: `../specs/components/column-settings-modal-spec.md` § 4
 
 ---
 
@@ -329,7 +329,7 @@ const handleSave = async () => {
 };
 ```
 
-**更新 SPEC**: `components/column-settings-modal-spec.md` § 5
+**更新 SPEC**: `../specs/components/column-settings-modal-spec.md` § 5
 
 ---
 
@@ -426,7 +426,7 @@ const handleBatchDelete = () => {
 };
 ```
 
-**更新 SPEC**: `components/toolbar-spec.md` § 4
+**更新 SPEC**: `../specs/components/toolbar-spec.md` § 4
 
 ---
 
@@ -524,7 +524,7 @@ const Toolbar: React.FC = () => {
 </div>
 ```
 
-**更新 SPEC**: `components/toolbar-spec.md` § 5
+**更新 SPEC**: `../specs/components/toolbar-spec.md` § 5
 
 ---
 
@@ -536,7 +536,7 @@ const Toolbar: React.FC = () => {
 
 **前端決策**: **參照 modal-interaction-pattern.md 已確認的方案**
 
-**解決方案**: 已在 `common/modal-interaction-pattern.md` § 5.3 解決
+**解決方案**: 已在 `../specs/common/modal-interaction-pattern.md` § 5.3 解決
 
 - Drawer 始終使用 `z-index: 1100` (高於所有 Modal)
 - Drawer 可以疊加在 Modal 之上 (用於第 3 層互動)
@@ -544,7 +544,7 @@ const Toolbar: React.FC = () => {
 
 **同步更新**: 直接引用 `modal-interaction-pattern.md` 決策
 
-**更新 SPEC**: `components/drawer-spec.md` § 4 (引用 common spec)
+**更新 SPEC**: `../specs/components/drawer-spec.md` § 4 (引用 common spec)
 
 ---
 
@@ -610,7 +610,7 @@ Cache-Control: max-age=300, must-revalidate
 ETag: "abc123"
 ```
 
-**更新 SPEC**: `components/drawer-spec.md` § 5
+**更新 SPEC**: `../specs/components/drawer-spec.md` § 5
 
 ---
 
@@ -727,7 +727,7 @@ const handleBack = () => {
 };
 ```
 
-**更新 SPEC**: `components/pagination-spec.md` § 4
+**更新 SPEC**: `../specs/components/pagination-spec.md` § 4
 
 ---
 
@@ -737,7 +737,7 @@ const handleBack = () => {
 
 **前端決策**: **參照 table-design-system.md 已確認的方案**
 
-**解決方案**: 已在 `common/table-design-system.md` § 7.1 解決
+**解決方案**: 已在 `../specs/common/table-design-system.md` § 7.1 解決
 
 - 資料量 > 1000 筆: 使用後端分頁 (Server-side Pagination)
 - 單頁資料 > 100 筆: 啟用虛擬滾動 (react-window)
@@ -753,7 +753,7 @@ const handleBack = () => {
 
 **同步更新**: 直接引用 `table-design-system.md` 決策
 
-**更新 SPEC**: `components/pagination-spec.md` § 5 (引用 common spec)
+**更新 SPEC**: `../specs/components/pagination-spec.md` § 5 (引用 common spec)
 
 ---
 
@@ -912,7 +912,7 @@ interface FilterParams {
 }
 ```
 
-**更新 SPEC**: `components/unified-search-modal-spec.md` § 4
+**更新 SPEC**: `../specs/components/unified-search-modal-spec.md` § 4
 
 ---
 
@@ -1029,7 +1029,7 @@ interface FilterQuery {
 }
 ```
 
-**更新 SPEC**: `components/unified-search-modal-spec.md` § 5
+**更新 SPEC**: `../specs/components/unified-search-modal-spec.md` § 5
 
 ---
 
@@ -1151,7 +1151,7 @@ const QuickFilterBar: React.FC = ({ filters, onFilter, onAdvancedSearch }) => {
 └─────────────────────────────────────┘
 ```
 
-**更新 SPEC**: `components/quick-filter-bar-spec.md` § 4
+**更新 SPEC**: `../specs/components/quick-filter-bar-spec.md` § 4
 
 ---
 
@@ -1263,7 +1263,7 @@ const handleShareFilters = () => {
 </Button>
 ```
 
-**更新 SPEC**: `components/quick-filter-bar-spec.md` § 5
+**更新 SPEC**: `../specs/components/quick-filter-bar-spec.md` § 5
 
 ---
 
@@ -1367,7 +1367,7 @@ const getTableHeight = () => {
 };
 ```
 
-**更新 SPEC**: `components/table-container-spec.md` § 4
+**更新 SPEC**: `../specs/components/table-container-spec.md` § 4
 
 ---
 
@@ -1377,7 +1377,7 @@ const getTableHeight = () => {
 
 **前端決策**: **參照 table-design-system.md 已確認的方案**
 
-**解決方案**: 已在 `common/table-design-system.md` § 11.2 解決
+**解決方案**: 已在 `../specs/common/table-design-system.md` § 11.2 解決
 
 - 觸發條件: 單頁資料 > 100 筆
 - 使用技術: react-window (FixedSizeList)
@@ -1385,7 +1385,7 @@ const getTableHeight = () => {
 
 **同步更新**: 直接引用 `table-design-system.md` 決策
 
-**更新 SPEC**: `components/table-container-spec.md` § 5 (引用 common spec)
+**更新 SPEC**: `../specs/components/table-container-spec.md` § 5 (引用 common spec)
 
 ---
 
@@ -1450,7 +1450,7 @@ const getTableHeight = () => {
 }
 ```
 
-**更新 SPEC**: `common/table-design-system.md` § 12
+**更新 SPEC**: `../specs/common/table-design-system.md` § 12
 
 ---
 
@@ -1651,7 +1651,7 @@ const EditableCell: React.FC<EditableCellProps> = ({ ... }) => {
 }
 ```
 
-**更新 SPEC**: `common/table-design-system.md` § 13
+**更新 SPEC**: `../specs/common/table-design-system.md` § 13
 
 ---
 
@@ -1832,7 +1832,7 @@ useEffect(() => {
 }, []);
 ```
 
-**更新 SPEC**: `common/modal-interaction-pattern.md` § 8
+**更新 SPEC**: `../specs/common/modal-interaction-pattern.md` § 8
 
 ---
 
@@ -1957,7 +1957,7 @@ const handleLanguageChange = async (lang: string) => {
 };
 ```
 
-**更新 SPEC**: `modules/profile-preference-spec.md` § 5
+**更新 SPEC**: `../specs/modules/profile-preference-spec.md` § 5
 
 ---
 
@@ -2125,7 +2125,7 @@ useEffect(() => {
 }, []);
 ```
 
-**更新 SPEC**: `modules/platform-layout-spec.md` § 6
+**更新 SPEC**: `../specs/modules/platform-layout-spec.md` § 6
 
 ---
 
@@ -2135,53 +2135,53 @@ useEffect(() => {
 
 ### Component Specs (8 個)
 
-1. **components/modal-spec.md**
+1. **../specs/common/modal-interaction-pattern.md**
    - § 5: 巢狀模態框的顯示優先級 (Z-index + 焦點管理)
    - § 6: 模態框內容的生命週期管理 (延遲卸載策略)
 
-2. **components/column-settings-modal-spec.md**
+2. **../specs/components/column-settings-modal-spec.md**
    - § 4: 欄位設定的儲存位置 (使用者級/團隊級選擇器)
    - § 5: 欄位排序的持久化策略 (點擊儲存 + 回滾機制)
 
-3. **components/toolbar-spec.md**
+3. **../specs/components/toolbar-spec.md**
    - § 4: 批次操作的權限控制機制 (隱藏/禁用策略)
    - § 5: 工具列響應式佈局 (更多選單收合)
 
-4. **components/drawer-spec.md**
+4. **../specs/components/drawer-spec.md**
    - § 4: 多層抽屜的堆疊管理機制 (引用 common spec)
    - § 5: 抽屜內容的預載入策略 (快取策略矩陣)
 
-5. **components/pagination-spec.md**
+5. **../specs/components/pagination-spec.md**
    - § 4: 分頁資訊的持久化 (URL + SessionStorage)
    - § 5: 大資料量時的分頁策略 (引用 common spec)
 
-6. **components/unified-search-modal-spec.md**
+6. **../specs/components/unified-search-modal-spec.md**
    - § 4: 篩選條件格式統一機制 (JSON Schema)
    - § 5: 進階搜尋支援範圍 (簡化版 + 進階版)
 
-7. **components/quick-filter-bar-spec.md**
+7. **../specs/components/quick-filter-bar-spec.md**
    - § 4: 快速篩選與進階搜尋整合 (自動填入 + AND 合併)
    - § 5: 篩選狀態的 URL 同步機制 (Query String)
 
-8. **components/table-container-spec.md**
+8. **../specs/components/table-container-spec.md**
    - § 4: 表格高度的自適應策略 (ResizeObserver)
    - § 5: 虛擬滾動的觸發條件 (引用 common spec)
 
 ### Common Specs (2 個)
 
-9. **common/table-design-system.md**
+9. **../specs/common/table-design-system.md**
    - § 12: 表格固定列支援需求 (Sticky Header + First Column)
    - § 13: 行內編輯統一實作方式 (點擊編輯 + Enter/Tab/ESC)
 
-10. **common/modal-interaction-pattern.md**
+10. **../specs/common/modal-interaction-pattern.md**
     - § 8: Modal 內表單的自動儲存草稿機制 (LocalStorage + 定時儲存)
 
 ### Module Specs (2 個)
 
-11. **modules/profile-preference-spec.md**
+11. **../specs/modules/profile-preference-spec.md**
     - § 5: 語言切換的即時生效範圍 (i18n 熱更新 + dayjs locale)
 
-12. **modules/platform-layout-spec.md**
+12. **../specs/modules/platform-layout-spec.md**
     - § 6: 主題色變更的即時生效機制 (CSS Variables + 即時預覽)
 
 ---

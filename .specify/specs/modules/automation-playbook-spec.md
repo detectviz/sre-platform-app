@@ -16,16 +16,16 @@
 
 ### 驗收情境（Acceptance Scenarios）
 1.  **Given** 我需要建立一個用於清理磁碟空間的新腳本。
-    **When** 我在「自動化腳本」頁面點擊「新增腳本」，在彈出的模態框中填寫腳本名稱、描述、腳本內容，並定義一個 `target_host` 參數。
-    **Then** 新的腳本應出現在列表中，並顯示其需要 1 個參數。
+    **When** 我在「自動化腳本」頁面點擊「新增腳本」，於彈出的模態框輸入名稱、描述，並貼上 Shell 腳本與一組參數定義。
+    **Then** 新的腳本會透過 `/automation/scripts` API 儲存，列表重新載入並顯示腳本類型、參數數量與預設觸發標籤。
 
-2.  **Given** 一台伺服器的磁碟空間告急，我需要立即執行「清理日誌檔案」這個腳本。
-    **When** 我在腳本列表中找到它，並點擊「執行」按鈕。在彈出的模態框中，我輸入目標伺服器的 IP 作為參數，然後確認執行。
-    **Then** 系統應開始執行該腳本，並在執行完成後更新該腳本的「最後執行時間」和「最後執行狀態」。
+2.  **Given** 一台伺服器的磁碟空間告急，我需要立即執行既有腳本。
+    **When** 我在腳本列上點擊「執行腳本」，於 `RunPlaybookModal` 內填寫必要參數並送出。
+    **Then** UI 會呼叫 `/automation/scripts/{id}/execute` 端點並提示成功；列表重新整理後顯示最新的執行狀態與時間戳。
 
-3.  **Given** 我想刪除一個已經過時的腳本。
-    **When** 我在腳本列表中找到它，點擊「刪除」按鈕，並在確認對話框中進行確認。
-    **Then** 該腳本應被從列表中移除。
+3.  **Given** 我想調整表格呈現的欄位以便審閱。
+    **When** 我開啟「欄位設定」模態並勾選欲顯示的欄位，然後儲存設定。
+    **Then** 頁面會透過 `/settings/column-config/{pageKey}` 更新偏好並即時套用新的欄位順序。
 
 ### 邊界案例（Edge Cases）
 - 當使用者嘗試執行一個需要參數但未提供參數的腳本時，系統應在執行模態框中給出明確的錯誤提示，並阻止執行。
@@ -36,18 +36,18 @@
 
 ## 二、功能需求（Functional Requirements）
 
-- **FR-001**：系統必須（MUST）提供一個完整的 CRUD 介面來管理自動化腳本（Playbooks）。
-- **FR-002**：系統必須（MUST）在一個可分頁、可排序的表格中展示所有腳本。
-- **FR-003**：系統必須（MUST）允許使用者透過一個模態框來新增或編輯腳本的元數據（如名稱、描述）和腳本內容。
-- **FR-004**：系統必須（MUST）提供一個介面，讓使用者可以為腳本定義輸入參數。
-- **FR-005**：系統必須（MUST）提供一個手動執行腳本的功能，並在執行前彈出一個模態框讓使用者填寫必要的參數。
-- **FR-006**：系統必須（MUST）在表格中展示每個腳本的最後一次執行狀態和執行時間。
-- **FR-007**：系統必須（MUST）支援批次刪除、欄位自訂等標準表格操作。
-- **FR-008**: 系統必須（MUST）提供一個 `CodeEditor` 介面，讓使用者可以在編輯模態框中直接編寫或貼上腳本內容（如 Bash, Python），該內容將作為字串儲存。
-- **FR-009**: 腳本參數的定義必須（MUST）是結構化的，至少包含 `name`, `type` (`string`\|`number`\|`boolean`), `required`, `default_value` 等欄位。
-- **FR-010**: `trigger` 欄位僅作為腳本的資訊標籤，用於描述其預期的主要觸發來源，不具備實際的功能性連結。
-- **FR-011**: 一個自動化腳本（Playbook）可以被多個觸發器（Triggers）所關聯，實現「一次定義，多處觸發」。
-- **FR-012**：系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。詳細的權限對應關係請參閱下方的「權限控制」章節。
+- **FR-001**：列表頁面必須（MUST）透過 `/automation/scripts` 取得腳本清單，支援分頁、排序與選取列，以提供批次操作與細節檢閱。
+- **FR-002**：系統必須（MUST）在表格中顯示腳本名稱、類型、參數數量、最近執行狀態／時間與執行次數，並以 `StatusTag` 呈現狀態樣式。
+- **FR-003**：系統必須（MUST）提供 `AutomationPlaybookEditModal` 以建立或編輯腳本，允許調整名稱、描述、類型、腳本內容與參數結構。
+- **FR-004**：使用者在編輯模態中必須（MUST）能透過 `CodeEditor` 編輯腳本內容、上傳檔案或使用 AI 產生腳本，並維護參數的型別、預設值、選項與必填設定。
+- **FR-005**：系統必須（MUST）提供 `RunPlaybookModal` 讓使用者輸入參數並執行腳本，成功時顯示 toast 並重新整理列表資料。
+- **FR-006**：刪除操作必須（MUST）以確認模態確認個別刪除，且支援 `/automation/scripts/batch-actions` 的批次刪除請求。
+- **FR-007**：使用者必須（MUST）能開啟欄位設定模態並儲存可見欄位至 `/settings/column-config/{pageKey}`，若後端尚未設定欄位需顯示錯誤訊息。
+- **FR-008**：頁面必須（MUST）允許重新排序欄位透過 `SortableColumnHeaderCell`，並使用 `useTableSorting` 產生查詢參數。
+- **FR-009**：所有操作按鈕目前（AS-IS）對所有登入使用者可見且可用，前端未實作權限檢查或狀態限制。
+- **FR-010**：當 API 呼叫失敗時，系統必須（MUST）透過 toast 呈現錯誤訊息並維持既有視圖；匯入欄位設定缺失時顯示 fallback 字串。
+- **FR-011**：所有腳本的建立、更新、刪除與手動執行成功後，後端必須回傳 `auditId` 以記錄操作人與內容，前端需依《common/rbac-observability-audit-governance.md》在成功訊息中顯示該識別碼。
+- **FR-012**：列表中的觸發器標籤必須（MUST）連結至 `automation-trigger` 模組並帶入 `triggerId` 查詢參數；若腳本未綁定觸發器則顯示 "未綁定" 並提供快速建立捷徑。
 
 ---
 
@@ -61,27 +61,21 @@
 
 ## 四、權限控制 (Role-Based Access Control)
 
-根據平台級的 RBAC 設計，此模組的 UI 應根據後端提供的權限列表進行動態渲染。
+根據平台級的 RBAC 設計，此模組原始規格定義了細緻的權限需求；然而目前 MVP 並未套用任何前端守衛。
 
 ### 4.1. 權限定義 (Permissions)
 | 權限字串 | 描述 |
 |---|---|
-| `automation:playbooks:read` | 允許使用者查看自動化腳本列表。 |
-| `automation:playbooks:create` | 允許使用者建立新的腳本。 |
-| `automation:playbooks:update` | 允許使用者修改現有腳本的定義（如名稱、描述、內容）。 |
-| `automation:playbooks:delete` | 允許使用者刪除腳本。 |
-| `automation:playbooks:execute`| 允許使用者手動執行一個腳本。 |
+| `automation:playbooks:read` | 預期用於限制列表與欄位設定存取。 |
+| `automation:playbooks:create` | 預期用於控制新增腳本的入口。 |
+| `automation:playbooks:update` | 預期用於控制編輯腳本與變更欄位設定。 |
+| `automation:playbooks:delete` | 預期用於控制刪除與批次刪除。 |
+| `automation:playbooks:execute`| 預期用於控制執行腳本與執行模態。 |
 
-### 4.2. UI 控制映射 (UI Mapping)
-- **頁面存取**: `AutomationPlaybooksPage` 的根元件需由 `<RequirePermission permission="automation:playbooks:read">` 包裹。
-- **工具列按鈕**:
-  - 「新增腳本」按鈕需具備 `automation:playbooks:create` 權限。
-- **批次操作按鈕**:
-  - 「刪除」按鈕需具備 `automation:playbooks:delete` 權限。
-- **表格內行內操作**:
-  - 「執行腳本」按鈕需具備 `automation:playbooks:execute` 權限。
-  - 「編輯腳本」按鈕需具備 `automation:playbooks:update` 權限。
-  - 「刪除腳本」按鈕需具備 `automation:playbooks:delete` 權限。
+### 4.2. 目前實作現況
+- `AutomationPlaybooksPage` 尚未包裹 `<RequirePermission>` 或呼叫 `usePermissions`，所有操作對所有登入者開放。
+- 前端僅透過 `/automation/scripts` API 回傳資料，未檢查回傳權限範圍；需要後續決議是否由 API 過濾或於 UI 隱藏操作。
+- 權限字串維持於規格作為目標狀態，後續計畫需補上守衛與審計記錄。
 
 ---
 
@@ -89,11 +83,11 @@
 
 | 項目 | 狀態 | 說明 |
 |------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ✅ | 後端 API **必須**為所有對腳本的 CUD 操作及每一次執行產生詳細的審計日誌，遵循平台級審計日誌方案。 |
-| 指標與告警 (Metrics & Alerts) | ✅ | 前端應透過 OpenTelemetry SDK 自動收集頁面載入性能指標（LCP, FID, CLS）和 API 呼叫遙測（延遲、狀態碼），無需為此模組單獨配置。 |
-| RBAC 權限與審計 | ✅ | 系統已定義詳細的前端權限控制模型。詳見上方的「權限控制」章節。 |
-| i18n 文案 | ⚠️ | **[PARTIAL VIOLATION: `constitution.md`]** 此頁面已廣泛使用 `useContentSection` hook，是個好的實踐。但程式碼中仍存在後備的硬式編碼字串，例如 `'無法獲取自動化腳本。'`，應將其完全移除並統一由內容管理系統提供。 |
-| Theme Token 使用 | ✅ | 程式碼使用了 `StatusTag` 和中央化的 `options` 來管理狀態和類型顯示，符合設計系統規範。 |
+| 記錄與追蹤 (Logging/Tracing) | ❌ | `pages/automation/AutomationPlaybooksPage.tsx` 未串接遙測或審計 API，僅以本地狀態與 toast 呈現結果。 |
+| 指標與告警 (Metrics & Alerts) | ❌ | 頁面缺少 OpenTelemetry 或自訂指標，所有 API 呼叫僅透過共享客戶端發送。 |
+| RBAC 權限與審計 | ❌ | UI 未使用 `usePermissions` 或 `<RequirePermission>`，所有操作目前對所有登入者可見，需依《common/rbac-observability-audit-governance.md》導入守衛。 |
+| i18n 文案 | ⚠️ | 主要字串透過內容 context 取得，但錯誤與提示訊息仍有中文 fallback，需要補強內容來源。 |
+| Theme Token 使用 | ⚠️ | 介面混用 `app-*` 樣式與 Tailwind 色票（如 `bg-slate-*`），尚未完全以設計 token 命名。 |
 
 ---
 
@@ -109,4 +103,6 @@
 
 ## 七、模糊與待確認事項（Clarifications）
 
-(此區塊所有相關項目已被澄清)
+- [RESOLVED - 2025-10-07] 此模組將依《common/rbac-observability-audit-governance.md》導入 `automation:playbooks:*` 守衛與 `<RequirePermission>`，並統一使用 `usePermissions` 控制可視性。
+- [RESOLVED - 2025-10-07] 審計軌跡採後端產生 `auditId` 的方案，前端僅需在成功訊息中帶出識別碼並於 API 請求傳遞必要上下文。
+- 所有成功與錯誤訊息需改由內容系統提供：前端僅傳遞錯誤碼與 `auditId`，禁止硬寫中文 fallback。

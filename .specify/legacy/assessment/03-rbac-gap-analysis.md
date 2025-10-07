@@ -188,7 +188,7 @@ useEffect(() => {
 
 ### 2.1 核心概念
 
-**參考**: `.specify/specs/common/rbac.md`
+**參考**: `../specs/modules/identity-role-spec.md`
 
 #### 權限格式
 

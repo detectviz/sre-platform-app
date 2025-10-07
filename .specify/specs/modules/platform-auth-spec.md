@@ -42,9 +42,10 @@
 - **FR-004**：系統必須（MUST）提供一個開關，允許使用者臨時查看（unmask）完整的 Client Secret。
 - **FR-005**：系統必須（MUST）為 Client ID 和 Client Secret 提供一鍵複製的功能。
 - **FR-006**：系統必須（MUST）清晰地展示當前的身份提供商（Provider）、領域（Realm）以及 OIDC 功能是否已啟用。
-- **FR-007**: OIDC 身份驗證設定**必須**透過後端設定檔或環境變數進行管理，此頁面僅供唯讀檢視。
-- **FR-008**: `AuthSettings` API 回應**必須**能支援不同提供商所需的特定欄位，建議使用一個通用的 `provider_details: object` 欄位來達成。
-- **FR-009**：系統必須（MUST）根據使用者的權限，決定其是否能存取此頁面。詳細的權限對應關係請參閱下方的「權限控制」章節。
+- **FR-007**：頁面必須（MUST）以唯讀方式呈現設定，並於載入後即顯示最新 `AuthSettings` 值。
+- **FR-008**：若後端提供 IdP 管理連結 (`idp_admin_url`)，頁面必須（MUST）以外部連結按鈕呈現；缺省時顯示「尚未提供」訊息。
+- **FR-009**：在顯示 Client Secret 時必須（MUST）提供遮蔽/顯示切換與複製動作，並於切換/複製時提示使用者。
+- **FR-010 (FUTURE)**：後續版本需提供編輯與測試流程：具備 `settings:auth:update` 的使用者可開啟編輯模式、送出審批請求並觸發測試郵件/登入驗證，所有變更需產生審計紀錄。
 
 ---
 
@@ -73,11 +74,11 @@
 
 | 項目 | 狀態 | 說明 |
 |------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ✅ | 後端 API **必須**為「顯示 Client Secret」的行為產生高優先級的安全審計日誌，遵循平台級審計日誌方案。 |
-| 指標與告警 (Metrics & Alerts) | ✅ | 前端應透過 OpenTelemetry SDK 自動收集頁面載入性能指標（LCP, FID, CLS）和 API 呼叫遙測（延遲、狀態碼），無需為此模組單獨配置。 |
-| RBAC 權限與審計 | ✅ | 系統已定義詳細的前端權限控制模型。詳見上方的「權限控制」章節。 |
-| i18n 文案 | ❌ | **[VIOLATION: `constitution.md`]** 程式碼中存在大量硬式編碼的繁體中文文案，例如 "無法載入身份驗證設定。"、"Client ID 已複製" 等。 |
-| Theme Token 使用 | ✅ | 程式碼符合設計系統規範。 |
+| 記錄與追蹤 (Logging/Tracing) | ❌ | `pages/settings/platform/AuthSettingsPage.tsx` 未串接遙測或審計 API，僅以本地狀態與 toast 呈現結果。 |
+| 指標與告警 (Metrics & Alerts) | ❌ | 頁面缺少 OpenTelemetry 或自訂指標，所有 API 呼叫僅透過共享客戶端發送。 |
+| RBAC 權限與審計 | ❌ | UI 未使用 `usePermissions` 或 `<RequirePermission>`，所有操作目前對所有登入者可見，需依《common/rbac-observability-audit-governance.md》導入守衛。 |
+| i18n 文案 | ⚠️ | 主要字串透過內容 context 取得，但錯誤與提示訊息仍有中文 fallback，需要補強內容來源。 |
+| Theme Token 使用 | ⚠️ | 介面混用 `app-*` 樣式與 Tailwind 色票（如 `bg-slate-*`），尚未完全以設計 token 命名。 |
 
 ---
 
@@ -93,4 +94,8 @@
 
 ## 七、模糊與待確認事項（Clarifications）
 
-(此區塊所有相關項目已被澄清)
+- **[CLARIFICATION]** Client Secret 仍以明文存於 API 回傳，前端僅負責遮蔽顯示；若需避免明文傳輸需調整後端策略。
+- **[CLARIFICATION]** 頁面未限制存取權限，權限表目前為未來治理目標。
+- **[CLARIFICATION]** 警示卡片為靜態文字，未與任何審計或操作流程連動。
+- [RESOLVED - 2025-10-07] 已採納《common/rbac-observability-audit-governance.md》定義的權限守衛與審計方案；此模組必須導入 `usePermissions`/`<RequirePermission>` 並依規範等待後端審計 API。
+- 後續將引入編輯與測試流程：需新增審批機制、`settings:auth:update` 權限守衛與測試動作的審計記錄。
