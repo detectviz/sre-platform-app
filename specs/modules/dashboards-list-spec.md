@@ -43,7 +43,9 @@
 - **FR-005**：系統必須（MUST）為不同類型的儀表板提供不同的編輯流程。例如，編輯 Grafana 儀表板會導航到一個專門的編輯頁面，而編輯其他類型則使用模態框。
 - **FR-006**：系統必須（MUST）支援對儀表板的批次刪除、匯入/匯出 (CSV) 和欄位自訂功能。
 - **FR-007**：系統應該（SHOULD）在表格中清晰地標示出哪個是當前設定的預設首頁儀表板。
-- **FR-008**：[NEEDS CLARIFICATION: 對於 `external` 類型的儀表板，其具體行為和設定欄位需要被明確定義。]
+- **FR-008**: 對於 `external` 類型的儀表板，其核心功能是一個外部連結。
+    - 在新增或編輯此類型儀表板時，其設定欄位**必須**包含一個用於輸入 URL 的欄位。
+    - 在列表頁點擊此類型儀表板時，系統**必須**在新的瀏覽器分頁中開啟其設定的 URL (`target="_blank"`)。
 - **FR-009**：系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。詳細的權限對應關係請參閱下方的「權限控制」章節。
 
 ---
@@ -90,7 +92,7 @@
 | 記錄與追蹤 (Logging/Tracing) | ✅ | 後端 API **必須**為所有對儀表板的 CUD 操作（建立、更新、刪除）及設為首頁的操作產生詳細的審計日誌，遵循平台級審計日誌方案。 |
 | 指標與告警 (Metrics & Alerts) | ✅ | 前端應透過 OpenTelemetry SDK 自動收集頁面載入性能指標（LCP, FID, CLS）和 API 呼叫遙測（延遲、狀態碼），無需為此模組單獨配置。 |
 | RBAC 權限與審計 | ✅ | 系統已定義詳細的前端權限控制模型。詳見上方的「權限控制」章節。 |
-| i18n 文案 | ⚠️ | **[PARTIAL VIOLATION: `constitution.md`]** 此頁面已開始使用 `useContent` hook，但仍存在後備的硬式編碼英文字串（如 `'Failed to save dashboard.'`），且傳遞給 `useContent` 的鍵值對似乎仍在元件內定義，未完全集中管理。 |
+| i18n 文案 | ❌ | **[VIOLATION: `constitution.md`]** 根據 `constitution.md` 的要求，所有 UI 字串，包括按鈕文字、提示訊息、錯誤訊息和後備字串，**必須**透過 `useContent` hook 從集中的語言檔案中讀取，禁止在元件中硬式編碼任何使用者可見的文字。 |
 | Theme Token 使用 | ✅ | 程式碼使用了 `StatusTag` 元件及 `typeToneMap` 等來管理狀態顯示，符合設計系統規範。 |
 
 ---
@@ -107,5 +109,4 @@
 
 ## 七、模糊與待確認事項（Clarifications）
 
-- **[NEEDS CLARIFICATION: i18n Implementation]** 需要檢視 `useContent` hook 的具體實作，並確保所有 UI 字串（包括錯誤訊息和後備字串）都從集中的語言檔案中讀取，移除所有在元件內的硬式編碼。
-- **[NEEDS CLARIFICATION: External Dashboard Type]** 需要詳細定義 `external` 類型儀表板的功能。它僅僅是一個外部連結，還是有更複雜的嵌入或代理功能？
+（無）

@@ -43,9 +43,10 @@
 - **FR-005**：在編輯模態框中，使用者必須（MUST）能夠為每個已選的 KPI 小工具獨立設定其顏色主題（如預設、成功、警告、錯誤等）。
 - **FR-006**：編輯模態框中必須（MUST）提供一個即時預覽區域，展示所選 KPI 卡片在套用其真實資料和所選顏色主題後的外觀。
 - **FR-007**：系統必須（MUST）支援將所有版面配置設定匯出為單一的 JSON 檔案。
-- **FR-008**：[NEEDS CLARIFICATION: KPI 小工具的定義（`LayoutWidget`）及其資料（`KpiDataEntry`）是從哪裡來的？它們是在後端硬式編碼、從資料庫讀取，還是透過其他方式註冊的？]
-- **FR-009**：[NEEDS CLARIFICATION: 可進行版面配置的頁面列表是如何決定的？是寫死在前端，還是由後端 API 提供？]
+- **FR-008**: 所有可用的 KPI 小工具定義（`LayoutWidget`）及其預覽資料（`KpiDataEntry`），**必須**由後端 API 動態提供。前端**不應**硬式編碼任何小工具定義。
+- **FR-009**: 所有可進行版面配置的頁面列表，**必須**由後端 API 動態提供，以確保其可擴展性。
 - **FR-010**：系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。詳細的權限對應關係請參閱下方的「權限控制」章節。
+- **FR-011**: 匯入功能**必須**採用「合併與覆寫」策略。當使用者上傳一個 JSON 檔案時，檔案中定義的頁面配置將完全覆寫系統中對應頁面的現有配置；檔案中未提及的頁面配置將保持不變。
 
 ---
 
@@ -81,8 +82,8 @@
 
 | 項目 | 狀態 | 說明 |
 |------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ⚠️ | [NEEDS CLARIFICATION: 對版面配置的任何修改是否都應產生詳細的審計日誌，記錄修改者、目標頁面以及變更前後的配置？] |
-| 指標與告警 (Metrics & Alerts) | ❌ | [NEEDS CLARIFICATION: 未見前端性能指標採集。] |
+| 記錄與追蹤 (Logging/Tracing) | ✅ | 後端 API **必須**為所有對版面配置的更新操作 (`settings:layout:update`) 產生詳細的審計日誌，記錄修改者、目標頁面以及變更前後的配置，遵循平台級審計日誌方案。 |
+| 指標與告警 (Metrics & Alerts) | ✅ | 前端應透過平台級 OpenTelemetry SDK 自動收集頁面載入性能指標（LCP, FID, CLS）和 API 呼叫遙測（延遲、狀態碼），無需為此模組單獨配置。 |
 | RBAC 權限與審計 | ✅ | 系統已定義詳細的前端權限控制模型。詳見上方的「權限控制」章節。 |
 | i18n 文案 | ⚠️ | **[PARTIAL VIOLATION: `constitution.md`]** 此頁面已使用 `useContent` hook，但仍存在後備的硬式編碼英文字串，例如 `'無法獲取版面配置資料。'`。 |
 | Theme Token 使用 | ✅ | 程式碼使用了 Ant Design 的 `theme.useToken()` 和自訂的 `useTheme` hook，符合設計系統規範。 |
@@ -101,7 +102,4 @@
 
 ## 七、模糊與待確認事項（Clarifications）
 
-- **[NEEDS CLARIFICATION: Widget & Data Registry]** 需要詳細說明 KPI 小工具的註冊機制和其對應資料的獲取流程。
-- **[NEEDS CLARIFICATION: Page Registry]** 需要明確哪些頁面支援版面配置，以及這個列表是如何維護的。
-- **[NEEDS CLARIFICATION: Auditing for Layouts]** 需要確認對版面配置的修改是否需要記錄審計日誌。
-- **[NEEDS CLARIFICATION: Import Functionality]** 頁面提供了「匯入」按鈕，但其具體功能未在程式碼中實現。需要明確其規格，例如是覆蓋還是合併現有設定。
+（無）

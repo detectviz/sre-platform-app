@@ -46,7 +46,12 @@
     - 模擬的告警觸發點（Trigger Points）
     - 使用者手動標記的實際事件區間（Marked Areas）
 - **FR-006**：系統必須（MUST）在回測完成後，展示量化的統計結果，包括總數據點、觸發次數和觸發率。
-- **FR-007**: 當使用者提供了「實際事件」進行比對時，後端**必須**計算並回傳規則的 Precision, Recall, F1 Score 等進階效能指標。
+- **FR-007**: 當使用者提供了「實際事件」進行比對時，後端**必須**計算並回傳規則的 Precision, Recall, F1 Score 等進階效能指標。其計算邏輯遵循以下定義：
+    - **True Positive (TP)**: 一個模擬的告警觸發點，其時間戳落在任一使用者手動標記的「實際事件」時間區間內。
+    - **False Positive (FP)**: 一個模擬的告警觸發點，其時間戳**不**落在任何使用者手動標記的「實際事件」時間區間內。
+    - **False Negative (FN)**: 一個使用者手動標記的「實際事件」時間區間，其內部**完全沒有**任何模擬的告警觸發點。
+    - **Precision** 的計算公式為 `TP / (TP + FP)`。
+    - **Recall** 的計算公式為 `TP / (TP + FN)`。
 - **FR-008**：前端在輪詢任務結果時，應採用固定的 5 秒間隔，並在任務完成或失敗時立即停止。
 - **FR-009**：系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。詳細的權限對應關係請參閱下方的「權限控制」章節。
 
@@ -75,6 +80,7 @@
 ### 4.2. UI 控制映射 (UI Mapping)
 - **頁面存取**: `BacktestingPage` 的根元件需由 `<RequirePermission permission="insights:backtesting:read">` 包裹。
 - **「開始回放」按鈕**: 此按鈕需具備 `insights:backtesting:execute` 權限。沒有此權限的使用者將看到一個被禁用的按鈕或按鈕不顯示。
+- **查看歷史結果**: 若系統未來提供查看歷史回測結果列表的功能，該功能同樣需要 `insights:backtesting:read` 權限。後端 API **必須**根據使用者權限過濾可見的結果列表。
 
 ---
 
@@ -102,4 +108,4 @@
 
 ## 七、模糊與待確認事項（Clarifications）
 
-- **[NEEDS CLARIFICATION: Advanced Metrics Definition]** 必須明確定義 Precision, Recall, F1 Score 等進階指標的**具體計算邏輯**。例如，一個「模擬觸發點」落在「手動標記事件」區間內，是算作 True Positive (TP) 嗎？如何定義 True Negative (TN), False Positive (FP), False Negative (FN)？這是後端演算法的核心。
+（無）

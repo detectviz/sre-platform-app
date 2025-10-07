@@ -158,7 +158,7 @@ const handleLanguageChange = async (lang: string) => {
 ## 六、模糊與待確認事項(Clarifications)
 
 - ✅ ~~[NEEDS CLARIFICATION: 語言切換的即時生效範圍]~~ → **已解決: 採用 React Context + i18n 熱更新,即時生效無需重新整理,後端文字需重新載入**
-- ✅ ~~[NEEDS CLARIFICATION: 通知偏好的優先級與策略繼承]~~ → **已解決: 參見 `_backend-parameters-spec.md` § 5.1**
+- [NEEDS CLARIFICATION: 通知偏好的優先級與策略繼承]
 
 ---
 

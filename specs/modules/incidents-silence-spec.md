@@ -51,6 +51,7 @@
 - **FR-013**: 後端 API 回傳的 `SilenceRule` 物件中，**必須**包含一個 `status` 欄位（其值如：`active`, `expiring_soon`, `expired`），前端直接使用此欄位來顯示狀態，不應自行計算。
 - **FR-014**: 系統必須（MUST）從後端 API 或 `options` hook 獲取所有可用的匹配器運算子（Matcher Operators）列表，並在編輯模態框中動態生成對應的選項。
 - **FR-015**：系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。詳細的權限對應關係請參閱下方的「權限控制」章節。
+- **FR-016**: 編輯模態框中的匹配器（Matchers）設定介面**必須**為一個結構化的條件產生器。對於每一條匹配條件，使用者應能輸入「欄位名 (key)」、從動態列表中選擇「運算子 (operator)」，並輸入「值 (value)」。
 
 ---
 
@@ -118,4 +119,4 @@
 
 ## 七、模糊與待確認事項（Clarifications）
 
-- **[NEEDS CLARIFICATION: Matcher Builder UI]** 需要詳細定義用於設定匹配器（Matchers）的 UI 介面。是提供一個結構化的條件產生器（欄位-運算子-值），還是其他形式？
+（無）

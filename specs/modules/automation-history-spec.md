@@ -46,6 +46,7 @@
 - **FR-008**: 後端 API 回傳的 `AutomationExecution` 物件中，`triggered_by` 欄位**必須**是一個包含 `type: 'user' | 'trigger'` 和 `name: string` 的物件。
 - **FR-009**: `ExecutionLogDetail` 抽屜中顯示的日誌內容**必須**包含 `stdout`、`stderr`、`exit_code` 和一個包含各步驟計時的 `steps` 陣列。
 - **FR-010**：系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面，並在後端過濾可見的歷史紀錄。詳細的權限對應關係請參閱下方的「權限控制」章節。
+- **FR-011**: 根據平台資料治理策略，執行歷史紀錄的線上資料保留期限為 90 天。後端**必須**自動清除所有超過 90 天的歷史紀錄。
 
 ---
 
@@ -103,4 +104,4 @@
 
 ## 七、模糊與待確認事項（Clarifications）
 
-- **[NEEDS CLARIFICATION: Data Retention Policy]** 執行歷史的資料保留策略是什麼？是永久保留，還是只保留特定時間（如 90 天）？
+（無）

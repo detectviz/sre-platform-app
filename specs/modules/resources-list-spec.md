@@ -46,8 +46,12 @@
 - **FR-008**：系統必須（MUST）提供一個統一的搜尋模態框，允許使用者基於多個維度（如：類型、狀態、提供商、地區等）篩選資源。
 - **FR-009**：系統必須（MUST）允許使用者自訂表格顯示的欄位，並保存其設定。
 - **FR-010**：系統應該（SHOULD）根據效能指標的數值（如 CPU 使用率）和預設的閾值（`utilization_bands`）來改變指標條的顏色，以達到預警效果。
-- **FR-011**：**[VIOLATION: `constitution.md` - Mock 與 API 合約]** [NEEDS CLARIFICATION: 資源的事件列表 (`eventDrawerItems`) 目前由前端的 `generateMockEvents` 函式模擬產生。這嚴重違反了「Mock 伺服器與正式 API 共享合約」的原則。必須定義一個真實的 API 端點（例如 `GET /api/v1/resources/{id}/events`）來獲取這些資料。]
+- **FR-011**: **[VIOLATION FIXED]** 獲取單一資源的近期事件列表**必須**透過一個真實的後端 API 端點（如 `GET /api/v1/resources/{id}/events`）來實現。前端**嚴禁**使用任何模擬資料產生函式。
 - **FR-012**：系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。詳細的權限對應關係請參閱下方的「權限控制」章節。
+- **FR-013**: 對資源的「AI 分析」功能觸發後，後端 API (`/ai/resources/analyze`) **必須**回傳一份結構化的分析報告。報告中應包含但不限於以下維度：
+    - `cost_optimization`: (array) 成本優化建議。
+    - `security_vulnerabilities`: (array) 已發現的安全漏洞。
+    - `performance_bottlenecks`: (array) 潛在的效能瓶頸分析。
 
 ---
 
@@ -114,5 +118,4 @@
 
 ## 七、模糊與待確認事項（Clarifications）
 
-- **[NEEDS CLARIFICATION: Real Event API]** 必須提供一個真實的後端 API 來取代前端的 `generateMockEvents` 函式，用於獲取資源的近期事件。需定義 API 的路徑、請求參數和回應格式。
-- **[NEEDS CLARIFICATION: AI Analysis for Resources]** 需要定義對資源進行「AI 分析」的具體功能。是分析其效能瓶頸、成本、安全風險，還是配置合理性？
+（無）

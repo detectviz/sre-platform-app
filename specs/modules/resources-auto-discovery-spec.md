@@ -43,9 +43,15 @@
 - **FR-005**：系統必須（MUST）在表格中清晰地展示每個任務的執行狀態（例如：等待中、執行中、成功、失敗）。
 - **FR-006**：系統必須（MUST）提供手動觸發任何已設定掃描任務的功能。
 - **FR-007**：系統必須（MUST）提供一個抽屜（Drawer）視圖，用於顯示特定掃描任務的執行結果詳情。
-- **FR-008**：[NEEDS CLARIFICATION: 前端的 `getCronDescription` 函式提供了很好的使用者體驗，但這種業務邏輯是否應在前端實現？為保證一致性，建議此轉換邏輯由後端 API 提供或來自一個共享函式庫。]
-- **FR-009**：[NEEDS CLARIFICATION: 「查看結果」抽屜中應顯示哪些具體資訊？需要明確定義掃描結果的資料結構，例如 `new_resources`, `changed_resources`, `deleted_resources` 等。]
+- **FR-008**: 為確保全平台對 CRON 表達式的解釋一致，從 CRON 到人類可讀描述的轉換邏輯**必須**由後端 API 或共享函式庫提供，前端**不應**自行實現。
+- **FR-009**: 「查看結果」抽屜中顯示的掃描結果（`DiscoveryJobResult`）**必須**包含一個清晰的結構化物件，至少應有以下欄位：
+    - `status`: (string) 該次執行的最終狀態。
+    - `error_message`: (string, optional) 如果執行失敗，此處應包含錯誤訊息。
+    - `new_resources`: (array) 本次掃描發現的新資源列表。
+    - `changed_resources`: (array) 本次掃描發現狀態有變更的資源列表。
+    - `deleted_resources`: (array) 本次掃描發現可能已被移除的資源列表。
 - **FR-010**：系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。詳細的權限對應關係請參閱下方的「權限控制」章節。
+- **FR-011**: 所有支援的掃描類型（`job_kinds`）及其所需的具體配置參數綱要（schema），**必須**由一個專門的後端 API 動態提供。前端**必須**根據此綱要動態渲染新增/編輯表單。
 
 ---
 
@@ -107,6 +113,4 @@
 
 ## 七、模糊與待確認事項（Clarifications）
 
-- **[NEEDS CLARIFICATION: Cron Description Logic]** 建議將 CRON 表達式到自然語言的轉換邏輯移至後端或共享函式庫，以確保多處使用時的一致性。
-- **[NEEDS CLARIFICATION: Job Result Details]** 需要明確定義掃描結果（`DiscoveryJobResult`）的具體資料結構和其在抽屜中的呈現方式。
-- **[NEEDS CLARIFICATION: Supported Job Kinds]** 需要一份詳盡的列表，說明系統支援的所有掃描類型（`job_kinds`）及其所需的具體配置參數。
+（無）
