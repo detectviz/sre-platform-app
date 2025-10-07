@@ -1060,7 +1060,7 @@ const TableComponent = ({ data }: { data: any[] }) => {
 
 ### 5.2 刪除確認 UI 設計 🟢
 
-**前端問題**: `crud-base-requirements.md` 刪除操作的使用者確認流程。
+**前端問題**: `../specs/common/crud-interaction-pattern.md` 刪除操作的使用者確認流程。
 
 **影響範圍**: 所有 CRUD 模組
 

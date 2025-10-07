@@ -27,7 +27,7 @@
 
 ### 2.1 Component Specs (8 個檔案,16 項決策)
 
-#### 1. `components/modal-spec.md`
+#### 1. `../specs/common/modal-interaction-pattern.md`
 **更新內容**:
 - ✅ 新增 § 5: Z-index 與顯示優先級
   - Modal Level 1: z-index 1000
@@ -45,7 +45,7 @@
 
 ---
 
-#### 2. `components/column-settings-modal-spec.md`
+#### 2. `../specs/components/column-settings-modal-spec.md`
 **更新內容**:
 - ✅ 新增 § 4: 儲存位置選擇
   - 支援「僅我自己」(使用者級) 與「套用至整個團隊」(團隊級)
@@ -63,7 +63,7 @@
 
 ---
 
-#### 3. `components/toolbar-spec.md`
+#### 3. `../specs/components/toolbar-spec.md`
 **更新內容**:
 - ✅ 新增 § 4: 權限控制機制
   - 完全無權限: 隱藏按鈕
@@ -81,7 +81,7 @@
 
 ---
 
-#### 4. `components/drawer-spec.md`
+#### 4. `../specs/components/drawer-spec.md`
 **更新內容**:
 - ✅ 新增 § 4: 堆疊管理機制
   - 參照 `modal-interaction-pattern.md` § 5.3
@@ -98,7 +98,7 @@
 
 ---
 
-#### 5. `components/pagination-spec.md`
+#### 5. `../specs/components/pagination-spec.md`
 **更新內容**:
 - ✅ 新增 § 4: 分頁資訊持久化
   - 採用 URL Query String + SessionStorage 備份策略
@@ -115,7 +115,7 @@
 
 ---
 
-#### 6. `components/unified-search-modal-spec.md`
+#### 6. `../specs/components/unified-search-modal-spec.md`
 **更新內容**:
 - ✅ 新增 § 4: 篩選條件格式統一機制
   - 採用 JSON Schema 定義篩選欄位
@@ -131,7 +131,7 @@
 
 ---
 
-#### 7. `components/quick-filter-bar-spec.md`
+#### 7. `../specs/components/quick-filter-bar-spec.md`
 **更新內容**:
 - ✅ 新增 § 4: 與進階搜尋的整合方式
   - 快速篩選條件自動填入進階搜尋
@@ -148,7 +148,7 @@
 
 ---
 
-#### 8. `components/table-container-spec.md`
+#### 8. `../specs/components/table-container-spec.md`
 **更新內容**:
 - ✅ 新增 § 4: 表格高度的自適應策略
   - 固定高度 + ResizeObserver 監聽
@@ -156,7 +156,7 @@
   - 最小高度 400px
 
 - ✅ 新增 § 5: 虛擬滾動的觸發條件
-  - 參照 `common/table-design-system.md` § 11
+  - 參照 `../specs/common/table-design-system.md` § 11
   - 觸發閾值: 單頁資料 > 100 筆
   - 採用 react-window (FixedSizeList)
 
@@ -167,7 +167,7 @@
 
 ### 2.2 Common Specs (2 個檔案,3 項決策)
 
-#### 9. `common/table-design-system.md`
+#### 9. `../specs/common/table-design-system.md`
 **更新內容**:
 - ✅ 新增 § 12: 表格固定列支援需求
   - 支援 Sticky Header (固定表頭) - 已支援
@@ -185,7 +185,7 @@
 
 ---
 
-#### 10. `common/modal-interaction-pattern.md`
+#### 10. `../specs/common/modal-interaction-pattern.md`
 **更新內容**:
 - ✅ 新增 § 8: Modal 內表單的自動儲存草稿機制
   - 採用 LocalStorage + 定時儲存策略
@@ -201,7 +201,7 @@
 
 ### 2.3 Module Specs (2 個檔案,2 項決策)
 
-#### 11. `modules/profile-preference-spec.md`
+#### 11. `../specs/modules/profile-preference-spec.md`
 **更新內容**:
 - ✅ 新增 § 5: 語言切換的即時生效範圍
   - React Context + i18n 熱更新
@@ -214,7 +214,7 @@
 
 ---
 
-#### 12. `modules/platform-layout-spec.md`
+#### 12. `../specs/modules/platform-layout-spec.md`
 **更新內容**:
 - ✅ 新增 § 6: 主題色變更的即時生效機制
   - CSS Variables 動態更新
@@ -268,18 +268,18 @@
 
 | 檔案 | 決策記錄 | 內容摘要 |
 |------|---------|---------|
-| modal-spec.md | DR-001, DR-002 | Z-index 規則、生命週期策略 |
-| column-settings-modal-spec.md | DR-001, DR-002 | 儲存位置選擇、排序持久化 |
-| toolbar-spec.md | DR-001, DR-002 | 權限控制策略、響應式佈局 |
-| drawer-spec.md | DR-001, DR-002 | 堆疊管理、預載入策略 |
-| pagination-spec.md | DR-001, DR-002 | 持久化策略、分頁策略 |
-| unified-search-modal-spec.md | DR-001, DR-002 | 格式統一、進階搜尋範圍 |
-| quick-filter-bar-spec.md | DR-001, DR-002 | 整合方式、URL 同步 |
-| table-container-spec.md | DR-001, DR-002 | 高度自適應、虛擬滾動 |
-| table-design-system.md | DR-002, DR-003 | Sticky Rows 支援、行內編輯 |
-| modal-interaction-pattern.md | DR-002 | 草稿自動儲存 |
-| profile-preference-spec.md | DR-001 | 語言切換即時生效 |
-| platform-layout-spec.md | DR-001 | 主題色即時生效 |
+| ../specs/common/modal-interaction-pattern.md | DR-001, DR-002 | Z-index 規則、生命週期策略 |
+| ../specs/components/column-settings-modal-spec.md | DR-001, DR-002 | 儲存位置選擇、排序持久化 |
+| ../specs/components/toolbar-spec.md | DR-001, DR-002 | 權限控制策略、響應式佈局 |
+| ../specs/components/drawer-spec.md | DR-001, DR-002 | 堆疊管理、預載入策略 |
+| ../specs/components/pagination-spec.md | DR-001, DR-002 | 持久化策略、分頁策略 |
+| ../specs/components/unified-search-modal-spec.md | DR-001, DR-002 | 格式統一、進階搜尋範圍 |
+| ../specs/components/quick-filter-bar-spec.md | DR-001, DR-002 | 整合方式、URL 同步 |
+| ../specs/components/table-container-spec.md | DR-001, DR-002 | 高度自適應、虛擬滾動 |
+| ../specs/common/table-design-system.md | DR-002, DR-003 | Sticky Rows 支援、行內編輯 |
+| ../specs/common/modal-interaction-pattern.md | DR-002 | 草稿自動儲存 |
+| ../specs/modules/profile-preference-spec.md | DR-001 | 語言切換即時生效 |
+| ../specs/modules/platform-layout-spec.md | DR-001 | 主題色即時生效 |
 
 ### 4.2 決策記錄格式
 
@@ -442,7 +442,7 @@
 ### 9.1 已更新的 12 個 SPEC 檔案
 
 **Component Specs (8 個)**:
-1. `/Users/zoe/Desktop/sre-platform-app/.specify/specs/components/modal-spec.md`
+1. `/Users/zoe/Desktop/sre-platform-app/.specify/specs/common/modal-interaction-pattern.md`
 2. `/Users/zoe/Desktop/sre-platform-app/.specify/specs/components/column-settings-modal-spec.md`
 3. `/Users/zoe/Desktop/sre-platform-app/.specify/specs/components/toolbar-spec.md`
 4. `/Users/zoe/Desktop/sre-platform-app/.specify/specs/components/drawer-spec.md`

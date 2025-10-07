@@ -47,15 +47,15 @@
 
 ---
 
-## 四、觀測性與治理檢查（Observability & Governance Checklist）
+## 五、觀測性與治理檢查（Observability & Governance Checklist）
 
 | 項目 | 狀態 | 說明 |
 |------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ✅ | 使用者點擊「聯繫我們」按鈕的行為**不應**產生審計日誌，但應作為一個業務分析事件，由前端的可觀測性 SDK 進行追蹤，以評估潛在商機的轉化率。 |
-| 指標與告警 (Metrics & Alerts) | ✅ | 此頁面為靜態內容頁，通常無需特定的前端性能指標。 |
-| RBAC 權限與審計 | ✅ | 此頁面為公開資訊，通常無需特定的權限控制。 |
-| i18n 文案 | ✅ | 此頁面完全依賴 `useContent` hook，是 i18n 實踐的良好範例。 |
-| Theme Token 使用 | ✅ | 程式碼符合設計系統規範。 |
+| 記錄與追蹤 (Logging/Tracing) | ❌ | `pages/settings/platform/LicensePage.tsx` 未串接遙測或審計 API，僅以本地狀態與 toast 呈現結果。 |
+| 指標與告警 (Metrics & Alerts) | ❌ | 頁面缺少 OpenTelemetry 或自訂指標，所有 API 呼叫僅透過共享客戶端發送。 |
+| RBAC 權限與審計 | ❌ | UI 未使用 `usePermissions` 或 `<RequirePermission>`，所有操作目前對所有登入者可見，需依《common/rbac-observability-audit-governance.md》導入守衛。 |
+| i18n 文案 | ⚠️ | 主要字串透過內容 context 取得，但錯誤與提示訊息仍有中文 fallback，需要補強內容來源。 |
+| Theme Token 使用 | ⚠️ | 介面混用 `app-*` 樣式與 Tailwind 色票（如 `bg-slate-*`），尚未完全以設計 token 命名。 |
 
 ---
 
@@ -71,4 +71,3 @@
 
 ## 六、模糊與待確認事項（Clarifications）
 
-（無）

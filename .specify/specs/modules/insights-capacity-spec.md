@@ -36,18 +36,15 @@
 
 ## 二、功能需求（Functional Requirements）
 
-- **FR-001**：系統必須（MUST）從 `/analysis/capacity-planning` API 端點獲取資料，並將其呈現在一個儀表板佈局中。
-- **FR-002**：系統必須（MUST）在一個圖表中同時展示 CPU、記憶體、儲存空間的歷史使用率和未來預測趨勢。
-- **FR-003**：系統必須（MUST）提供一個獨立的圖表，用於詳細展示單一資源（如 CPU）的預測模型，包括其預測趨勢線和信賴區間（Confidence Band）。
-- **FR-004**：系統必須（MUST）以卡片列表的形式，展示由 AI 生成的具體優化建議，包括建議的標題、詳情、影響等級和投入精力評估。
-- **FR-005**：系統必須（MUST）提供一個詳細的表格，列出每個被分析資源的當前用量、預測用量、系統建議（如擴容/縮容）和預估的成本影響。
-- **FR-006**：系統必須（MUST）允許使用者將詳細分析表格的內容匯出為 CSV 檔案。
-- **FR-007**：系統必須（MUST）提供一個手動按鈕，用於觸發一次新的 AI 分析並刷新整個頁面的資料。
-- **FR-008**: 「時間範圍」下拉選單在變更時，**必須**觸發一次新的後端 API 請求，以獲取並顯示對應時間範圍的歷史與預測數據。
-- **FR-009**: 「預測模型」圖表**必須**支援使用者在 CPU、記憶體、儲存等不同指標間進行切換，以查看各指標的詳細預測模型。
-- **FR-010**: AI 建議 (`Suggestion`) 物件中，`impact` 和 `effort` 欄位的值**必須**為標準化的枚舉（如 `high`, `medium`, `low`）。
-- **FR-011**: 詳細分析表格中的「建議」 (`ResourceAnalysis`) 應為一個結構化物件，包含 `action`（如 `scale_up`, `scale_down`）和 `reason`（如 `forecast_exceeds_threshold`）等欄位，供前端進行格式化顯示。
-- **FR-012**：系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。詳細的權限對應關係請參閱下方的「權限控制」章節。
+- **FR-001**：系統必須（MUST）在載入時呼叫 `/analysis/capacity-planning` 端點，並以單頁儀表板呈現回傳的趨勢、預測模型、建議與詳細分析資料。
+- **FR-002**：系統必須（MUST）在單一折線圖中同時展示 CPU、記憶體、儲存空間的歷史使用率實線與未來預測虛線。
+- **FR-003**：系統必須（MUST）提供一個獨立的「預測模型」圖表，展示 CPU 指標的預測線與信賴區間填色。
+- **FR-004**：系統必須（MUST）以卡片列表呈現 AI 優化建議，包含標題、摘要、影響與投入等級以及偵測時間，並支援長文案展開/收合。
+- **FR-005**：系統必須（MUST）提供一個詳細分析表格，列出每個資源的目前/預測用量、建議標籤（含嚴重度徽章）與成本影響描述。
+- **FR-006**：系統必須（MUST）允許使用者將目前顯示的詳細分析表格匯出為 CSV 檔案；匯出內容僅含當前頁面載入的資料列。
+- **FR-007**：系統必須（MUST）在工具列提供「觸發 AI 分析」按鈕，用於重新呼叫同一 API 並刷新趨勢、建議與分析結果。
+- **FR-008**：「時間範圍」下拉選單必須（MUST）呈現後端提供的 `time_range_options` 並更新圖表標題與摘要文案，惟目前僅更新 UI 狀態且不重新查詢資料。
+- **FR-009**：系統必須（MUST）依據 `recommendation.severity` 使用統一的語義色彩（`critical`、`warning`、`info`）渲染徽章，缺省時需退回安全的預設色。
 
 ---
 
@@ -56,8 +53,8 @@
 |-----------|------|------|
 | **CapacityPlanningData** | 整個容量規劃頁面的核心資料模型，是包含趨勢、預測、建議和詳細分析的複合體。 | - |
 | **TrendSeries** | 一組時間序列數據，包含歷史值和預測值，用於趨勢圖。 | - |
-| **Suggestion** | 一條由 AI 生成的具體優化建議，包含 `impact` 和 `effort` 枚舉欄位。 | - |
-| **ResourceAnalysis** | 對單一資源的詳細容量分析結果，包含結構化的 `recommendation` 物件。 | Resource |
+| **Suggestion** | 一條由 AI 生成的具體優化建議，包含標題、詳情、偵測時間與繁體中文的 `impact` / `effort` 等級。 | - |
+| **ResourceAnalysis** | 對單一資源的詳細容量分析結果，含用量數值與 `recommendation`（`label`、`action`、`severity`）結構。 | Resource |
 
 ---
 
@@ -84,11 +81,11 @@
 
 | 項目 | 狀態 | 說明 |
 |------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ✅ | 後端 API **必須**為使用者觸發的「AI 分析」和「匯出報表」操作產生詳細的審計日誌，遵循平台級審計日誌方案。 |
-| 指標與告警 (Metrics & Alerts) | ✅ | 前端應透過 OpenTelemetry SDK 自動收集頁面載入性能指標和 API 呼叫遙測。此數據密集型頁面應使用自訂性能標記來測量圖表的渲染時間。 |
-| RBAC 權限與審計 | ✅ | 系統已定義詳細的前端權限控制模型。詳見上方的「權限控制」章節。 |
-| i18n 文案 | ⚠️ | **[PARTIAL VIOLATION: `constitution.md`]** 此頁面已使用 `useContentSection` hook，但仍存在後備的硬式編碼字串，例如 `'無法獲取容量規劃資料。'`。 |
-| Theme Token 使用 | ✅ | 程式碼透過 `useChartTheme` hook 獲取圖表主題，符合設計系統規範。 |
+| 記錄與追蹤 (Logging/Tracing) | ❌ | `pages/analysis/CapacityPlanningPage.tsx` 未串接遙測或審計 API，僅以本地狀態與 toast 呈現結果。 |
+| 指標與告警 (Metrics & Alerts) | ❌ | 頁面缺少 OpenTelemetry 或自訂指標，所有 API 呼叫僅透過共享客戶端發送。 |
+| RBAC 權限與審計 | ❌ | UI 未使用 `usePermissions` 或 `<RequirePermission>`，所有操作目前對所有登入者可見，需依《common/rbac-observability-audit-governance.md》導入守衛。 |
+| i18n 文案 | ⚠️ | 主要字串透過內容 context 取得，但錯誤與提示訊息仍有中文 fallback，需要補強內容來源。 |
+| Theme Token 使用 | ⚠️ | 介面混用 `app-*` 樣式與 Tailwind 色票（如 `bg-slate-*`），尚未完全以設計 token 命名。 |
 
 ---
 
@@ -104,4 +101,9 @@
 
 ## 七、模糊與待確認事項（Clarifications）
 
-(此區塊所有相關項目已被澄清)
+- **[CLARIFICATION]** 「時間範圍」選單目前僅更新前端狀態與圖表文案，不會重新呼叫 API；若需依選項查詢，須擴充後端支援並在前端觸發再取。
+- **[CLARIFICATION]** 預測模型圖僅顯示 CPU 指標，尚無切換記憶體/儲存的操作；若要覆蓋更多指標需更新資料結構與 UI。
+- **[CLARIFICATION]** `Suggestion.impact`/`effort` 的值為繁中字串（「高/中/低」），與其他模組使用的英文枚舉不同；跨模組共用前需定義轉換策略。
+- **[CLARIFICATION]** 匯出功能僅輸出當前載入的資料列，不會啟動後端批次或分頁匯出；大量資料需求需另行設計。
+- **[CLARIFICATION]** 頁面尚未實作 RBAC 守門與操作審計，規格中的權限表目前僅為目標狀態。
+- [RESOLVED - 2025-10-07] 已採納《common/rbac-observability-audit-governance.md》定義的權限守衛與審計方案；此模組必須導入 `usePermissions`/`<RequirePermission>` 並依規範等待後端審計 API。

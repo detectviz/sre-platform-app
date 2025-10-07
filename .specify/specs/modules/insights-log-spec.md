@@ -43,13 +43,10 @@
 - **FR-005**：系統必須（MUST）提供一個「AI 總結」功能，能夠對當前篩選出的日誌觸發後端分析，並在模態框中展示分析結果。
 - **FR-006**：系統必須（MUST）支援透過 URL 查詢參數（`?q=`）來預先填寫搜尋關鍵字。
 - **FR-007**：系統必須（MUST）提供將當前檢視的日誌匯出為 CSV 檔案的功能。
-- **FR-008**: 為避免前端效能瓶頸，日誌直方圖的資料**必須**由一個專門的後端聚合 API 提供（例如 `/logs/histogram`）。前端**不應**在客戶端對大量日誌進行即時計算。
-- **FR-009**: 「AI 總結」功能觸發的後端 API，其回傳的報告**必須**包含一個結構化的物件，至少應有以下欄位：
-    - `summary`: (string) 對日誌內容的自然語言摘要。
-    - `error_patterns`: (array) 偵測到的主要錯誤模式列表。
-    - `recommendations`: (array) 基於分析結果的操作建議。
-- **FR-010**：系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面，並在後端過濾可見的日誌範圍。詳細的權限對應關係請參閱下方的「權限控制」章節。
-- **FR-011**: 「即時日誌」功能當前可採用固定間隔（如 5 秒）的輪詢機制實現。為應對未來高流量場景，應考慮在技術路線圖中規劃使用 WebSocket 等推播技術進行優化，以降低延遲和伺服器負載。
+- **FR-008**：系統必須（MUST）以客戶端聚合方式，根據目前載入的日誌計算每分鐘的錯誤/警告/資訊數量並繪製堆疊直方圖。
+- **FR-009**：「AI 總結」功能觸發後端 `/ai/logs/summarize` 時，回傳的 `LogAnalysis` 物件至少須包含 `summary`、`patterns`（描述、次數、等級）與 `recommendations` 字串陣列。
+- **FR-010**：系統必須（MUST）維持工具列「搜尋和篩選」模態，允許使用者調整 `keyword` 與 `time_range`，並在套用後重新載入資料。
+- **FR-011**：「即時日誌」模式使用 5 秒輪詢刷新最新五筆資料並插入列表頂端，同時保留最多 200 筆記錄。
 
 ---
 
@@ -58,7 +55,7 @@
 |-----------|------|------|
 | **LogEntry** | 核心資料實體，代表一筆獨立的日誌紀錄，包含時間戳、級別、訊息和詳細結構化資料。 | - |
 | **LogExplorerFilters** | 用於篩選日誌的一組條件集合，如關鍵字、時間範圍、日誌級別等。 | - |
-| **LogAnalysis** | 對一批日誌進行 AI 分析後產生的報告，包含摘要、模式和範例等。 | LogEntry |
+| **LogAnalysis** | 對目前查詢結果進行 AI 分析後的報告，包含 `summary`、`patterns`（描述/次數/級別）與 `recommendations`。 | LogEntry |
 
 ---
 
@@ -86,11 +83,11 @@
 
 | 項目 | 狀態 | 說明 |
 |------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ✅ | 後端 API **必須**為觸發「AI 總結」的行為 (`logs:analyze`) 產生審計日誌，記錄執行者與查詢條件。一般性的日誌搜尋行為無需寫入審計日誌，但可由其他可觀測性工具採集以供效能分析。 |
-| 指標與告警 (Metrics & Alerts) | ✅ | 前端應透過平台級 OpenTelemetry SDK 自動收集頁面載入性能指標和 API 呼叫遙測。此外，對於日誌查詢和渲染等關鍵效能路徑，應使用自訂性能標記 (custom instrumentation) 進行重點監控。 |
-| RBAC 權限與審計 | ✅ | 系統已定義詳細的前端權限控制模型與後端資料過濾原則。詳見上方的「權限控制」章節。 |
-| i18n 文案 | ❌ | **[VIOLATION: `constitution.md`]** 程式碼中存在大量硬式編碼的繁體中文文案，例如 "即時日誌"、"無法獲取日誌數據。"、"AI 總結" 等。 |
-| Theme Token 使用 | ✅ | 程式碼透過 `useChartTheme` hook 獲取圖表主題，並使用 `LogLevelPill` 等元件，符合設計系統規範。 |
+| 記錄與追蹤 (Logging/Tracing) | ❌ | `pages/analysis/LogExplorerPage.tsx` 未串接遙測或審計 API，僅以本地狀態與 toast 呈現結果。 |
+| 指標與告警 (Metrics & Alerts) | ❌ | 頁面缺少 OpenTelemetry 或自訂指標，所有 API 呼叫僅透過共享客戶端發送。 |
+| RBAC 權限與審計 | ❌ | UI 未使用 `usePermissions` 或 `<RequirePermission>`，所有操作目前對所有登入者可見，需依《common/rbac-observability-audit-governance.md》導入守衛。 |
+| i18n 文案 | ⚠️ | 主要字串透過內容 context 取得，但錯誤與提示訊息仍有中文 fallback，需要補強內容來源。 |
+| Theme Token 使用 | ⚠️ | 介面混用 `app-*` 樣式與 Tailwind 色票（如 `bg-slate-*`），尚未完全以設計 token 命名。 |
 
 ---
 
@@ -106,4 +103,9 @@
 
 ## 七、模糊與待確認事項（Clarifications）
 
-（無）
+- **[CLARIFICATION]** 直方圖資料由前端對目前載入的最多 200 筆日誌重新分組，若要支援更大資料量需導入伺服器端聚合。 
+- **[CLARIFICATION]** 當查詢結果為空時列表區域沒有「無結果」提示；若需更佳 UX 需補上空狀態。 
+- **[CLARIFICATION]** `LogAnalysis.patterns` 僅含描述/計數/等級，缺乏具體樣本；若要提供範例需擴充 API。
+- **[CLARIFICATION]** 即時模式在 API 失敗時靜默忽略錯誤；若需提示或退回策略需再決策。
+- **[CLARIFICATION]** RBAC 與審計目前未落地，權限表僅代表目標設計。
+- [RESOLVED - 2025-10-07] 已採納《common/rbac-observability-audit-governance.md》定義的權限守衛與審計方案；此模組必須導入 `usePermissions`/`<RequirePermission>` 並依規範等待後端審計 API。

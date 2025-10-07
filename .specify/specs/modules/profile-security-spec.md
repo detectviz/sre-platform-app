@@ -62,15 +62,15 @@
 
 ---
 
-## 四、觀測性與治理檢查（Observability & Governance Checklist）
+## 五、觀測性與治理檢查（Observability & Governance Checklist）
 
 | 項目 | 狀態 | 說明 |
 |------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ✅ | 後端 API **必須**為所有在此頁面上的安全敏感操作（如變更密碼、撤銷會話）產生高優先級的審計日誌，遵循平台級審計日誌方案。 |
-| 指標與告警 (Metrics & Alerts) | ✅ | 前端應透過平台級 OpenTelemetry SDK 自動收集頁面載入性能指標（LCP, FID, CLS）和 API 呼叫遙測（延遲、狀態碼），無需為此模組單獨配置。 |
-| RBAC 權限與審計 | ✅ | 此頁面僅用於修改使用者自身的安全設定，存取控制邏輯簡單清晰。 |
-| i18n 文案 | ✅ | 此頁面廣泛使用了 `useContentSection` hook，是 i18n 實踐的良好範例。 |
-| Theme Token 使用 | ✅ | 此頁面使用了 `useDesignSystemClasses` hook 來抽象化樣式，是設計系統實踐的良好範例。 |
+| 記錄與追蹤 (Logging/Tracing) | ❌ | `pages/profile/SecuritySettingsPage.tsx` 未串接遙測或審計 API，僅以本地狀態與 toast 呈現結果。 |
+| 指標與告警 (Metrics & Alerts) | ❌ | 頁面缺少 OpenTelemetry 或自訂指標，所有 API 呼叫僅透過共享客戶端發送。 |
+| RBAC 權限與審計 | ❌ | UI 未使用 `usePermissions` 或 `<RequirePermission>`，所有操作目前對所有登入者可見，需依《common/rbac-observability-audit-governance.md》導入守衛。 |
+| i18n 文案 | ⚠️ | 主要字串透過內容 context 取得，但錯誤與提示訊息仍有中文 fallback，需要補強內容來源。 |
+| Theme Token 使用 | ⚠️ | 介面混用 `app-*` 樣式與 Tailwind 色票（如 `bg-slate-*`），尚未完全以設計 token 命名。 |
 
 ---
 
@@ -86,4 +86,3 @@
 
 ## 六、模糊與待確認事項（Clarifications）
 
-（無）

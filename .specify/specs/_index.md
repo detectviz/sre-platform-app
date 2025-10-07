@@ -122,6 +122,7 @@
 | crud-interaction-pattern | CRUD 互動模式 | [crud-interaction-pattern.md](common/crud-interaction-pattern.md) | 所有 CRUD 模組(20+) |
 | table-design-system | 表格設計系統 | [table-design-system.md](common/table-design-system.md) | 所有表格模組(18+) |
 | modal-interaction-pattern | Modal 互動模式 | [modal-interaction-pattern.md](common/modal-interaction-pattern.md) | 所有使用 Modal/Drawer 的模組(15+) |
+| rbac-observability-audit-governance | RBAC 與觀測審計治理 | [rbac-observability-audit-governance.md](common/rbac-observability-audit-governance.md) | 全平台模組 |
 
 ---
 

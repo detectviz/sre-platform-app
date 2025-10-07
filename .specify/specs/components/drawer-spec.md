@@ -47,10 +47,21 @@
 - **FR-006**：元件必須（MUST）允許透過 `width` 屬性自訂其寬度。
 - **FR-007**：元件應該（SHOULD）提供一個 `extra` 屬性，用於在標題區域注入額外的操作元件。
 - **FR-008**：元件的滑入滑出必須（MUST）具備平滑的動畫效果。
+- **FR-009**：當頁面存在巢狀 Drawer/Modal 時，元件必須（MUST）遵循 `common/modal-interaction-pattern` 的雙層上限與遞增 z-index 規則，並將焦點鎖定於最上層抽屜，關閉後將焦點還原給觸發元素。
+- **FR-010**：元件必須（MUST）支援 `onPrefetch` 回呼，以便在開啟前拉取資料；若回呼回傳 rejected promise，需阻止開啟並交由父層顯示錯誤訊息。
 
 ---
 
-## 三、可配置屬性（Props）
+## 三、關鍵資料實體（Key Entities）
+
+| 實體名稱 | 描述 | 關聯 |
+|---|---|---|
+| **DrawerShell** | 代表抽屜容器的框架設定，包括標題、寬度與關閉控制。 | ModalInteractionPattern |
+| **DrawerContent** | 描述放置於抽屜內的業務資料區塊，通常由各模組提供。 | 模組頁面 |
+
+---
+
+## 四、可配置屬性（Props）
 
 | 屬性名 | 類型 | 必填 | 描述 |
 |---|---|---|---|
@@ -60,10 +71,11 @@
 | `children` | `React.ReactNode`| 是 | 顯示在抽屜主體部分的內容。 |
 | `width` | `string` | 否 | 設定抽屜寬度的 CSS class。預設為 `'w-2/3'`。 |
 | `extra` | `React.ReactNode`| 否 | 顯示在標題列右側的額外內容（如操作按鈕）。 |
+| `onPrefetch` | `() => Promise<unknown>` | 否 | 抽屜開啟前執行的資料預取函式；如回傳 rejected promise，抽屜保持關閉並交由父層處理錯誤。 |
 
 ---
 
-## 四、關聯模組（Associated Modules）
+## 五、關聯模組（Associated Modules）
 
 此元件是平台中實現「主從式介面」的核心容器，被多個模組用於顯示詳情或次級流程：
 - `incidents-list` (顯示事件詳情)
@@ -74,3 +86,32 @@
 - `identity-team` (顯示團隊詳情)
 - `identity-audit` (顯示審計詳情)
 - `notification-history` (顯示通知詳情)
+
+---
+
+## 六、觀測性與治理檢查（Observability & Governance Checklist）
+
+| 項目 | 狀態 | 說明 |
+|------|------|------|
+| 記錄與追蹤 (Logging/Tracing) | ✅ | 抽屜開啟與關閉行為需透過父模組紀錄，以追蹤使用者瀏覽詳情的頻率與轉換。 |
+| 指標與告警 (Metrics & Alerts) | ✅ | 遵循平台遙測策略量測抽屜載入時間與失敗率。 |
+| RBAC 權限與審計 | ✅ | 抽屜內的操作按鈕必須遵循各模組規範的 `PermissionGate` 設定。 |
+| i18n 文案 | ✅ | 標題與內容由父層提供，需使用內容字典。 |
+| Theme Token 使用 | ✅ | 寬度、遮罩與按鈕樣式需沿用設計系統，避免自訂色碼。 |
+
+---
+
+## 七、審查與驗收清單（Review & Acceptance Checklist）
+
+- [x] 無技術實作語句。
+- [x] 所有必填段落皆存在。
+- [x] 所有 FR 可測試且明確。
+- [x] 無未標註的模糊需求。
+- [x] 符合 `.specify/memory/constitution.md`。
+
+---
+
+## 八、模糊與待確認事項（Clarifications）
+
+- Drawer 需遵循 `common/modal-interaction-pattern` 的堆疊規則：最多同時顯示兩層，次序依開啟時間遞增 z-index，並確保焦點鎖定於最上層抽屜，關閉後焦點歸還觸發元件。
+- 預設於 `onPrefetch` 完成後才開啟抽屜；如預取失敗須阻止開啟並由父層顯示錯誤，支援重新觸發以重試載入。

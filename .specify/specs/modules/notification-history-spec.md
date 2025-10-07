@@ -40,15 +40,14 @@
 - **FR-002**：每條歷史紀錄必須（MUST）包含關鍵資訊，如：時間戳、觸發策略、目標管道、收件人、狀態和內容摘要。
 - **FR-003**：系統必須（MUST）提供快速篩選器，允許使用者根據「狀態」和「管道類型」過濾列表。
 - **FR-004**：系統必須（MUST）允許使用者點擊任一筆紀錄，以在抽屜（Drawer）中查看該次通知的完整詳細資訊。
-- **FR-005**：系統必須（MUST）為發送失敗的通知提供一個「重新發送」的功能。
+- **FR-005 (AS-IS)**：系統必須（MUST）為發送失敗的通知提供「重新發送」功能；MVP 僅在狀態為 `failed` 時顯示按鈕，重送成功後會關閉抽屜並重新整理列表。
 - **FR-006**：系統必須（MUST）支援將歷史紀錄匯出為 CSV 檔案。
 - **FR-007**：系統必須（MUST）支援自訂表格顯示的欄位。
-- **FR-008**：頁面必須（MUST）每 60 秒自動刷新一次資料。
-- **FR-009**: 後端回傳的通知紀錄中，`content` 欄位**必須**是一個結構化物件，至少包含 `title`、`body` 和一個指向源頭實體（如事件）的 `source_link`。
-- **FR-010**: 在 UI 上，如果通知紀錄包含 `source_link` 或關聯的 ID（如 `incident_id`），前端**必須**將其渲染為一個可點擊的連結，導向對應的詳情頁面。
-- **FR-011**：系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面，並在後端過濾可見的歷史紀錄。詳細的權限對應關係請參閱下方的「權限控制」章節。
-- **FR-012**: 「重新發送」功能觸發時，後端**必須**基於源頭事件的**當前狀態**重新評估通知策略並產生新的通知內容，而非簡單地重發舊的訊息。
-- **FR-013**: 根據平台資料治理策略，通知歷史紀錄的線上資料保留期限為 180 天。後端**必須**自動清除所有超過 180 天的歷史紀錄。
+- **FR-008 (AS-IS)**：頁面每 60 秒自動刷新一次資料，使用 `setInterval` 重新呼叫 `/settings/notification-history`；未實作瀏覽器背景時的降頻控制。
+- **FR-009**：`NotificationHistoryRecord.content` 目前以純文字摘要呈現，匯出時需直接輸出該字串。
+- **FR-010**：抽屜需顯示完整紀錄 JSON，並在重新發送成功後關閉抽屜並重新載入列表。
+- **FR-011**：頁面必須（MUST）在工具列提供搜尋模態與欄位設定模態，以調整 `NotificationHistoryFilters` 與可見欄位。
+- **FR-012**：列表頂部需呈現批次/群組成功率摘要（成功筆數、失敗筆數、成功率百分比），資料由後端依策略或群組聚合提供。
 
 ---
 
@@ -85,11 +84,11 @@
 
 | 項目 | 狀態 | 說明 |
 |------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ✅ | 此模組本身即為通知發送的審計日誌，滿足了對通知行為的追蹤要求。 |
-| 指標與告警 (Metrics & Alerts) | ✅ | 前端應透過平台級 OpenTelemetry SDK 自動收集頁面載入性能指標（LCP, FID, CLS）和 API 呼叫遙測（延遲、狀態碼），無需為此模組單獨配置。 |
-| RBAC 權限與審計 | ✅ | 系統已定義詳細的前端權限控制模型與後端資料過濾原則。詳見上方的「權限控制」章節。 |
-| i18n 文案 | ❌ | **[VIOLATION: `constitution.md`]** 程式碼中存在大量硬式編碼的繁體中文文案，例如 "重新發送"、"無法獲取通知歷史。" 等。 |
-| Theme Token 使用 | ✅ | 程式碼使用了 `StatusTag` 和動態圖示設定，符合設計系統規範。 |
+| 記錄與追蹤 (Logging/Tracing) | ❌ | `pages/settings/notification-management/NotificationHistoryPage.tsx` 未串接遙測或審計 API，僅以本地狀態與 toast 呈現結果。 |
+| 指標與告警 (Metrics & Alerts) | ❌ | 頁面缺少 OpenTelemetry 或自訂指標，所有 API 呼叫僅透過共享客戶端發送。 |
+| RBAC 權限與審計 | ❌ | UI 未使用 `usePermissions` 或 `<RequirePermission>`，所有操作目前對所有登入者可見，需依《common/rbac-observability-audit-governance.md》導入守衛。 |
+| i18n 文案 | ⚠️ | 主要字串透過內容 context 取得，但錯誤與提示訊息仍有中文 fallback，需要補強內容來源。 |
+| Theme Token 使用 | ⚠️ | 介面混用 `app-*` 樣式與 Tailwind 色票（如 `bg-slate-*`），尚未完全以設計 token 命名。 |
 
 ---
 
@@ -105,4 +104,10 @@
 
 ## 七、模糊與待確認事項（Clarifications）
 
-（無）
+- **[CLARIFICATION]** `content` 為純文字欄位，抽屜顯示完整 JSON 亦僅含原字串；若需結構化標題/連結需後端調整資料模型。
+- **[CLARIFICATION]** 抽屜中的事件 ID 僅為文字，尚未提供導向詳細頁的超連結。
+- **[CLARIFICATION]** 重新發送僅呼叫 `/resend` 並不重新計算策略內容；若需策略重跑需由後端支援。
+- **[CLARIFICATION]** 頁面未套用 RBAC，權限表目前為目標狀態。
+- **[CLARIFICATION]** 匯出僅輸出目前頁面資料，無 server-side 分頁或篩選對齊。
+- [RESOLVED - 2025-10-07] 已採納《common/rbac-observability-audit-governance.md》定義的權限守衛與審計方案；此模組必須導入 `usePermissions`/`<RequirePermission>` 並依規範等待後端審計 API。
+- 列表需新增批次/群組成功率摘要，後端 API 提供聚合資料，前端在列表與抽屜呈現分母與成功率。

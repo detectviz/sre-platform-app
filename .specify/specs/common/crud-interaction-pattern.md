@@ -58,7 +58,7 @@
 | 項目 | 狀態 | 說明 |
 |------|------|------|
 | 記錄與追蹤 (Logging/Tracing) | ✅ | 所有 CRUD 操作都應在後端產生詳細的審計日誌。此要求應在具體的模組級規格中被再次強調。 |
-| 指標與告警 (Metrics & Alerts) | ⚠️ | [NEEDS CLARIFICATION: 應考慮監控所有 CRUD API 的延遲和成功率。] |
+| 指標與告警 (Metrics & Alerts) | ⚠️ | 已採納《common/rbac-observability-audit-governance.md》，需以 API 攔截器上報延遲、成功率與 requestId，並建立儀表板追蹤。 |
 | RBAC 權限與審計 | ✅ | 對 CRUD 的權限控制應在每個具體的模組中根據業務需求進行定義，並在後端強制執行。 |
 | i18n 文案 | ✅ | 所有構成此模式的共享元件都應使用 `useContent` hook 獲取文案。 |
 | Theme Token 使用 | ✅ | 所有構成此模式的共享元件都應遵循 `constitution.md` 的主題和樣式規範。 |
@@ -77,5 +77,5 @@
 
 ## 六、模糊與待確認事項（Clarifications）
 
-- **[NEEDS CLARIFICATION: Optimistic Updates]** 在執行建立、更新或刪除操作後，前端列表是應該立即進行樂觀更新（Optimistic Update），還是在等待 API 確認成功後再刷新？需要為平台定義一個統一的策略。
-- **[NEEDS CLARIFICATION: Error Handling]** 當 CRUD 操作失敗時（例如，因為網路錯誤或權限不足），應採用統一的錯誤回饋機制。是使用全域的 Toast 提示，還是在表單或模態框內顯示具體的錯誤訊息？
+- [RESOLVED - 2025-10-07] CRUD 操作採「先等待 API 成功再刷新」策略，僅對具立即回饋需求的操作於模組層另行定義；若要顯示暫存結果，須於模組規格明載樂觀更新規則。
+- [RESOLVED - 2025-10-07] 當 CRUD 操作失敗時，需同時顯示全域 Toast 與欄位錯誤（若適用），Toast 中應包含 requestId 或 auditId 以便追蹤；錯誤訊息來源統一交由內容系統管理。
