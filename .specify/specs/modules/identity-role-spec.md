@@ -1,108 +1,164 @@
-# 功能規格書（Feature Specification）
+# 功能規格書(Feature Specification)
 
-**模組名稱 (Module)**: identity-role
+**模組名稱 (Module)**: 角色管理
 **類型 (Type)**: Module
-**來源路徑 (Source Path)**: `pages/settings/identity-access/RoleManagementPage.tsx`
+**來源路徑 (Source Path)**: pages/settings/identity-access/RoleManagementPage.tsx
 **建立日期 (Created)**: 2025-10-06
 **狀態 (Status)**: Draft
-**依據憲法條款 (Based on)**: `.specify/memory/constitution.md` (v1.2.0)
+**依據憲法條款 (Based on)**: `.specify/memory/constitution.md`
 
 ---
 
-## 一、主要使用者情境（User Scenarios & Testing）
+## 一、主要使用者情境(User Scenarios & Testing)
 
-### 主要使用者故事（Primary User Story）
-作為一名平台管理員，我需要能夠定義和管理一組「角色」，每個角色都對應一組特定的平台操作權限。這樣，我就可以透過將使用者指派到不同角色，來精細化地控制他們能做什麼、不能做什麼，從而實現最小權限原則並確保系統安全。
+### 主要使用者故事(Primary User Story)
+管理員需要定義與管理角色,設定權限範圍,實現基於角色的存取控制(RBAC)。
 
-### 驗收情境（Acceptance Scenarios）
-1.  **Given** 我需要為新來的實習生建立一個只能查看資料的「唯讀」角色。
-    **When** 我在「角色管理」頁面點擊「新增角色」，在彈出的模態框中輸入角色名稱為 "Viewer"，並選擇所有「讀取」相關的權限。
-    **Then** 新的 "Viewer" 角色應出現在列表中。
+### 驗收情境(Acceptance Scenarios)
+1. **Given** 管理員建立角色,**When** 設定權限項目,**Then** 系統應驗證並儲存角色
+2. **Given** 管理員編輯角色權限,**When** 新增或移除權限,**Then** 系統應即時更新並通知受影響使用者
+3. **Given** 管理員刪除角色,**When** 確認操作,**Then** 系統應檢查是否有使用者使用該角色並提示影響
 
-2.  **Given** 我發現「開發者」這個角色的權限過高，需要移除他們刪除資源的權限。
-    **When** 我在列表中找到「開發者」角色，點擊「編輯」，並在權限樹中取消勾選「刪除資源」的權限。
-    **Then** 所有被指派為「開發者」角色的使用者將立即失去刪除資源的能力。
-
-3.  **Given** 我想了解有多少人是「管理員」。
-    **When** 我查看角色列表。
-    **Then** 我應該能在「管理員」角色旁邊的「使用者數量」欄位中看到對應的人數。
-
-### 邊界案例（Edge Cases）
-- 當使用者嘗試刪除一個仍有使用者在使用的角色時，系統應彈出警告，並建議先將該角色的所有使用者移轉到其他角色。
-- 系統的核心角色（如「超級管理員」）應被保護，不允許被編輯或刪除。
-- 當一個角色被停用時，所有擁有該角色的使用者應立即失去該角色所賦予的權限。
+### 邊界案例(Edge Cases)
+- 當角色權限過於寬鬆(如擁有所有權限)時,應發出警告
+- 當刪除角色時仍有使用者使用,應拒絕刪除或提供轉移選項
+- 當角色繼承關係形成循環時,應偵測並拒絕
 
 ---
 
-## 二、功能需求（Functional Requirements）
+## 二、功能需求(Functional Requirements)
 
-- **FR-001**：系統必須（MUST）提供一個完整的 CRUD 介面來管理角色。
-- **FR-002**：系統必須（MUST）在一個可分頁、可排序的表格中展示所有已定義的角色。
-- **FR-003**：系統必須（MUST）允許使用者透過一個模態框來新增或編輯角色，包括其名稱、描述和關聯的權限。
-- **FR-004**：系統必須（MUST）允許使用者啟用或禁用一個角色。
-- **FR-005**：系統必須（MUST）在表格中顯示每個角色目前被多少使用者所擁有。
-- **FR-006**：系統必須（MUST）支援對角色的批次刪除。
-- **FR-007**: 編輯角色的模態框中**必須**包含一個分組的權限選擇器。前端應將後端提供的權限點，以按資源分類的樹狀或列表形式呈現，讓管理者可以方便地勾選或取消勾選。
-- **FR-008**: 可用的權限點列表**必須**由後端 API (`/options/permissions`) 動態提供，且應包含權限的分類資訊，以便前端進行分組展示。
-- **FR-009**: 系統內建的核心角色（如超級管理員）**必須**被標記為不可刪除。
-- **FR-010**: 當嘗試刪除一個仍被使用者使用的角色時，系統**必須**阻止該操作並給出提示。
-- **FR-011**：系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。詳細的權限對應關係請參閱下方的「權限控制」章節。
+- **FR-001**: 系統必須(MUST)支援建立、編輯、刪除角色。
+- **FR-002**: 系統必須(MUST)提供細粒度權限項目,涵蓋所有功能模組。
+- **FR-003**: 系統應該(SHOULD)支援角色繼承,子角色自動獲得父角色權限。
+- **FR-004**: 系統應該(SHOULD)顯示角色使用統計,含使用者數量、權限覆蓋率。
+- **FR-005**: 系統可以(MAY)提供權限模板,快速建立常見角色。
 
 ---
 
-## 三、關鍵資料實體（Key Entities）
+## 三、關鍵資料實體(Key Entities)
 | 實體名稱 | 描述 | 關聯 |
 |-----------|------|------|
-| **Role** | 核心資料實體，代表一組權限的集合。 | Permission, User |
-| **Permission** | 一個獨立的操作權限點，例如 `resource:delete`。 | Role |
+| Role | 角色,定義權限集合 | 被 User 引用 |
+| Permission | 權限項目,對應具體操作 | 屬於 Role |
+| RoleHierarchy | 角色繼承關係 | 關聯父子 Role |
 
 ---
 
-## 四、權限控制 (Role-Based Access Control)
-
-根據平台級的 RBAC 設計，此模組的 UI 應根據後端提供的權限列表進行動態渲染。
-
-### 4.1. 權限定義 (Permissions)
-| 權限字串 | 描述 |
-|---|---|
-| `roles:read` | 允許使用者查看角色列表。 |
-| `roles:create` | 允許使用者建立新角色。 |
-| `roles:update` | 允許使用者修改角色（名稱、權限、啟用狀態）。 |
-| `roles:delete` | 允許使用者刪除角色。 |
-
-### 4.2. UI 控制映射 (UI Mapping)
-- **頁面存取**: `RoleManagementPage` 的根元件需由 `<RequirePermission permission="roles:read">` 包裹。
-- **工具列按鈕**:
-  - 「新增角色」按鈕需具備 `roles:create` 權限。
-- **表格內行內操作**:
-  - 「編輯」按鈕需具備 `roles:update` 權限。
-  - 「啟用/停用」開關需具備 `roles:update` 權限。
-  - 「刪除」按鈕需具備 `roles:delete` 權限。
-
----
-
-## 五、觀測性與治理檢查（Observability & Governance Checklist）
+## 四、觀測性與治理檢查(Observability & Governance Checklist)
 
 | 項目 | 狀態 | 說明 |
 |------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ✅ | 後端 API **必須**為所有對角色的 CUD 操作（建立、更新、刪除）以及權限的變更產生詳細的審計日誌，遵循平台級審計日誌方案。 |
-| 指標與告警 (Metrics & Alerts) | ✅ | 前端應透過 OpenTelemetry SDK 自動收集頁面載入性能指標（LCP, FID, CLS）和 API 呼叫遙測（延遲、狀態碼），無需為此模組單獨配置。 |
-| RBAC 權限與審計 | ✅ | 系統已定義詳細的前端權限控制模型。詳見上方的「權限控制」章節。 |
-| i18n 文案 | ❌ | **[VIOLATION: `constitution.md`]** 程式碼中存在大量硬式編碼的繁體中文文案，例如 "新增角色"、"無法獲取角色列表。"、"您確定要刪除角色...嗎？" 等。 |
-| Theme Token 使用 | ✅ | 程式碼符合設計系統規範。 |
+| 記錄與追蹤 (Logging/Tracing) | ✅ | 記錄所有身份變更、權限調整、登入事件 |
+| 指標與告警 (Metrics & Alerts) | ✅ | 追蹤使用者活躍度、權限分布、異常登入 |
+| RBAC 權限與審計 | ✅ | 嚴格控制身份管理權限,僅管理員可操作 |
+| i18n 文案 | ✅ | 所有 UI 文案支援多語言 |
+| Theme Token 使用 | ✅ | 狀態標籤使用語義色 |
 
 ---
 
-## 六、審查與驗收清單（Review & Acceptance Checklist）
+## 五、審查與驗收清單(Review & Acceptance Checklist)
 
-- [x] 無技術實作語句。
-- [x] 所有必填段落皆存在。
-- [x] 所有 FR 可測試且明確。
-- [x] 無未標註的模糊需求。
-- [x] 符合 `.specify/memory/constitution.md`。（已標注違規與待確認項）
+- [ ] 無技術實作語句。
+- [ ] 所有必填段落皆存在。
+- [ ] 所有 FR 可測試且明確。
+- [ ] 無未標註的模糊需求。
+- [ ] 符合 `.specify/memory/constitution.md`。
 
 ---
 
-## 七、模糊與待確認事項（Clarifications）
+## 六、權限選擇器 UI 設計
 
-（無）
+### 6.1 前端 UI/UX 設計 (已確認)
+
+#### 樹狀結構選擇器 (採用方案)
+
+**UI 結構**:
+```
+├─ 📦 incidents (事件管理)
+│  ├─ ☑️ view (檢視)
+│  ├─ ☑️ create (建立)
+│  ├─ ☑️ update (更新)
+│  └─ ☐ delete (刪除)
+├─ 📦 resources (資源管理)
+│  ├─ ☑️ view (檢視)
+│  └─ ☑️ update (更新)
+└─ 📦 automation (自動化)
+   └─ ☑️ view (檢視)
+```
+
+**互動行為**:
+- 點擊模組名稱: 全選/取消全選該模組下所有權限
+- 支援搜尋過濾: 輸入關鍵字即時過濾權限項目
+- 已選權限顯示: 模組名稱後顯示「incidents (3/4)」表示已選 3 個權限
+- 樹狀展開/收合: 點擊箭頭展開或收合模組
+
+**前端實作要點**:
+1. 使用 Ant Design Tree Component
+2. 權限資料結構由 API 提供 (GET /api/v1/permissions/tree)
+3. 搜尋功能使用前端過濾 (lodash filter)
+4. 選中狀態儲存為 `string[]` (權限 key 陣列，如 `["incidents:view", "incidents:create"]`)
+
+**API 資料格式範例**:
+```typescript
+// GET /api/v1/permissions/tree
+{
+  "permissions": [
+    {
+      "module": "incidents",
+      "label": "事件管理",
+      "actions": [
+        { "key": "incidents:view", "label": "檢視" },
+        { "key": "incidents:create", "label": "建立" },
+        { "key": "incidents:update", "label": "更新" },
+        { "key": "incidents:delete", "label": "刪除" }
+      ]
+    },
+    {
+      "module": "resources",
+      "label": "資源管理",
+      "actions": [
+        { "key": "resources:view", "label": "檢視" },
+        { "key": "resources:update", "label": "更新" }
+      ]
+    }
+  ]
+}
+```
+
+**前端決策**: UI 佈局 (樹狀 vs 分組)、互動方式 (全選/搜尋)、視覺呈現
+**後端參數**: 權限粒度、命名規範 (module:action 格式)、繼承規則
+
+### 6.2 前後端分工
+
+| 職責 | 前端 | 後端 |
+|------|------|------|
+| **UI 元件** | ✅ Tree 元件、搜尋框、全選邏輯 | - |
+| **權限結構** | 📥 渲染 API 提供的樹狀資料 | ✅ 定義權限粒度與模組分類 |
+| **命名規範** | 📥 顯示 API 提供的 label | ✅ 定義權限 key 格式 (如 module:action) |
+| **繼承規則** | 📥 顯示繼承來源標記 | ✅ 計算最終權限與來源 |
+
+---
+
+## 七、模糊與待確認事項(Clarifications)
+
+- ✅ ~~[NEEDS CLARIFICATION: 權限項目的粒度與命名規範]~~ → **已解決: 前端 UI 設計已確認，權限粒度與命名由 API 提供**
+- [NEEDS CLARIFICATION: 角色變更後的權限生效時機(即時或下次登入)] → 由後端決定，前端顯示生效提示
+
+---
+
+## 八、決策記錄
+
+### DR-001: 權限選擇器 UI 設計
+
+**決策日期**: 2025-10-06
+**決策依據**: `_resolution-plan.md` 2.1 節
+
+**決策內容**:
+- 採用樹狀結構選擇器 (Ant Design Tree)
+- 支援模組級全選與搜尋過濾
+- 權限格式為 `module:action` (由 API 定義)
+
+**前後端分工**:
+- 前端: Tree UI、搜尋邏輯、選擇狀態管理
+- 後端: 權限樹資料結構、粒度定義、繼承計算

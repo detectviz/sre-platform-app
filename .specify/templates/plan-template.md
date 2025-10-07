@@ -1,3 +1,4 @@
+
 # Implementation Plan: [FEATURE]
 
 **Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
@@ -17,7 +18,7 @@
    → Update Progress Tracking: Initial Constitution Check
 5. Execute Phase 0 → research.md
    → If NEEDS CLARIFICATION remain: ERROR "Resolve unknowns"
-6. Execute Phase 1 → contracts, data-model.md, quickstart.md, agent-specific template file (e.g., `CLAUDE.md` for Claude Code, `.github/copilot-instructions.md` for GitHub Copilot, `GEMINI.md` for Gemini CLI, `QWEN.md` for Qwen Code, or `AGENTS.md` for all other agents).
+6. Execute Phase 1 → contracts, data-model.md, quickstart.md, agent-specific template file (e.g., `CLAUDE.md` for Claude Code, `.github/copilot-instructions.md` for GitHub Copilot, `GEMINI.md` for Gemini CLI, `QWEN.md` for Qwen Code or `AGENTS.md` for opencode).
 7. Re-evaluate Constitution Check section
    → If new violations: Refactor design, return to Phase 1
    → Update Progress Tracking: Post-Design Constitution Check
@@ -43,10 +44,34 @@
 **Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
 **Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
 
-## Constitution Check
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+## 憲法檢查
+*GATE: 在第 0 階段研究前必須通過。第 1 階段設計後重新檢查。*
 
-[Gates determined based on constitution file]
+### 一、觀測性與可靠性優先
+- [ ] 所有系統組件包含監控、記錄、告警功能
+- [ ] 規劃健康檢查、指標收集、故障檢測機制
+- [ ] 不損害系統穩定性或觀測性
+
+### 二、資料治理與血緣追蹤
+- [ ] 資料流維持從來源到消費的完整可追溯性
+- [ ] 資料轉換、儲存、使用將記錄在血緣系統中
+- [ ] AI 洞察、自動化決策、使用者操作完全可審計
+
+### 三、安全性與多租戶架構
+- [ ] 多租戶資料隔離絕對，不允許跨租戶洩漏
+- [ ] 所有存取遵循 RBAC 並配合審計記錄
+- [ ] 安全性驗證在任何資料操作之前發生
+- [ ] 符合 GDPR、ISO27001 標準
+
+### 四、自動化與智慧
+- [ ] 自動化工作流程結合 AI 決策制定與可靠執行
+- [ ] 所有自動化操作可審計、可逆轉，包含人工監督
+- [ ] 智慧功能提供可解釋的推理邏輯和資料血緣
+
+### 五、標準與一致性
+- [ ] 所有程式碼、API、資料結構遵循 snake_case 命名慣例
+- [ ] 全面驗證、結構化錯誤處理、一致的模式
+- [ ] 重大變更需要理由說明和遷移計劃
 
 ## Project Structure
 
@@ -151,7 +176,7 @@ directories captured above]
    - Quickstart test = story validation steps
 
 5. **Update agent file incrementally** (O(1) operation):
-   - Run `.specify/scripts/bash/update-agent-context.sh claude`
+   - Run `.specify/scripts/bash/update-agent-context.sh cursor`
      **IMPORTANT**: Execute it exactly as specified above. Do not add or remove any arguments.
    - If exists: Add only NEW tech from current plan
    - Preserve manual additions between markers
@@ -215,4 +240,4 @@ directories captured above]
 - [ ] Complexity deviations documented
 
 ---
-*Based on Constitution v2.1.1 - See `/memory/constitution.md`*
+*基於憲法 v1.0.0 - 請參閱 `/memory/constitution.md`*
