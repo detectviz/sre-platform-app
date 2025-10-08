@@ -16,21 +16,21 @@
 
 ### 驗收情境（Acceptance Scenarios）
 1.  **Given** 我正在查看「資源列表」頁面。
-    **When** 我看到一個資源的 CPU 使用率顯示為紅色，表示過高。
-    **Then** 我應該能夠點擊該資源列，從右側滑出的抽屜中查看其詳細的效能指標圖表和日誌，以進行問題診斷。
+    **When** 我看到一個資源的 CPU 使用率顯示為紅色。
+    **Then** 我應該能夠點擊該資源列，從右側滑出的抽屜中查看其詳細資訊。
 
 2.  **Given** 我發現一個資源的「事件計數」顯示為一個高數值。
     **When** 我點擊該事件計數徽章。
-    **Then** 系統必須滑出一個專門的抽屜，顯示該資源在最近 24 小時內發生的具體事件列表（包含嚴重性、標題和時間）。
+    **Then** 系統必須滑出一個專門的抽屜，顯示該資源最近發生的事件列表。
 
 3.  **Given** 我需要下線一批舊的伺服器。
     **When** 我使用篩選功能找到這些伺服器，將它們全部選中，然後點擊批次「刪除」按鈕。
-    **Then** 所有被選中的資源都應被刪除，並在操作成功後收到提示。
+    **Then** 所有被選中的資源都應被刪除。
 
 ### 邊界案例（Edge Cases）
-- 當一個資源沒有任何效能指標資料時，其使用率欄位應顯示為 "--" 或 "N/A"，而不是 0% 或錯誤。
-- 當一個資源在近期沒有任何事件時，其「事件計數」徽章應為禁用狀態且不可點擊。
-- 當使用者嘗試刪除一個資源時，系統必須彈出一個確認對話框以防止誤刪。
+- 當一個資源沒有任何效能指標資料時，其使用率欄位應顯示為 "--"。
+- 當一個資源在近期沒有任何事件時，其「事件計數」徽章應為禁用狀態。
+- 當使用者嘗試刪除一個資源時，系統必須彈出一個確認對話框。
 
 ---
 
@@ -38,20 +38,17 @@
 
 - **FR-001**：系統必須（MUST）提供一個完整的 CRUD 介面來管理所有獨立資源。
 - **FR-002**：系統必須（MUST）在一個可分頁、可排序的表格中展示所有資源。
-- **FR-003**：系統必須（MUST）允許使用者透過一個模態框來新增或編輯資源的屬性（如名稱、類型、擁有者等）。
-- **FR-004**：系統必須（MUST）在表格中以視覺化方式展示關鍵效能指標，例如 CPU 和記憶體的使用率條。
-- **FR-005**：系統必須（MUST）顯示每個資源在特定時間範圍內（如 24 小時）的事件計數，並提供鑽取查看事件詳情的功能。
+- **FR-003**：系統必須（MUST）允許使用者透過 `ResourceEditModal` 模態框來新增或編輯資源。
+- **FR-004**：系統必須（MUST）在表格中以視覺化方式展示關鍵效能指標（如 CPU/記憶體使用率條）。
+- **FR-005**：系統必須（MUST）顯示每個資源的事件計數，並提供鑽取查看事件詳情的功能。
 - **FR-006**：系統必須（MUST）在使用者點擊資源時，在一個寬抽屜（Drawer）中顯示該資源的完整詳細頁面 (`ResourceDetailPage`)。
 - **FR-007**：系統必須（MUST）支援對多個選中資源的批次操作，包括：AI 分析、刪除、匯入/匯出。
-- **FR-008**：系統必須（MUST）提供一個統一的搜尋模態框，允許使用者基於多個維度（如：類型、狀態、提供商、地區等）篩選資源。
-- **FR-009**：系統必須（MUST）允許使用者自訂表格顯示的欄位，並保存其設定。
-- **FR-010**：系統應該（SHOULD）根據效能指標的數值（如 CPU 使用率）和預設的閾值（`utilization_bands`）來改變指標條的顏色，以達到預警效果。
-- **FR-011**: **[VIOLATION FIXED]** 獲取單一資源的近期事件列表**必須**透過一個真實的後端 API 端點（如 `GET /api/v1/resources/{id}/events`）來實現。前端**嚴禁**使用任何模擬資料產生函式。
-- **FR-012**：系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。詳細的權限對應關係請參閱下方的「權限控制」章節。
-- **FR-013**: 對資源的「AI 分析」功能觸發後，後端 API (`/ai/resources/analyze`) **必須**回傳一份結構化的分析報告。報告中應包含但不限於以下維度：
-    - `cost_optimization`: (array) 成本優化建議。
-    - `security_vulnerabilities`: (array) 已發現的安全漏洞。
-    - `performance_bottlenecks`: (array) 潛在的效能瓶頸分析。
+- **FR-008**：系統必須（MUST）提供 `UnifiedSearchModal` 以支援進階篩選。
+- **FR-009**：系統必須（MUST）允許使用者自訂表格顯示的欄位 (`ColumnSettingsModal`)。
+- **FR-010 (AS-IS)**：效能指標條的顏色是根據從 `options` 獲取的 `utilization_bands` 來動態改變的。
+- **FR-011 (AS-IS)**：近期事件列表是透過前端的 `generateMockEvents` 函式模擬產生的，並非來自真實 API。
+- **FR-012 (FUTURE)**：對資源的「AI 分析」功能需要實現。
+- **FR-013 (FUTURE)**：系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。
 
 ---
 
@@ -67,7 +64,7 @@
 
 ## 四、權限控制 (Role-Based Access Control)
 
-根據平台級的 RBAC 設計，此模組的 UI 應根據後端提供的權限列表進行動態渲染。
+**[FUTURE REQUIREMENT]** 以下權限模型描述了產品的最終設計目標，尚未在當前 MVP 中實現。
 
 ### 4.1. 權限定義 (Permissions)
 | 權限字串 | 描述 |
@@ -96,13 +93,15 @@
 
 ## 五、觀測性與治理檢查（Observability & Governance Checklist）
 
+此部分描述當前 MVP 的狀態，作為未來迭代的基準。
+
 | 項目 | 狀態 | 說明 |
 |------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ❌ | `pages/resources/ResourceListPage.tsx` 未串接遙測或審計 API，僅以本地狀態與 toast 呈現結果。 |
-| 指標與告警 (Metrics & Alerts) | ❌ | 頁面缺少 OpenTelemetry 或自訂指標，所有 API 呼叫僅透過共享客戶端發送。 |
-| RBAC 權限與審計 | ❌ | UI 未使用 `usePermissions` 或 `<RequirePermission>`，所有操作目前對所有登入者可見，需依《common/rbac-observability-audit-governance.md》導入守衛。 |
-| i18n 文案 | ⚠️ | 主要字串透過內容 context 取得，但錯誤與提示訊息仍有中文 fallback，需要補強內容來源。 |
-| Theme Token 使用 | ⚠️ | 介面混用 `app-*` 樣式與 Tailwind 色票（如 `bg-slate-*`），尚未完全以設計 token 命名。 |
+| 記錄與追蹤 (Logging/Tracing) | 🟡 | 未實現。 |
+| 指標與告警 (Metrics & Alerts) | 🟡 | 未實現。 |
+| RBAC 權限與審計 | 🟡 | 未實現。所有操作對任何登入使用者均可見。 |
+| i18n 文案 | 🟡 | 部分實現。此頁面大部分為硬編碼中文，未接入 i18n 內容管理系統。 |
+| Theme Token 使用 | 🟡 | 部分實現。UI 混用預定義樣式與直接的 Tailwind 色票。 |
 
 ---
 
@@ -118,4 +117,6 @@
 
 ## 七、模糊與待確認事項（Clarifications）
 
-- [RESOLVED - 2025-10-07] 已採納《common/rbac-observability-audit-governance.md》定義的權限守衛與審計方案；此模組必須導入 `usePermissions`/`<RequirePermission>` 並依規範等待後端審計 API。
+- **[NEEDS CLARIFICATION] i18n**: 目前 MVP 在多處使用硬編碼中文，例如 `showToast` 的訊息 (`'無法獲取資源列表。'`)，未來需全面遷移至 i18n 內容管理系統。
+- **[NEEDS CLARIFICATION] Theming**: MVP 廣泛使用 Tailwind CSS 的原子化 class (如 `bg-sky-900/50`) 來定義語義顏色和樣式，未來需重構為使用中央設計系統的 Theme Token。
+- **[NEEDS CLARIFICATION] Mock Event Data**: 當前 MVP 的事件列表是透過前端 `generateMockEvents` 函式模擬的 (FR-011)，未來必須替換為真實的後端 API。

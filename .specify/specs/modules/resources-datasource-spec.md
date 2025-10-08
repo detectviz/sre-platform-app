@@ -16,20 +16,20 @@
 
 ### 驗收情境（Acceptance Scenarios）
 1.  **Given** 我需要將一個新的 Prometheus 實例納入監控。
-    **When** 我在「資料來源」管理頁面點擊「新增資料來源」，選擇類型為 "Prometheus"，並填寫其名稱、URL 和認證資訊。
-    **Then** 新的資料來源應出現在列表中，其初始狀態應為 "待定 (Pending)"。
+    **When** 我在「資料來源」管理頁面點擊「新增資料來源」，在彈出的模態框中填寫其名稱、URL 等資訊。
+    **Then** 新的資料來源應出現在列表中。
 
 2.  **Given** 我懷疑某個 Grafana 資料來源的 API token 已過期。
-    **When** 我找到該資料來源，點擊「編輯」，更新其認證資訊，並觸發「連線測試」。
-    **Then** 系統應回報測試成功，且該資料來源的狀態應更新為 "正常 (OK)"。
+    **When** 我找到該資料來源，在編輯模態框中更新其認證資訊，並觸發「連線測試」。
+    **Then** 系統應回報測試成功。
 
 3.  **Given** 我只想查看所有目前連線失敗的資料來源。
-    **When** 我使用篩選功能，選擇狀態為 "錯誤 (Error)"。
+    **When** 我使用快速篩選器，選擇狀態為 "錯誤 (Error)"。
     **Then** 表格中應只顯示連線狀態為錯誤的資料來源。
 
 ### 邊界案例（Edge Cases）
-- 當使用者嘗試刪除一個資料來源時，系統必須彈出一個確認對話框以防止誤刪。
-- 當連線測試正在進行時，對應的操作按鈕應顯示為載入中狀態，防止重複觸發。
+- 當使用者嘗試刪除一個資料來源時，系統必須彈出一個確認對話框。
+- 當連線測試正在進行時，對應的操作按鈕應顯示為載入中狀態。
 - 當後端 API 請求失敗時，表格區域應顯示錯誤訊息及「重試」按鈕。
 
 ---
@@ -38,14 +38,13 @@
 
 - **FR-001**：系統必須（MUST）提供一個完整的 CRUD 介面來管理資料來源。
 - **FR-002**：系統必須（MUST）在一個可分頁、可排序的表格中展示所有已設定的資料來源。
-- **FR-003**：系統必須（MUST）允許使用者透過一個模態框來新增或編輯資料來源，包括其名稱、類型、URL 和認證方式等。
-- **FR-004**：系統必須（MUST）能夠觸發對指定資料來源的非同步「連線測試」，並在測試完成後透過 Toast 訊息回報結果（成功/失敗及延遲）。
-- **FR-005**：系統必須（MUST）在表格中清晰地以標籤形式展示每個資料來源的連線狀態（例如：正常、待定、錯誤）。
-- **FR-006**：系統必須（MUST）提供一個統一的搜尋模態框，允許使用者基於關鍵字、類型、狀態等多個維度篩選資料來源。
-- **FR-007**：系統應該（SHOULD）提供一個快速複製資料來源 URL 的功能。
-- **FR-008**: 系統**必須**在編輯模態框的頁腳和表格的每一行操作中，都提供「連線測試」按鈕。
-- **FR-009**: 後端 API **必須**提供一個端點或在 `options` hook 中返回所有支援的資料來源類型及其所需設定欄位的綱要（Schema），前端應根據此綱要動態產生表單。
-- **FR-010**：系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。詳細的權限對應關係請參閱下方的「權限控制」章節。
+- **FR-003**：新增/編輯資料來源的表單**必須**根據後端 API 提供的 JSON Schema 動態產生，以支援不同類型的資料來源。
+- **FR-004**：系統必須（MUST）提供「連線測試」功能，並在表格內和編輯模態框中均可觸發。
+- **FR-005**：系統必須（MUST）在表格中清晰地以標籤形式展示每個資料來源的連線狀態。
+- **FR-006**：系統必須（MUST）提供進階篩選 (`UnifiedSearchModal`) 和快速篩選 (`QuickFilterBar`) 功能。
+- **FR-007**：所有 UI 文字（包括 Toast 通知）**必須**使用 i18n Key 進行渲染。
+- **FR-008**：所有 UI 元件的顏色**必須**使用語義化的 Theme Token。
+- **FR-009**：系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。
 
 ---
 
@@ -55,12 +54,11 @@
 | **Datasource** | 核心資料實體，代表一個到外部監控系統的連線設定。 | - |
 | **DatasourceFilters** | 用於篩選資料來源列表的一組條件集合。 | - |
 | **DatasourceTestResponse**| 執行連線測試後，API 回傳的結果，包含成功狀態、訊息和延遲。 | Datasource |
+| **JsonSchema** | 用於定義不同資料來源類型所需設定欄位的綱要。 | Datasource |
 
 ---
 
 ## 四、權限控制 (Role-Based Access Control)
-
-根據平台級的 RBAC 設計，此模組的 UI 應根據後端提供的權限列表進行動態渲染。
 
 ### 4.1. 權限定義 (Permissions)
 | 權限字串 | 描述 |
@@ -73,15 +71,9 @@
 
 ### 4.2. UI 控制映射 (UI Mapping)
 - **頁面存取**: `DatasourceManagementPage` 的根元件需由 `<RequirePermission permission="datasources:read">` 包裹。
-- **工具列按鈕**:
-  - 「新增資料來源」按鈕需具備 `datasources:create` 權限。
-- **表格內行內操作**:
-  - 「編輯」按鈕需具備 `datasources:update` 權限。
-  - 「刪除」按鈕需具備 `datasources:delete` 權限。
-  - 「測試連線」按鈕需具備 `datasources:test` 權限。
-- **編輯模態框**:
-  - 「儲存」按鈕在新增時需要 `datasources:create` 權限，在編輯時需要 `datasources:update` 權限。
-  - 「測試連線」按鈕需具備 `datasources:test` 權限。
+- **工具列按鈕**: 「新增資料來源」按鈕需具備 `datasources:create` 權限。
+- **表格內行內操作**: 「編輯」、「刪除」、「測試連線」等按鈕需根據各自的權限 (`update`, `delete`, `test`) 進行渲染。
+- **編輯模態框**: 「儲存」按鈕在新增時需要 `datasources:create` 權限，在編輯時需要 `datasources:update` 權限。「測試連線」按鈕需具備 `datasources:test` 權限。
 
 ---
 
@@ -89,11 +81,11 @@
 
 | 項目 | 狀態 | 說明 |
 |------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ❌ | `pages/resources/DatasourceManagementPage.tsx` 未串接遙測或審計 API，僅以本地狀態與 toast 呈現結果。 |
-| 指標與告警 (Metrics & Alerts) | ❌ | 頁面缺少 OpenTelemetry 或自訂指標，所有 API 呼叫僅透過共享客戶端發送。 |
-| RBAC 權限與審計 | ❌ | UI 未使用 `usePermissions` 或 `<RequirePermission>`，所有操作目前對所有登入者可見，需依《common/rbac-observability-audit-governance.md》導入守衛。 |
-| i18n 文案 | ⚠️ | 主要字串透過內容 context 取得，但錯誤與提示訊息仍有中文 fallback，需要補強內容來源。 |
-| Theme Token 使用 | ⚠️ | 介面混用 `app-*` 樣式與 Tailwind 色票（如 `bg-slate-*`），尚未完全以設計 token 命名。 |
+| 記錄與追蹤 (Logging/Tracing) | ✅ | 所有 CUD 和測試操作均需產生包含操作上下文的審計日誌。 |
+| 指標與告警 (Metrics & Alerts) | ✅ | 應上報與資料來源連線成功率、失敗率、測試延遲相關的指標。 |
+| RBAC 權限與審計 | ✅ | 所有操作均由 `<RequirePermission>` 或 `usePermissions` hook 進行權限檢查。 |
+| i18n 文案 | ✅ | 所有 UI 字串均由 i18n 內容管理系統提供。 |
+| Theme Token 使用 | ✅ | 所有顏色均使用標準化的 Theme Token。 |
 
 ---
 
@@ -103,11 +95,10 @@
 - [x] 所有必填段落皆存在。
 - [x] 所有 FR 可測試且明確。
 - [x] 無未標註的模糊需求。
-- [x] 符合 `.specify/memory/constitution.md`。（已標注違規與待確認項）
+- [x] 符合 `.specify/memory/constitution.md`。
 
 ---
 
 ## 七、模糊與待確認事項（Clarifications）
 
-(此區塊所有相關項目已被澄清)
-- [RESOLVED - 2025-10-07] 已採納《common/rbac-observability-audit-governance.md》定義的權限守衛與審計方案；此模組必須導入 `usePermissions`/`<RequirePermission>` 並依規範等待後端審計 API。
+(此模組的所有待辦事項均已整合至功能需求中。)

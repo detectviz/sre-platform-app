@@ -42,12 +42,10 @@
 - **FR-004**：系統必須（MUST）提供「儲存變更」的功能，用於將使用者的修改持久化。
 - **FR-005**：只有在設定被修改後，「儲存變更」按鈕才應變為可點擊狀態。
 - **FR-006**：系統必須（MUST）提供「重置為預設」的功能，允許使用者一鍵恢復到系統預設的偏好設定。
-- **FR-007**: 系統**必須**提供「匯出偏好設定」的功能，允許使用者將其當前設定下載為一個 JSON 檔案。此功能主要用於個人備份或在不同環境間遷移設定。
-- **FR-010**：語言切換必須（MUST）即時套用於介面，並顯示重新載入提示以重新整理緩存的內容字典。
-- **FR-011**：頁面需提供草稿自動儲存：編輯後 3 秒內未儲存則寫入 localStorage，回到頁面時可選擇恢復或丟棄草稿。
-- **FR-012**：匯出功能應優先採用目前表單草稿內容，若存在未儲存變更需提示使用者是否包含草稿。
-- **FR-008**: 若未來實現對應的「匯入」功能，其行為**必須**是完全覆寫當前使用者的所有偏好設定。
-- **FR-009**: 系統管理員設定全域「預設偏好」的功能，**必須**在一個獨立的、更高權限的管理模組中提供，其規格不在此文件定義範圍內。本頁面的「重置為預設」按鈕將讀取該全域設定。
+- **FR-007**：系統必須（MUST）提供「匯出偏好設定」的功能，允許使用者將其當前設定下載為一個 JSON 檔案。
+- **FR-008 (AS-IS)**：只有在設定被修改後，「儲存變更」按鈕才應變為可點擊狀態。
+- **FR-009 (FUTURE)**：系統應支援「匯入偏好設定」功能。
+- **FR-010 (FUTURE)**：頁面應提供草稿自動儲存功能。
 
 ---
 
@@ -59,19 +57,27 @@
 
 ---
 
-## 五、觀測性與治理檢查（Observability & Governance Checklist）
+## 四、權限控制 (Role-Based Access Control)
 
-| 項目 | 狀態 | 說明 |
-|------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ❌ | `pages/profile/PreferenceSettingsPage.tsx` 未串接遙測或審計 API，僅以本地狀態與 toast 呈現結果。 |
-| 指標與告警 (Metrics & Alerts) | ❌ | 頁面缺少 OpenTelemetry 或自訂指標，所有 API 呼叫僅透過共享客戶端發送。 |
-| RBAC 權限與審計 | ❌ | UI 未使用 `usePermissions` 或 `<RequirePermission>`，所有操作目前對所有登入者可見，需依《common/rbac-observability-audit-governance.md》導入守衛。 |
-| i18n 文案 | ⚠️ | 主要字串透過內容 context 取得，但錯誤與提示訊息仍有中文 fallback，需要補強內容來源。 |
-| Theme Token 使用 | ⚠️ | 介面混用 `app-*` 樣式與 Tailwind 色票（如 `bg-slate-*`），尚未完全以設計 token 命名。 |
+**[FUTURE REQUIREMENT]** 此頁面未來可能需要根據使用者權限進行訪問控制，但目前對所有使用者可見。
 
 ---
 
-## 五、審查與驗收清單（Review & Acceptance Checklist）
+## 五、觀測性與治理檢查（Observability & Governance Checklist）
+
+此部分描述當前 MVP 的狀態，作為未來迭代的基準。
+
+| 項目 | 狀態 | 說明 |
+|------|------|------|
+| 記錄與追蹤 (Logging/Tracing) | 🟡 | 未實現。 |
+| 指標與告警 (Metrics & Alerts) | 🟡 | 未實現。 |
+| RBAC 權限與審計 | 🟡 | 未實現。此頁面目前對所有登入者可見。 |
+| i18n 文案 | 🔴 | 未實現。此頁面所有 UI 文字均為硬編碼的中文，未接入 i18n 內容管理系統。 |
+| Theme Token 使用 | 🟡 | 部分實現。UI 混用預定義樣式與直接的 Tailwind 色票。 |
+
+---
+
+## 六、審查與驗收清單（Review & Acceptance Checklist）
 
 - [x] 無技術實作語句。
 - [x] 所有必填段落皆存在。
@@ -81,9 +87,8 @@
 
 ---
 
-## 六、模糊與待確認事項（Clarifications）
+## 七、模糊與待確認事項（Clarifications）
 
-- 語言切換需即時套用並彈出重新載入提示，以刷新 i18n 緩存並紀錄審計事件。
-- 偏好儲存需保留草稿自動儲存與審計欄位：送出時傳遞 `auditReason` 並記錄操作者資訊。
-- 匯出流程可選擇使用目前草稿或最後儲存狀態，預設提示包含草稿內容並保留既有編輯。
-- [RESOLVED - 2025-10-07] 偏好頁須依《common/rbac-observability-audit-governance.md》導入 `profile:preferences:*` 權限守衛，僅允許本人修改，相關審計交由後端提供 `auditId`。
+- **[NEEDS CLARIFICATION] i18n**: 目前 MVP 在此頁面完全使用硬編碼中文，例如 `'偏好設定已成功儲存。'`，未來需全面遷移至 i18n 內容管理系統。
+- **[NEEDS CLARIFICATION] Theming**: MVP 廣泛使用 Tailwind CSS 的原子化 class (如 `bg-sky-600`) 來定義語義顏色和樣式，未來需重構為使用中央設計系統的 Theme Token。
+- **[NEEDS CLARIFICATION] Draft Management**: 草稿自動儲存 (FR-010) 等進階功能未在當前 MVP 中實現。

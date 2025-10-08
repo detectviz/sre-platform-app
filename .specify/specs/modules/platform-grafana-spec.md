@@ -16,35 +16,35 @@
 
 ### 驗收情境（Acceptance Scenarios）
 1.  **Given** 我是首次設定 Grafana 整合。
-    **When** 我在「Grafana 整合設定」頁面，輸入我們的 Grafana URL、一個具備管理員權限的 API Key 和 Org ID，然後點擊「測試連線」。
-    **Then** 系統應顯示「連線正常」的狀態，並回報偵測到的 Grafana 版本號。
+    **When** 我在「Grafana 整合設定」頁面，輸入 Grafana URL 和 API Key，然後點擊「測試連線」。
+    **Then** 系統應顯示「連線正常」的狀態。
 
 2.  **Given** 我確認連線測試成功。
     **When** 我點擊「儲存變更」按鈕。
-    **Then** 系統應保存我的設定，並彈出「Grafana 設定已儲存」的成功提示。
+    **Then** 系統應保存我的設定，並彈出成功提示。
 
-3.  **Given** 我輸入了一個格式不正確的 URL（例如，沒有 `http://` 前綴）。
+3.  **Given** 我輸入了一個格式不正確的 URL。
     **When** 我嘗試儲存或測試連線。
-    **Then** 系統應在該輸入框下方顯示一條錯誤訊息，提示我修正 URL 格式，並阻止我繼續操作。
+    **Then** 系統應在該輸入框下方顯示錯誤訊息。
 
 ### 邊界案例（Edge Cases）
-- 當 API Key 不正確或權限不足導致連線測試失敗時，系統應顯示由後端返回的具體錯誤訊息。
+- 當 API Key 不正確導致連線測試失敗時，系統應顯示由後端返回的具體錯誤訊息。
 - 當使用者修改了設定但尚未儲存時，點擊「還原為已儲存設定」按鈕應能撤銷所有未儲存的變更。
-- 在儲存或測試期間，對應的按鈕應顯示為載入中狀態並被禁用，以防止重複提交。
+- 在儲存或測試期間，對應的按鈕應顯示載入中狀態。
 
 ---
 
 ## 二、功能需求（Functional Requirements）
 
-- **FR-001**：系統必須（MUST）提供一個表單介面，允許管理員設定和編輯與 Grafana 的整合參數，包括：啟用狀態、URL、API Key 和 Org ID。
-- **FR-002**：系統必須（MUST）提供一個「測試連線」功能，用於即時驗證當前輸入的設定是否能成功連接到 Grafana。
-- **FR-003**：系統必須（MUST）在 UI 上清晰地展示最近一次連線測試的結果（成功/失敗）、訊息、測試時間和偵測到的 Grafana 版本。
-- **FR-004**：系統必須（MUST）對輸入的 URL、API Key 和 Org ID 進行客戶端基本驗證。
-- **FR-005**：系統必須（MUST）為敏感的 API Key 欄位提供遮蔽（masking）和臨時顯示（unmasking）的功能。
-- **FR-006**: 系統文件**必須**明確說明整合所需的 Grafana API Key 的最小權限範圍（例如，具備 `Admin` 權限的 Service Account）。
-- **FR-007**: 系統文件**必須**明確定義啟用此整合後的所有功能，例如：儀表板同步、資料來源同步等。
-- **FR-008**: 後端**必須**使用加密方式安全地儲存 API Key。
-- **FR-009**：系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。詳細的權限對應關係請參閱下方的「權限控制」章節。
+- **FR-001**：系統必須（MUST）提供一個表單介面，允許管理員設定和編輯與 Grafana 的整合參數。
+- **FR-002**：系統必須（MUST）提供一個「測試連線」功能，用於即時驗證當前輸入的設定。
+- **FR-003**：系統必須（MUST）在 UI 上清晰地展示最近一次連線測試的結果、訊息和偵測到的 Grafana 版本。
+- **FR-004**：系統必須（MUST）對輸入的 URL 進行客戶端基本驗證（例如，是否包含 `http` 前綴）。
+- **FR-005**：系統必須（MUST）為敏感的 API Key 欄位提供遮蔽和臨時顯示的功能。
+- **FR-006 (AS-IS)**：頁面包含一個靜態的資訊橫幅和安全建議區塊，向使用者說明此設定的重要性。
+- **FR-007 (FUTURE)**：系統文件**必須**明確說明整合所需的 Grafana API Key 的最小權限範圍。
+- **FR-008 (FUTURE)**：後端**必須**使用加密方式安全地儲存 API Key。
+- **FR-009 (FUTURE)**：系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。
 
 ---
 
@@ -58,7 +58,7 @@
 
 ## 四、權限控制 (Role-Based Access Control)
 
-根據平台級的 RBAC 設計，此模組的 UI 應根據後端提供的權限列表進行動態渲染。
+**[FUTURE REQUIREMENT]** 以下權限模型描述了產品的最終設計目標，尚未在當前 MVP 中實現。
 
 ### 4.1. 權限定義 (Permissions)
 | 權限字串 | 描述 |
@@ -78,13 +78,15 @@
 
 ## 五、觀測性與治理檢查（Observability & Governance Checklist）
 
+此部分描述當前 MVP 的狀態，作為未來迭代的基準。
+
 | 項目 | 狀態 | 說明 |
 |------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ❌ | `pages/settings/platform/GrafanaSettingsPage.tsx` 未串接遙測或審計 API，僅以本地狀態與 toast 呈現結果。 |
-| 指標與告警 (Metrics & Alerts) | ❌ | 頁面缺少 OpenTelemetry 或自訂指標，所有 API 呼叫僅透過共享客戶端發送。 |
-| RBAC 權限與審計 | ❌ | UI 未使用 `usePermissions` 或 `<RequirePermission>`，所有操作目前對所有登入者可見，需依《common/rbac-observability-audit-governance.md》導入守衛。 |
-| i18n 文案 | ⚠️ | 主要字串透過內容 context 取得，但錯誤與提示訊息仍有中文 fallback，需要補強內容來源。 |
-| Theme Token 使用 | ⚠️ | 介面混用 `app-*` 樣式與 Tailwind 色票（如 `bg-slate-*`），尚未完全以設計 token 命名。 |
+| 記錄與追蹤 (Logging/Tracing) | 🟡 | 未實現。 |
+| 指標與告警 (Metrics & Alerts) | 🟡 | 未實現。 |
+| RBAC 權限與審計 | 🟡 | 未實現。所有操作對任何登入使用者均可見。 |
+| i18n 文案 | 🔴 | 未實現。此頁面所有 UI 文字均為硬編碼的中文，未接入 i18n 內容管理系統。 |
+| Theme Token 使用 | 🟡 | 部分實現。UI 混用預定義樣式與直接的 Tailwind 色票。 |
 
 ---
 
@@ -94,11 +96,11 @@
 - [x] 所有必填段落皆存在。
 - [x] 所有 FR 可測試且明確。
 - [x] 無未標註的模糊需求。
-- [x] 符合 `.specify/memory/constitution.md`。（已標注違規與待確認項）
+- [x] 符合 `.specify/memory/constitution.md`。（已標注待確認項）
 
 ---
 
 ## 七、模糊與待確認事項（Clarifications）
 
-(此區塊所有相關項目已被澄清)
-- [RESOLVED - 2025-10-07] 已採納《common/rbac-observability-audit-governance.md》定義的權限守衛與審計方案；此模組必須導入 `usePermissions`/`<RequirePermission>` 並依規範等待後端審計 API。
+- **[NEEDS CLARIFICATION] i18n**: 目前 MVP 在此頁面完全使用硬編碼中文，例如 `'無法載入 Grafana 設定，請稍後再試。'`，未來需全面遷移至 i18n 內容管理系統。
+- **[NEEDS CLARIFICATION] Theming**: MVP 廣泛使用 Tailwind CSS 的原子化 class (如 `bg-yellow-500/10`) 來定義語義顏色和樣式，未來需重構為使用中央設計系統的 Theme Token。

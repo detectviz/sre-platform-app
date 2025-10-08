@@ -36,7 +36,8 @@
 - **FR-003**：頁面必須（MUST）提供一個詳細的功能比較表格，逐項列出各項功能在哪個版本中可用。
 - **FR-004**：頁面必須（MUST）提供一個明確的「行動呼籲 (Call to Action)」，例如一個包含 `mailto:` 連結的按鈕，引導使用者聯繫商務團隊。
 - **FR-005**：頁面的所有文字內容必須（MUST）來自於 `useContent` hook，以便於市場或產品團隊更新。
-- **FR-006**: 本模組僅為資訊展示頁面。系統**不包含**任何允許使用者自行輸入、上傳或管理授權金鑰 (License Key) 的功能。所有授權升級流程均需透過線下聯繫商務團隊完成。
+- **FR-006 (AS-IS)**: 本模組僅為資訊展示頁面，不包含任何管理授權金鑰的功能。
+- **FR-007 (AS-IS)**: 前端為部分內容（如「社群版功能亮點」）提供了硬編碼的 fallback 資料，以防內容系統未提供。
 
 ---
 
@@ -47,19 +48,27 @@
 
 ---
 
-## 五、觀測性與治理檢查（Observability & Governance Checklist）
+## 四、權限控制 (Role-Based Access Control)
 
-| 項目 | 狀態 | 說明 |
-|------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ❌ | `pages/settings/platform/LicensePage.tsx` 未串接遙測或審計 API，僅以本地狀態與 toast 呈現結果。 |
-| 指標與告警 (Metrics & Alerts) | ❌ | 頁面缺少 OpenTelemetry 或自訂指標，所有 API 呼叫僅透過共享客戶端發送。 |
-| RBAC 權限與審計 | ❌ | UI 未使用 `usePermissions` 或 `<RequirePermission>`，所有操作目前對所有登入者可見，需依《common/rbac-observability-audit-governance.md》導入守衛。 |
-| i18n 文案 | ⚠️ | 主要字串透過內容 context 取得，但錯誤與提示訊息仍有中文 fallback，需要補強內容來源。 |
-| Theme Token 使用 | ⚠️ | 介面混用 `app-*` 樣式與 Tailwind 色票（如 `bg-slate-*`），尚未完全以設計 token 命名。 |
+**[FUTURE REQUIREMENT]** 此頁面未來可能需要根據使用者權限進行訪問控制，但目前對所有使用者可見。
 
 ---
 
-## 五、審查與驗收清單（Review & Acceptance Checklist）
+## 五、觀測性與治理檢查（Observability & Governance Checklist）
+
+此部分描述當前 MVP 的狀態，作為未來迭代的基準。
+
+| 項目 | 狀態 | 說明 |
+|------|------|------|
+| 記錄與追蹤 (Logging/Tracing) | 🟡 | 未實現。 |
+| 指標與告警 (Metrics & Alerts) | 🟡 | 未實現。 |
+| RBAC 權限與審計 | 🟡 | 未實現。此頁面目前對所有登入者可見。 |
+| i18n 文案 | 🟢 | 已實現。此頁面所有 UI 文字均由 `useContent` hook 提供。 |
+| Theme Token 使用 | 🟡 | 部分實現。UI 混用預定義樣式與直接的 Tailwind 色票。 |
+
+---
+
+## 六、審查與驗收清單（Review & Acceptance Checklist）
 
 - [x] 無技術實作語句。
 - [x] 所有必填段落皆存在。
@@ -69,5 +78,7 @@
 
 ---
 
-## 六、模糊與待確認事項（Clarifications）
+## 七、模糊與待確認事項（Clarifications）
 
+- **[NEEDS CLARIFICATION] Theming**: MVP 廣泛使用 Tailwind CSS 的原子化 class (如 `bg-amber-500/10`) 來定義語義顏色和樣式，未來需重構為使用中央設計系統的 Theme Token。
+- **[NEEDS CLARIFICATION] Content Fallback**: 「社群版功能亮點」等內容在 `useContent` 未提供時有硬編碼的 fallback，未來應確保所有內容均由 CMS 管理。

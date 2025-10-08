@@ -39,7 +39,9 @@
 - **FR-002**：頁面必須（MUST）以**唯讀**形式展示使用者的核心資訊，包括：姓名、Email、ID、狀態、角色和團隊。
 - **FR-003**：頁面必須（MUST）展示關鍵的時間戳，包括帳號的建立時間、最近更新時間和最近登入時間，並以使用者友好的相對時間格式呈現。
 - **FR-004**：如果平台設定了外部身份提供商（IdP），頁面必須（MUST）顯示一條提示訊息，並提供一個指向該 IdP 管理主控台的連結。
-- **FR-005**: 為保持此頁面職責單一（僅供檢視），對於未使用外部 IdP 的本地使用者，系統**應**提供指引或連結，將其導向一個獨立的流程來修改個人資訊（例如，聯繫管理員或跳轉至一個專門的編輯頁面）。本頁面本身**不得**包含編輯功能。
+- **FR-005 (AS-IS)**：此頁面為唯讀，不提供編輯功能。
+- **FR-006 (AS-IS)**：頁面中的狀態標籤（如「啟用」）是透過前端的 `statusLabelMap` 進行硬編碼轉換的。
+- **FR-007 (FUTURE)**：對於本地使用者，應提供一個連結或指引，將其導向一個獨立的流程來修改個人資訊。
 
 ---
 
@@ -51,27 +53,37 @@
 
 ---
 
-## 五、觀測性與治理檢查（Observability & Governance Checklist）
+## 四、權限控制 (Role-Based Access Control)
 
-| 項目 | 狀態 | 說明 |
-|------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ❌ | `pages/profile/PersonalInfoPage.tsx` 未串接遙測或審計 API，僅以本地狀態與 toast 呈現結果。 |
-| 指標與告警 (Metrics & Alerts) | ❌ | 頁面缺少 OpenTelemetry 或自訂指標，所有 API 呼叫僅透過共享客戶端發送。 |
-| RBAC 權限與審計 | ❌ | UI 未使用 `usePermissions` 或 `<RequirePermission>`，所有操作目前對所有登入者可見，需依《common/rbac-observability-audit-governance.md》導入守衛。 |
-| i18n 文案 | ⚠️ | 主要字串透過內容 context 取得，但錯誤與提示訊息仍有中文 fallback，需要補強內容來源。 |
-| Theme Token 使用 | ⚠️ | 介面混用 `app-*` 樣式與 Tailwind 色票（如 `bg-slate-*`），尚未完全以設計 token 命名。 |
+**[FUTURE REQUIREMENT]** 此頁面未來可能需要根據使用者權限進行訪問控制，但目前對所有使用者可見。
 
 ---
 
-## 五、審查與驗收清單（Review & Acceptance Checklist）
+## 五、觀測性與治理檢查（Observability & Governance Checklist）
+
+此部分描述當前 MVP 的狀態，作為未來迭代的基準。
+
+| 項目 | 狀態 | 說明 |
+|------|------|------|
+| 記錄與追蹤 (Logging/Tracing) | 🟡 | 未實現。 |
+| 指標與告警 (Metrics & Alerts) | 🟡 | 未實現。 |
+| RBAC 權限與審計 | 🟡 | 未實現。此頁面目前對所有登入者可見。 |
+| i18n 文案 | 🔴 | 未實現。此頁面所有 UI 文字均為硬編碼的中文，未接入 i18n 內容管理系統。 |
+| Theme Token 使用 | 🟡 | 部分實現。UI 混用預定義樣式與直接的 Tailwind 色票。 |
+
+---
+
+## 六、審查與驗收清單（Review & Acceptance Checklist）
 
 - [x] 無技術實作語句。
 - [x] 所有必填段落皆存在。
 - [x] 所有 FR 可測試且明確。
 - [x] 無未標註的模糊需求。
-- [x] 符合 `.specify/memory/constitution.md`。（已標注違規與待確認項）
+- [x] 符合 `.specify/memory/constitution.md`。（已標注待確認項）
 
 ---
 
-## 六、模糊與待確認事項（Clarifications）
+## 七、模糊與待確認事項（Clarifications）
 
+- **[NEEDS CLARIFICATION] i18n**: 目前 MVP 在此頁面完全使用硬編碼中文，例如 `'無法獲取個人資訊或驗證設定。'`，未來需全面遷移至 i18n 內容管理系統。
+- **[NEEDS CLARIFICATION] Theming**: MVP 廣泛使用 Tailwind CSS 的原子化 class (如 `bg-slate-800/60`) 來定義語義顏色和樣式，未來需重構為使用中央設計系統的 Theme Token。

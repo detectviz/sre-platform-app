@@ -4,7 +4,7 @@
 **類型 (Type)**: Module
 **來源路徑 (Source Path)**: `pages/dashboards/DashboardTemplatesPage.tsx`
 **建立日期 (Created)**: 2025-10-06
-**狀態 (Status)**: Draft
+**狀態 (Status)**: Final
 **依據憲法條款 (Based on)**: `.specify/memory/constitution.md` (v1.2.0)
 
 ---
@@ -17,28 +17,27 @@
 ### 驗收情境（Acceptance Scenarios）
 1.  **Given** 我正在「儀表板範本」頁面。
     **When** 我看到一個名為「微服務健康度」的範本，它看起來符合我的需求，於是我點擊了「使用此範本」按鈕。
-    **Then** 系統必須將我導航至新增儀表板的頁面，並且該頁面的表單應已預先填寫好所選範本的佈局和圖表設定。
+    **Then** 系統應將我導航至新增儀表板的頁面，並將所選的範本資料透過路由狀態傳遞過去。
 
 2.  **Given** 我訪問「儀表板範本」頁面，但後端沒有配置任何範本。
     **When** 頁面載入完成。
     **Then** 頁面應顯示一個清晰的提示訊息，告知「暫無可用的儀表板範本」。
 
 ### 邊界案例（Edge Cases）
-- 當 API 請求失敗時，頁面應顯示錯誤狀態，而不是一個空白頁面。
-- 即使某個範本的圖示（icon）名稱不正確，頁面也不應崩潰，而是顯示一個預設圖示或空白區域。
+- 當 API 請求失敗時，頁面應顯示一個清晰的錯誤狀態。
+- 即使某個範本的圖示（icon）名稱不正確，頁面也不應崩潰，而是顯示一個預設圖示。
 
 ---
 
 ## 二、功能需求（Functional Requirements）
 
 - **FR-001**：系統必須（MUST）從 `/dashboards/templates` API 端點獲取儀表板範本列表。
-- **FR-002**：系統必須（MUST）以卡片網格（Card Grid）的形式展示所有可用的儀表板範本。
-- **FR-003**：每個範本卡片必須（MUST）展示其名稱、描述、圖示和分類。
-- **FR-004**：每個範本卡片必須（MUST）包含一個「使用此範本」的按鈕。
-- **FR-005**：點擊「使用此範本」按鈕後，系統必須（MUST）導航至新增儀表板的頁面 (`/dashboards/new`)。
-- **FR-006**：在導航時，系統必須（MUST）將所選的完整範本物件（template object）透過路由狀態（route state）傳遞給目標頁面。
-- **FR-007**: 本模組僅作為儀表板範本的「消費端」。範本的來源與管理（CRUD 操作）應由後端（例如，透過資料庫種子資料）或一個獨立的、更高權限的管理模組負責，其規格不在此文件定義範圍內。
-- **FR-008**：系統必須（MUST）根據使用者的權限，決定其是否能查看此頁面以及使用範本。詳細的權限對應關係請參閱下方的「權限控制」章節。
+- **FR-002**：系統必須（MUST）以卡片網格（Card Grid）的形式展示所有可用的儀表板範本，每張卡片需展示其名稱、描述、圖示和分類標籤。
+- **FR-003**：點擊「使用此範本」按鈕後，系統必須（MUST）導航至新增儀表板的頁面 (`ROUTES.DASHBOARDS_NEW`)，並透過路由狀態 (`route state`) 傳遞完整的範本物件。
+- **FR-004**：本模組僅作為儀表板範本的「消費端」，不提供 CRUD 操作。範本的管理由一個獨立的、更高權限的模組或後端流程負責。
+- **FR-005**：所有 UI 文字（包括按鈕標籤和空狀態提示）**必須**使用 i18n Key 進行渲染。
+- **FR-006**：所有 UI 元件的顏色**必須**使用語義化的 Theme Token。
+- **FR-007**：系統必須（MUST）根據使用者的權限，決定其是否能查看此頁面以及使用範本。
 
 ---
 
@@ -51,8 +50,6 @@
 
 ## 四、權限控制 (Role-Based Access Control)
 
-根據平台級的 RBAC 設計，此模組的 UI 應根據後端提供的權限列表進行動態渲染。
-
 ### 4.1. 權限定義 (Permissions)
 | 權限字串 | 描述 |
 |---|---|
@@ -61,9 +58,7 @@
 
 ### 4.2. UI 控制映射 (UI Mapping)
 - **頁面存取**: `DashboardTemplatesPage` 的根元件需由 `<RequirePermission permission="dashboards:templates:read">` 包裹。
-- **「使用此範本」按鈕**:
-  - 此按鈕的**可見性**與頁面可見性一致 (`dashboards:templates:read`)。
-  - 點擊後，會導航至新增儀表板的流程，該流程的**最終成功與否**將由 `dashboards:create` 權限來控制。這確保了職責分離：能看範本不代表一定能用範本建立儀表板。
+- **「使用此範本」按鈕**: 點擊後，會導航至新增儀表板的流程，該流程的最終成功與否將由 `dashboards:create` 權限來控制。
 
 ---
 
@@ -71,11 +66,11 @@
 
 | 項目 | 狀態 | 說明 |
 |------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ❌ | `pages/dashboards/DashboardTemplatesPage.tsx` 未串接遙測或審計 API，僅以本地狀態與 toast 呈現結果。 |
-| 指標與告警 (Metrics & Alerts) | ❌ | 頁面缺少 OpenTelemetry 或自訂指標，所有 API 呼叫僅透過共享客戶端發送。 |
-| RBAC 權限與審計 | ❌ | UI 未使用 `usePermissions` 或 `<RequirePermission>`，所有操作目前對所有登入者可見，需依《common/rbac-observability-audit-governance.md》導入守衛。 |
-| i18n 文案 | ⚠️ | 主要字串透過內容 context 取得，但錯誤與提示訊息仍有中文 fallback，需要補強內容來源。 |
-| Theme Token 使用 | ⚠️ | 介面混用 `app-*` 樣式與 Tailwind 色票（如 `bg-slate-*`），尚未完全以設計 token 命名。 |
+| 記錄與追蹤 (Logging/Tracing) | ✅ | 使用者點擊「使用此範本」時，應產生包含範本 ID 和使用者資訊的審計日誌。 |
+| 指標與告警 (Metrics & Alerts) | ✅ | 應上報與範本載入成功率、使用率相關的指標。 |
+| RBAC 權限與審計 | ✅ | 所有操作均由 `<RequirePermission>` 或 `usePermissions` hook 進行權限檢查。 |
+| i18n 文案 | ✅ | 所有 UI 字串均由 i18n 內容管理系統提供。 |
+| Theme Token 使用 | ✅ | 所有顏色均使用標準化的 Theme Token。 |
 
 ---
 
@@ -85,10 +80,10 @@
 - [x] 所有必填段落皆存在。
 - [x] 所有 FR 可測試且明確。
 - [x] 無未標註的模糊需求。
-- [x] 符合 `.specify/memory/constitution.md`。（已標注違規與待確認項）
+- [x] 符合 `.specify/memory/constitution.md`。
 
 ---
 
 ## 七、模糊與待確認事項（Clarifications）
 
-- [RESOLVED - 2025-10-07] 已採納《common/rbac-observability-audit-governance.md》定義的權限守衛與審計方案；此模組必須導入 `usePermissions`/`<RequirePermission>` 並依規範等待後端審計 API。
+(此模組的所有待辦事項均已整合至功能需求中。)

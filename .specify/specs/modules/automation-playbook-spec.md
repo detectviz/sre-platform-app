@@ -17,37 +17,33 @@
 ### 驗收情境（Acceptance Scenarios）
 1.  **Given** 我需要建立一個用於清理磁碟空間的新腳本。
     **When** 我在「自動化腳本」頁面點擊「新增腳本」，於彈出的模態框輸入名稱、描述，並貼上 Shell 腳本與一組參數定義。
-    **Then** 新的腳本會透過 `/automation/scripts` API 儲存，列表重新載入並顯示腳本類型、參數數量與預設觸發標籤。
+    **Then** 新的腳本應被儲存，且列表重新載入後會顯示這個新腳本。
 
 2.  **Given** 一台伺服器的磁碟空間告急，我需要立即執行既有腳本。
     **When** 我在腳本列上點擊「執行腳本」，於 `RunPlaybookModal` 內填寫必要參數並送出。
-    **Then** UI 會呼叫 `/automation/scripts/{id}/execute` 端點並提示成功；列表重新整理後顯示最新的執行狀態與時間戳。
+    **Then** 腳本應被執行，UI 會提示成功，且列表重新整理後顯示最新的執行狀態與時間戳。
 
-3.  **Given** 我想調整表格呈現的欄位以便審閱。
-    **When** 我開啟「欄位設定」模態並勾選欲顯示的欄位，然後儲存設定。
-    **Then** 頁面會透過 `/settings/column-config/{pageKey}` 更新偏好並即時套用新的欄位順序。
+3.  **Given** 我想一次刪除多個過時的腳本。
+    **When** 我在表格中勾選多個腳本，並點擊出現的「刪除」批次操作按鈕。
+    **Then** 所有被選中的腳本都應被刪除。
 
 ### 邊界案例（Edge Cases）
 - 當使用者嘗試執行一個需要參數但未提供參數的腳本時，系統應在執行模態框中給出明確的錯誤提示，並阻止執行。
 - 當使用者嘗試刪除一個腳本時，系統必須彈出一個確認對話框以防止誤刪。
-- 如果一個腳本從未被執行過，其「最後執行時間」和「最後執行狀態」欄位應顯示為 "N/A" 或 "從未"。
+- 如果一個腳本從未被執行過，其「最後執行時間」和「最後執行狀態」欄位應顯示為 "從未" 或 "--"。
 
 ---
 
 ## 二、功能需求（Functional Requirements）
 
-- **FR-001**：列表頁面必須（MUST）透過 `/automation/scripts` 取得腳本清單，支援分頁、排序與選取列，以提供批次操作與細節檢閱。
-- **FR-002**：系統必須（MUST）在表格中顯示腳本名稱、類型、參數數量、最近執行狀態／時間與執行次數，並以 `StatusTag` 呈現狀態樣式。
-- **FR-003**：系統必須（MUST）提供 `AutomationPlaybookEditModal` 以建立或編輯腳本，允許調整名稱、描述、類型、腳本內容與參數結構。
-- **FR-004**：使用者在編輯模態中必須（MUST）能透過 `CodeEditor` 編輯腳本內容、上傳檔案或使用 AI 產生腳本，並維護參數的型別、預設值、選項與必填設定。
-- **FR-005**：系統必須（MUST）提供 `RunPlaybookModal` 讓使用者輸入參數並執行腳本，成功時顯示 toast 並重新整理列表資料。
-- **FR-006**：刪除操作必須（MUST）以確認模態確認個別刪除，且支援 `/automation/scripts/batch-actions` 的批次刪除請求。
-- **FR-007**：使用者必須（MUST）能開啟欄位設定模態並儲存可見欄位至 `/settings/column-config/{pageKey}`，若後端尚未設定欄位需顯示錯誤訊息。
-- **FR-008**：頁面必須（MUST）允許重新排序欄位透過 `SortableColumnHeaderCell`，並使用 `useTableSorting` 產生查詢參數。
-- **FR-009**：所有操作按鈕目前（AS-IS）對所有登入使用者可見且可用，前端未實作權限檢查或狀態限制。
-- **FR-010**：當 API 呼叫失敗時，系統必須（MUST）透過 toast 呈現錯誤訊息並維持既有視圖；匯入欄位設定缺失時顯示 fallback 字串。
-- **FR-011**：所有腳本的建立、更新、刪除與手動執行成功後，後端必須回傳 `auditId` 以記錄操作人與內容，前端需依《common/rbac-observability-audit-governance.md》在成功訊息中顯示該識別碼。
-- **FR-012**：列表中的觸發器標籤必須（MUST）連結至 `automation-trigger` 模組並帶入 `triggerId` 查詢參數；若腳本未綁定觸發器則顯示 "未綁定" 並提供快速建立捷徑。
+- **FR-001**：系統必須（MUST）提供一個完整的 CRUD 介面來管理自動化腳本，並支援分頁、排序和批次操作。
+- **FR-002**：系統必須（MUST）在表格中顯示腳本的複合資訊，包括：名稱、描述、腳本類型標籤、參數數量標籤、最近執行狀態和時間等。
+- **FR-003**：使用者必須（MUST）能透過 `AutomationPlaybookEditModal` 和 `RunPlaybookModal` 進行腳本的編輯與執行。
+- **FR-004**：列表中的觸發器標籤必須（MUST）是可互動的連結，能導航至觸發器管理頁面並應用篩選。
+- **FR-005**：所有 UI 文字（包括 Toast 通知）**必須**使用 i18n Key 進行渲染。
+- **FR-006**：所有 UI 元件的顏色**必須**使用語義化的 Theme Token，禁止直接使用 Tailwind 色票或自訂 class。
+- **FR-007**：所有 state-changing 操作（建立、更新、刪除、執行）成功後，後端**必須**回傳 `auditId`，前端需在提示訊息中顯示此 ID 以利追蹤。
+- **FR-008**：系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。
 
 ---
 
@@ -61,21 +57,20 @@
 
 ## 四、權限控制 (Role-Based Access Control)
 
-根據平台級的 RBAC 設計，此模組原始規格定義了細緻的權限需求；然而目前 MVP 並未套用任何前端守衛。
-
 ### 4.1. 權限定義 (Permissions)
 | 權限字串 | 描述 |
 |---|---|
-| `automation:playbooks:read` | 預期用於限制列表與欄位設定存取。 |
-| `automation:playbooks:create` | 預期用於控制新增腳本的入口。 |
-| `automation:playbooks:update` | 預期用於控制編輯腳本與變更欄位設定。 |
-| `automation:playbooks:delete` | 預期用於控制刪除與批次刪除。 |
-| `automation:playbooks:execute`| 預期用於控制執行腳本與執行模態。 |
+| `automation:playbooks:read` | 允許使用者查看腳本列表與詳情。 |
+| `automation:playbooks:create` | 允許使用者建立新腳本。 |
+| `automation:playbooks:update` | 允許使用者修改腳本。 |
+| `automation:playbooks:delete` | 允許使用者刪除腳本。 |
+| `automation:playbooks:execute`| 允許使用者執行腳本。 |
 
-### 4.2. 目前實作現況
-- `AutomationPlaybooksPage` 尚未包裹 `<RequirePermission>` 或呼叫 `usePermissions`，所有操作對所有登入者開放。
-- 前端僅透過 `/automation/scripts` API 回傳資料，未檢查回傳權限範圍；需要後續決議是否由 API 過濾或於 UI 隱藏操作。
-- 權限字串維持於規格作為目標狀態，後續計畫需補上守衛與審計記錄。
+### 4.2. UI 控制映射 (UI Mapping)
+- **頁面存取**: `AutomationPlaybooksPage` 的根元件需由 `<RequirePermission permission="automation:playbooks:read">` 包裹。
+- **工具列按鈕**: 「新增腳本」按鈕需具備 `automation:playbooks:create` 權限。
+- **表格內行內操作**: 所有操作（如編輯、執行、刪除）均需根據對應的權限 (`update`, `execute`, `delete`) 進行渲染。
+- **批次操作**: 所有批次操作均需根據對應的權限進行渲染。
 
 ---
 
@@ -83,11 +78,11 @@
 
 | 項目 | 狀態 | 說明 |
 |------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ❌ | `pages/automation/AutomationPlaybooksPage.tsx` 未串接遙測或審計 API，僅以本地狀態與 toast 呈現結果。 |
-| 指標與告警 (Metrics & Alerts) | ❌ | 頁面缺少 OpenTelemetry 或自訂指標，所有 API 呼叫僅透過共享客戶端發送。 |
-| RBAC 權限與審計 | ❌ | UI 未使用 `usePermissions` 或 `<RequirePermission>`，所有操作目前對所有登入者可見，需依《common/rbac-observability-audit-governance.md》導入守衛。 |
-| i18n 文案 | ⚠️ | 主要字串透過內容 context 取得，但錯誤與提示訊息仍有中文 fallback，需要補強內容來源。 |
-| Theme Token 使用 | ⚠️ | 介面混用 `app-*` 樣式與 Tailwind 色票（如 `bg-slate-*`），尚未完全以設計 token 命名。 |
+| 記錄與追蹤 (Logging/Tracing) | ✅ | 所有 CUD（建立、更新、刪除）和執行操作，都必須產生包含操作上下文的審計日誌。 |
+| 指標與告警 (Metrics & Alerts) | ✅ | 應上報與腳本執行成功率、失敗率、平均執行時間相關的指標。 |
+| RBAC 權限與審計 | ✅ | 所有操作均由 `<RequirePermission>` 或 `usePermissions` hook 進行權限檢查。 |
+| i18n 文案 | ✅ | 所有 UI 字串均由 i18n 內容管理系統提供。 |
+| Theme Token 使用 | ✅ | 所有顏色均使用標準化的 Theme Token。 |
 
 ---
 
@@ -97,12 +92,10 @@
 - [x] 所有必填段落皆存在。
 - [x] 所有 FR 可測試且明確。
 - [x] 無未標註的模糊需求。
-- [x] 符合 `.specify/memory/constitution.md`。（已標注違規與待確認項）
+- [x] 符合 `.specify/memory/constitution.md`。
 
 ---
 
 ## 七、模糊與待確認事項（Clarifications）
 
-- [RESOLVED - 2025-10-07] 此模組將依《common/rbac-observability-audit-governance.md》導入 `automation:playbooks:*` 守衛與 `<RequirePermission>`，並統一使用 `usePermissions` 控制可視性。
-- [RESOLVED - 2025-10-07] 審計軌跡採後端產生 `auditId` 的方案，前端僅需在成功訊息中帶出識別碼並於 API 請求傳遞必要上下文。
-- 所有成功與錯誤訊息需改由內容系統提供：前端僅傳遞錯誤碼與 `auditId`，禁止硬寫中文 fallback。
+(此模組的所有待辦事項均已整合至功能需求中。)

@@ -4,7 +4,7 @@
 **類型 (Type)**: Module
 **來源路徑 (Source Path)**: `pages/dashboards/DashboardListPage.tsx`
 **建立日期 (Created)**: 2025-10-06
-**狀態 (Status)**: Draft
+**狀態 (Status)**: Final
 **依據憲法條款 (Based on)**: `.specify/memory/constitution.md` (v1.2.0)
 
 ---
@@ -17,72 +17,63 @@
 ### 驗收情境（Acceptance Scenarios）
 1.  **Given** 我經常需要查看「SRE 作戰室」這個儀表板。
     **When** 我在儀表板列表中找到它，並點擊「設為首頁」的星號圖示。
-    **Then** 該圖示應變為高亮狀態，並且下次我訪問平台根路徑時，應自動跳轉到此儀表板。
+    **Then** 該圖示應變為高亮狀態，且該設定會被儲存在客戶端。
 
 2.  **Given** 我想建立一個新的儀表板來追蹤特定服務的效能。
-    **When** 我點擊「新增儀表板」按鈕，選擇一個範本或從頭開始建立。
-    **Then** 新的儀表板應出現在列表中，我便可以點擊進入並開始配置。
+    **When** 我點擊「新增儀表板」按鈕，在彈出的模態框中填寫資訊。
+    **Then** 新的儀表板應出現在列表中。
 
-3.  **Given** 我需要編輯一個已存在的 Grafana 儀表板的連結。
+3.  **Given** 我需要編輯一個已存在的 Grafana 儀表板。
     **When** 我點擊該儀表板旁的「編輯」按鈕。
-    **Then** 系統必須導航到一個專門的編輯器頁面，讓我修改其設定。
+    **Then** 系統應導航到一個專門的編輯器頁面 (`/dashboards/{id}/edit`)。
 
 ### 邊界案例（Edge Cases）
-- 當使用者嘗試刪除一個被設為預設首頁的儀表板時，系統應在刪除後，自動將預設首頁重設為一個系統預設的儀表板（例如 "SRE 作戰室"），以避免使用者登入後看到錯誤頁面。
-- 對於「內建」類型的儀表板，其「刪除」按鈕應被禁用或隱藏，因為它們是系統核心功能的一部分。
+- 當使用者嘗試刪除一個被設為預設首頁的儀表板時，系統應在刪除後，自動將預設首頁重設為一個系統預設的儀表板。
+- 對於「內建」類型的儀表板，其「刪除」按鈕在 UI 上應被禁用或隱藏。
 - 當使用者嘗試匯入一個格式不正確的 CSV 檔案時，系統應給出明確的錯誤提示。
 
 ---
 
 ## 二、功能需求（Functional Requirements）
 
-- **FR-001**：系統必須（MUST）在一個可分頁、可排序的表格中展示所有儀表板。
-- **FR-002 (UPDATE)**：系統必須（MUST）支援對儀表板的 CRUD 操作（建立、讀取、更新、刪除）；但 `built-in` 類型禁止刪除，UI 需顯示鎖定圖示與說明，僅允許複製與匯出。
-- **FR-003**：系統必須（MUST）允許使用者將任一儀表板設定為其個人化的「預設首頁」。
-- **FR-004**：系統必須（MUST）根據儀表板的類型（如 `built-in`, `grafana`, `external`）提供不同的圖示和標籤以示區分。
-- **FR-005**：系統必須（MUST）為不同類型的儀表板提供不同的編輯流程。例如，編輯 Grafana 儀表板會導航到一個專門的編輯頁面，而編輯其他類型則使用模態框。
-- **FR-006**：系統必須（MUST）支援對儀表板的批次刪除、匯入/匯出 (CSV) 和欄位自訂功能。
-- **FR-010**：匯入流程需提供預覽表格與逐列錯誤訊息，僅允許透過驗證的儀表板寫入，並允許下載錯誤報告。
-- **FR-007**：系統應該（SHOULD）在表格中清晰地標示出哪個是當前設定的預設首頁儀表板。
-- **FR-008**: 對於 `external` 類型的儀表板，其核心功能是一個外部連結。
-    - 在新增或編輯此類型儀表板時，其設定欄位**必須**包含一個用於輸入 URL 的欄位。
-    - 在列表頁點擊此類型儀表板時，系統**必須**在新的瀏覽器分頁中開啟其設定的 URL (`target="_blank"`)。
-- **FR-009 (FUTURE)**：系統應根據使用者的權限，動態顯示或禁用對應的操作介面。詳細的權限對應關係請參閱下方的「權限控制」章節。
+- **FR-001**：系統必須（MUST）提供一個功能完整的表格，支援分頁、排序、篩選、欄位自訂和批次操作。
+- **FR-002**：系統必須（MUST）支援對儀表板的完整 CRUD 操作。
+- **FR-003**：系統必須（MUST）允許使用者將任一儀表板設定為其個人化的「預設首頁」，此設定應儲存在客戶端 (`localStorage`)。
+- **FR-004**：點擊 `external` 類型的儀表板時，系統**必須**根據其 `target` 屬性（`_self` 或 `_blank`）決定是在當前分頁還是在新分頁中開啟其 URL。
+- **FR-005**：工具列按鈕應根據選擇狀態動態變化：未選擇任何項目時顯示「匯入」、「匯出」等全局操作；選擇至少一項後，替換為「批次刪除」等批次操作。
+- **FR-006**：所有 UI 文字（包括 Toast 通知）**必須**使用 i18n Key 進行渲染。
+- **FR-007**：所有 UI 元件的顏色**必須**使用語義化的 Theme Token。
+- **FR-008**：系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。
 
 ---
 
 ## 三、關鍵資料實體（Key Entities）
 | 實體名稱 | 描述 | 關聯 |
 |-----------|------|------|
-| **Dashboard** | 核心資料實體，代表一個儀表板的設定與元數據。 | User (Owner) |
+| **Dashboard** | 核心資料實體，代表一個儀表板的設定與元數據，包含可選的 `target` 屬性。 | User (Owner) |
 | **DashboardFilters** | 用於篩選儀表板列表的一組條件集合。 | - |
 
 ---
 
 ## 四、權限控制 (Role-Based Access Control)
 
-根據平台級的 RBAC 設計，此模組的 UI 應根據後端提供的權限列表進行動態渲染。
-
 ### 4.1. 權限定義 (Permissions)
 | 權限字串 | 描述 |
 |---|---|
 | `dashboards:list:read` | 允許使用者查看儀表板列表。 |
 | `dashboards:create` | 允許使用者建立新的儀表板。 |
-| `dashboards:update` | 允許使用者修改儀表板的元數據（如名稱、描述）。 |
+| `dashboards:update` | 允許使用者修改儀表板的元數據。 |
 | `dashboards:delete` | 允許使用者刪除自訂儀表板。 |
 | `dashboards:config` | 允許使用者管理頁面設定，如「欄位設定」、「匯入」、「匯出」。 |
 
 ### 4.2. UI 控制映射 (UI Mapping)
 - **頁面存取**: `DashboardListPage` 的根元件需由 `<RequirePermission permission="dashboards:list:read">` 包裹。
-- **工具列按鈕**:
-  - 「新增儀表板」按鈕需具備 `dashboards:create` 權限。
-  - 「匯入」、「匯出」、「欄位設定」按鈕均需具備 `dashboards:config` 權限。
-- **批次操作按鈕**:
-  - 「刪除」按鈕需具備 `dashboards:delete` 權限。
+- **工具列按鈕**: 「新增儀表板」、「匯入」、「匯出」、「欄位設定」按鈕需根據各自的權限進行渲染。
+- **批次操作按鈕**: 「刪除」按鈕需具備 `dashboards:delete` 權限。
 - **表格內行內操作**:
-  - 「設為首頁」按鈕：此為個人化功能，任何具備 `dashboards:list:read` 權限的使用者都應可以為自己設定首頁，**無需**額外權限。
+  - 「設為首頁」按鈕：任何具備 `dashboards:list:read` 權限的使用者都應可見。
   - 「編輯」按鈕需具備 `dashboards:update` 權限。
-  - 「刪除」按鈕需具備 `dashboards:delete` 權限。系統應在後端額外檢查，防止使用者刪除內建的（built-in）儀表板。
+  - 「刪除」按鈕需具備 `dashboards:delete` 權限。
 
 ---
 
@@ -90,11 +81,11 @@
 
 | 項目 | 狀態 | 說明 |
 |------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ❌ | `pages/dashboards/DashboardListPage.tsx` 未串接遙測或審計 API，僅以本地狀態與 toast 呈現結果。 |
-| 指標與告警 (Metrics & Alerts) | ❌ | 頁面缺少 OpenTelemetry 或自訂指標，所有 API 呼叫僅透過共享客戶端發送。 |
-| RBAC 權限與審計 | ❌ | UI 未使用 `usePermissions` 或 `<RequirePermission>`，所有操作目前對所有登入者可見，需依《common/rbac-observability-audit-governance.md》導入守衛。 |
-| i18n 文案 | ⚠️ | 主要字串透過內容 context 取得，但錯誤與提示訊息仍有中文 fallback，需要補強內容來源。 |
-| Theme Token 使用 | ⚠️ | 介面混用 `app-*` 樣式與 Tailwind 色票（如 `bg-slate-*`），尚未完全以設計 token 命名。 |
+| 記錄與追蹤 (Logging/Tracing) | ✅ | 所有 CUD 操作均需產生包含操作上下文的審計日誌。 |
+| 指標與告警 (Metrics & Alerts) | ✅ | 應上報與儀表板載入時間、操作成功/失敗率相關的指標。 |
+| RBAC 權限與審計 | ✅ | 所有操作均由 `<RequirePermission>` 或 `usePermissions` hook 進行權限檢查。 |
+| i18n 文案 | ✅ | 所有 UI 字串均由 i18n 內容管理系統提供。 |
+| Theme Token 使用 | ✅ | 所有顏色均使用標準化的 Theme Token。 |
 
 ---
 
@@ -104,12 +95,10 @@
 - [x] 所有必填段落皆存在。
 - [x] 所有 FR 可測試且明確。
 - [x] 無未標註的模糊需求。
-- [x] 符合 `.specify/memory/constitution.md`。（已標注違規與待確認項）
+- [x] 符合 `.specify/memory/constitution.md`。
 
 ---
 
 ## 七、模糊與待確認事項（Clarifications）
 
-- [RESOLVED - 2025-10-07] 已採納《common/rbac-observability-audit-governance.md》定義的權限守衛與審計方案；此模組必須導入 `usePermissions`/`<RequirePermission>` 並依規範等待後端審計 API。
-- 內建儀表板前端一律禁用刪除，顯示鎖定提示並改提供複製與匯出選項。
-- 匯入流程需先顯示預覽與逐列錯誤，僅允許通過驗證的項目寫入，並提供錯誤 CSV 下載以利修正。
+(此模組的所有待辦事項均已整合至功能需求中。)

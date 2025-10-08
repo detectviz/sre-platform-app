@@ -45,12 +45,9 @@
 - **FR-003**：系統必須（MUST）提供一個「登出其他裝置」的功能，用於立即撤銷使用者所有其他的有效登入會話。
 - **FR-004**：系統必須（MUST）在一個可分頁的表格中，展示使用者最近的登入歷史紀錄。
 - **FR-005**：登入歷史紀錄必須（MUST）包含時間戳、IP 位址、裝置資訊和登入狀態（成功/失敗）。
-- **FR-006**: 系統**必須**在後端強制執行密碼強度策略。該策略至少應包含：
-    - 最小長度為 12 個字元。
-    - 必須混合使用大寫字母、小寫字母、數字和符號。
-    - 後端應檢查密碼是否出現在已知的洩漏密碼列表中。
-- **FR-007**: 「登出其他裝置」功能**必須**僅撤銷使用者除當前操作會話外的所有其他登入會話，不得影響使用者當前的登入狀態。
-- **FR-008**: 登入歷史中的「裝置」資訊是後端基於請求的 User-Agent 字串進行盡力解析的結果，其準確性不作保證，僅供使用者參考。
+- **FR-006 (AS-IS)**：前端透過一個視覺化的「密碼強度計」即時回饋新密碼的複雜度。
+- **FR-007 (AS-IS)**：登入歷史中的「裝置」資訊是前端基於 User-Agent 字串進行簡單解析的結果。
+- **FR-008 (FUTURE)**：系統**必須**在後端強制執行密碼強度策略。
 
 ---
 
@@ -62,19 +59,27 @@
 
 ---
 
-## 五、觀測性與治理檢查（Observability & Governance Checklist）
+## 四、權限控制 (Role-Based Access Control)
 
-| 項目 | 狀態 | 說明 |
-|------|------|------|
-| 記錄與追蹤 (Logging/Tracing) | ❌ | `pages/profile/SecuritySettingsPage.tsx` 未串接遙測或審計 API，僅以本地狀態與 toast 呈現結果。 |
-| 指標與告警 (Metrics & Alerts) | ❌ | 頁面缺少 OpenTelemetry 或自訂指標，所有 API 呼叫僅透過共享客戶端發送。 |
-| RBAC 權限與審計 | ❌ | UI 未使用 `usePermissions` 或 `<RequirePermission>`，所有操作目前對所有登入者可見，需依《common/rbac-observability-audit-governance.md》導入守衛。 |
-| i18n 文案 | ⚠️ | 主要字串透過內容 context 取得，但錯誤與提示訊息仍有中文 fallback，需要補強內容來源。 |
-| Theme Token 使用 | ⚠️ | 介面混用 `app-*` 樣式與 Tailwind 色票（如 `bg-slate-*`），尚未完全以設計 token 命名。 |
+**[FUTURE REQUIREMENT]** 此頁面未來可能需要根據使用者權限進行訪問控制，但目前對所有使用者可見。
 
 ---
 
-## 五、審查與驗收清單（Review & Acceptance Checklist）
+## 五、觀測性與治理檢查（Observability & Governance Checklist）
+
+此部分描述當前 MVP 的狀態，作為未來迭代的基準。
+
+| 項目 | 狀態 | 說明 |
+|------|------|------|
+| 記錄與追蹤 (Logging/Tracing) | 🟡 | 未實現。 |
+| 指標與告警 (Metrics & Alerts) | 🟡 | 未實現。 |
+| RBAC 權限與審計 | 🟡 | 未實現。此頁面目前對所有登入者可見。 |
+| i18n 文案 | 🟢 | 已實現。此頁面所有 UI 文字均由 `useContent` hook 提供。 |
+| Theme Token 使用 | 🟡 | 部分實現。UI 混用預定義樣式與直接的 Tailwind 色票。 |
+
+---
+
+## 六、審查與驗收清單（Review & Acceptance Checklist）
 
 - [x] 無技術實作語句。
 - [x] 所有必填段落皆存在。
@@ -84,5 +89,6 @@
 
 ---
 
-## 六、模糊與待確認事項（Clarifications）
+## 七、模糊與待確認事項（Clarifications）
 
+- **[NEEDS CLARIFICATION] Theming**: MVP 廣泛使用 Tailwind CSS 的原子化 class (如 `bg-slate-700`) 來定義語義顏色和樣式，未來需重構為使用中央設計系統的 Theme Token。
