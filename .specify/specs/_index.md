@@ -4,15 +4,15 @@
 **最後更新**: 2025-10-08
 **狀態**: Final
 **憲法版本**: 1.3.0
-**總文件數**: 24 份
+**總文件數**: 28 份
 
 ---
 
 ## 一、概覽
 
 本索引涵蓋 SRE 平台的完整規格文件體系，包含:
-- **16 份模組級規格** (Module Specifications)
-- **8 份系統層規範** (System-level Specifications)
+- **18 份模組級規格** (Module Specifications)
+- **10 份系統層規範** (System-level Specifications)
 
 所有規格文件皆依據 `.specify/memory/constitution.md` v1.3.0 制定，確保符合平台憲法原則。
 
@@ -20,7 +20,7 @@
 
 ---
 
-## 二、模組級規格（16 份）
+## 二、模組級規格（18 份）
 
 ### 模組分類與狀態
 
@@ -92,7 +92,7 @@
 ### Profile（個人設定）- 1 份
 - user-profile - 使用者個人資料（整合資訊、偏好、安全）
 
-### Platform（平台設定）- 5 份
+### Platform（平台設定）- 6 份
 - platform-auth - 身份驗證設定
 - platform-grafana - Grafana 整合
 - platform-license - 授權管理
@@ -100,9 +100,11 @@
 - platform-tag - 標籤管理
 - platform-navigation - 平台導覽
 
+> 備註：`_review-report.md` 為審查報告文件，不計入模組統計。
+
 ---
 
-## 四、系統層規範（8 份）
+## 四、系統層規範（10 份）
 
 | 規範 ID | 規範名稱 | 檔案路徑 | 適用範圍 |
 |---------|----------|----------|----------|
@@ -114,6 +116,8 @@
 | scene-auditing-spec | 審計規範 | [scene-auditing-spec.md](system/scene-auditing-spec.md) | 全平台審計與行為追蹤 |
 | scene-observability-spec | 可觀測性規範 | [scene-observability-spec.md](system/scene-observability-spec.md) | 全平台監測與遙測 |
 | scene-rbac-spec | 權限控制規範 | [scene-rbac-spec.md](system/scene-rbac-spec.md) | 全平台權限管理 |
+| scene-api-guideline | API 設計指引 | [scene-api-guideline.md](system/scene-api-guideline.md) | 全平台 API 設計 |
+| scene-security-spec | 安全性規範 | [scene-security-spec.md](system/scene-security-spec.md) | 全平台安全設計 |
 
 ---
 
@@ -274,11 +278,11 @@
 
 ## 十二、專案成果總結
 
-- **模組規格**: 成功產生 16 份模組級規格文件（經整合優化，原24個模組精簡為16個），存放於 `specs/modules/`
-- **系統層規範**: 維持 8 份系統層規範文件，涵蓋 Scenes 架構、CRUD 互動、治理觀測等核心規範
+- **模組規格**: 成功產生 18 份模組級規格文件（經整合優化，原24個模組精簡為18個），存放於 `specs/modules/`
+- **系統層規範**: 維持 10 份系統層規範文件，涵蓋 Scenes 架構、CRUD 互動、治理觀測等核心規範
 - **整合成果**:
   - **完全合規**: 5 個整合規格（31.3%）已達到高標準
-  - **需修正**: 11 個模組（68.7%）需補充情境、AS 或更新憲法版本
+  - **需修正**: 13 個模組（68.7%）需補充情境、AS 或更新憲法版本
   - **質量提升**: 通過審查明確了修正方向與優先級
 - **合規審查**: 完成 SPEC ⇄ MVP 對齊審查，詳細記錄於 [審查報告](modules/_review-report.md)
 - **修正計畫**: 制定三階段修正路線圖，預計 4 週完成所有修正
