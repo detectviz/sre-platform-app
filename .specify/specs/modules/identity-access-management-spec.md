@@ -1,5 +1,3 @@
-
-
 # Feature Specification: Identity Access Management (IAM)
 
 **Feature Branch**: `[identity-access-management]`  

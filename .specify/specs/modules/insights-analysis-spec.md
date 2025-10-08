@@ -1,5 +1,3 @@
-
-
 # Feature Specification: Insights Analysis
 
 **Feature Branch**: `[insights-analysis]`  

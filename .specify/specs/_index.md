@@ -1,38 +1,39 @@
 # SRE 平台規格文件索引
 
 **建立日期**: 2025-10-06
+**最後更新**: 2025-10-08
 **狀態**: Final
-**憲法版本**: 1.2.0
-**總文件數**: 32 份
+**憲法版本**: 1.3.0
+**總文件數**: 24 份
 
 ---
 
 ## 一、概覽
 
 本索引涵蓋 SRE 平台的完整規格文件體系,包含:
-- **24 份模組級規格** (Module Specifications)
+- **16 份模組級規格** (Module Specifications) - 經整合優化後
 - **8 份系統層規範** (System-level Specifications)
 
-所有規格文件皆依據 `.specify/memory/constitution.md` v1.2.0 制定,確保符合平台憲法原則。
+所有規格文件皆依據 `.specify/memory/constitution.md` v1.3.0 制定,確保符合平台憲法原則。
+
+**整合更新**: 根據 `USER_SCENARIOS_ENHANCEMENT_GUIDE.md` v3.0.0，已將原本 24 個模組整合為 16 個模組，提升維護效率與使用者體驗。
 
 ---
 
-## 二、模組級規格 (23 份)
+## 二、模組級規格 (16 份)
 
-### Incidents (事件管理) - 3 份
+### Incidents (事件管理) - 2 份
 
-| 模組 ID | 模組名稱 | 檔案路徑 | 來源頁面 |
-|---------|----------|----------|----------|
-| incidents-list | 事件列表管理 | [incidents-list-spec.md](modules/incidents-list-spec.md) | pages/incidents/IncidentListPage.tsx |
-| incidents-alert | 告警規則管理 | [incidents-alert-spec.md](modules/incidents-alert-spec.md) | pages/incidents/AlertRulePage.tsx |
-| incidents-silence | 靜音規則管理 | [incidents-silence-spec.md](modules/incidents-silence-spec.md) | pages/incidents/SilenceRulePage.tsx |
+| 模組 ID | 模組名稱 | 檔案路徑 | 來源頁面 | 整合說明 |
+|---------|----------|----------|----------|----------|
+| incidents-list | 事件列表管理 | [incidents-list-spec.md](modules/incidents-list-spec.md) | pages/incidents/IncidentListPage.tsx | 獨立維護 |
+| incident-rules | 事件規則管理 | [incident-rules-spec.md](modules/incident-rules-spec.md) | pages/incidents/IncidentRulesPage.tsx | 整合 `incidents-alert` + `incidents-silence` |
 
-### Resources (資源管理) - 2 份
+### Resources (資源管理) - 1 份
 
-| 模組 ID | 模組名稱 | 檔案路徑 | 來源頁面 |
-|---------|----------|----------|----------|
-| resources-management | 資源管理 | [resources-management-spec.md](modules/resources-management-spec.md) | pages/resources/ResourceManagementPage.tsx |
-| resources-discovery | 資源探索 | [resources-discovery-spec.md](modules/resources-discovery-spec.md) | pages/resources/ResourceOverviewPage.tsx |
+| 模組 ID | 模組名稱 | 檔案路徑 | 來源頁面 | 整合說明 |
+|---------|----------|----------|----------|----------|
+| resources-management | 資源管理與探索 | [resources-management-spec.md](modules/resources-management-spec.md) | pages/resources/ResourceManagementPage.tsx | 整合 `resources-discovery` + `resources-management` |
 
 ### Dashboards (儀表板) - 1 份
 
@@ -46,13 +47,11 @@
 |---------|----------|----------|----------|
 | insights-analysis | 洞察分析 | [insights-analysis-spec.md](modules/insights-analysis-spec.md) | pages/analysis/InsightsAnalysisPage.tsx |
 
-### Automation (自動化) - 3 份
+### Automation (自動化) - 1 份
 
-| 模組 ID | 模組名稱 | 檔案路徑 | 來源頁面 |
-|---------|----------|----------|----------|
-| automation-playbook | 自動化劇本 | [automation-playbook-spec.md](modules/automation-playbook-spec.md) | pages/automation/AutomationPlaybooksPage.tsx |
-| automation-trigger | 觸發器管理 | [automation-trigger-spec.md](modules/automation-trigger-spec.md) | pages/automation/AutomationTriggersPage.tsx |
-| automation-history | 執行歷史 | [automation-history-spec.md](modules/automation-history-spec.md) | pages/automation/AutomationHistoryPage.tsx |
+| 模組 ID | 模組名稱 | 檔案路徑 | 來源頁面 | 整合說明 |
+|---------|----------|----------|----------|----------|
+| automation-management | 自動化管理 | [automation-management-spec.md](modules/automation-management-spec.md) | pages/automation/AutomationManagementPage.tsx | 整合 `automation-playbook` + `automation-trigger` + `automation-history` |
 
 ### Identity (身份與存取) - 1 份
 
@@ -60,20 +59,18 @@
 |---------|----------|----------|----------|
 | identity-access-management | 身份與存取管理 | [identity-access-management-spec.md](modules/identity-access-management-spec.md) | pages/settings/identity-access/AccessManagementPage.tsx |
 
-### Notifications (通知管理) - 3 份
+### Notifications (通知管理) - 1 份
 
-| 模組 ID | 模組名稱 | 檔案路徑 | 來源頁面 |
-|---------|----------|----------|----------|
-| notification-channel | 通知渠道 | [notification-channel-spec.md](modules/notification-channel-spec.md) | pages/settings/notification-management/NotificationChannelPage.tsx |
-| notification-strategy | 通知策略 | [notification-strategy-spec.md](modules/notification-strategy-spec.md) | pages/settings/notification-management/NotificationStrategyPage.tsx |
-| notification-history | 通知歷史 | [notification-history-spec.md](modules/notification-history-spec.md) | pages/settings/notification-management/NotificationHistoryPage.tsx |
+| 模組 ID | 模組名稱 | 檔案路徑 | 來源頁面 | 整合說明 |
+|---------|----------|----------|----------|----------|
+| notification-management | 通知管理 | [notification-management-spec.md](modules/notification-management-spec.md) | pages/settings/notification-management/NotificationManagementPage.tsx | 整合 `notification-channel` + `notification-strategy` + `notification-history` |
 
-> **業務流關聯說明**：  
-> 三個模組共同構成完整的通知生命週期：  
-> `notification-channel` 為 **設定層**，定義通知傳輸方式；  
-> `notification-strategy` 為 **邏輯層**，設定發送規則與條件；  
-> `notification-history` 為 **觀測層**，負責記錄所有通知事件與結果。  
-> 三者形成自下而上的依賴鏈：「Channel → Strategy → History」，確保通知流程可控、可追蹤與可審計。
+> **整合說明**：  
+> 原有的三個模組已整合為統一的通知管理介面，包含完整的通知生命週期管理：  
+> - **設定層**：定義通知傳輸管道與配置  
+> - **邏輯層**：設定發送規則與觸發條件  
+> - **觀測層**：記錄所有通知事件與結果追蹤  
+> 整合後提升操作流暢度，減少頁面跳轉，提升使用者體驗。
 
 ### Platform (平台設定) - 5 份
 
@@ -85,13 +82,11 @@
 | platform-tag | 標籤管理 | [platform-tag-spec.md](modules/platform-tag-spec.md) | pages/settings/platform/TagManagementPage.tsx |
 | platform-license | 授權管理 | [platform-license-spec.md](modules/platform-license-spec.md) | pages/settings/platform/LicensePage.tsx |
 
-### Profile (個人設定) - 3 份
+### Profile (個人設定) - 1 份
 
-| 模組 ID | 模組名稱 | 檔案路徑 | 來源頁面 |
-|---------|----------|----------|----------|
-| profile-info | 個人資訊 | [profile-info-spec.md](modules/profile-info-spec.md) | pages/profile/PersonalInfoPage.tsx |
-| profile-preference | 偏好設定 | [profile-preference-spec.md](modules/profile-preference-spec.md) | pages/profile/PreferenceSettingsPage.tsx |
-| profile-security | 安全設定 | [profile-security-spec.md](modules/profile-security-spec.md) | pages/profile/SecuritySettingsPage.tsx |
+| 模組 ID | 模組名稱 | 檔案路徑 | 來源頁面 | 整合說明 |
+|---------|----------|----------|----------|----------|
+| user-profile | 使用者個人資料 | [user-profile-spec.md](modules/user-profile-spec.md) | pages/profile/UserProfilePage.tsx | 整合 `profile-info` + `profile-preference` + `profile-security` |
 
 ---
 
@@ -162,12 +157,11 @@ Modal/Drawer (87+)
 
 ## 七、文件狀態統計
 
-| 類別 | 總數 | Draft | Review | Approved |
-|------|------|-------|--------|----------|
-| 模組規格 | 23 | 0 | 0 | 23 |
-| 通用規範 | 8 | 0 | 0 | 8 |
-| 平台規範 | 0 | 0 | 0 | 0 |
-| **合計** | **31** | **0** | **0** | **31** |
+| 類別 | 總數 | Draft | Review | Approved | 整合說明 |
+|------|------|-------|--------|----------|----------|
+| 模組規格 | 16 | 0 | 0 | 16 | 經整合優化（原24個→16個） |
+| 系統層規範 | 8 | 0 | 0 | 8 | - |
+| **合計** | **24** | **0** | **0** | **24** | 減少8個重複模組文件 |
 
 ---
 
@@ -175,36 +169,33 @@ Modal/Drawer (87+)
 
 ### 依功能分類
 
-- **事件與告警**: incidents-list, incidents-alert, incidents-silence
-- **資源管理**: resources-management, resources-discovery
+- **事件與告警**: incidents-list, incident-rules
+- **資源管理**: resources-management (整合探索與管理)
 - **視覺化**: dashboards-management
 - **分析洞察**: insights-analysis
-- **自動化**: automation-* (3 份)
+- **自動化**: automation-management (整合劇本、觸發器與歷史)
 - **身份與權限**: identity-access-management
-- **通知**: notification-* (3 份)
-- **系統設定**: platform-* (5 份), profile-* (3 份)
+- **通知**: notification-management (整合管道、策略與歷史)
+- **系統設定**: platform-* (5 份), user-profile (整合個人設定)
 
 ### 依優先級分類
 
 #### P0 (關鍵功能)
-- incidents-list, incidents-alert
+- incidents-list, incident-rules
 - resources-management
 - dashboards-management
 - identity-access-management
 
 #### P1 (重要功能)
-- incidents-silence
-- resources-discovery
-- automation-playbook, automation-trigger
-- notification-channel, notification-strategy
+- automation-management
+- notification-management
 
 #### P2 (輔助功能)
-- insights-analysis, automation-history
-- notification-history
-- platform-*
+- insights-analysis
+- platform-* (5 份)
 
 #### P3 (個人化)
-- profile-*
+- user-profile
 
 ---
 
@@ -212,6 +203,12 @@ Modal/Drawer (87+)
 
 | 日期 | 變更內容 | 變更者 |
 |------|----------|--------|
+| 2025-10-08 | 根據 USER_SCENARIOS_ENHANCEMENT_GUIDE.md 整合模組規格：24個模組 → 16個模組 | Claude Code Assistant |
+| 2025-10-08 | 合併 automation-* (3個) → automation-management-spec.md | Claude Code Assistant |
+| 2025-10-08 | 合併 notification-* (3個) → notification-management-spec.md | Claude Code Assistant |
+| 2025-10-08 | 合併 profile-* (3個) → user-profile-spec.md | Claude Code Assistant |
+| 2025-10-08 | 合併 resources-* (2個) → resources-management-spec.md (擴展版) | Claude Code Assistant |
+| 2025-10-08 | 合併 incidents-alert + incidents-silence → incident-rules-spec.md | Claude Code Assistant |
 | 2025-10-10 | 將 common/ 重新命名為 system/ ，統一為系統層規範 | AI Agent |
 | 2025-10-09 | 移除平台規範 (3 份)，整併至通用 Scenes 規範層 | AI Agent |
 | 2025-10-09 | 移除元件級規格 (7 份)，整併為通用 Scenes 規範 | AI Agent |
@@ -226,7 +223,7 @@ Modal/Drawer (87+)
 - [憲法 (Constitution)](../.specify/memory/constitution.md)
 - [規格模板 (Spec Template)](../.specify/templates/spec-template.md)
 - [檢查報告 (Review Report)](./_review.md)
-- [釐清事項 (Clarifications)](./Clarifications.md)
+- [使用者情境補充指南 (User Scenarios Enhancement Guide)](modules/USER_SCENARIOS_ENHANCEMENT_GUIDE.md)
 
 ---
 
@@ -238,11 +235,15 @@ Modal/Drawer (87+)
 
 ## 十二、專案成果總結
 
-- **模組規格**：成功產生固定的 23 份模組級規格文件，存放於 `specs/modules/`。
-- **元件規格**：根據元件的重用性與複雜度，動態生成了 7 份關鍵元件規格，如 `Toolbar`, `Drawer`, `UnifiedSearchModal` 等。
-- **通用規範**：抽象出 5 份通用設計規範，包括 Scenes 架構計畫、CRUD 互動模式、治理與觀測規範、互動層規範、表格行為與設計系統。
-- **平台規範**：建立 3 份平台級規範，涵蓋 RBAC 權限、審計日誌、觀測性等核心平台功能。
+- **模組規格**：成功產生固定的 16 份模組級規格文件（經整合優化，原24個模組精簡為16個），存放於 `specs/modules/`。
+- **系統層規範**：維持 8 份系統層規範文件，涵蓋 Scenes 架構、CRUD 互動、治理觀測等核心規範。
+- **模組整合**：根據 `USER_SCENARIOS_ENHANCEMENT_GUIDE.md` 完成模組整合優化：
+  - Automation 群集：3個模組 → 1個整合模組
+  - Notification 群集：3個模組 → 1個整合模組
+  - Profile 群集：3個模組 → 1個整合模組
+  - Resources 群集：2個模組 → 1個擴展模組
+  - Incidents 群集：3個模組 → 2個模組（部分整合）
 - **釐清與解決**：透過與使用者多輪的互動，成功解決了初始版本中標記的 285 項 `[NEEDS CLARIFICATION]` 問題，並將解決方案整合至所有相關文件中。
 - **品質校閱**：產出 `_review.md` 報告，確保所有文件符合模板、憲法，並標記出已解決的 `[VIOLATION]` 項目。
 
-此提交代表了整個規格逆向工程任務的最終交付成果。
+此提交代表了整個規格逆向工程任務的整合優化成果，提升了文檔維護效率與使用者體驗。
