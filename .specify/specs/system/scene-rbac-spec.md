@@ -1,7 +1,6 @@
 # Scene RBAC Specification（Scenes 架構權限控制規範）
 
 **模組名稱 (Module)**: Scene RBAC Specification  
-**類型 (Type)**: Common  
 **來源 (Source)**: `SceneAppProvider`, `ScenePermissionGuard`, `SceneContext.permissions`, `SceneVariableSet`  
 **建立日期 (Created)**: 2025-10-09  
 **狀態 (Status)**: Active  

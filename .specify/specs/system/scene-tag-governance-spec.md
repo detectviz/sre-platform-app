@@ -1,5 +1,3 @@
-
-
 # System Specification: Tag Governance
 
 **Category**: System-level Specification  

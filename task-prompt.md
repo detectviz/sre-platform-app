@@ -10,7 +10,7 @@
 ---
 
 ## 審查目標
-逐一檢查 `.specify/specs` 所有規格文件的完整性，確保各模組規格文件彼此一致、無矛盾、完整描述行為與治理邏輯。  
+逐一檢查 `.specify/specs/modules` 所有規格文件的完整性，確保各模組規格文件彼此一致、無矛盾、完整描述行為與治理邏輯，最後更新 `.specify/specs/_index.md`。  
 審查過程需找出下列差異類型並修正：
 - 程式碼中已實現但規格中缺失的功能。
 - 規格中已定義但程式碼中未實現的功能。
@@ -130,7 +130,7 @@
 ### 補充說明（設計哲學對齊 `spec-driven.md`）
 - 所有 `.specify/specs/` 文件應保持技術中立，描述「What」而非「How」。
 - 技術框架、API、元件命名等應移入：
-  - `.specify/specs/common/`（技術規範層）
+  - `.specify/specs/system/`（技術規範層）
   - `.specify/memory/constitution.md`（架構語義層）
 - 審查時若發現具體實作語言或框架語義，應立即標記 `[TECHNICAL DETAIL]` 並建議移除。  
 - 審查任務現已完全以 `.specify/specs/` 為核心，任何技術實作或框架語義皆不列入比對。

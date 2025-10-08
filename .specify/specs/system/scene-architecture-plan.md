@@ -22,9 +22,9 @@
 
 | # | 項目 | 所屬檔案 | 解決方式 |
 |---|------|----------|----------|
-| 1 | 巢狀 Modal 層級限制 | ../specs/common/modal-interaction-pattern.md | 前端決策: 最大 2 層 |
-| 2 | 虛擬滾動方案選擇 | ../specs/common/table-design-system.md | 前端決策: react-window |
-| 3 | 軟刪除與硬刪除 UI | ../specs/common/crud-interaction-pattern.md | 前端決策: Checkbox vs 輸入確認 |
+| 1 | 巢狀 Modal 層級限制 | ../specs/system/modal-interaction-pattern.md | 前端決策: 最大 2 層 |
+| 2 | 虛擬滾動方案選擇 | ../specs/system/table-design-system.md | 前端決策: react-window |
+| 3 | 軟刪除與硬刪除 UI | ../specs/system/crud-interaction-pattern.md | 前端決策: Checkbox vs 輸入確認 |
 | 4 | 權限選擇器 UI | identity-role-spec.md | 前端決策: 樹狀結構 |
 | 5 | 事件狀態變更提示 | incidents-list-spec.md | 前端決策: Toast + 時間軸 |
 | 6 | 策略衝突提示 | notification-strategy-spec.md | 前端決策: Alert + 色點 |

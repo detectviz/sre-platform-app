@@ -1,7 +1,6 @@
 # Scene Table Behavior & Design Guideline（Scenes 架構通用規範）
 
 **模組名稱 (Module)**: Scene Table Behavior & Design Guideline  
-**類型 (Type)**: Common  
 **來源 (Source)**: `SceneTable`, `SceneVariableSet`, `SceneStatusHandler`, `SceneQueryRunner`  
 **建立日期 (Created)**: 2025-10-08  
 **狀態 (Status)**: Active  

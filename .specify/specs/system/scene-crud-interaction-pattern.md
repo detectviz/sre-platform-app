@@ -1,7 +1,6 @@
 # Scene CRUD Interaction Pattern Specification（Scenes 架構通用 CRUD 模式規範）
 
 **模組名稱 (Module)**: Scene CRUD Interaction Pattern  
-**類型 (Type)**: Common  
 **來源 (Source)**: `SceneControls`, `SceneTable`, `SceneQueryRunner`, `SceneVariableSet`, `ScenePanel`, `SceneEventBus`  
 **建立日期 (Created)**: 2025-10-08  
 **狀態 (Status)**: Active  

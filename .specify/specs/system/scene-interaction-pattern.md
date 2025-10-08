@@ -1,7 +1,6 @@
 # Scene Interaction Pattern Specification（Scenes 架構互動層規範）
 
 **模組名稱 (Module)**: Scene Interaction Pattern  
-**類型 (Type)**: Common  
 **來源 (Source)**: `SceneState`, `ScenePanel`, `ScenePersistence`, `SceneExitHandler`, `SceneAppProvider`  
 **建立日期 (Created)**: 2025-10-08  
 **狀態 (Status)**: Active  

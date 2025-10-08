@@ -10,87 +10,99 @@
 
 ## 一、概覽
 
-本索引涵蓋 SRE 平台的完整規格文件體系,包含:
-- **16 份模組級規格** (Module Specifications) - 經整合優化後
+本索引涵蓋 SRE 平台的完整規格文件體系，包含:
+- **16 份模組級規格** (Module Specifications)
 - **8 份系統層規範** (System-level Specifications)
 
-所有規格文件皆依據 `.specify/memory/constitution.md` v1.3.0 制定,確保符合平台憲法原則。
+所有規格文件皆依據 `.specify/memory/constitution.md` v1.3.0 制定，確保符合平台憲法原則。
 
-**整合更新**: 根據 `USER_SCENARIOS_ENHANCEMENT_GUIDE.md` v3.0.0，已將原本 24 個模組整合為 16 個模組，提升維護效率與使用者體驗。
-
----
-
-## 二、模組級規格 (16 份)
-
-### Incidents (事件管理) - 2 份
-
-| 模組 ID | 模組名稱 | 檔案路徑 | 來源頁面 | 整合說明 |
-|---------|----------|----------|----------|----------|
-| incidents-list | 事件列表管理 | [incidents-list-spec.md](modules/incidents-list-spec.md) | pages/incidents/IncidentListPage.tsx | 獨立維護 |
-| incident-rules | 事件規則管理 | [incident-rules-spec.md](modules/incident-rules-spec.md) | pages/incidents/IncidentRulesPage.tsx | 整合 `incidents-alert` + `incidents-silence` |
-
-### Resources (資源管理) - 1 份
-
-| 模組 ID | 模組名稱 | 檔案路徑 | 來源頁面 | 整合說明 |
-|---------|----------|----------|----------|----------|
-| resources-management | 資源管理與探索 | [resources-management-spec.md](modules/resources-management-spec.md) | pages/resources/ResourceManagementPage.tsx | 整合 `resources-discovery` + `resources-management` |
-
-### Dashboards (儀表板) - 1 份
-
-| 模組 ID | 模組名稱 | 檔案路徑 | 來源頁面 |
-|---------|----------|----------|----------|
-| dashboards-management | 儀表板管理 | [dashboards-management-spec.md](modules/dashboards-management-spec.md) | pages/dashboards/DashboardManagementPage.tsx |
-
-### Insights (洞察分析) - 1 份
-
-| 模組 ID | 模組名稱 | 檔案路徑 | 來源頁面 |
-|---------|----------|----------|----------|
-| insights-analysis | 洞察分析 | [insights-analysis-spec.md](modules/insights-analysis-spec.md) | pages/analysis/InsightsAnalysisPage.tsx |
-
-### Automation (自動化) - 1 份
-
-| 模組 ID | 模組名稱 | 檔案路徑 | 來源頁面 | 整合說明 |
-|---------|----------|----------|----------|----------|
-| automation-management | 自動化管理 | [automation-management-spec.md](modules/automation-management-spec.md) | pages/automation/AutomationManagementPage.tsx | 整合 `automation-playbook` + `automation-trigger` + `automation-history` |
-
-### Identity (身份與存取) - 1 份
-
-| 模組 ID | 模組名稱 | 檔案路徑 | 來源頁面 |
-|---------|----------|----------|----------|
-| identity-access-management | 身份與存取管理 | [identity-access-management-spec.md](modules/identity-access-management-spec.md) | pages/settings/identity-access/AccessManagementPage.tsx |
-
-### Notifications (通知管理) - 1 份
-
-| 模組 ID | 模組名稱 | 檔案路徑 | 來源頁面 | 整合說明 |
-|---------|----------|----------|----------|----------|
-| notification-management | 通知管理 | [notification-management-spec.md](modules/notification-management-spec.md) | pages/settings/notification-management/NotificationManagementPage.tsx | 整合 `notification-channel` + `notification-strategy` + `notification-history` |
-
-> **整合說明**：  
-> 原有的三個模組已整合為統一的通知管理介面，包含完整的通知生命週期管理：  
-> - **設定層**：定義通知傳輸管道與配置  
-> - **邏輯層**：設定發送規則與觸發條件  
-> - **觀測層**：記錄所有通知事件與結果追蹤  
-> 整合後提升操作流暢度，減少頁面跳轉，提升使用者體驗。
-
-### Platform (平台設定) - 5 份
-
-| 模組 ID | 模組名稱 | 檔案路徑 | 來源頁面 |
-|---------|----------|----------|----------|
-| platform-auth | 身份驗證設定 | [platform-auth-spec.md](modules/platform-auth-spec.md) | pages/settings/platform/AuthSettingsPage.tsx |
-| platform-grafana | Grafana 整合 | [platform-grafana-spec.md](modules/platform-grafana-spec.md) | pages/settings/platform/GrafanaSettingsPage.tsx |
-| platform-mail | 郵件設定 | [platform-mail-spec.md](modules/platform-mail-spec.md) | pages/settings/platform/MailSettingsPage.tsx |
-| platform-tag | 標籤管理 | [platform-tag-spec.md](modules/platform-tag-spec.md) | pages/settings/platform/TagManagementPage.tsx |
-| platform-license | 授權管理 | [platform-license-spec.md](modules/platform-license-spec.md) | pages/settings/platform/LicensePage.tsx |
-
-### Profile (個人設定) - 1 份
-
-| 模組 ID | 模組名稱 | 檔案路徑 | 來源頁面 | 整合說明 |
-|---------|----------|----------|----------|----------|
-| user-profile | 使用者個人資料 | [user-profile-spec.md](modules/user-profile-spec.md) | pages/profile/UserProfilePage.tsx | 整合 `profile-info` + `profile-preference` + `profile-security` |
+**最新審查**: 2025-10-08 完成 SPEC ⇄ MVP 對齊審查，詳見 [審查報告](modules/_review-report.md)
 
 ---
 
-## 四、系統層規範 (8 份)
+## 二、模組級規格（16 份）
+
+### 模組分類與狀態
+
+#### ✅ 完全合規（5個，31.3%）
+
+| 模組 ID | 模組名稱 | 檔案路徑 | 整合來源 | 憲法版本 | AS 數量 |
+|---------|----------|----------|----------|----------|---------|
+| automation-management | 自動化管理 | [automation-management-spec.md](modules/automation-management-spec.md) | automation-history + automation-playbook + automation-trigger | v1.3.0 | 12 |
+| notification-management | 通知管理 | [notification-management-spec.md](modules/notification-management-spec.md) | notification-channel + notification-strategy + notification-history | v1.3.0 | 15 |
+| user-profile | 使用者個人資料 | [user-profile-spec.md](modules/user-profile-spec.md) | profile-info + profile-preference + profile-security | v1.3.0 | 16 |
+| resources-management | 資源管理與探索 | [resources-management-spec.md](modules/resources-management-spec.md) | resources-discovery + resources-management | v1.3.0 | 20 |
+| incident-rules | 事件規則管理 | [incident-rules-spec.md](modules/incident-rules-spec.md) | incidents-alert + incidents-silence | v1.3.0 | 12 |
+
+#### ⚠️ 需修正 - P1 高優先級（6個，37.5%）
+
+| 模組 ID | 模組名稱 | 檔案路徑 | 憲法版本 | 主要問題 |
+|---------|----------|----------|----------|----------|
+| identity-access-management | 身份與存取管理 | [identity-access-management-spec.md](modules/identity-access-management-spec.md) | 未標示 | 缺少詳細情境與痛點，AS 僅 6 個 |
+| insights-analysis | 洞察分析 | [insights-analysis-spec.md](modules/insights-analysis-spec.md) | 未標示 | 缺少詳細情境與痛點，AS 僅 4 個 |
+| platform-tag | 標籤管理 | [platform-tag-spec.md](modules/platform-tag-spec.md) | v1.2.0 | 缺少詳細情境與痛點，AS 僅 5 個 |
+| identity-audit | 審計日誌 | [identity-audit-spec.md](modules/identity-audit-spec.md) | v1.2.0 | 缺少詳細情境與痛點，AS 僅 3 個 |
+| incidents-list | 事件列表管理 | [incidents-list-spec.md](modules/incidents-list-spec.md) | v1.2.0 | 缺少詳細情境與痛點，AS 僅 5 個 |
+| insights-log | 日誌探索 | [insights-log-spec.md](modules/insights-log-spec.md) | v1.2.0 | 缺少詳細情境與痛點，AS 僅 5 個 |
+
+#### ⚠️ 需修正 - P2 中優先級（4個，25.0%）
+
+| 模組 ID | 模組名稱 | 檔案路徑 | 憲法版本 | 主要問題 |
+|---------|----------|----------|----------|----------|
+| platform-auth | 身份驗證設定 | [platform-auth-spec.md](modules/platform-auth-spec.md) | v1.2.0 | AS 僅 3 個 |
+| platform-grafana | Grafana 整合 | [platform-grafana-spec.md](modules/platform-grafana-spec.md) | v1.2.0 | AS 僅 3 個 |
+| platform-license | 授權管理 | [platform-license-spec.md](modules/platform-license-spec.md) | v1.2.0 | AS 僅 2 個 |
+| platform-mail | 郵件設定 | [platform-mail-spec.md](modules/platform-mail-spec.md) | v1.2.0 | AS 僅 3 個 |
+
+#### ✅ 基本合規 - P3 低優先級（1個，6.2%）
+
+| 模組 ID | 模組名稱 | 檔案路徑 | 憲法版本 | 輕微問題 |
+|---------|----------|----------|----------|----------|
+| platform-navigation | 平台導覽 | [platform-navigation-spec.md](modules/platform-navigation-spec.md) | v1.3.0 | Primary User Story 可加強 |
+| dashboards-management | 儀表板管理 | [dashboards-management-spec.md](modules/dashboards-management-spec.md) | 未標示 | 現有痛點未獨立章節，AS 分組不清晰 |
+
+---
+
+## 三、模組功能分類
+
+### Identity（身份與存取）- 2 份
+- identity-access-management - 身份與存取管理
+- identity-audit - 審計日誌
+
+### Incidents（事件管理）- 2 份
+- incidents-list - 事件列表管理
+- incident-rules - 事件規則管理（整合告警與靜音）
+
+### Insights（洞察分析）- 2 份
+- insights-log - 日誌探索
+- insights-analysis - 洞察分析（整合回放與容量預測）
+
+### Automation（自動化）- 1 份
+- automation-management - 自動化管理（整合腳本、觸發器、歷史）
+
+### Notification（通知管理）- 1 份
+- notification-management - 通知管理（整合管道、策略、歷史）
+
+### Resources（資源管理）- 1 份
+- resources-management - 資源管理與探索
+
+### Dashboards（儀表板）- 1 份
+- dashboards-management - 儀表板管理
+
+### Profile（個人設定）- 1 份
+- user-profile - 使用者個人資料（整合資訊、偏好、安全）
+
+### Platform（平台設定）- 5 份
+- platform-auth - 身份驗證設定
+- platform-grafana - Grafana 整合
+- platform-license - 授權管理
+- platform-mail - 郵件設定
+- platform-tag - 標籤管理
+- platform-navigation - 平台導覽
+
+---
+
+## 四、系統層規範（8 份）
 
 | 規範 ID | 規範名稱 | 檔案路徑 | 適用範圍 |
 |---------|----------|----------|----------|
@@ -105,145 +117,170 @@
 
 ---
 
-## 五、平台規範 (0 份)
+## 五、憲法合規性統計
+
+### Constitution v1.3.0 合規狀態
+
+| 檢查項目 | 完全合規 | 部分合規 | 需修正 |
+|---------|---------|---------|--------|
+| **觀測性（Logging/Tracing/Metrics）** | 5 | 6 | 5 |
+| **安全性（RBAC/Audit/隔離）** | 16 | 0 | 0 |
+| **一致性（i18n/Theme Token）** | 5 | 11 | 0 |
+| **i18n（無硬編碼）** | 5 | 11 | 0 |
+| **資料閉環（完整流程）** | 5 | 11 | 0 |
+
+### 模組間一致性
+
+#### ✅ RBAC 權限命名空間（無衝突）
+- `automation:*` - Automation Management
+- `notification:*` - Notification Management
+- `profile:*` - User Profile
+- `resources:*` - Resources Management
+- `incident-rules:*` - Incident Rules
+- `audit-logs:*` - Identity Audit
+- `identity:*` - Identity Access Management
+- `incidents:*` - Incidents List
+- `logs:*` - Insights Log
+- `insights:*` - Insights Analysis
+- `settings:*` - Platform Settings（auth, grafana, mail）
+- `tags:*` - Platform Tag
+- `dashboards:*` - Dashboards Management
+- `platform-navigation:*` - Platform Navigation
+
+#### ✅ i18n Key 命名規範（基本一致）
+大部分模組遵循 `{module}.{category}.{item}` 命名規範
+
+**建議**: 統一 Platform 模組為 `platform.{submodule}.{category}.{item}` 格式
+
+#### ✅ 資料實體定義（無重複或矛盾）
+所有模組的資料實體定義清晰且無衝突
+
+#### ✅ 功能邊界（清晰）
+所有模組的功能邊界明確，無重疊或矛盾
 
 ---
 
-## 六、依賴關係圖
+## 六、問題統計與優先級
 
-### 元件被模組使用統計
+### 問題分佈
 
-```
-Toolbar (22)
-  ├─ incidents-list, incidents-alert, incidents-silence
-  ├─ resources-list, resources-group, resources-datasource
-  ├─ automation-playbook, automation-trigger, automation-history
-  ├─ identity-personnel, identity-role, identity-team
-  ├─ notification-channel, notification-strategy, notification-history
-  └─ dashboards-list, platform-tag, insights-log, ...
+| 優先級 | 問題數量 | 影響模組數 | 問題類型 |
+|--------|---------|-----------|---------|
+| **P0 - Critical** | 0 | 0 | 無關鍵問題 |
+| **P1 - High** | 18 | 6 | 缺少詳細 Primary User Story（6）<br>Acceptance Scenarios 數量不足（12） |
+| **P2 - Medium** | 24 | 11 | 憲法版本過舊（11）<br>FR 格式不一致（5）<br>AS 數量不足（8） |
+| **P3 - Low** | 12 | 8 | 治理檢查清單標記不一致（6）<br>Clarifications 未解決（4）<br>其他格式優化（2） |
 
-TableContainer (21)
-  ├─ incidents-list, incidents-alert, incidents-silence
-  ├─ resources-list, resources-group, resources-datasource
-  ├─ automation-playbook, automation-trigger, automation-history
-  ├─ identity-personnel, identity-role, identity-team
-  ├─ notification-channel, notification-strategy, notification-history
-  └─ dashboards-list, platform-tag, profile-security, ...
+### 完成度統計
 
-Pagination (21)
-  ├─ incidents-list, incidents-alert, incidents-silence
-  ├─ resources-list, resources-group, resources-datasource
-  ├─ automation-playbook, automation-trigger, automation-history
-  ├─ identity-personnel, identity-role, identity-team
-  ├─ notification-channel, notification-strategy, notification-history
-  └─ dashboards-list, platform-tag, profile-security, ...
-
-Modal/Drawer (87+)
-  ├─ AlertRuleEditModal → incidents-alert
-  ├─ SilenceRuleEditModal → incidents-silence
-  ├─ ResourceEditModal → resources-list
-  └─ ... (分散在各模組的編輯、新增 Modal)
-```
-
-### 通用規範應用統計
-
-- **CRUD 互動模式**: 適用 20+ 模組
-- **表格行為與設計系統**: 適用 18+ 模組
-- **互動層規範**: 所有上下文場景互動
-- **治理與觀測規範**: 全平台治理與觀測
-- **Scenes 架構計畫**: 全平台結構與模組關聯
+| 狀態 | 模組數 | 百分比 | 說明 |
+|------|--------|--------|------|
+| **完全合規** | 5 | 31.3% | 符合所有標準，可作為參考模板 |
+| **需修正 - P1** | 6 | 37.5% | 需補充詳細情境與 AS |
+| **需修正 - P2** | 4 | 25.0% | 需補充 AS 數量與更新憲法版本 |
+| **基本合規 - P3** | 1 | 6.2% | 僅需輕微優化 |
 
 ---
 
-## 七、文件狀態統計
+## 七、修正路線圖
 
-| 類別 | 總數 | Draft | Review | Approved | 整合說明 |
-|------|------|-------|--------|----------|----------|
-| 模組規格 | 16 | 0 | 0 | 16 | 經整合優化（原24個→16個） |
-| 系統層規範 | 8 | 0 | 0 | 8 | - |
-| **合計** | **24** | **0** | **0** | **24** | 減少8個重複模組文件 |
+### 第一階段（2 週）- P1 問題修正
+**目標**: 補充核心模組的 Primary User Story 與 Acceptance Scenarios
+
+#### Week 1: 核心治理與分析模組
+1. identity-access-management-spec.md
+2. insights-analysis-spec.md
+3. platform-tag-spec.md
+
+#### Week 2: 其他 P1 模組
+4. identity-audit-spec.md
+5. incidents-list-spec.md
+6. insights-log-spec.md
+
+### 第二階段（1 週）- P2 問題修正
+**目標**: 批次更新憲法版本與補充 AS
+
+#### Week 3: 批次更新與優化
+1. 統一憲法版本至 v1.3.0（11 個模組）
+2. 補充 Platform 模組 AS（4 個模組）
+3. 優化 dashboards-management
+
+### 第三階段（3 天）- P3 問題修正
+**目標**: 統一格式與解決待確認事項
+
+#### Week 4: 格式統一
+1. 統一治理檢查清單標記（6 個模組）
+2. 解決 Clarifications（逐步處理）
+3. 其他格式優化
 
 ---
 
 ## 八、快速導航
 
-### 依功能分類
-
-- **事件與告警**: incidents-list, incident-rules
-- **資源管理**: resources-management (整合探索與管理)
-- **視覺化**: dashboards-management
-- **分析洞察**: insights-analysis
-- **自動化**: automation-management (整合劇本、觸發器與歷史)
-- **身份與權限**: identity-access-management
-- **通知**: notification-management (整合管道、策略與歷史)
-- **系統設定**: platform-* (5 份), user-profile (整合個人設定)
-
 ### 依優先級分類
 
-#### P0 (關鍵功能)
+#### P0（關鍵功能）
 - incidents-list, incident-rules
 - resources-management
 - dashboards-management
 - identity-access-management
 
-#### P1 (重要功能)
+#### P1（重要功能）
 - automation-management
 - notification-management
 
-#### P2 (輔助功能)
-- insights-analysis
+#### P2（輔助功能）
+- insights-analysis, insights-log
 - platform-* (5 份)
 
-#### P3 (個人化)
+#### P3（個人化）
 - user-profile
 
 ---
 
-## 九、更新記錄
+## 九、相關文件
+
+- [憲法 (Constitution)](../memory/constitution.md)
+- [規格模板 (Spec Template)](../templates/spec-template.md)
+- [審查報告 (Review Report)](modules/_review-report.md)
+
+---
+
+## 十、更新記錄
 
 | 日期 | 變更內容 | 變更者 |
 |------|----------|--------|
-| 2025-10-08 | 根據 USER_SCENARIOS_ENHANCEMENT_GUIDE.md 整合模組規格：24個模組 → 16個模組 | Claude Code Assistant |
+| 2025-10-08 | 完成 SPEC ⇄ MVP 對齊審查，生成詳細審查報告 | Claude Code Assistant |
+| 2025-10-08 | 更新索引，新增合規性統計與問題分佈 | Claude Code Assistant |
 | 2025-10-08 | 合併 automation-* (3個) → automation-management-spec.md | Claude Code Assistant |
 | 2025-10-08 | 合併 notification-* (3個) → notification-management-spec.md | Claude Code Assistant |
 | 2025-10-08 | 合併 profile-* (3個) → user-profile-spec.md | Claude Code Assistant |
 | 2025-10-08 | 合併 resources-* (2個) → resources-management-spec.md (擴展版) | Claude Code Assistant |
 | 2025-10-08 | 合併 incidents-alert + incidents-silence → incident-rules-spec.md | Claude Code Assistant |
-| 2025-10-10 | 將 common/ 重新命名為 system/ ，統一為系統層規範 | AI Agent |
+| 2025-10-10 | 將 common/ 重新命名為 system/，統一為系統層規範 | AI Agent |
 | 2025-10-09 | 移除平台規範 (3 份)，整併至通用 Scenes 規範層 | AI Agent |
 | 2025-10-09 | 移除元件級規格 (7 份)，整併為通用 Scenes 規範 | AI Agent |
 | 2025-10-08 | 更新通用規範為 Scenes 架構版本，擴充至 5 份文件 | AI Agent |
-| 2025-10-06 | 初始建立,包含 33 份模組、7 份元件、3 份通用規範、3 份平台規範 | AI Agent |
+| 2025-10-06 | 初始建立，包含 33 份模組、7 份元件、3 份通用規範、3 份平台規範 | AI Agent |
 | 2025-10-06 | 完成所有規格文件的審查與最終定版 | AI Agent |
-
----
-
-## 十、相關文件
-
-- [憲法 (Constitution)](../.specify/memory/constitution.md)
-- [規格模板 (Spec Template)](../.specify/templates/spec-template.md)
-- [檢查報告 (Review Report)](./_review.md)
-- [使用者情境補充指南 (User Scenarios Enhancement Guide)](modules/USER_SCENARIOS_ENHANCEMENT_GUIDE.md)
 
 ---
 
 ## 十一、聯絡與回饋
 
-如發現規格文件缺失、不一致或需要澄清的內容,請標記 `[NEEDS CLARIFICATION]` 並提交至檢查報告。
+如發現規格文件缺失、不一致或需要澄清的內容，請標記 `[NEEDS CLARIFICATION]` 並提交至 [審查報告](modules/_review-report.md)。
 
 ---
 
 ## 十二、專案成果總結
 
-- **模組規格**：成功產生固定的 16 份模組級規格文件（經整合優化，原24個模組精簡為16個），存放於 `specs/modules/`。
-- **系統層規範**：維持 8 份系統層規範文件，涵蓋 Scenes 架構、CRUD 互動、治理觀測等核心規範。
-- **模組整合**：根據 `USER_SCENARIOS_ENHANCEMENT_GUIDE.md` 完成模組整合優化：
-  - Automation 群集：3個模組 → 1個整合模組
-  - Notification 群集：3個模組 → 1個整合模組
-  - Profile 群集：3個模組 → 1個整合模組
-  - Resources 群集：2個模組 → 1個擴展模組
-  - Incidents 群集：3個模組 → 2個模組（部分整合）
-- **釐清與解決**：透過與使用者多輪的互動，成功解決了初始版本中標記的 285 項 `[NEEDS CLARIFICATION]` 問題，並將解決方案整合至所有相關文件中。
-- **品質校閱**：產出 `_review.md` 報告，確保所有文件符合模板、憲法，並標記出已解決的 `[VIOLATION]` 項目。
+- **模組規格**: 成功產生 16 份模組級規格文件（經整合優化，原24個模組精簡為16個），存放於 `specs/modules/`
+- **系統層規範**: 維持 8 份系統層規範文件，涵蓋 Scenes 架構、CRUD 互動、治理觀測等核心規範
+- **整合成果**:
+  - **完全合規**: 5 個整合規格（31.3%）已達到高標準
+  - **需修正**: 11 個模組（68.7%）需補充情境、AS 或更新憲法版本
+  - **質量提升**: 通過審查明確了修正方向與優先級
+- **合規審查**: 完成 SPEC ⇄ MVP 對齊審查，詳細記錄於 [審查報告](modules/_review-report.md)
+- **修正計畫**: 制定三階段修正路線圖，預計 4 週完成所有修正
 
-此提交代表了整個規格逆向工程任務的整合優化成果，提升了文檔維護效率與使用者體驗。
+此提交代表了整個規格逆向工程任務的審查成果，為後續修正工作提供了明確的方向與標準。

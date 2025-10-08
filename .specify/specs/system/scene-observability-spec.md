@@ -1,7 +1,6 @@
 # Scene Observability Specification（Scenes 架構可觀測性規範）
 
 **模組名稱 (Module)**: Scene Observability Specification  
-**類型 (Type)**: Common  
 **來源 (Source)**: `SceneTelemetry`, `SceneQueryRunner`, `SceneEventBus`, `SceneAppProvider`  
 **建立日期 (Created)**: 2025-10-09  
 **狀態 (Status)**: Active  

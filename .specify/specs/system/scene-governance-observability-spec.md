@@ -1,7 +1,6 @@
 # Scene Governance & Observability Specification（Scenes 架構治理規範）
 
 **模組名稱 (Module)**: scene-governance-observability  
-**類型 (Type)**: Common  
 **來源 (Source)**: `SceneAppProvider`, `SceneQueryRunner`, `SceneEventBus`, `SceneStatusHandler`  
 **建立日期 (Created)**: 2025-10-08  
 **狀態 (Status)**: Active  
