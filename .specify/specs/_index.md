@@ -3,7 +3,7 @@
 **建立日期**: 2025-10-06
 **狀態**: Final
 **憲法版本**: 1.2.0
-**總文件數**: 46 份
+**總文件數**: 41 份
 
 ---
 
@@ -11,9 +11,7 @@
 
 本索引涵蓋 SRE 平台的完整規格文件體系,包含:
 - **33 份模組級規格** (Module Specifications)
-- **7 份元件級規格** (Component Specifications)
-- **3 份通用規範** (Common Specifications)
-- **3 份平台規範** (Platform Specifications)
+- **8 份通用規範** (Common Specifications)
 
 所有規格文件皆依據 `.specify/memory/constitution.md` v1.2.0 制定,確保符合平台憲法原則。
 
@@ -101,38 +99,22 @@
 
 ---
 
-## 三、元件級規格 (7 份)
-
-| 元件 ID | 元件名稱 | 檔案路徑 | 使用次數 | 主要使用模組 |
-|---------|----------|----------|----------|--------------|
-| unified-search-modal | 統一搜尋模態框 | [unified-search-modal-spec.md](components/unified-search-modal-spec.md) | 15+ | incidents-list, alert-rules, resources-list |
-| column-settings-modal | 欄位設定模態框 | [column-settings-modal-spec.md](components/column-settings-modal-spec.md) | 12+ | incidents-list, alert-rules, resources-list |
-| table-container | 表格容器 | [table-container-spec.md](components/table-container-spec.md) | 21 | incidents-list, alert-rules, resources-list |
-| toolbar | 工具列 | [toolbar-spec.md](components/toolbar-spec.md) | 22 | incidents-list, alert-rules, resources-list |
-| pagination | 分頁元件 | [pagination-spec.md](components/pagination-spec.md) | 21 | incidents-list, alert-rules, resources-list |
-| drawer | 抽屜元件 | [drawer-spec.md](components/drawer-spec.md) | 10+ | incidents-list, resources-list, resource-groups |
-| quick-filter-bar | 快速篩選列 | [quick-filter-bar-spec.md](components/quick-filter-bar-spec.md) | 8+ | resources-list, incidents-list, dashboards |
-
----
-
-## 四、通用規範 (3 份)
+## 四、通用規範 (8 份)
 
 | 規範 ID | 規範名稱 | 檔案路徑 | 適用範圍 |
 |---------|----------|----------|----------|
-| crud-interaction-pattern | CRUD 互動模式 | [crud-interaction-pattern.md](common/crud-interaction-pattern.md) | 所有 CRUD 模組(20+) |
-| table-design-system | 表格設計系統 | [table-design-system.md](common/table-design-system.md) | 所有表格模組(18+) |
-| modal-interaction-pattern | Modal 互動模式 | [modal-interaction-pattern.md](common/modal-interaction-pattern.md) | 所有使用 Modal/Drawer 的模組(15+) |
-| rbac-observability-audit-governance | RBAC 與觀測審計治理 | [rbac-observability-audit-governance.md](common/rbac-observability-audit-governance.md) | 全平台模組 |
+| scene-architecture-plan | Scenes 架構計畫 | [scene-architecture-plan.md](common/scene-architecture-plan.md) | 全平台結構與模組關聯 |
+| scene-crud-interaction-pattern | CRUD 互動模式 | [scene-crud-interaction-pattern.md](common/scene-crud-interaction-pattern.md) | 所有 CRUD 模組(20+) |
+| scene-governance-observability-spec | 治理與觀測規範 | [scene-governance-observability-spec.md](common/scene-governance-observability-spec.md) | 全平台治理與觀測 |
+| scene-interaction-pattern | 互動層規範 | [scene-interaction-pattern.md](common/scene-interaction-pattern.md) | 所有上下文場景互動 |
+| scene-table-guideline | 表格行為與設計系統 | [scene-table-guideline.md](common/scene-table-guideline.md) | 所有表格模組(18+) |
+| scene-auditing-spec | 審計規範 | [scene-auditing-spec.md](common/scene-auditing-spec.md) | 全平台審計與行為追蹤 |
+| scene-observability-spec | 可觀測性規範 | [scene-observability-spec.md](common/scene-observability-spec.md) | 全平台監測與遙測 |
+| scene-rbac-spec | 權限控制規範 | [scene-rbac-spec.md](common/scene-rbac-spec.md) | 全平台權限管理 |
 
 ---
 
-## 五、平台規範 (3 份)
-
-| 規範 ID | 規範名稱 | 檔案路徑 | 適用範圍 |
-|---------|----------|----------|----------|
-| rbac | RBAC 權限系統 | [RBAC.md](RBAC.md) | 全平台權限管理 |
-| auditing | 審計日誌系統 | [Auditing.md](Auditing.md) | 全平台操作審計 |
-| observability | 觀測性規範 | [Observability.md](Observability.md) | 全平台監控與追蹤 |
+## 五、平台規範 (0 份)
 
 ---
 
@@ -175,11 +157,10 @@ Modal/Drawer (87+)
 ### 通用規範應用統計
 
 - **CRUD 互動模式**: 適用 20+ 模組
-- **表格設計系統**: 適用 18+ 模組
-- **Modal 互動模式**: 適用 15+ 模組
-- **RBAC 權限系統**: 全平台適用
-- **審計日誌系統**: 全平台適用
-- **觀測性規範**: 全平台適用
+- **表格行為與設計系統**: 適用 18+ 模組
+- **互動層規範**: 所有上下文場景互動
+- **治理與觀測規範**: 全平台治理與觀測
+- **Scenes 架構計畫**: 全平台結構與模組關聯
 
 ---
 
@@ -188,10 +169,9 @@ Modal/Drawer (87+)
 | 類別 | 總數 | Draft | Review | Approved |
 |------|------|-------|--------|----------|
 | 模組規格 | 33 | 0 | 0 | 33 |
-| 元件規格 | 7 | 0 | 0 | 7 |
-| 通用規範 | 3 | 0 | 0 | 3 |
-| 平台規範 | 3 | 0 | 0 | 3 |
-| **合計** | **46** | **0** | **0** | **46** |
+| 通用規範 | 8 | 0 | 0 | 8 |
+| 平台規範 | 0 | 0 | 0 | 0 |
+| **合計** | **41** | **0** | **0** | **41** |
 
 ---
 
@@ -237,6 +217,9 @@ Modal/Drawer (87+)
 
 | 日期 | 變更內容 | 變更者 |
 |------|----------|--------|
+| 2025-10-09 | 移除平台規範 (3 份)，整併至通用 Scenes 規範層 | AI Agent |
+| 2025-10-09 | 移除元件級規格 (7 份)，整併為通用 Scenes 規範 | AI Agent |
+| 2025-10-08 | 更新通用規範為 Scenes 架構版本，擴充至 5 份文件 | AI Agent |
 | 2025-10-06 | 初始建立,包含 33 份模組、7 份元件、3 份通用規範、3 份平台規範 | AI Agent |
 | 2025-10-06 | 完成所有規格文件的審查與最終定版 | AI Agent |
 
@@ -261,7 +244,7 @@ Modal/Drawer (87+)
 
 - **模組規格**：成功產生固定的 33 份模組級規格文件，存放於 `specs/modules/`。
 - **元件規格**：根據元件的重用性與複雜度，動態生成了 7 份關鍵元件規格，如 `Toolbar`, `Drawer`, `UnifiedSearchModal` 等。
-- **通用規範**：抽象出 3 份通用設計規範，包括表格設計、CRUD 互動模式、以及模態框與抽屜的互動模式。
+- **通用規範**：抽象出 5 份通用設計規範，包括 Scenes 架構計畫、CRUD 互動模式、治理與觀測規範、互動層規範、表格行為與設計系統。
 - **平台規範**：建立 3 份平台級規範，涵蓋 RBAC 權限、審計日誌、觀測性等核心平台功能。
 - **釐清與解決**：透過與使用者多輪的互動，成功解決了初始版本中標記的 285 項 `[NEEDS CLARIFICATION]` 問題，並將解決方案整合至所有相關文件中。
 - **品質校閱**：產出 `_review.md` 報告，確保所有文件符合模板、憲法，並標記出已解決的 `[VIOLATION]` 項目。

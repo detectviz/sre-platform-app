@@ -28,3 +28,4 @@ tmp/
 .env
 .cursor
 .gemini
+docs/prompt

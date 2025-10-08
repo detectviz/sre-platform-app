@@ -22,8 +22,12 @@
 ## 技術標準
 
 ### 技術棧與版本（前端）
+- **Like Grafana / Scenes-based 架構**：以狀態驅動（state-driven）為核心，  
+  使用 @grafana/scenes、@grafana/ui、@grafana/data 建構操作介面；  
+  不使用傳統 Modal，互動以 Drawer / SceneLayout 組合呈現。
 - **React 19**、**TypeScript 5**、**Vite 6**
-- **Ant Design 5**（重置樣式為主）、**Tailwind（CDN）**
+- **UI Framework**：全面採用 Like Grafana 架構，所有互動、表單、樣式與主題均透過 Scenes / UI token 系統構建。  
+  不使用外部 UI 庫（如 AntD、Tailwind）；如有特殊需求，應以 Theme Token 擴充。
 - **ECharts 6**（CDN）、**dayjs 1.11**、**axios 1.12**、**React Router 7**
 
 ### 應用組件與規約
