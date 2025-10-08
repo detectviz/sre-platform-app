@@ -2,7 +2,6 @@
 
 **模組名稱 (Module)**: notification-strategy
 **類型 (Type)**: Module
-**來源路徑 (Source Path)**: `pages/settings/notification-management/NotificationStrategyPage.tsx`
 **建立日期 (Created)**: 2025-10-06
 **狀態 (Status)**: Draft
 **依據憲法條款 (Based on)**: `.specify/memory/constitution.md` (v1.2.0)
@@ -111,3 +110,12 @@
 - **[NEEDS CLARIFICATION] i18n**: 目前 MVP 在多處使用硬編碼中文，例如 `showToast` 的訊息 (`'儲存通知策略失敗，請稍後再試。'`)，未來需完全遷移至 i18n 內容管理系統。
 - **[NEEDS CLARIFICATION] Theming**: MVP 廣泛使用 Tailwind CSS 的原子化 class (如 `bg-sky-900/50`) 來定義語義顏色和樣式，未來需重構為使用中央設計系統的 Theme Token。
 - **[NEEDS CLARIFICATION] Condition Input**: 當前 MVP 的條件輸入為純字串，易用性較差，未來應改為結構化的條件產生器 (FR-008)。
+
+---
+
+## 八、依賴關係（Dependencies）
+
+| 模組名稱 | 關聯類型 | 說明 |
+|-----------|-----------|------|
+| `notification-channel` | 依賴 (Dependency) | 此模組依賴通知管道模組以獲取可用的傳輸設定（如 Slack、Email、Webhook 等）。策略執行時必須引用至少一個啟用的通知管道。 |
+| `notification-history` | 輸出 (Output) | 此模組執行後會產生通知事件記錄，並寫入通知歷史模組，以供後續查詢、稽核與回溯。 |

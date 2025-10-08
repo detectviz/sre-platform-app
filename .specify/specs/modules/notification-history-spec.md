@@ -2,7 +2,6 @@
 
 **模組名稱 (Module)**: notification-history
 **類型 (Type)**: Module
-**來源路徑 (Source Path)**: `pages/settings/notification-management/NotificationHistoryPage.tsx`
 **建立日期 (Created)**: 2025-10-06
 **狀態 (Status)**: Draft
 **依據憲法條款 (Based on)**: `.specify/memory/constitution.md` (v1.2.0)
@@ -108,3 +107,11 @@
 - **[NEEDS CLARIFICATION] i18n**: 目前 MVP 在多處使用硬編碼中文，例如 `showToast` 的訊息 (`'通知已成功重新發送。'`)，未來需完全遷移至 i18n 內容管理系統。
 - **[NEEDS CLARIFICATION] Theming**: MVP 廣泛使用 Tailwind CSS 的原子化 class (如 `bg-slate-700/50`) 來定義語義顏色和樣式，未來需重構為使用中央設計系統的 Theme Token。
 - **[NEEDS CLARIFICATION] Success Rate Summary**: 成功率摘要功能 (FR-010) 未在當前 MVP 中實現，是未來監控通知可靠性的關鍵部分。
+
+---
+
+## 八、依賴關係（Dependencies）
+
+| 模組名稱 | 關聯類型 | 說明 |
+|-----------|-----------|------|
+| `notification-strategy` | 接收 (Input) | 此模組接收來自「通知策略」模組的發送結果事件，負責記錄每一次通知任務的執行結果、成功與失敗狀態，以支援後續的稽核與回溯分析。 |

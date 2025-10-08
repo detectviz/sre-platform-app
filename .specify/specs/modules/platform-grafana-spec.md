@@ -2,7 +2,6 @@
 
 **模組名稱 (Module)**: platform-grafana
 **類型 (Type)**: Module
-**來源路徑 (Source Path)**: `pages/settings/platform/GrafanaSettingsPage.tsx`
 **建立日期 (Created)**: 2025-10-06
 **狀態 (Status)**: Draft
 **依據憲法條款 (Based on)**: `.specify/memory/constitution.md` (v1.2.0)

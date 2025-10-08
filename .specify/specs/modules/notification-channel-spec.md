@@ -2,7 +2,6 @@
 
 **模組名稱 (Module)**: notification-channel
 **類型 (Type)**: Module
-**來源路徑 (Source Path)**: `pages/settings/notification-management/NotificationChannelPage.tsx`
 **建立日期 (Created)**: 2025-10-06
 **狀態 (Status)**: Draft
 **依據憲法條款 (Based on)**: `.specify/memory/constitution.md` (v1.2.0)
@@ -100,3 +99,11 @@
 ## 七、模糊與待確認事項（Clarifications）
 
 (此模組的所有待辦事項均已整合至功能需求中。)
+
+---
+
+## 八、依賴關係（Dependencies）
+
+| 模組名稱 | 關聯類型 | 說明 |
+|-----------|-----------|------|
+| `notification-strategy` | 被依賴 (Dependent) | 此模組提供通知傳遞通道設定，為「通知策略」模組的依賴基礎。所有策略執行皆需引用至少一個已啟用的通知管道。 |

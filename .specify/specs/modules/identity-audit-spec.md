@@ -2,7 +2,6 @@
 
 **模組名稱 (Module)**: identity-audit
 **類型 (Type)**: Module
-**來源路徑 (Source Path)**: `pages/settings/identity-access/AuditLogsPage.tsx`
 **建立日期 (Created)**: 2025-10-06
 **狀態 (Status)**: Final
 **依據憲法條款 (Based on)**: `.specify/memory/constitution.md` (v1.2.0)

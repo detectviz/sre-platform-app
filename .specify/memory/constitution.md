@@ -22,13 +22,12 @@
 ## 技術標準
 
 ### 技術棧與版本（前端）
-- **Like Grafana / Scenes-based 架構**：以狀態驅動（state-driven）為核心，  
-  使用 @grafana/scenes、@grafana/ui、@grafana/data 建構操作介面；  
-  不使用傳統 Modal，互動以 Drawer / SceneLayout 組合呈現。
-- **React 19**、**TypeScript 5**、**Vite 6**
-- **UI Framework**：全面採用 Like Grafana 架構，所有互動、表單、樣式與主題均透過 Scenes / UI token 系統構建。  
-  不使用外部 UI 庫（如 AntD、Tailwind）；如有特殊需求，應以 Theme Token 擴充。
-- **ECharts 6**（CDN）、**dayjs 1.11**、**axios 1.12**、**React Router 7**
+- 前端採狀態驅動（state-driven）設計理念，  
+  以統一的設計系統與 Theme Token 為核心，確保互動一致、可觀測與可追蹤。  
+  外部依賴應經設計審核，並以 Theme Token 層包裝。  
+  UI Framework 應遵循技術中立原則，禁止框架專屬語法於規格層出現。
+- 前端技術選型應維持穩定版本，並受版本治理文件控管。  
+  使用任何外部函式庫前，須評估安全性與維護風險，並於版本升級時提交風險分析。
 
 ### 應用組件與規約
 - 路由：僅由集中設定管理；禁止硬寫路徑字串。
@@ -65,7 +64,7 @@ UI 元件必須支援主題切換（深色 / 淺色）與自訂化 token。任�
 
 ### 設計文件分層
 - **原則層（本文件）**：僅定義設計哲學與治理原則。  
-- **規範層（`specs/common/ui-guideline-spec.md`）**：定義設計準則、組件尺寸與交互行為。  
+- **規範層（`specs/system/ui-guideline-spec.md`）**：定義設計準則、組件尺寸與交互行為。  
 - **實作層（`/frontend/theme/`）**：定義具體 token 值、CSS class 與樣式表。
 
 ---
@@ -141,6 +140,10 @@ UI 元件必須支援主題切換（深色 / 淺色）與自訂化 token。任�
    - **i18n 與常數化**：是否無硬字串與硬枚舉。  
    - **資料閉環**：是否包含輸入、處理、輸出、回饋、審計完整流程。  
 
+3. 其他補充檢查：  
+   - **技術中立性**：不得出現具體框架、API 或元件名稱。  
+   - **模板完整性**：必須符合 `.specify/templates/spec-template.md` 結構。
+
 AI 若偵測違反上述任一項，應標記 `[VIOLATION: <條款名稱>]` 並於 `_review.md` 彙整。
 
 ---
@@ -153,6 +156,7 @@ AI 若偵測違反上述任一項，應標記 `[VIOLATION: <條款名稱>]` 並�
 | 模板 (Template) | `.specify/templates/spec-template.md` | 定義規格結構與格式 | 與憲法同版 |
 | 模組規格 (Specs) | `.specify/specs/modules/` | 描述 WHAT / WHY | 對應 Template 與 Constitution 版本一致 |
 | 審查報告 (Review) | `.specify/specs/_review.md` | 驗證規格合規與完整性 | 自動標註憲法版本 |
+| 系統層規範 (System) | `.specify/specs/system/` | 定義跨模組原則與技術標準 | 與模組規格共用版本 |
 
 ---
 
@@ -168,4 +172,4 @@ AI 若偵測違反上述任一項，應標記 `[VIOLATION: <條款名稱>]` 並�
 
 定期合規審查確保持續遵守；違規將阻擋部署直至修正。原則上偏好簡單可驗證解法，複雜度需被正當化。
 
-**版本**：1.2.0 | **通過日期**：2025-10-06 | **最後修訂**：2025-10-06
+**版本**：1.3.0 | **通過日期**：2025-10-10 | **最後修訂**：2025-10-10

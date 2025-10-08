@@ -2,7 +2,6 @@
 
 **模組名稱 (Module)**: automation-playbook
 **類型 (Type)**: Module
-**來源路徑 (Source Path)**: `pages/automation/AutomationPlaybooksPage.tsx`
 **建立日期 (Created)**: 2025-10-06
 **狀態 (Status)**: Draft
 **依據憲法條款 (Based on)**: `.specify/memory/constitution.md` (v1.2.0)
