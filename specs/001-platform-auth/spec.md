@@ -70,55 +70,54 @@
 ## 二、功能需求（Functional Requirements）
 
 ### 2.1. IdP 管理 (IDP Management)
-| 編號 | 說明 |
-|------|------|
-| **FR-IDP-001** | 系統必須（MUST）支援配置多個身份提供商（IdP）。 |
-| **FR-IDP-002** | 系統必須（MUST）提供 IdP 的 CRUD（建立、讀取、更新、刪除）功能。 |
-| **FR-IDP-003** | 系統必須（MUST）根據所選 IdP 類型動態調整配置表單。 |
+
+- **FR-IDP-001**: 系統必須（MUST）支援配置多個身份提供商（IdP）。
+- **FR-IDP-002**: 系統必須（MUST）提供 IdP 的 CRUD（建立、讀取、更新、刪除）功能。
+- **FR-IDP-003**: 系統必須（MUST）根據所選 IdP 類型動態調整配置表單。
+- **FR-IDP-004**: 系統必須（MUST）支援至少 10 個 IdP 配置並同時處理 1000 個認證請求/分鐘。
 
 ### 2.2. 高可用性與容錯 (HA & Failover)
-| 編號 | 說明 |
-|------|------|
-| **FR-HA-001** | 系統必須（MUST）支援配置備用 IdP，當主要 IdP 不可用時自動切換。 |
-| **FR-HA-002** | 系統必須（MUST）在 IdP 故障轉移時記錄審計日誌。 |
+
+- **FR-HA-001**: 系統必須（MUST）支援配置備用 IdP，當主要 IdP 不可用時自動切換。
+- **FR-HA-002**: 系統必須（MUST）在 IdP 故障轉移時記錄審計日誌。
+- **FR-HA-003**: IdP 故障轉移必須（MUST）在 5 秒內完成。
+- **FR-HA-004**: 網路逾時情境下，系統必須（MUST）在 30 秒內重試 3 次。
+- **FR-HA-005**: IdP 服務錯誤時，系統必須（MUST）降級到快取模式以維持服務可用性。
+- **FR-HA-006**: 憑證錯誤時，系統必須（MUST）發出告警並自動停用相關 IdP。
 
 ### 2.3. 連線測試 (Connection Testing)
-| 編號 | 說明 |
-|------|------|
-| **FR-TEST-001** | 系統必須（MUST）為每個 IdP 提供「測試連線」功能。 |
-| **FR-TEST-002** | 測試結果必須（MUST）顯示連線狀態、錯誤訊息、版本資訊與回應時間。 |
+
+- **FR-TEST-001**: 系統必須（MUST）為每個 IdP 提供「測試連線」功能。
+- **FR-TEST-002**: 測試結果必須（MUST）顯示連線狀態、錯誤訊息、版本資訊與回應時間。
 
 ### 2.4. 敏感資訊保護 (Sensitive Data Protection)
-| 編號 | 說明 |
-|------|------|
-| **FR-SEC-001** | Client Secret 必須（MUST）預設以遮蔽形式顯示。 |
-| **FR-SEC-002** | 系統必須（MUST）提供「顯示/隱藏」和「一鍵複製」功能。 |
-| **FR-SEC-003** | Client Secret 必須（MUST）在後端加密儲存。 |
+
+- **FR-SEC-001**: Client Secret 必須（MUST）預設以遮蔽形式顯示。
+- **FR-SEC-002**: 系統必須（MUST）提供「顯示/隱藏」和「一鍵複製」功能。
+- **FR-SEC-003**: Client Secret 必須（MUST）在後端加密儲存。
+- **FR-SEC-004**: 系統必須（MUST）支援加密傳輸並符合 GDPR 和 ISO 27001 標準。
+- **FR-SEC-005**: 系統必須（MUST）防範零日攻擊和內部威脅，提供完整的審計追蹤。
 
 ### 2.5. 使用者登入體驗 (User Login Experience)
-| 編號 | 說明 |
-|------|------|
-| **FR-UX-001** | 登入頁面必須（MUST）顯示所有已啟用的 IdP 選項。 |
-| **FR-UX-002** | 系統應該（SHOULD）支援根據使用者屬性自動導向對應的 IdP。 |
+
+- **FR-UX-001**: 登入頁面必須（MUST）顯示所有已啟用的 IdP 選項。
+- **FR-UX-002**: 系統應該（SHOULD）支援根據使用者屬性自動導向對應的 IdP。
 
 ### 2.6. 審計與監控 (Audit & Monitoring)
-| 編號 | 說明 |
-|------|------|
-| **FR-AUDIT-001** | 系統必須（MUST）記錄所有 IdP 配置變更與敏感操作至審計日誌。 |
-| **FR-AUDIT-002** | 系統應該（SHOULD）提供 IdP 使用統計儀表板。 |
+
+- **FR-AUDIT-001**: 系統必須（MUST）記錄所有 IdP 配置變更與敏感操作至審計日誌。
+- **FR-AUDIT-002**: 系統應該（SHOULD）提供 IdP 使用統計儀表板。
 
 ### 2.7. 多租戶 (Multi-Tenancy)
-| 編號 | 說明 |
-|------|------|
-| **FR-TENANT-001** | 系統應該（SHOULD）支援租戶級別的 IdP 配置。 |
+
+- **FR-TENANT-001**: 系統應該（SHOULD）支援租戶級別的 IdP 配置。
 
 ---
 
 ## 三、關鍵資料實體（Key Entities）
-| 實體名稱 | 描述 |
-|-----------|------|
-| **IdentityProvider** | 代表一個已配置的身份提供商（IdP）的核心實體。 |
-| **IdPConfiguration** | IdP 特定的配置參數。 |
+| 實體名稱 | 描述 | 關鍵屬性 |
+| **IdentityProvider** | 代表一個已配置的身份提供商（IdP）的核心實體。 | id, name, type, is_active, priority_order, created_at, updated_at |
+| **IdPConfiguration** | IdP 特定的配置參數。 | |
 | **IdPConnectionTest** | IdP 連線測試結果。 |
 | **IdPFailoverLog** | IdP 故障轉移記錄。 |
 | **IdPAuditLog** | IdP 審計日誌。 |
@@ -126,23 +125,50 @@
 ---
 
 ## 四、權限控制 (RBAC)
-| 權限字串 | 描述 |
-|---|---|
-| `settings:auth:read` | 允許查看身份驗證設定。 |
-| `settings:auth:create` | 允許新增 IdP 配置。 |
-| `settings:auth:update` | 允許編輯 IdP 配置。 |
-| `settings:auth:delete` | 允許刪除 IdP 配置。 |
-| `settings:auth:test` | 允許執行 IdP 連線測試。 |
-| `settings:auth:secret:view` | 允許查看 Client Secret。 |
-| `settings:auth:secret:copy` | 允許複製 Client Secret。 |
+
+### 4.1. 使用者角色定義
+- **管理員（Administrator）**: 擁有完整權限，可執行所有身份驗證相關操作
+- **使用者（User）**: 僅擁有登入權限，通過細粒度權限控制管理具體操作
+
+### 4.2. 權限清單
+
+- `settings:auth:read`: 允許查看身份驗證設定。
+- `settings:auth:create`: 允許新增 IdP 配置。
+- `settings:auth:update`: 允許編輯 IdP 配置。
+- `settings:auth:delete`: 允許刪除 IdP 配置。
+- `settings:auth:test`: 允許執行 IdP 連線測試。
+- `settings:auth:secret:view`: 允許查看 Client Secret。
+- `settings:auth:secret:copy`: 允許複製 Client Secret。
 
 ---
 
 ## 五、觀測性與治理檢查（Observability & Governance Checklist）
-| 項目 | 狀態 | 說明 |
-|------|------|------|
-| **Logging/Tracing** | 🟡 | 需實現結構化日誌記錄與分散式追蹤整合。 |
-| **Metrics & Alerts** | 🟡 | 需實現業務指標收集與異常告警機制。 |
-| **RBAC** | ⚙️ | 需實現基於權限的控制與審計日誌。 |
-| **i18n** | 🟡 | 需完全遷移至 i18n 內容管理系統。 |
-| **Theme Token** | 🟡 | 需統一使用中央設計系統的 Theme Token。 |
+
+- **Logging/Tracing**: 🟡 需實現結構化日誌記錄與分散式追蹤整合。
+- **Metrics & Alerts**: 🟡 需實現業務指標收集與異常告警機制。
+- **RBAC**: ⚙️ 需實現基於權限的控制與審計日誌。
+- **i18n**: 🟡 需完全遷移至 i18n 內容管理系統。
+- **Theme Token**: 🟡 需統一使用中央設計系統的 Theme Token。
+
+---
+
+## Success Criteria *(mandatory)*
+
+### Measurable Outcomes
+
+- **SC-001**: 使用者可以在 30 秒內完成 IdP 配置並驗證連線狀態
+- **SC-002**: 當主要 IdP 故障時，系統能在 5 秒內自動切換到備用 IdP並維持服務可用性
+- **SC-003**: 敏感資訊顯示和複製操作的成功率達到 99.9%，並且所有操作都被完整記錄
+- **SC-004**: 95% 的認證操作能在單次嘗試中成功完成，包含正常和容錯情境
+- **SC-005**: 審計系統能夠在 1 秒內查詢並顯示指定時間範圍內的認證活動記錄
+
+---
+
+## Clarifications
+
+### Session 2025-10-09
+- Q: 資料實體的具體屬性與關係 → A: 基本屬性：id, name, type, is_active, priority_order, created_at, updated_at
+- Q: 效能與可擴展性約束 → A: 效能目標：IdP 切換 <5秒，支援 10個 IdP 配置，同時處理 1000個認證請求/分鐘
+- Q: 安全威脅模型與合規要求 → A: 符合 GDPR 和 ISO 27001，支援加密傳輸，防範進階威脅：零日攻擊、內部威脅
+- Q: 使用者角色區分 → A: 二角色：管理員（完整權限）、使用者（登入權限），通過權限控制細粒度管理
+- Q: 外部依賴失敗模式 → A: 網路逾時：30秒重試3次；服務錯誤：降級到快取模式；憑證錯誤：發出告警並停用 IdP

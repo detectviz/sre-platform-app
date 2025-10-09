@@ -81,64 +81,65 @@
 ## 二、功能需求（Functional Requirements）
 
 ### 2.1. 結構管理 (Structure Management)
-| 編號 | 說明 |
 |------|------|
-| **FR-SM-001** | 系統必須（MUST）提供統一的導覽結構 API，供所有模組註冊、更新、移除導覽項。 |
-| **FR-SM-002** | 管理員必須（MUST）能夠 CRUD 導覽群組，支援設定名稱、圖示、排序。 |
-| **FR-SM-003** | 系統必須（MUST）限制導覽層級最多 3 層。 |
+- **FR-XXX**: 系統必須（MUST）提供統一的導覽結構 API，供所有模組註冊、更新、移除導覽項。
+- **FR-XXX**: 管理員必須（MUST）能夠 CRUD 導覽群組，支援設定名稱、圖示、排序。
+- **FR-XXX**: 系統必須（MUST）限制導覽層級最多 3 層。
 
 ### 2.2. 權限與可見性 (Permission & Visibility)
-| 編號 | 說明 |
 |------|------|
-| **FR-PV-001** | 導覽項目必須（MUST）綁定權限字串（`role_scope`）。 |
-| **FR-PV-002** | 系統必須（MUST）根據使用者權限動態計算可見導覽項目。 |
+- **FR-XXX**: 導覽項目必須（MUST）綁定權限字串（`role_scope`）。
+- **FR-XXX**: 系統必須（MUST）根據使用者權限動態計算可見導覽項目。
 
 ### 2.3. 個人偏好 (User Preferences)
-| 編號 | 說明 |
 |------|------|
-| **FR-UP-001** | 使用者必須（MUST）能夠標記常用功能和摺疊群組。 |
-| **FR-UP-002** | 個人偏好必須（MUST）儲存至後端 Profile Service，並跨裝置同步。 |
+- **FR-XXX**: 使用者必須（MUST）能夠標記常用功能和摺疊群組。
+- **FR-XXX**: 個人偏好必須（MUST）儲存至後端 Profile Service，並跨裝置同步。
 
 ### 2.4. 即時同步 (Real-time Synchronization)
-| 編號 | 說明 |
 |------|------|
-| **FR-RS-001** | 導覽結構變更必須（MUST）透過 WebSocket 或 SSE 即時推送給所有線上使用者。 |
+- **FR-XXX**: 導覽結構變更必須（MUST）透過 WebSocket 或 SSE 即時推送給所有線上使用者。
 
 ### 2.5. 多語系支援 (Internationalization)
-| 編號 | 說明 |
 |------|------|
-| **FR-I18N-001** | 所有導覽標籤必須（MUST）使用 i18n Key。 |
+- **FR-XXX**: 所有導覽標籤必須（MUST）使用 i18n Key。
 
 ### 2.6. 稽核與追溯 (Audit & Traceability)
-| 編號 | 說明 |
 |------|------|
-| **FR-AT-001** | 所有導覽結構修改必須（MUST）記錄於 Audit Log。 |
-| **FR-AT-002** | 系統必須（MUST）支援從 Audit Log 回滾導覽變更。 |
+- **FR-XXX**: 所有導覽結構修改必須（MUST）記錄於 Audit Log。
+- **FR-XXX**: 系統必須（MUST）支援從 Audit Log 回滾導覽變更。
 
 ### 2.7. 性能 (Performance)
-| 編號 | 說明 |
 |------|------|
-| **FR-PS-001** | 導覽樹渲染時間必須（MUST） < 200ms（P95）。 |
-| **FR-PS-002** | 權限檢查結果必須（MUST）快取 5 分鐘。 |
+- **FR-XXX**: 導覽樹渲染時間必須（MUST） < 200ms（P95）。
+- **FR-XXX**: 權限檢查結果必須（MUST）快取 5 分鐘。
 
 ---
 
 ## 三、Clarifications（待釐清事項）
 
-| 項目 | 狀態 | 說明 |
-|------|------|------|
-| WebSocket 技術選型 | ✅ RESOLVED | 推薦使用 Server-Sent Events (SSE)，因其單向通信模型更適合此場景。 |
-| 快取策略細節 | ✅ RESOLVED | 權限檢查快取 TTL 為 5 分鐘，但權限變更時會主動清除相關快取。 |
-| 導覽項目圖示庫 | ✅ RESOLVED | 使用 Ant Design Icons，圖示名稱直接對應其元件名稱。 |
-| 回滾權限控管 | ✅ RESOLVED | 回滾操作需要雙重確認（輸入變更理由 + 對比變更前後差異）。 |
-| 導覽項目外部連結 | ✅ RESOLVED | 支援外部連結，但需在後端設定白名單，防止 Open Redirect 漏洞。 |
+-項目 | 狀態 : 說明 
+-WebSocket 技術選型 | ✅ RESOLVED : 推薦使用 Server-Sent Events (SSE)，因其單向通信模型更適合此場景。 
+-快取策略細節 | ✅ RESOLVED : 權限檢查快取 TTL 為 5 分鐘，但權限變更時會主動清除相關快取。 
+-導覽項目圖示庫 | ✅ RESOLVED : 使用 Ant Design Icons，圖示名稱直接對應其元件名稱。 
+-回滾權限控管 | ✅ RESOLVED : 回滾操作需要雙重確認（輸入變更理由 + 對比變更前後差異）。 
+-導覽項目外部連結 | ✅ RESOLVED : 支援外部連結，但需在後端設定白名單，防止 Open Redirect 漏洞。 
 
 ---
 
 ## 四、版本歷史
 
-| 版本 | 日期 | 變更摘要 | 作者 |
 |------|------|---------|------|
-| 2.1.0 | 2025-10-10 | 優化 Primary User Story 與情境對應，解決大部分 Clarifications，更新狀態。 | Claude Code Assistant |
-| 2.0.0 | 2025-10-08 | 完整重寫規格，符合 constitution v1.3.0 標準。 | Claude Code Assistant |
-| 1.0.0 | 2025-10-08 | 初始草稿。 | - |
+-2.1.0 | 2025-10-10 | 優化 Primary User Story 與情境對應，解決大部分 Clarifications，更新狀態。 : Claude Code Assistant 
+-2.0.0 | 2025-10-08 | 完整重寫規格，符合 constitution v1.3.0 標準。 : Claude Code Assistant 
+-1.0.0 | 2025-10-08 | 初始草稿。 : - 
+
+---
+
+## Success Criteria *(mandatory)*
+
+### Measurable Outcomes
+
+- **SC-001**: 使用者可以在 30 秒內自訂並儲存導航配置
+- **SC-002**: 頁面載入時間低於 500 毫秒，支援 100+ 個導航項目
+- **SC-003**: 95% 的使用者能在首次使用中成功找到所需功能

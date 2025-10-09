@@ -45,63 +45,64 @@
 ## 二、功能需求（Functional Requirements）
 
 ### 2.1. 儀表板類型與清單管理 (Dashboard Types & List Management)
-| 編號 | 說明 |
 |------|------|
-| **FR-DT-001** | 系統必須（MUST）支援「內建」與「外部」兩種類型的儀表板。 |
-| **FR-DT-002** | 內建儀表板必須（MUST）為唯讀，不可編輯或複製。 |
-| **FR-DT-003** | 儀表板清單必須（MUST）支援搜尋、排序與分頁功能。 |
+- **FR-XXX**: 系統必須（MUST）支援「內建」與「外部」兩種類型的儀表板。
+- **FR-XXX**: 內建儀表板必須（MUST）為唯讀，不可編輯或複製。
+- **FR-XXX**: 儀表板清單必須（MUST）支援搜尋、排序與分頁功能。
 
 ### 2.2. 外部 Grafana 整合 (External Grafana Integration)
-| 編號 | 說明 |
 |------|------|
-| **FR-EG-001** | 系統必須（MUST）允許透過 Grafana UID 或 URL 新增外部儀表板連結。 |
-| **FR-EG-002** | 新增時必須（MUST）驗證儀表板是否存在且可存取。 |
+- **FR-XXX**: 系統必須（MUST）允許透過 Grafana UID 或 URL 新增外部儀表板連結。
+- **FR-XXX**: 新增時必須（MUST）驗證儀表板是否存在且可存取。
 
 ### 2.3. 顯示模式與視圖控制 (Display Modes & View Control)
-| 編號 | 說明 |
 |------|------|
-| **FR-DV-001** | 系統必須（MUST）提供標準模式、全螢幕模式、聚焦面板模式。 |
-| **FR-DV-002** | 系統必須（MUST）提供自動刷新間隔設定。 |
+- **FR-XXX**: 系統必須（MUST）提供標準模式、全螢幕模式、聚焦面板模式。
+- **FR-XXX**: 系統必須（MUST）提供自動刷新間隔設定。
 
 ### 2.4. 使用者偏好與書籤 (User Preferences & Bookmarks)
-| 編號 | 說明 |
 |------|------|
-| **FR-UP-001** | 使用者必須（MUST）可設定個人預設儀表板。 |
-| **FR-UP-002** | 使用者可（MAY）將任何儀表板標記為「書籤」。 |
-| **FR-UP-003** | 書籤與排序偏好必須（MUST）跨裝置同步。 |
+- **FR-XXX**: 使用者必須（MUST）可設定個人預設儀表板。
+- **FR-XXX**: 使用者可（MAY）將任何儀表板標記為「書籤」。
+- **FR-XXX**: 書籤與排序偏好必須（MUST）跨裝置同步。
 
 ### 2.5. 審計與版本控制 (Audit & Version Control)
-| 編號 | 說明 |
 |------|------|
-| **FR-AV-001** | 系統必須（MUST）記錄所有新增、刪除、同步儀表板的操作至審計日誌。 |
-| **FR-AV-002** | 內建儀表板版本更新時，系統應（SHOULD）自動記錄版本變更。 |
+- **FR-XXX**: 系統必須（MUST）記錄所有新增、刪除、同步儀表板的操作至審計日誌。
+- **FR-XXX**: 內建儀表板版本更新時，系統應（SHOULD）自動記錄版本變更。
 
 ### 2.6. 未來擴展 (Future Enhancements)
-| 編號 | 說明 |
 |------|------|
-| **FR-FE-001** | [FUTURE] 支援場景：整合 Grafana Scenes Dashboard 為內建儀表板。 |
-| **FR-FE-002** | [FUTURE] 支援儀表板共用設定匯出／匯入。 |
+- **FR-XXX**: [FUTURE] 支援場景：整合 Grafana Scenes Dashboard 為內建儀表板。
+- **FR-XXX**: [FUTURE] 支援儀表板共用設定匯出／匯入。
 
 ---
 
 ## 三、權限控制（RBAC）
 
-| 權限字串 | 描述 |
 |-----------|------|
-| `dashboards:read` | 檢視儀表板清單與內容。 |
-| `dashboards:edit` | 修改或複製內建儀表板。 |
-| `dashboards:link` | 新增外部 Grafana 儀表板連結。 |
-| `dashboards:delete` | 刪除使用者自訂或外部儀表板。 |
-| `dashboards:sync` | 同步外部 Grafana 儀表板內容。 |
+-`dashboards:read` : 檢視儀表板清單與內容。 
+-`dashboards:edit` : 修改或複製內建儀表板。 
+-`dashboards:link` : 新增外部 Grafana 儀表板連結。 
+-`dashboards:delete` : 刪除使用者自訂或外部儀表板。 
+-`dashboards:sync` : 同步外部 Grafana 儀表板內容。 
 
 ---
 
 ## 四、觀測性與治理檢查（Observability & Governance）
 
-| 項目 | 狀態 | 說明 |
-|------|------|------|
-| Logging / Audit | ✅ | 所有新增、同步、刪除操作須記錄審計。 |
-| Metrics | ✅ | 記錄儀表板使用頻率與平均載入時間。 |
-| RBAC | ✅ | 嚴格依使用者角色顯示與控制操作權限。 |
-| Theme / i18n | ✅ | 使用多語系與語義化樣式。 |
-| [FUTURE] Integration | ⚙️ | 未來版本支援 Grafana Scenes 整合。 |
+-項目 | 狀態 : 說明 
+-Logging / Audit | ✅ : 所有新增、同步、刪除操作須記錄審計。 
+-Metrics | ✅ : 記錄儀表板使用頻率與平均載入時間。 
+-RBAC | ✅ : 嚴格依使用者角色顯示與控制操作權限。 
+-Theme / i18n | ✅ : 使用多語系與語義化樣式。 
+-[FUTURE] Integration | ⚙️ : 未來版本支援 Grafana Scenes 整合。 
+## Success Criteria *(mandatory)*
+
+### Measurable Outcomes
+
+- **SC-001**: 使用者可以在 2 分鐘內建立自訂儀表板並配置小工具
+- **SC-002**: 儀表板載入時間低於 3 秒，支援同時顯示 50 個圖表元件
+- **SC-003**: 儀表板使用率達到 90%，協助使用者節省 70% 的資料查詢時間
+
+---

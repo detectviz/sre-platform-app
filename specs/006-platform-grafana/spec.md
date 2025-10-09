@@ -43,46 +43,44 @@
 ## 二、功能需求（Functional Requirements）
 
 ### 2.1. 設定管理 (Settings Management)
-| 編號 | 說明 |
 |------|------|
-| **FR-SM-001** | 系統必須（MUST）提供表單介面，允許設定和編輯 Grafana 整合參數。 |
-| **FR-SM-002** | 系統必須（MUST）支援儲存設定與還原未儲存的變更。 |
+- **FR-XXX**: 系統必須（MUST）提供表單介面，允許設定和編輯 Grafana 整合參數。
+- **FR-XXX**: 系統必須（MUST）支援儲存設定與還原未儲存的變更。
 
 ### 2.2. 連線測試 (Connection Testing)
-| 編號 | 說明 |
 |------|------|
-| **FR-CT-001** | 系統必須（MUST）提供「測試連線」功能，驗證當前設定。 |
-| **FR-CT-002** | 測試成功時，必須（MUST）顯示 Grafana 版本與資源統計資訊。 |
-| **FR-CT-003** | 測試失敗時，必須（MUST）顯示具體錯誤訊息。 |
+- **FR-XXX**: 系統必須（MUST）提供「測試連線」功能，驗證當前設定。
+- **FR-XXX**: 測試成功時，必須（MUST）顯示 Grafana 版本與資源統計資訊。
+- **FR-XXX**: 測試失敗時，必須（MUST）顯示具體錯誤訊息。
 
 ### 2.3. 敏感資訊保護 (Sensitive Data Protection)
-| 編號 | 說明 |
 |------|------|
-| **FR-SDP-001** | 系統必須（MUST）為 API Key 欄位提供遮蔽功能與顯示/隱藏切換。 |
-| **FR-SDP-002** | API Key 必須（MUST）在後端加密儲存。 |
+- **FR-XXX**: 系統必須（MUST）為 API Key 欄位提供遮蔽功能與顯示/隱藏切換。
+- **FR-XXX**: API Key 必須（MUST）在後端加密儲存。
 
 ### 2.4. 文件與權限 (Documentation & Permissions)
-| 編號 | 說明 |
 |------|------|
-| **FR-DP-001** | 系統文件必須（MUST）明確說明整合所需的 API Key 最小權限範圍。 |
-| **FR-DP-002** | [FUTURE] 系統應（SHOULD）根據使用者權限動態顯示或禁用操作介面。 |
+- **FR-XXX**: 系統文件必須（MUST）明確說明整合所需的 API Key 最小權限範圍。
+- **FR-XXX**: [FUTURE] 系統應（SHOULD）根據使用者權限動態顯示或禁用操作介面。
 
 ---
 
 ## 三、關鍵資料實體（Key Entities）
-| 實體名稱 | 描述 |
+-實體名稱 : 描述 
 |-----------|------|
-| **GrafanaSettings** | 核心資料實體，包含與 Grafana 整合所需的所有設定。 |
-| **GrafanaTestResponse** | 執行連線測試後，API 回傳的結果，包含成功狀態、訊息、版本與資源統計。 |
-| **GrafanaResourceSummary** | Grafana 資源概況統計。 |
 
 ---
 
 ## 四、觀測性與治理檢查（Observability & Governance Checklist）
-| 項目 | 狀態 | 說明 |
-|------|------|------|
-| **Logging/Tracing** | 🟡 | 需實現結構化日誌記錄（如設定變更、連線測試結果）。 |
-| **Metrics & Alerts** | 🟡 | 需實現業務指標收集（如測試成功率）與告警機制。 |
-| **RBAC** | ⚙️ | 需實現基於 `settings:grafana:*` 的權限控制。 |
-| **i18n** | 🟡 | 需完全遷移至 i18n 內容管理系統。 |
-| **Theme Token** | 🟡 | 需統一使用中央設計系統的 Theme Token。 |
+-項目 | 狀態 : 說明 
+| **Theme Token** | 🟡 | 需統一使用中央設計系統的 Theme Token。
+
+---
+
+## Success Criteria *(mandatory)*
+
+### Measurable Outcomes
+
+- **SC-001**: 使用者可以在 5 分鐘內完成 Grafana 連線配置和同步
+- **SC-002**: 儀表板同步成功率達到 98%，平均同步時間低於 10 秒
+- **SC-003**: 支援至少 500 個儀表板並維持良好的查詢效能 |
