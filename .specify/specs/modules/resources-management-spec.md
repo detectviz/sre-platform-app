@@ -1,4 +1,4 @@
-# Feature Specification: Resources Management (Expanded)
+# Feature Specification: Resources Management
 
 **Feature Branch**: `[resources-management]`
 **Created**: 2025-10-08

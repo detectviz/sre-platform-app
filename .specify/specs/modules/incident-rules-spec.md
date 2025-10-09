@@ -1,4 +1,4 @@
-# Feature Specification: Incident Rules Management
+# Feature Specification: Incident Rules
 
 **Feature Branch**: `[incident-rules]`
 **Created**: 2025-10-08

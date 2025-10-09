@@ -1,4 +1,4 @@
-# Feature Specification: Identity Access Management (IAM)
+# Feature Specification: Identity Access Management
 
 **Feature Branch**: `[identity-access-management]`
 **Created**: 2025-10-10
