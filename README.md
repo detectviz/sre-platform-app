@@ -70,4 +70,5 @@ npm run preview      # 本地預覽
 | 文檔 | 用途 |
 |------|------|
 | [README.md](README.md) | 專案說明與快速開始 |
-| [.specify/specs/_index.md](.specify/specs/_index.md) | 系統與模組層規格索引 |
+| [docs/specs/scene/_index.md](docs/specs/scene/_index.md) | 系統層規範索引 |
+| [docs/specs/modules/_index.md](docs/specs/modules/_index.md) | 模組級規格索引 |
