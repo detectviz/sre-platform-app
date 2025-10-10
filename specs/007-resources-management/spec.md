@@ -6,7 +6,7 @@
 
 ---
 
-## 一、主要使用者情境（User Scenarios & Testing）
+## 使用者情境與測試 *(mandatory)*
 
 ### Primary User Story
 作為 SRE 團隊主管、平台架構師或平台管理員，我需要一個完整的資源管理平台，讓我能夠：
@@ -111,7 +111,7 @@
     **Then** 系統應按排程自動執行探索任務，
     **And Then** 將新發現的資源列入待審核清單並發送通知。
 
-### 邊界案例（Edge Cases）
+### 邊界案例
 - 當探索任務執行失敗時（如 API 憑證過期），系統應記錄錯誤並顯示明確提示，並允許使用者查看錯誤詳情。
 - 當資料源連線測試失敗時，系統應提供詳細錯誤訊息（如：連線逾時、憑證無效、URL 格式錯誤）。
 - 當使用者嘗試刪除正在被資源使用的資料源時，後端應回傳 `409 Conflict` 錯誤，前端顯示清晰提示並列出使用該資料源的資源清單。
@@ -121,7 +121,7 @@
 
 ---
 
-## 二、功能需求（Functional Requirements）
+## 功能需求 *(mandatory)*
 
 ### 2.1. 資源自動探索（Auto Discovery）
 - **FR-AD-001**: 系統必須（MUST）提供自動資源掃描功能，支援多雲環境（AWS、GCP、Azure、On-Prem）。
@@ -176,7 +176,7 @@
 
 ---
 
-## 三、權限控制 (RBAC)
+## 權限控制 *(RBAC)*
 
 ### 3.1. 權限定義 (Permissions)
 - `resources:read`: 檢視資源清單、群組與總覽。
@@ -221,7 +221,7 @@
 
 ---
 
-## Success Criteria *(mandatory)*
+## 成功標準 *(mandatory)*
 
 ### Measurable Outcomes
 
@@ -231,19 +231,7 @@
 
 ---
 
-## 四、審查與驗收清單（Review & Acceptance Checklist）
-
-- [x] 所有段落齊備且結構正確。
-- [x] 無技術語句。
-- [x] 所有 FR 具可測試性。
-- [x] 無模糊或重疊需求。
-- [x] 與 `.specify/memory/constitution.md` (v1.3.0) 一致。
-- [x] 模板結構完整。
-- [x] 已整合 `resources-discovery-spec.md`、`resources-management-spec.md` 兩份規格，並擴展為完整的資源管理平台。
-
----
-
-## 五、模糊與待確認事項（Clarifications）
+## 模糊與待確認事項 *(如果有的話)*
 
 - **多雲連線驗證方式**: [NEEDS CLARIFICATION] : 不同雲供應商 API 權限驗證機制是否統一，以及是否支援 IAM Role、Service Account、API Key 等多種認證方式。
 - **拓撲圖資料來源**: [NEEDS CLARIFICATION] : 是否直接來自監控資料庫或需即時計算，以及資源關聯關係的來源（手動定義 / 自動偵測）。

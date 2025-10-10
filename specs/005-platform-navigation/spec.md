@@ -6,7 +6,7 @@
 
 ---
 
-## 一、主要使用者情境（User Scenarios & Testing）
+## 使用者情境與測試 *(mandatory)*
 
 ### Primary User Story
 作為一名平台使用者（包含管理員、SRE、一般使用者），我需要一個統一且智能的導覽系統，讓我能夠：
@@ -78,7 +78,7 @@
 
 ---
 
-## 二、功能需求（Functional Requirements）
+## 功能需求 *(mandatory)*
 
 ### 2.1. 結構管理 (Structure Management)
 - **FR-SM-001**: 系統必須（MUST）提供統一的導覽結構 API，供所有模組註冊、更新、移除導覽項。
@@ -113,7 +113,7 @@
 
 ---
 
-## Success Criteria *(mandatory)*
+## 成功標準 *(mandatory)*
 
 ### Measurable Outcomes
 
@@ -123,20 +123,10 @@
 
 ---
 
-## 三、Clarifications（待釐清事項）
+## 模糊與待確認事項 *(如果有的話)*
 
 - **WebSocket 技術選型**: ✅ RESOLVED : 推薦使用 Server-Sent Events (SSE)，因其單向通信模型更適合此場景。
 - **快取策略細節**: ✅ RESOLVED : 權限檢查快取 TTL 為 5 分鐘，但權限變更時會主動清除相關快取。
 - **導覽項目圖示庫**: ✅ RESOLVED : 使用 Ant Design Icons，圖示名稱直接對應其元件名稱。
 - **回滾權限控管**: ✅ RESOLVED : 回滾操作需要雙重確認（輸入變更理由 + 對比變更前後差異）。
 - **導覽項目外部連結**: ✅ RESOLVED : 支援外部連結，但需在後端設定白名單，防止 Open Redirect 漏洞。
-
----
-
-## 四、版本歷史
-
-| Version | Date       | Description                                                                  | Author                |
-|:--------|:-----------|:-----------------------------------------------------------------------------|:----------------------|
-| 2.1.0   | 2025-10-10 | 優化 Primary User Story 與情境對應，解決大部分 Clarifications，更新狀態。 | Claude Code Assistant |
-| 2.0.0   | 2025-10-08 | 完整重寫規格，符合 constitution v1.3.0 標準。                               | Claude Code Assistant |
-| 1.0.0   | 2025-10-08 | 初始草稿。                                                                   | -                     |

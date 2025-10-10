@@ -6,7 +6,7 @@
 
 ---
 
-## 一、主要使用者情境（User Scenarios & Testing）
+## 使用者情境與測試 *(mandatory)*
 
 ### Primary User Story
 
@@ -53,7 +53,7 @@
 
 ---
 
-## 二、功能需求（Functional Requirements）
+## 功能需求 *(mandatory)*
 
 ### 2.1. 標籤定義 (Tag Definition)
 - **FR-TD-001**: 系統必須（MUST）提供標籤定義的 CRUD 功能。
@@ -78,7 +78,7 @@
 
 ---
 
-## Success Criteria *(mandatory)*
+## 成功標準 *(mandatory)*
 
 ### Measurable Outcomes
 

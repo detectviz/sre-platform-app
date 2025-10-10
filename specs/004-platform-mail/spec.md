@@ -6,7 +6,7 @@
 
 ---
 
-## 一、主要使用者情境（User Scenarios & Testing）
+## 使用者情境與測試 *(mandatory)*
 
 ### Primary User Story
 作為一名平台管理員，我需要設定一個全局的 SMTP 郵件伺服器，以便平台能夠可靠地發送所有系統通知，包括告警郵件、使用者邀請和定時報告。我希望能方便地配置伺服器位址、埠號、加密方式和認證資訊，並能在儲存前進行測試，以確保設定無誤。
@@ -47,7 +47,7 @@
 
 ---
 
-## 二、功能需求（Functional Requirements）
+## 功能需求 *(mandatory)*
 
 ### 2.1. 設定管理 (Settings Management)
 - **FR-SM-001**: 系統必須（MUST）提供表單介面，允許設定和編輯全局 SMTP 參數。
@@ -76,7 +76,7 @@
 
 ---
 
-## Success Criteria *(mandatory)*
+## 成功標準 *(mandatory)*
 
 ### Measurable Outcomes
 

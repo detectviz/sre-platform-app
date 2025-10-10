@@ -6,7 +6,7 @@
 
 ---
 
-## 一、主要使用者情境（User Scenarios & Testing）
+## 使用者情境與測試 *(mandatory)*
 
 ### Primary User Story
 作為一名 SRE 或開發人員，我需要一個強大的日誌探索與分析工具，讓我能夠：
@@ -54,7 +54,7 @@
 
 ---
 
-## 二、功能需求（Functional Requirements）
+## 功能需求 *(mandatory)*
 
 ### 2.1. 搜尋與過濾 (Search & Filter)
 - **FR-SF-001**: 系統必須（MUST）提供一個搜尋介面，允許使用者輸入關鍵字和結構化條件進行搜尋。
@@ -79,7 +79,7 @@
 
 ---
 
-## Success Criteria *(mandatory)*
+## 成功標準 *(mandatory)*
 
 ### Measurable Outcomes
 

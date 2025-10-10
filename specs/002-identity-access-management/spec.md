@@ -6,7 +6,7 @@
 
 ---
 
-## 一、主要使用者情境（User Scenarios & Testing）
+## 使用者情境與測試 *(mandatory)*
 
 ### Primary User Story
 
@@ -209,7 +209,7 @@
 
 ---
 
-## 二、功能需求（Functional Requirements）
+## 功能需求 *(mandatory)*
 
 ### 2.1. 使用者管理（User Management）
 
@@ -238,32 +238,118 @@
 - **FR-XXX**: 系統必須（MUST）支援角色匯入與匯出（JSON 格式，包含權限、繼承關係）。
 - **FR-XXX**: 角色詳情必須（MUST）顯示繼承鏈與所有有效權限。
 
-### 2.4. 權限管理（Permission Management）
+### 2.4. 權限管理
 
-- **FR-XXX**: 系統必須（MUST）支援使用者 → 團隊 → 角色多層授權關聯。
-- **FR-XXX**: 系統必須（MUST）允許查詢使用者的有效權限（包含繼承來源展開）。
-- **FR-XXX**: 系統應該（SHOULD）支援全域與租戶級別權限隔離。
-- **FR-XXX**: 所有權限修改必須（MUST）產生稽核記錄。
-- **FR-XXX**: [FUTURE] 支援動態權限（Attribute-based Access Control, ABAC）。
-- **FR-XXX**: [FUTURE] 支援角色模板與自動指派策略。
+- **FR-PM-001**: 系統必須（MUST）支援基本的權限檢查（基於角色和團隊成員資格）。
+- **FR-PM-002**: 系統必須（MUST）支援角色指派功能（平台管理員可為使用者/團隊指派角色）。
+- **FR-PM-003**: 系統必須（MUST）記錄權限變更至稽核日誌。
 
 ---
 
-## 三、關鍵資料實體（Key Entities）
+## 關鍵資料實體 *(如果功能涉及資料則包含)*
+
+### 3.1. User（使用者）
+- **id**: 唯一識別碼
+- **username**: 使用者名稱（唯一）
+- **email**: 電子郵件地址（唯一，用於登入）
+- **display_name**: 顯示名稱
+- **status**: 帳號狀態（Active/Disabled）
+- **role**: 使用者角色（platform_admin/department_admin/user）
+- **team_id**: 所屬團隊 ID
+- **created_at**: 建立時間
+- **updated_at**: 更新時間
+
+### 3.2. Team（團隊）
+- **id**: 唯一識別碼
+- **name**: 團隊名稱（唯一）
+- **description**: 團隊描述
+- **role**: 團隊角色（繼承給所有成員）
+- **created_at**: 建立時間
+- **updated_at**: 更新時間
+
+### 3.3. AuditLog（稽核日誌）
+- **id**: 唯一識別碼
+- **action**: 操作類型（CREATE_USER/UPDATE_TEAM/ASSIGN_ROLE 等）
+- **user_id**: 操作者 ID
+- **target_type**: 目標實體類型
+- **target_id**: 目標實體 ID
+- **details**: 操作詳情
+- **timestamp**: 操作時間
+
 ---
 
-## 四、權限控制（RBAC）
+## 權限控制 *(RBAC)*
 
--`identity:user:read` : 檢視使用者列表與詳細資料。 
--`identity:user:write` : 新增、修改、停用使用者。 
--`identity:team:manage` : 建立與維護團隊結構。 
--`identity:role:manage` : 建立、修改與刪除角色。 
--`identity:permission:view` : 檢視權限與授權關聯。 
--`identity:audit:read` : 檢視身分與權限變更稽核日誌。 
+### 4.1. 基本權限模型
+
+平台採用簡化的角色-based 權限控制：
+
+#### 平台預設角色
+- **平台管理員** (`platform_admin`): 完整系統管理權限
+- **部門管理員** (`team_manager`): 團隊級別管理權限
+- **一般使用者** (`user`): 基本操作權限
+
+#### 權限檢查邏輯
+- 使用者權限 = 個人角色權限 + 所屬團隊角色權限
+- 權限採用 Allow/Deny 模式，Deny 優先
+- 支援資源級別權限控制（未來擴展）
+
+### 4.2. 核心權限定義
+
+- `user:manage` : 使用者帳號管理（建立、修改、停用）
+- `team:manage` : 團隊結構管理（建立、修改、刪除團隊）
+- `role:assign` : 角色指派權限（為使用者/團隊指派角色）
+- `system:admin` : 系統管理權限（平台設定、稽核日誌）
+- `data:access` : 資料存取權限（依模組定義）
 
 ---
 
-## 五、邊界案例（Edge Cases）
+### 4.1 比照 Grafana 權限架構
+
+本模組遵循 Grafana 官方的角色與權限模型，以確保可擴展性與治理一致性。  
+系統採用「角色 (Role) → 權限 (Permissions) → 操作 (Actions)」的層級設計，允許管理員依組織需求自定義角色組合。  
+
+#### 權限模型原則
+
+- 每個權限以 `<模組>:<資源>:<操作>` 形式定義（如 `automation:playbooks:execute`）。  
+- 系統內建三個角色：
+  - **Admin**：擁有所有權限。
+  - **Editor**：可操作模組資料但無法變更系統設定。
+  - **Viewer**：僅能檢視儀表板、事件與報表。
+- 使用者最終權限 = 個人授權 + 團隊繼承 + 角色繼承。  
+- 支援角色繼承與權限合併；若有衝突，以更高層級角色為準。  
+- 管理員可建立自定義角色並指派權限鍵值。所有變更自動寫入稽核日誌。  
+
+#### 權限命名規範
+
+| 類別 | 命名範例 | 說明 |
+|------|-----------|------|
+| 使用者管理 | `identity:user:read` / `identity:user:update` | 管理使用者資訊 |
+| 團隊管理 | `identity:team:create` / `identity:team:delete` | 管理團隊階層與結構 |
+| 角色管理 | `identity:role:assign` / `identity:role:revoke` | 管理角色與權限綁定 |
+| 稽核 | `identity:audit:read` | 檢視稽核日誌 |
+| 系統設定 | `platform:config:update` | 管理全域平台設定 |
+
+#### 比照 Grafana RBAC 架構之設計
+
+| Grafana 元件 | 對應於 SRE Platform | 說明 |
+|---------------|----------------------|------|
+| Instance-level Roles | Platform Roles | 系統全域層級角色（Admin, Editor, Viewer） |
+| Organization Roles | Team Roles | 組織或團隊層級權限繼承 |
+| Dashboard Permissions | Module Permissions | 模組內部權限控制，如 automation、incidents |
+| Fine-grained Access Control | Scoped Permissions | 未來支援基於屬性（Attribute-based）的細粒度權限 |
+
+#### 稽核與合規
+
+- 所有角色、權限、團隊異動皆自動產生稽核事件 (`identity:audit:write`)。  
+- 稽核記錄內容包含操作者、目標實體、變更項與時間戳記。  
+- 權限規範比照 [Grafana Roles and Permissions](https://grafana.com/docs/grafana/latest/administration/roles-and-permissions/)。  
+
+[FUTURE] 未來版本將支援 Fine-grained Access Control (FGAC) 與 ABAC，以進一步細化行為授權。
+
+---
+
+## 邊界案例 *(如果有的話)*
 
 ### 5.1. 團隊階層深度超過限制
 **情境**: 管理員嘗試建立第 6 層團隊（超過建議的 5 層限制）。
@@ -298,56 +384,58 @@
 - 顯示詳細錯誤報告：「第 15 行：電子郵件格式錯誤 (zhang.example.com)」、「第 20 行：團隊不存在 (Backend Team)」。
 - 管理員修正後可重新上傳。
 
+### 5.4. 刪除仍有成員的團隊
+**情境**: 管理員嘗試刪除仍有 5 位成員的團隊。
+**處理**:
+- 系統必須（MUST）拒絕刪除操作。
+- 顯示錯誤訊息：「無法刪除仍有成員的團隊，請先移除所有成員或將其轉移至其他團隊。」
+- 提供「檢視成員」按鈕協助管理員處理。
+
+### 5.5. 重複的使用者名稱或電子郵件
+**情境**: 管理員嘗試建立的使用者名稱或電子郵件已存在。
+**處理**:
+- 系統必須（MUST）驗證唯一性並拒絕建立。
+- 顯示具體錯誤：「使用者名稱 'john_doe' 已存在」或「電子郵件 'john@example.com' 已註冊」。
+- 建議管理員檢查現有使用者或聯繫系統管理員。
+
+### 5.6. 批次匯入資料格式錯誤
+**情境**: 批次匯入的 CSV 檔案中包含格式錯誤的資料。
+**處理**:
+- 系統必須（MUST）在匯入前驗證所有資料。
+- 顯示詳細錯誤報告，包含錯誤行號和具體問題。
+- 允許管理員修正錯誤後重新上傳。
+
 ---
 
 {{specs/common.md}}
 
 ---
 
-## 七、審查與驗收清單（Review & Acceptance Checklist）
+## 模糊與待確認事項 *(如果有的話)*
 
-- [x] 文件結構符合 constitution v1.3.0 標準
-- [x] Primary User Story 包含詳細情境與現有痛點
-- [x] Acceptance Scenarios 至少 12 個，分場景群組（A/B/C/D）
-- [x] FR 採用分類格式（FR-U/T/R/P-001）
-- [x] 整合三份原模組（人員、團隊、角色）內容
-- [x] 無技術實作語義（無框架專屬語法）
-- [x] 所有功能具可測試性
-- [x] 包含邊界案例處理
-- [x] 包含完整治理檢查清單（Logging, Metrics, RBAC, i18n, Theme Token）
+-團隊層級上限 | ✅ RESOLVED : 支援簡單的團隊結構，暫不支援複雜階層。
+-使用者邀請有效期 | ✅ RESOLVED : 預設 24 小時，可在設定中調整。
+-角色定義 | ✅ RESOLVED : 採用預設的三種角色：平台管理員、部門管理員、一般使用者。
+-批次匯入格式 | ✅ RESOLVED : 支援 CSV 格式，包含基本欄位：姓名、電子郵件、團隊、角色。
+-稽核日誌保留期 | [PENDING] : 稽核日誌保留多長時間（建議至少 1 年）。
+-第三方認證整合 | [FUTURE] : 是否支援 LDAP、SAML 等第三方認證整合。
 
 ---
 
-## 八、模糊與待確認事項（Clarifications）
-
--團隊層級上限 | ✅ RESOLVED : 建議最多 5 層，超過時系統警告但允許建立。 
--使用者邀請有效期 | ✅ RESOLVED : 預設 24 小時，可在設定中調整（範圍：1-72 小時）。 
--角色繼承策略 | [FUTURE] : 是否支援條件式繼承（如依環境或模組區域）。 
--權限模板 | [FUTURE] : 是否提供可複製的角色模板庫（如「標準 SRE」、「唯讀訪客」）。 
--ABAC 支援 | [FUTURE] : 是否支援基於屬性的動態權限（Attribute-based Access Control）。 
-
----
-
-## Success Criteria *(mandatory)*
+## 成功標準 *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: 使用者可以在 2 分鐘內完成團隊創建並邀請成員
-- **SC-002**: 系統支援至少 1000 個活躍使用者並維持良好的回應時間
-- **SC-003**: 90% 的使用者能在首次嘗試中成功完成角色指派任務
-- **SC-004**: 權限檢查操作在 100 毫秒內完成
-- **SC-005**: 降低 70% 與權限管理相關的支援票證
+#### 核心功能指標
+- **SC-001**: 使用者建立與團隊指派可在 2 分鐘內完成
+- **SC-002**: 系統支援至少 500 個活躍使用者
+- **SC-003**: 角色指派操作在 3 秒內完成
+- **SC-004**: 權限檢查準確率達 100%
 
----
+#### 使用者體驗指標
+- **SC-005**: 90% 的管理員能在首次使用中成功管理使用者
+- **SC-006**: 批次匯入功能錯誤率低於 5%
 
-## 十、版本歷史
-
-|------|------|---------|------|
--1.0.0 | 2025-10-10 | 初始草稿 : - 
-
----
-
-**審核狀態**: ✅ Ready for Technical Review
-**技術中立性**: ✅ Pass（無框架專屬語法）
-**憲法合規性**: ✅ Pass（符合 constitution v1.3.0 所有要求）
-**P1 問題修正**: ✅ Complete（Primary User Story 與 AS 已補充）
+#### 業務價值指標
+- **SC-007**: 降低 50% 手動權限管理的工作量
+- **SC-008**: 稽核日誌完整記錄所有身分與權限變更

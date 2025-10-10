@@ -6,7 +6,7 @@
 
 ---
 
-## 一、主要使用者情境（User Scenarios & Testing）
+## 使用者情境與測試 *(mandatory)*
 
 ### Primary User Story
 作為一名平台管理員或決策者，我需要清楚地了解我當前使用的平台版本（社群版）所包含的功能，以及付費的商業版能提供哪些額外的進階功能。我希望有一個專門的頁面，能讓我直觀地比較不同版本之間的差異，並在需要升級時能方便地找到聯繫方式。
@@ -46,7 +46,7 @@
 
 ---
 
-## 二、功能需求（Functional Requirements）
+## 功能需求 *(mandatory)*
 
 ### 2.1. 版本展示 (Version Display)
 - **FR-VD-001**: 頁面必須（MUST）清晰地標示出當前運行的平台版本為「社群版」。
@@ -72,7 +72,7 @@
 
 ---
 
-## Success Criteria *(mandatory)*
+## 成功標準 *(mandatory)*
 
 ### Measurable Outcomes
 

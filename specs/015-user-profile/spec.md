@@ -6,7 +6,7 @@
 
 ---
 
-## 一、主要使用者情境（User Scenarios & Testing）
+## 使用者情境與測試 *(mandatory)*
 
 ### Primary User Story
 作為一名平台使用者，我需要一個統一的個人設定中心，讓我能夠：
@@ -129,7 +129,7 @@
     **When** 頁面載入失敗，
     **Then** 頁面應顯示一個清晰的錯誤訊息，並提供重試按鈕。
 
-### 邊界案例（Edge Cases）
+### 邊界案例
 - 如果使用者沒有任何可用的儀表板（例如新帳號且未被授予任何權限），「預設首頁」的下拉選單應被禁用，並顯示提示訊息。
 - 「儲存設定」按鈕在使用者沒有做出任何修改時應處於禁用狀態。
 - 更改語言設定後，應提示使用者需要重新整理頁面才能完全套用。
@@ -140,7 +140,7 @@
 
 ---
 
-## 二、功能需求（Functional Requirements）
+## 功能需求 *(mandatory)*
 
 ### 2.1. 個人資訊查看（Info Viewing）
 - **FR-IV-001**: 頁面必須（MUST）從 `/me` API 端點獲取當前登入使用者的個人資料。
@@ -184,7 +184,7 @@
 
 ---
 
-## 三、權限控制 (RBAC)
+## 權限控制 *(RBAC)*
 
 ### 3.1. 權限定義 (Permissions)
 - `profile:info:read`: 檢視個人基本資訊。
@@ -214,7 +214,7 @@
 
 ---
 
-## Success Criteria *(mandatory)*
+## 成功標準 *(mandatory)*
 
 ### Measurable Outcomes
 
@@ -224,7 +224,7 @@
 
 ---
 
-## 四、審查與驗收清單（Review & Acceptance Checklist）
+## 審查與驗收清單 *(如果有的話)*（Review & Acceptance Checklist）
 
 - [x] 所有段落齊備且結構正確。
 - [x] 無技術語句。
@@ -236,7 +236,7 @@
 
 ---
 
-## 五、模糊與待確認事項（Clarifications）
+## 模糊與待確認事項 *(如果有的話)*
 
 - **i18n 遷移**: [NEEDS CLARIFICATION] : profile-info 與 profile-preference 目前使用硬編碼中文，需全面遷移至 i18n 內容管理系統。profile-security 已實現。
 - **Theme Token 重構**: [NEEDS CLARIFICATION] : 所有模組廣泛使用 Tailwind CSS 的原子化 class（如 `bg-slate-800/60`），需重構為使用中央設計系統的 Theme Token。

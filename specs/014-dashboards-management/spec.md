@@ -6,7 +6,7 @@
 
 ---
 
-## 一、主要使用者情境（User Scenarios & Testing）
+## 使用者情境與測試 *(mandatory)*
 
 ### Primary User Story
 作為一名 SRE 或平台管理員，我需要在平台內快速切換與管理多個儀表板，包括平台內建儀表板（官方維護版本）與連結的 Grafana 儀表板（自訂或外部擴充），以便在單一介面中觀察系統狀態並根據需要擴展分析能力，無需在多個系統間跳轉。
@@ -42,7 +42,7 @@
 
 ---
 
-## 二、功能需求（Functional Requirements）
+## 功能需求 *(mandatory)*
 
 ### 2.1. 儀表板類型與清單管理 (Dashboard Types & List Management)
 - **FR-DTLM-001**: 系統必須（MUST）支援「內建」與「外部」兩種類型的儀表板。
@@ -72,7 +72,7 @@
 
 ---
 
-## 三、權限控制（RBAC）
+## 權限控制 *(RBAC)*（RBAC）
 - `dashboards:read`: 檢視儀表板清單與內容。
 - `dashboards:edit`: 修改或複製內建儀表板。
 - `dashboards:link`: 新增外部 Grafana 儀表板連結。
@@ -85,7 +85,7 @@
 
 ---
 
-## Success Criteria *(mandatory)*
+## 成功標準 *(mandatory)*
 
 ### Measurable Outcomes
 

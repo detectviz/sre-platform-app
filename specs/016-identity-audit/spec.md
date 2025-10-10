@@ -6,7 +6,7 @@
 
 ---
 
-## 一、主要使用者情境（User Scenarios & Testing）
+## 使用者情境與測試 *(mandatory)*
 
 ### Primary User Story
 
@@ -55,7 +55,7 @@
 
 ---
 
-## 二、功能需求（Functional Requirements）
+## 功能需求 *(mandatory)*
 
 ### 2.1. 日誌記錄 (Logging)
 - **FR-L-001**: 系統必須（MUST）記錄所有關鍵操作的審計日誌，包含操作者、時間、動作、目標、結果、IP、請求 ID。
@@ -83,7 +83,7 @@
 
 ---
 
-## 三、權限控制（RBAC）
+## 權限控制 *(RBAC)*（RBAC）
 
 - `audit-logs:read`: 檢視審計日誌清單與詳細資訊。
 - `audit-logs:export`: 匯出審計日誌（CSV、JSON）。
@@ -96,7 +96,7 @@
 
 ---
 
-## Success Criteria *(mandatory)*
+## 成功標準 *(mandatory)*
 
 ### Measurable Outcomes
 

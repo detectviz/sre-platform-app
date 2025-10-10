@@ -6,7 +6,7 @@
 
 ---
 
-## 一、主要使用者情境（User Scenarios & Testing）
+## 使用者情境與測試 *(mandatory)*
 
 ### Primary User Story
 作為一名 SRE 或平台管理員，我需要一個統一的自動化管理平台，讓我能夠：
@@ -73,7 +73,7 @@
     **Then** 系統應每隔固定間隔更新狀態，直到任務完成或失敗。
     → [FUTURE] 此功能需依後端事件流整合完成。
 
-### 邊界案例（Edge Cases）
+### 邊界案例
 - 當使用者嘗試執行一個需要參數但未提供參數的腳本時，系統應在執行模態框中給出明確的錯誤提示，並阻止執行。
 - 當使用者嘗試建立一個觸發器但未綁定任何腳本時，系統應在儲存時給出錯誤提示。
 - 當一個觸發器所綁定的腳本被刪除時，後端應自動禁用該觸發器，並在 UI 上顯示其為無效狀態。
@@ -86,7 +86,7 @@
 
 ---
 
-## 二、功能需求（Functional Requirements）
+## 功能需求 *(mandatory)*
 
 ### 2.1. 腳本管理（Playbook Management）
 - **FR-PM-001**: 系統必須（MUST）提供完整的 CRUD 介面來管理自動化腳本，並支援分頁、排序、搜尋與批次操作。
@@ -129,7 +129,7 @@
 
 ---
 
-## 三、權限控制 (RBAC)
+## 權限控制 *(RBAC)*
 
 ### 3.1. 權限定義 (Permissions)
 - `automation:playbooks:read`: 檢視腳本列表與詳情。
@@ -171,7 +171,7 @@
 
 ---
 
-## Success Criteria *(mandatory)*
+## 成功標準 *(mandatory)*
 
 ### Measurable Outcomes
 
@@ -181,7 +181,7 @@
 
 ---
 
-## 四、審查與驗收清單（Review & Acceptance Checklist）
+## 審查與驗收清單 *(如果有的話)*（Review & Acceptance Checklist）
 
 - [x] 所有段落齊備且結構正確。
 - [x] 無技術語句。
@@ -193,7 +193,7 @@
 
 ---
 
-## 五、模糊與待確認事項（Clarifications）
+## 模糊與待確認事項 *(如果有的話)*
 
 - **日誌匯出格式**: [CLARIFY] : 預期為 CSV，需確定欄位順序與內容格式。
 - **即時狀態更新頻率**: [NEEDS CLARIFICATION] : 需確認事件流或輪詢週期，以及對前端效能的影響。

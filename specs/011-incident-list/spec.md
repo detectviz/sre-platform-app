@@ -6,7 +6,7 @@
 
 ---
 
-## 一、主要使用者情境（User Scenarios & Testing）
+## 使用者情境與測試 *(mandatory)*
 
 ### Primary User Story
 
@@ -56,7 +56,7 @@
 
 ---
 
-## 二、功能需求（Functional Requirements）
+## 功能需求 *(mandatory)*
 
 ### 2.1. 列表展示 (List Display)
 - **FR-LD-001**: 系統必須（MUST）提供一個可分頁、可排序的事件列表。
@@ -85,7 +85,7 @@
 
 ---
 
-## 三、權限控制 (RBAC)
+## 權限控制 *(RBAC)*
 
 - `incident:read`: 允許查看事件列表與詳情。
 - `incident:write`: 允許執行認領、指派、解決、靜音等操作。
@@ -98,7 +98,7 @@
 
 ---
 
-## Success Criteria *(mandatory)*
+## 成功標準 *(mandatory)*
 
 ### Measurable Outcomes
 

@@ -6,7 +6,7 @@
 
 ---
 
-## 一、主要使用者情境（User Scenarios & Testing）
+## 使用者情境與測試 *(mandatory)*
 
 ### Primary User Story
 作為一名平台管理員或資深 SRE，我需要一個統一的規則管理平台，讓我能夠：
@@ -68,7 +68,7 @@
     **When** 我在告警規則或靜音規則頁籤勾選多條規則並點擊「AI 分析」，
     **Then** 系統應觸發批次分析，並在模態框中展示綜合報告（如規則重疊度、告警覆蓋率、優化建議）。
 
-### 邊界案例（Edge Cases）
+### 邊界案例
 - 當使用者嘗試刪除一條規則時，系統必須彈出確認對話框以防止誤刪。
 - 當 API 請求失敗時，表格區域應顯示錯誤訊息及「重試」按鈕。
 - 在新增規則後，表格應自動跳轉到第一頁。
@@ -79,7 +79,7 @@
 
 ---
 
-## 二、功能需求（Functional Requirements）
+## 功能需求 *(mandatory)*
 
 ### 2.1. 告警規則管理（Alert Rules Management）
 - **FR-AR-001**: 系統必須（MUST）提供完整的 CRUD 介面來管理告警規則。
@@ -117,7 +117,7 @@
 
 ---
 
-## 三、權限控制 (RBAC)
+## 權限控制 *(RBAC)*
 
 ### 3.1. 權限定義 (Permissions)
 - `incident-rules:alert:read`: 檢視告警規則列表與詳情。
@@ -159,7 +159,7 @@
 
 ---
 
-## Success Criteria *(mandatory)*
+## 成功標準 *(mandatory)*
 
 ### Measurable Outcomes
 
@@ -169,7 +169,7 @@
 
 ---
 
-## 四、審查與驗收清單（Review & Acceptance Checklist）
+## 審查與驗收清單 *(如果有的話)*（Review & Acceptance Checklist）
 
 - [x] 所有段落齊備且結構正確。
 - [x] 無技術語句。
@@ -181,7 +181,7 @@
 
 ---
 
-## 五、模糊與待確認事項（Clarifications）
+## 模糊與待確認事項 *(如果有的話)*
 
 - **AI 分析功能範圍**: [NEEDS CLARIFICATION] : 需確認 AI 分析的具體指標（歷史觸發頻率、誤報率、建議調整）與分析演算法來源（平台內建 / 外部 AI 服務）。
 - **靜音規則匹配邏輯**: [NEEDS CLARIFICATION] : 需確認靜音規則與告警規則的匹配演算法（精確匹配 / 模糊匹配 / 正則表達式），以及多條靜音規則的優先級處理。

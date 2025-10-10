@@ -6,7 +6,7 @@
 
 ---
 
-## 一、主要使用者情境（User Scenarios & Testing）
+## 使用者情境與測試 *(mandatory)*
 
 ### Primary User Story
 作為一名平台管理員或安全工程師，我需要能夠管理平台與多個外部身份提供商（IdP）的 OIDC/SSO 連線設定，讓我能夠：
@@ -67,7 +67,7 @@
 
 ---
 
-## 二、功能需求（Functional Requirements）
+## 功能需求 *(mandatory)*
 
 ### 2.1. IdP 管理 (IDP Management)
 
@@ -114,7 +114,7 @@
 
 ---
 
-## 三、關鍵資料實體（Key Entities）
+## 關鍵資料實體 *(如果功能涉及資料則包含)*
 | 實體名稱 | 描述 | 關鍵屬性 |
 | **IdentityProvider** | 代表一個已配置的身份提供商（IdP）的核心實體。 | id, name, type, is_active, priority_order, created_at, updated_at |
 | **IdPConfiguration** | IdP 特定的配置參數。 | |
@@ -124,7 +124,7 @@
 
 ---
 
-## 四、權限控制 (RBAC)
+## 權限控制 *(RBAC)*
 
 ### 4.1. 使用者角色定義
 - **管理員（Administrator）**: 擁有完整權限，可執行所有身份驗證相關操作
@@ -146,7 +146,7 @@
 
 ---
 
-## Success Criteria *(mandatory)*
+## 成功標準 *(mandatory)*
 
 ### Measurable Outcomes
 
@@ -158,7 +158,7 @@
 
 ---
 
-## Clarifications
+## 模糊與待確認事項 *(如果有的話)*
 
 ### Session 2025-10-09
 - Q: 資料實體的具體屬性與關係 → A: 基本屬性：id, name, type, is_active, priority_order, created_at, updated_at
