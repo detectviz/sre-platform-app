@@ -1,146 +1,142 @@
-# Feature Specification: Platform Auth
+# 功能規格書（Feature Specification）: Platform Auth
 
-**Created**: 2025-10-06
-**Status**: Ready for Technical Review
-**Based on**: `.specify/memory/constitution.md` (v1.3.0)
-
----
+**建立日期**: 2025-10-06
+**狀態**: Draft
+**輸入**: 使用者描述: "為平台提供全面的身份驗證與授權管理功能，支援多個外部身份提供商（IdP）的 OIDC/SSO 連線設定"
 
 ## 使用者情境與測試 *(mandatory)*
 
-### Primary User Story
-作為一名平台管理員或安全工程師，我需要能夠管理平台與多個外部身份提供商（IdP）的 OIDC/SSO 連線設定，讓我能夠：
-1. **配置多個身份提供商** - 支援同時配置多個 IdP（如 Keycloak、Auth0、Azure AD），滿足不同部門或客戶群的認證需求。
-2. **安全地管理憑證** - 查看 Client ID、Realm 等資訊，並在需要時安全地複製 Client Secret 進行金鑰輪換。
-3. **設定高可用性** - 指定主要 IdP 和備用 IdP，確保認證服務的高可用性。
-4. **管理使用者登入選項** - 控制使用者在登入頁面可見的 IdP 選項，提供彈性的認證體驗。
+### 使用者故事 1 - 作為平台管理員，配置與管理多個身份提供商 (IdP) (優先級: P1)
 
-以便支援企業級多租戶場景、提升認證系統的可用性與彈性、滿足不同組織單位的特定認證需求。
+作為一名平台管理員或安全工程師，我需要能夠管理平台與多個外部身份提供商（IdP）的 OIDC/SSO 連線設定，以便支援企業級多租戶場景、提升認證系統的可用性與彈性。這包括配置多個 IdP（如 Keycloak、Auth0）、設定主備援以實現高可用性，以及管理使用者在登入頁面可見的選項。當前的限制是只支援單一 IdP，且缺乏容錯機制，一旦 IdP 故障，整個平台登入功能便會中斷。
 
-### 具體情境:
-- **多部門認證需求**: 公司內部使用 Keycloak，外部客戶使用 Auth0，需要在同一平台上配置兩個 IdP。
-- **IdP 高可用性**: 設定主要 IdP 為 Auth0，備用 IdP 為 Keycloak，當 Auth0 故障時，系統自動切換至備用 IdP。
-- **安全稽核**: 定期審查所有 IdP 的設定，確認 Client ID、Realm、回調 URL 等是否正確。
-- **故障排查**: 當使用者回報無法登入時，快速查看 IdP 設定，並複製 Client Secret 進行比對。
-- **金鑰輪換**: 定期更新 IdP 的 Client Secret，確保憑證安全。
-- **租戶隔離**: 在 SaaS 環境中，為每個租戶配置專屬的 IdP。
+**為什麼此優先級**: 此為核心功能，解決了單一 IdP 限制、無容錯機制的關鍵痛點，是支援企業級多租戶和高可用性認證的基礎。
 
-### 現有痛點:
-- **單一 IdP 限制**: 無法滿足多部門、多客戶群的差異化認證需求。
-- **無容錯機制**: IdP 故障時，整個平台的登入功能完全中斷。
-- **憑證管理風險**: Client Secret 若以明文顯示，可能導致外洩。
-- **配置複雜**: 需要在多個系統間切換，增加配置錯誤風險。
-- **使用者體驗不佳**: 使用者不知道該選擇哪個登入方式。
+**獨立測試**: 可以通過新增、設定並啟用一個 OIDC IdP，並成功使用該 IdP 登入來獨立測試。
 
-### 驗收情境（Acceptance Scenarios）
+**驗收情境**:
 
-#### 場景群組 A：設定查看與資訊顯示 (3 個)
-1. **Given** 我正在「身份驗證設定」頁面, **When** 頁面載入完成, **Then** 所有設定欄位均應以唯讀狀態顯示。
-2. **Given** 頁面已成功載入身份驗證設定, **When** 我檢視設定內容, **Then** 系統應清晰顯示身份提供商名稱、Realm、OIDC 啟用狀態。
-3. **Given** 某些設定值未被配置, **When** 我查看對應的設定欄位, **Then** 系統應顯示佔位符（如 "—"）。
-
-#### 場景群組 B：敏感資訊保護與顯示切換 (3 個)
-4. **Given** Client Secret 欄位可見, **When** 我查看 Client Secret 欄位, **Then** Client Secret 應預設以遮蔽形式顯示。
-5. **Given** 我需要驗證儲存的 Client Secret, **When** 我點擊「顯示」按鈕, **Then** 被遮蔽的密鑰應切換為明文顯示。
-6. **Given** Client Secret 目前以明文顯示, **When** 我再次點擊「隱藏」按鈕, **Then** 密鑰應恢復為遮蔽狀態。
-
-#### 場景群組 C：複製功能與使用者回饋 (3 個)
-7. **Given** 我需要提供 Client ID, **When** 我點擊「複製」按鈕, **Then** Client ID 字串應被複製到剪貼簿，並顯示成功提示。
-8. **Given** 我需要複製 Client Secret, **When** 我點擊「複製」按鈕, **Then** 完整的 Client Secret（明文）應被複製到剪貼簿，並顯示成功提示。
-9. **Given** 我在不支援剪貼簿 API 的環境中, **When** 我嘗試點擊「複製」按鈕, **Then** 系統應顯示錯誤提示，建議我手動複製。
-
-#### 場景群組 D：錯誤處理與邊界情境 (3 個)
-10. **Given** 後端 API 無法載入身份驗證設定, **When** 頁面嘗試載入資料, **Then** 系統應顯示清晰的錯誤訊息。
-11. **Given** 使用者權限不足, **When** 使用者嘗試存取此頁面, **Then** 系統應顯示權限不足的提示訊息。
-12. **Given** 我在頁面上停留較長時間, **When** 我嘗試重新載入設定, **Then** 系統應檢測到 Session 過期並提示重新登入。
-
-#### 場景群組 E：多身份提供商管理 (9 個)
-13. **Given** 系統已配置多個 IdP, **When** 我開啟設定頁面, **Then** 系統應以清單形式顯示所有已配置的 IdP。
-14. **Given** 我需要新增 IdP, **When** 我點擊「新增 IdP」按鈕, **Then** 系統應顯示 IdP 配置表單。
-15. **Given** 我正在配置新的 IdP, **When** 我選擇 IdP 類型, **Then** 系統應根據所選類型動態調整表單欄位。
-16. **Given** 我需要設定主要 IdP, **When** 我在 IdP 清單中標記某個 IdP 為「預設」, **Then** 該 IdP 應成為使用者登入時的預設選項。
-17. **Given** 系統已配置主備 IdP, **When** 主要 IdP 連線失敗, **Then** 系統應自動嘗試使用備用 IdP 進行認證。
-18. **Given** 我需要編輯某個 IdP, **When** 我點擊「編輯」按鈕, **Then** 系統應顯示預填好現有配置的表單。
-19. **Given** 我需要停用某個 IdP, **When** 我將其啟用狀態切換為「停用」, **Then** 使用者將無法透過該 IdP 登入。
-20. **Given** 我需要測試 IdP 連線, **When** 我點擊「測試連線」按鈕, **Then** 系統應發送測試請求並顯示結果。
-21. **Given** 我需要刪除某個 IdP, **When** 我點擊「刪除」按鈕, **Then** 系統應顯示確認對話框並在確認後刪除配置。
+1. **Given** 系統已配置多個 IdP, **When** 我開啟設定頁面, **Then** 系統應以清單形式顯示所有已配置的 IdP。
+2. **Given** 我需要新增 IdP, **When** 我點擊「新增 IdP」按鈕, **Then** 系統應顯示 IdP 配置表單。
+3. **Given** 我正在配置新的 IdP, **When** 我選擇 IdP 類型, **Then** 系統應根據所選類型動態調整表單欄位。
+4. **Given** 我需要設定主要 IdP, **When** 我在 IdP 清單中標記某個 IdP 為「預設」, **Then** 該 IdP 應成為使用者登入時的預設選項。
+5. **Given** 系統已配置主備 IdP, **When** 主要 IdP 連線失敗, **Then** 系統應自動嘗試使用備用 IdP 進行認證。
+6. **Given** 我需要編輯某個 IdP, **When** 我點擊「編輯」按鈕, **Then** 系統應顯示預填好現有配置的表單。
+7. **Given** 我需要停用某個 IdP, **When** 我將其啟用狀態切換為「停用」, **Then** 使用者將無法透過該 IdP 登入。
+8. **Given** 我需要測試 IdP 連線, **When** 我點擊「測試連線」按鈕, **Then** 系統應發送測試請求並顯示結果。
+9. **Given** 我需要刪除某個 IdP, **When** 我點擊「刪除」按鈕, **Then** 系統應顯示確認對話框並在確認後刪除配置。
 
 ---
 
+### 使用者故事 2 - 作為平台管理員，安全地查看與管理 IdP 的敏感憑證 (優先級: P2)
+
+為了安全地進行金鑰輪換或故障排查，管理員需要能夠查看如 Client ID 等資訊，並在受控的情況下顯示或複製 Client Secret。目前的痛點是 Client Secret 若以明文顯示，可能導致外洩風險。
+
+**為什麼此優先級**: 確保敏感憑證（如 Client Secret）的管理既安全又便捷，防止資訊外洩，同時滿足日常維運需求。
+
+**獨立測試**: 可以通過驗證 Client Secret 預設為遮蔽、點擊按鈕可顯示/隱藏、以及複製功能可正常運作來獨立測試。
+
+**驗收情境**:
+
+1. **Given** Client Secret 欄位可見, **When** 我查看 Client Secret 欄位, **Then** Client Secret 應預設以遮蔽形式顯示。
+2. **Given** 我需要驗證儲存的 Client Secret, **When** 我點擊「顯示」按鈕, **Then** 被遮蔽的密鑰應切換為明文顯示。
+3. **Given** Client Secret 目前以明文顯示, **When** 我再次點擊「隱藏」按鈕, **Then** 密鑰應恢復為遮蔽狀態。
+4. **Given** 我需要提供 Client ID, **When** 我點擊「複製」按鈕, **Then** Client ID 字串應被複製到剪貼簿，並顯示成功提示。
+5. **Given** 我需要複製 Client Secret, **When** 我點擊「複製」按鈕, **Then** 完整的 Client Secret（明文）應被複製到剪貼簿，並顯示成功提示。
+6. **Given** 我在不支援剪貼簿 API 的環境中, **When** 我嘗試點擊「複製」按鈕, **Then** 系統應顯示錯誤提示，建議我手動複製。
+
+---
+
+### 使用者故事 3 - 作為平台管理員，查看 IdP 設定與處理錯誤 (優先級: P3)
+
+為了日常維護和問題診斷，管理員需要清晰地查看所有 IdP 的設定資訊，並在系統發生錯誤（如 API 載入失敗、權限不足）時獲得明確的提示。
+
+**為什麼此優先級**: 提供必要的資訊透明度和錯誤處理機制，是確保系統可維護性的基礎。
+
+**獨立測試**: 可以通過驗證頁面能正確顯示已配置的 IdP 資訊，並在模擬 API 失敗時顯示錯誤訊息來獨立測試。
+
+**驗收情境**:
+
+1. **Given** 我正在「身份驗證設定」頁面, **When** 頁面載入完成, **Then** 所有設定欄位均應以唯讀狀態顯示。
+2. **Given** 頁面已成功載入身份驗證設定, **When** 我檢視設定內容, **Then** 系統應清晰顯示身份提供商名稱、Realm、OIDC 啟用狀態。
+3. **Given** 某些設定值未被配置, **When** 我查看對應的設定欄位, **Then** 系統應顯示佔位符（如 "—"）。
+4. **Given** 後端 API 無法載入身份驗證設定, **When** 頁面嘗試載入資料, **Then** 系統應顯示清晰的錯誤訊息。
+5. **Given** 使用者權限不足, **When** 使用者嘗試存取此頁面, **Then** 系統應顯示權限不足的提示訊息。
+6. **Given** 我在頁面上停留較長時間, **When** 我嘗試重新載入設定, **Then** 系統應檢測到 Session 過期並提示重新登入。
+
+---
+
+### 邊界案例
+
+- 當 [邊界條件] 時會發生什麼？
+- 系統如何處理 [錯誤情境]？
+
 ## 功能需求 *(mandatory)*
 
-### 2.1. IdP 管理 (IDP Management)
+### 功能需求
 
 - **FR-IDP-001**: 系統必須（MUST）支援配置多個身份提供商（IdP）。
 - **FR-IDP-002**: 系統必須（MUST）提供 IdP 的 CRUD（建立、讀取、更新、刪除）功能。
 - **FR-IDP-003**: 系統必須（MUST）根據所選 IdP 類型動態調整配置表單。
 - **FR-IDP-004**: 系統必須（MUST）支援至少 10 個 IdP 配置並同時處理 1000 個認證請求/分鐘。
-
-### 2.2. 高可用性與容錯 (HA & Failover)
-
 - **FR-HA-001**: 系統必須（MUST）支援配置備用 IdP，當主要 IdP 不可用時自動切換。
 - **FR-HA-002**: 系統必須（MUST）在 IdP 故障轉移時記錄審計日誌。
 - **FR-HA-003**: IdP 故障轉移必須（MUST）在 5 秒內完成。
 - **FR-HA-004**: 網路逾時情境下，系統必須（MUST）在 30 秒內重試 3 次。
 - **FR-HA-005**: IdP 服務錯誤時，系統必須（MUST）降級到快取模式以維持服務可用性。
 - **FR-HA-006**: 憑證錯誤時，系統必須（MUST）發出告警並自動停用相關 IdP。
-
-### 2.3. 連線測試 (Connection Testing)
-
 - **FR-TEST-001**: 系統必須（MUST）為每個 IdP 提供「測試連線」功能。
 - **FR-TEST-002**: 測試結果必須（MUST）顯示連線狀態、錯誤訊息、版本資訊與回應時間。
-
-### 2.4. 敏感資訊保護 (Sensitive Data Protection)
-
 - **FR-SEC-001**: Client Secret 必須（MUST）預設以遮蔽形式顯示。
 - **FR-SEC-002**: 系統必須（MUST）提供「顯示/隱藏」和「一鍵複製」功能。
 - **FR-SEC-003**: Client Secret 必須（MUST）在後端加密儲存。
 - **FR-SEC-004**: 系統必須（MUST）支援加密傳輸並符合 GDPR 和 ISO 27001 標準。
 - **FR-SEC-005**: 系統必須（MUST）防範零日攻擊和內部威脅，提供完整的審計追蹤。
-
-### 2.5. 使用者登入體驗 (User Login Experience)
-
 - **FR-UX-001**: 登入頁面必須（MUST）顯示所有已啟用的 IdP 選項。
 - **FR-UX-002**: 系統應該（SHOULD）支援根據使用者屬性自動導向對應的 IdP。
-
-### 2.6. 審計與監控 (Audit & Monitoring)
-
 - **FR-AUDIT-001**: 系統必須（MUST）記錄所有 IdP 配置變更與敏感操作至審計日誌。
 - **FR-AUDIT-002**: 系統應該（SHOULD）提供 IdP 使用統計儀表板。
-
-### 2.7. 多租戶 (Multi-Tenancy)
-
 - **FR-TENANT-001**: 系統應該（SHOULD）支援租戶級別的 IdP 配置。
 
----
+### 關鍵資料實體 *(如果功能涉及資料則包含)*
 
-## 關鍵資料實體 *(如果功能涉及資料則包含)*
-| 實體名稱 | 描述 | 關鍵屬性 |
-| **IdentityProvider** | 代表一個已配置的身份提供商（IdP）的核心實體。 | id, name, type, is_active, priority_order, created_at, updated_at |
-| **IdPConfiguration** | IdP 特定的配置參數。 | |
-| **IdPConnectionTest** | IdP 連線測試結果。 |
-| **IdPFailoverLog** | IdP 故障轉移記錄。 |
-| **IdPAuditLog** | IdP 審計日誌。 |
-
----
+- **IdentityProvider**: 代表一個已配置的身份提供商（IdP）的核心實體。主要屬性: id, name, type, is_active, priority_order, created_at, updated_at
+- **IdPConfiguration**: 代表 IdP 特定的配置參數。
+- **IdPConnectionTest**: 代表 IdP 連線測試結果。
+- **IdPFailoverLog**: 代表 IdP 故障轉移記錄。
+- **IdPAuditLog**: 代表 IdP 審計日誌。
 
 ## 權限控制 *(RBAC)*
 
-### 4.1. 使用者角色定義
-- **管理員（Administrator）**: 擁有完整權限，可執行所有身份驗證相關操作
-- **使用者（User）**: 僅擁有登入權限，通過細粒度權限控制管理具體操作
+### 權限模型設計
 
-### 4.2. 權限清單
+此功能採用基於角色的存取控制（RBAC）模型。操作權限被細分為讀取、建立、更新、刪除、測試及敏感資訊操作等，並指派給預設的管理員角色。
 
-- `settings:auth:read`: 允許查看身份驗證設定。
-- `settings:auth:create`: 允許新增 IdP 配置。
-- `settings:auth:update`: 允許編輯 IdP 配置。
-- `settings:auth:delete`: 允許刪除 IdP 配置。
-- `settings:auth:test`: 允許執行 IdP 連線測試。
-- `settings:auth:secret:view`: 允許查看 Client Secret。
-- `settings:auth:secret:copy`: 允許複製 Client Secret。
+#### 所需權限定義
+
+- **`settings:auth:read`**: 允許查看身份驗證設定。
+- **`settings:auth:create`**: 允許新增 IdP 配置。
+- **`settings:auth:update`**: 允許編輯 IdP 配置。
+- **`settings:auth:delete`**: 允許刪除 IdP 配置。
+- **`settings:auth:test`**: 允許執行 IdP 連線測試。
+- **`settings:auth:secret:view`**: 允許查看 Client Secret。
+- **`settings:auth:secret:copy`**: 允許複製 Client Secret。
+
+#### 角色指派建議
+
+- **Admin 角色**: 需要所有 `settings:auth:*` 權限。
+- **Editor 角色**: [NEEDS CLARIFICATION: 是否需要 Editor 角色？若需要，應授予哪些權限？]
+- **Viewer 角色**: `settings:auth:read`
+
+#### 權限檢查點
+
+- **頁面載入**: 檢查 `settings:auth:read` 權限。
+- **執行新增/編輯/刪除/測試操作**: 分別檢查 `create`, `update`, `delete`, `test` 權限。
+- **查看/複製 Secret**: 分別檢查 `secret:view` 和 `secret:copy` 權限。
 
 ---
+
+## 觀測性與治理檢查（Observability & Governance Checklist）
 
 {{specs/common.md}}
 
@@ -148,21 +144,29 @@
 
 ## 成功標準 *(mandatory)*
 
-### Measurable Outcomes
+### 可衡量成果
 
-- **SC-001**: 使用者可以在 30 秒內完成 IdP 配置並驗證連線狀態
-- **SC-002**: 當主要 IdP 故障時，系統能在 5 秒內自動切換到備用 IdP並維持服務可用性
-- **SC-003**: 敏感資訊顯示和複製操作的成功率達到 99.9%，並且所有操作都被完整記錄
-- **SC-004**: 95% 的認證操作能在單次嘗試中成功完成，包含正常和容錯情境
-- **SC-005**: 審計系統能夠在 1 秒內查詢並顯示指定時間範圍內的認證活動記錄
+- **SC-001**: 使用者可以在 30 秒內完成 IdP 配置並驗證連線狀態。
+- **SC-002**: 當主要 IdP 故障時，系統能在 5 秒內自動切換到備用 IdP並維持服務可用性。
+- **SC-003**: 敏感資訊顯示和複製操作的成功率達到 99.9%，並且所有操作都被完整記錄。
+- **SC-004**: 95% 的認證操作能在單次嘗試中成功完成，包含正常和容錯情境。
+- **SC-005**: 審計系統能夠在 1 秒內查詢並顯示指定時間範圍內的認證活動記錄。
 
 ---
 
-## 模糊與待確認事項 *(如果有的話)*
+## 模糊與待確認事項（Clarifications）
 
-### Session 2025-10-09
-- Q: 資料實體的具體屬性與關係 → A: 基本屬性：id, name, type, is_active, priority_order, created_at, updated_at
-- Q: 效能與可擴展性約束 → A: 效能目標：IdP 切換 <5秒，支援 10個 IdP 配置，同時處理 1000個認證請求/分鐘
-- Q: 安全威脅模型與合規要求 → A: 符合 GDPR 和 ISO 27001，支援加密傳輸，防範進階威脅：零日攻擊、內部威脅
-- Q: 使用者角色區分 → A: 二角色：管理員（完整權限）、使用者（登入權限），通過權限控制細粒度管理
-- Q: 外部依賴失敗模式 → A: 網路逾時：30秒重試3次；服務錯誤：降級到快取模式；憑證錯誤：發出告警並停用 IdP
+- **效能與可擴展性約束**:
+  - **Q**: 資料實體的具體屬性與關係？
+  - **A**: 基本屬性：id, name, type, is_active, priority_order, created_at, updated_at
+  - **Q**: 效能與可擴展性約束？
+  - **A**: 效能目標：IdP 切換 <5秒，支援 10個 IdP 配置，同時處理 1000個認證請求/分鐘
+- **安全與合規**:
+  - **Q**: 安全威脅模型與合規要求？
+  - **A**: 符合 GDPR 和 ISO 27001，支援加密傳輸，防範進階威脅：零日攻擊、內部威威脅。
+- **角色與權限**:
+  - **Q**: 使用者角色區分？
+  - **A**: 二角色：管理員（完整權限）、使用者（登入權限），通過權限控制細粒度管理。
+- **外部依賴**:
+  - **Q**: 外部依賴失敗模式？
+  - **A**: 網路逾時：30秒重試3次；服務錯誤：降級到快取模式；憑證錯誤：發出告警並停用 IdP。

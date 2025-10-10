@@ -1,65 +1,93 @@
-# Feature Specification: Platform Grafana
+# 功能規格書（Feature Specification）: Platform Grafana Integration
 
-**Created**: 2025-10-06
-**Status**: Ready for Technical Review
-**Based on**: `.specify/memory/constitution.md` (v1.3.0)
-
----
+**建立日期**: 2025-10-06
+**狀態**: Draft
+**輸入**: 使用者描述: "為平台提供與外部 Grafana 執行個體的整合能力，包括連線設定、測試與資源同步"
 
 ## 使用者情境與測試 *(mandatory)*
 
-### Primary User Story
-作為一名平台管理員，我需要將我們的 SRE 平台與現有的 Grafana 執行個體進行整合。我希望能設定 Grafana 的連線位址和 API Key，並能驗證這些設定是否正確，以確保平台可以無縫地從 Grafana 同步儀表板、資料來源和告警規則。
+### 使用者故事 1 - 作為平台管理員，設定並測試與 Grafana 的連線 (優先級: P1)
 
-### 具體情境:
-- **連線驗證與資源盤點**: 設定完成後，我需要立即測試連線是否成功，並查看 Grafana 實例的資源概況（如儀表板、資料來源、告警規則的數量），評估同步範圍與 API Key 權限。
-- **權限範圍驗證**: 透過連線測試返回的資源數量資訊，我可以驗證 API Key 的權限範圍是否符合整合需求。
-- **容量規劃**: 透過測試結果顯示的儀表板與告警規則數量，我可以評估同步作業的資料量，規劃適當的同步頻率與資源配置。
+作為平台管理員，我需要將平台與現有的 Grafana 執行個體整合。我希望能設定 Grafana 的連線位址和 API Key，並能在儲存前透過「測試連線」功能，立即驗證設定是否正確，同時獲取 Grafana 實例的資源概況（如儀表板、資料來源的數量），以確保後續的儀表板同步功能可以正常運作。
 
-### 驗收情境（Acceptance Scenarios）
+**為什麼此優先級**: 這是與 Grafana 整合的基礎。一個可靠的連線測試功能可以顯著降低設定錯誤的風險，並為後續的容量規劃與權限驗證提供依據。
 
-#### 場景群組 A：設定管理（Settings Management）
-1.  **Given** 我是首次設定 Grafana 整合, **When** 我開啟「Grafana 整合設定」頁面, **Then** 表單欄位應為空白或顯示預設值。
-2.  **Given** 我已完成 Grafana URL 和 API Key 的輸入, **When** 我點擊「儲存變更」按鈕, **Then** 系統應保存我的設定並顯示成功提示。
-3.  **Given** 我已儲存過 Grafana 設定, **When** 我重新開啟此頁面, **Then** 系統應顯示之前儲存的設定值，且 API Key 應預設以遮蔽形式顯示。
+**獨立測試**: 可以通過在設定頁面輸入正確的 Grafana URL 和 API Key，點擊「測試連線」，並成功看到返回的 Grafana 版本和資源統計資訊來獨立測試。
 
-#### 場景群組 B：連線測試（Connection Testing）
-4.  **Given** 我已輸入 Grafana URL 和 API Key, **When** 我點擊「測試連線」按鈕, **Then** 系統應發送測試請求並顯示載入中狀態。
-5.  **Given** 連線測試成功, **When** 系統收到成功回應, **Then** 測試結果區域應顯示「連線正常」，並顯示 Grafana 版本、儀表板數量、資料來源數量、告警規則數量、組織資訊。
-6.  **Given** 連線測試失敗, **When** 系統收到錯誤回應, **Then** 測試結果區域應顯示「連線失敗」並顯示具體錯誤訊息。
-7.  **Given** 我修改了已儲存的設定但尚未儲存, **When** 我點擊「測試連線」, **Then** 系統應使用當前輸入的值進行測試。
+**驗收情境**:
 
-#### 場景群組 C：輸入驗證與錯誤處理（Input Validation & Error Handling）
-8.  **Given** 我輸入了格式不正確的 URL, **When** 我嘗試儲存或測試連線, **Then** 系統應顯示錯誤訊息並阻止操作。
-9.  **Given** 我將 API Key 欄位留空, **When** 我嘗試儲存設定, **Then** 系統應顯示錯誤訊息並阻止操作。
-10. **Given** 我已修改設定但尚未儲存, **When** 我點擊「還原為已儲存設定」按鈕, **Then** 系統應撤銷所有未儲存的變更。
-
-#### 場景群組 D：安全性與敏感資訊保護（Security & Sensitive Data Protection）
-11. **Given** API Key 欄位包含敏感資訊, **When** 我查看 API Key 欄位, **Then** API Key 應預設以遮蔽形式顯示，並提供「顯示」按鈕。
-12. **Given** 我需要查看完整的 API Key, **When** 我點擊「顯示」按鈕, **Then** API Key 應切換為明文顯示，按鈕圖示變為「隱藏」。
+1.  **Given** 我已輸入 Grafana URL 和 API Key, **When** 我點擊「測試連線」按鈕, **Then** 系統應發送測試請求並顯示載入中狀態。
+2.  **Given** 連線測試成功, **When** 系統收到成功回應, **Then** 測試結果區域應顯示「連線正常」，並顯示 Grafana 版本、儀表板數量、資料來源數量等資訊。
+3.  **Given** 我輸入了錯誤的 API Key, **When** 我點擊「測試連線」, **Then** 測試結果區域應顯示「連線失敗」並顯示具體錯誤訊息，如「認證失敗」。
+4.  **Given** 我輸入了格式不正確的 URL, **When** 我嘗試測試連線, **Then** 系統應顯示「URL 格式不正確」的錯誤訊息並阻止操作。
+5.  **Given** 我已完成 Grafana URL 和 API Key 的輸入, **When** 我點擊「儲存變更」按鈕, **Then** 系統應保存我的設定並顯示成功提示。
 
 ---
+
+### 使用者故事 2 - 作為平台管理員，安全地管理 Grafana API Key (優先級: P2)
+
+在設定整合時，我需要確保敏感的 Grafana API Key 受到妥善保護，避免在介面上明文顯示，以符合安全規範。
+
+**為什麼此優先級**: 保護敏感憑證，防止 API Key 外洩，是整合外部系統時的基本安全要求。
+
+**獨立測試**: 可以通過重新載入已儲存的設定頁面，驗證 API Key 欄位預設為遮蔽狀態，並可透過點擊按鈕切換其可見性來獨立測試。
+
+**驗收情境**:
+
+1.  **Given** 我已儲存過 Grafana 設定, **When** 我重新開啟此頁面, **Then** 系統應顯示之前儲存的設定值，且 API Key 應預設以遮蔽形式顯示。
+2.  **Given** API Key 欄位處於遮蔽狀態, **When** 我點擊「顯示」按鈕, **Then** API Key 應切換為明文顯示，按鈕圖示變為「隱藏」。
+3.  **Given** API Key 欄位處於明文顯示狀態, **When** 我點擊「隱藏」按鈕, **Then** API Key 應恢復為遮蔽狀態。
+
+---
+
+### 邊界案例
+
+- 當 Grafana 伺服器回應超時時，測試連線功能應如何處理？
+- 當 API Key 的權限不足以獲取資源統計資訊時，測試結果應如何顯示？
 
 ## 功能需求 *(mandatory)*
 
-### 2.1. 設定管理 (Settings Management)
-- **FR-SM-001**: 系統必須（MUST）提供表單介面，允許設定和編輯 Grafana 整合參數。
-- **FR-SM-002**: 系統必須（MUST）支援儲存設定與還原未儲存的變更。
+### 功能需求
 
-### 2.2. 連線測試 (Connection Testing)
-- **FR-CT-001**: 系統必須（MUST）提供「測試連線」功能，驗證當前設定。
-- **FR-CT-002**: 測試成功時，必須（MUST）顯示 Grafana 版本與資源統計資訊。
-- **FR-CT-003**: 測試失敗時，必須（MUST）顯示具體錯誤訊息。
+- **FR-001**: 系統必須（MUST）提供一個表單介面，允許管理員設定和編輯 Grafana 整合所需的 URL 和 API Key。
+- **FR-002**: 系統必須（MUST）提供「測試連線」功能，以驗證當前表單中的設定是否正確。
+- **FR-003**: 測試成功時，系統必須（MUST）顯示 Grafana 版本和基本的資源統計資訊（如儀表板、資料來源數量）。
+- **FR-004**: 測試失敗時，系統必須（MUST）顯示具體的、對使用者友善的錯誤訊息。
+- **FR-005**: API Key 欄位必須（MUST）預設以遮蔽形式顯示，並提供「顯示/隱藏」的切換功能。
+- **FR-006**: API Key 必須（MUST）在後端進行加密儲存。
+- **FR-007**: 系統文件必須（MUST）明確說明整合所需的最小 API Key 權限範圍。
 
-### 2.3. 敏感資訊保護 (Sensitive Data Protection)
-- **FR-SDP-001**: 系統必須（MUST）為 API Key 欄位提供遮蔽功能與顯示/隱藏切換。
-- **FR-SDP-002**: API Key 必須（MUST）在後端加密儲存。
+### 關鍵資料實體 *(如果功能涉及資料則包含)*
 
-### 2.4. 文件與權限 (Documentation & Permissions)
-- **FR-DP-001**: 系統文件必須（MUST）明確說明整合所需的 API Key 最小權限範圍。
-- **FR-DP-002**: [FUTURE] 系統應（SHOULD）根據使用者權限動態顯示或禁用操作介面。
+- **GrafanaConfiguration**: 代表全局 Grafana 整合設定的單一實體。主要屬性: url, api_key_secret。
+
+## 權限控制 *(RBAC)*
+
+### 權限模型設計
+
+此功能的存取控制應限制為只有具備平台管理權限的角色才能進行設定。
+
+#### 所需權限定義
+
+- **`platform:grafana:read`**: 允許查看 Grafana 整合設定（通常與 update 權限合併）。
+- **`platform:grafana:update`**: 允許修改並儲存 Grafana 整合設定。
+- **`platform:grafana:test`**: 允許執行「測試連線」操作。
+
+#### 角色指派建議
+
+- **Admin 角色**: 需要 `platform:grafana:update` 和 `platform:grafana:test` 權限。
+- **Editor 角色**: 無權限。
+- **Viewer 角色**: 無權限。
+
+#### 權限檢查點
+
+- **進入設定頁面**: 檢查使用者是否擁有 `platform:grafana:update` 權限。
+- **點擊「儲存」按鈕**: 檢查 `platform:grafana:update` 權限。
+- **點擊「測試連線」按鈕**: 檢查 `platform:grafana:test` 權限。
 
 ---
+
+## 觀測性與治理檢查（Observability & Governance Checklist）
 
 {{specs/common.md}}
 
@@ -67,8 +95,15 @@
 
 ## 成功標準 *(mandatory)*
 
-### Measurable Outcomes
+### 可衡量成果
 
-- **SC-001**: 使用者可以在 5 分鐘內完成 Grafana 連線配置和同步
-- **SC-002**: 儀表板同步成功率達到 98%，平均同步時間低於 10 秒
-- **SC-003**: 支援至少 500 個儀表板並維持良好的查詢效能 |
+- **SC-001**: 管理員可以在 2 分鐘內完成 Grafana 的連線配置並成功執行一次連線測試。
+- **SC-002**: 連線測試的平均回應時間應低於 3 秒。
+- **SC-003**: 後續的儀表板同步成功率達到 99% 以上。
+
+---
+
+## 模糊與待確認事項（Clarifications）
+
+- [NEEDS CLARIFICATION: API Key 在後端儲存時應使用何種加密標準？]
+- [NEEDS CLARIFICATION: 文件中應建議的最小 API Key 權限具體是哪些？]
