@@ -49,31 +49,29 @@
 ## 二、功能需求（Functional Requirements）
 
 ### 2.1. 版本展示 (Version Display)
-|------|------|
-- **FR-XXX**: 頁面必須（MUST）清晰地標示出當前運行的平台版本為「社群版」。
-- **FR-XXX**: 頁面必須（MUST）以並排卡片形式，摘要展示社群版和商業版的核心功能亮點。
-- **FR-XXX**: 頁面必須（MUST）提供一個詳細的功能比較表格，使用 ✅/❌ 圖示標示功能可用性。
+- **FR-VD-001**: 頁面必須（MUST）清晰地標示出當前運行的平台版本為「社群版」。
+- **FR-VD-002**: 頁面必須（MUST）以並排卡片形式，摘要展示社群版和商業版的核心功能亮點。
+- **FR-VD-003**: 頁面必須（MUST）提供一個詳細的功能比較表格，使用 ✅/❌ 圖示標示功能可用性。
 
 ### 2.2. 內容管理 (Content Management)
-|------|------|
-- **FR-XXX**: 頁面的所有文字內容必須（MUST）優先來自於內容管理系統。
-- **FR-XXX**: 系統應（SHOULD）為關鍵內容提供硬編碼的 fallback 資料。
-- **FR-XXX**: 內容載入期間，系統應（SHOULD）顯示骨架屏或載入指示器。
+- **FR-CM-001**: 頁面的所有文字內容必須（MUST）優先來自於內容管理系統。
+- **FR-CM-002**: 系統應（SHOULD）為關鍵內容提供硬編碼的 fallback 資料。
+- **FR-CM-003**: 內容載入期間，系統應（SHOULD）顯示骨架屏或載入指示器。
 
 ### 2.3. 升級引導 (Upgrade Guidance)
-|------|------|
-- **FR-XXX**: 頁面必須（MUST）提供一個明確的「行動呼籲 (Call to Action)」按鈕。
-- **FR-XXX**: 按鈕必須（MUST）使用 `mailto:` 連結，並預先填寫收件人信箱與主旨。
+- **FR-UG-001**: 頁面必須（MUST）提供一個明確的「行動呼籲 (Call to Action)」按鈕。
+- **FR-UG-002**: 按鈕必須（MUST）使用 `mailto:` 連結，並預先填寫收件人信箱與主旨。
 
 ### 2.4. 唯讀與安全 (Read-Only & Security)
-|------|------|
-- **FR-XXX**: 本模組必須（MUST）僅為資訊展示頁面，不包含任何管理或編輯功能。
-- **FR-XXX**: 頁面不得（MUST NOT）提供任何使用者輸入欄位。
+- **FR-RS-001**: 本模組必須（MUST）僅為資訊展示頁面，不包含任何管理或編輯功能。
+- **FR-RS-002**: 頁面不得（MUST NOT）提供任何使用者輸入欄位。
 
 ---
 
-## 三、觀測性與治理檢查（Observability & Governance Checklist）
--項目 | 狀態 : 說明 
+{{specs/common.md}}
+
+---
+
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes

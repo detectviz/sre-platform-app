@@ -101,109 +101,102 @@
 ## 二、功能需求（Functional Requirements）
 
 ### 2.1. 通知管道管理（Channel Management）
-|------|------|
-- **FR-XXX**: 系統必須（MUST）提供完整的 CRUD 介面來管理通知管道，並支援批次操作（啟用、停用、刪除）。
-- **FR-XXX**: 系統必須（MUST）在可分頁、可排序的表格中展示所有已設定的通知管道，包含名稱、類型、狀態、最後測試時間與結果。
-- **FR-XXX**: 新增/編輯管道的表單必須（MUST）根據後端 API 提供的 JSON Schema 動態產生，以支援不同類型的管道（Slack、Email、PagerDuty、Webhook 等）。
-- **FR-XXX**: 系統必須（MUST）為每個管道提供「測試」功能，並在 UI 上清晰地展示測試結果（成功/失敗）與錯誤訊息。
-- **FR-XXX**: 系統必須（MUST）支援進階篩選、欄位自訂、以及從 CSV 檔案匯入/匯出管道設定。
-- **FR-XXX**: 管道列表應每 30 秒自動刷新一次，以獲取最新的管道狀態和測試結果。
-- **FR-XXX**: 當管道被刪除時，系統必須（MUST）檢查是否被策略使用，若是則阻止刪除並回傳 `409 Conflict` 錯誤。
+- **FR-CM-001**: 系統必須（MUST）提供完整的 CRUD 介面來管理通知管道，並支援批次操作（啟用、停用、刪除）。
+- **FR-CM-002**: 系統必須（MUST）在可分頁、可排序的表格中展示所有已設定的通知管道，包含名稱、類型、狀態、最後測試時間與結果。
+- **FR-CM-003**: 新增/編輯管道的表單必須（MUST）根據後端 API 提供的 JSON Schema 動態產生，以支援不同類型的管道（Slack、Email、PagerDuty、Webhook 等）。
+- **FR-CM-004**: 系統必須（MUST）為每個管道提供「測試」功能，並在 UI 上清晰地展示測試結果（成功/失敗）與錯誤訊息。
+- **FR-CM-005**: 系統必須（MUST）支援進階篩選、欄位自訂、以及從 CSV 檔案匯入/匯出管道設定。
+- **FR-CM-006**: 管道列表應每 30 秒自動刷新一次，以獲取最新的管道狀態和測試結果。
+- **FR-CM-007**: 當管道被刪除時，系統必須（MUST）檢查是否被策略使用，若是則阻止刪除並回傳 `409 Conflict` 錯誤。
 
 ### 2.2. 通知策略管理（Strategy Management）
-|------|------|
-- **FR-XXX**: 系統必須（MUST）提供完整的 CRUD 介面來管理通知策略，並包含複製功能。
-- **FR-XXX**: 系統必須（MUST）在可分頁、可排序的表格中展示所有已設定的通知策略，包含名稱、啟用狀態、觸發條件、關聯管道數量、最近一次觸發狀態與時間。
-- **FR-XXX**: 系統必須（MUST）允許使用者透過策略編輯模態框來新增或編輯策略，包含名稱、觸發條件、通知管道選擇。
-- **FR-XXX**: 系統必須（MUST）允許使用者啟用或禁用一個通知策略，並支援批次操作（啟用、停用、刪除）。
-- **FR-XXX**: 系統必須（MUST）支援自訂表格顯示的欄位與批次刪除。
-- **FR-XXX**: 前端透過 `renderConditionTags` 函式將後端回傳的 `trigger_condition` 字串解析並美化為一組標籤。
-- **FR-XXX**: 編輯策略的模態框應提供一個結構化的條件產生器，以取代目前的純字串輸入。
-- **FR-XXX**: 策略列表中的「最近一次觸發」欄位必須（MUST）是可互動的連結，能導航至歷史頁面並自動篩選該策略的通知紀錄。
+- **FR-SM-001**: 系統必須（MUST）提供完整的 CRUD 介面來管理通知策略，並包含複製功能。
+- **FR-SM-002**: 系統必須（MUST）在可分頁、可排序的表格中展示所有已設定的通知策略，包含名稱、啟用狀態、觸發條件、關聯管道數量、最近一次觸發狀態與時間。
+- **FR-SM-003**: 系統必須（MUST）允許使用者透過策略編輯模態框來新增或編輯策略，包含名稱、觸發條件、通知管道選擇。
+- **FR-SM-004**: 系統必須（MUST）允許使用者啟用或禁用一個通知策略，並支援批次操作（啟用、停用、刪除）。
+- **FR-SM-005**: 系統必須（MUST）支援自訂表格顯示的欄位與批次刪除。
+- **FR-SM-006**: 前端透過 `renderConditionTags` 函式將後端回傳的 `trigger_condition` 字串解析並美化為一組標籤。
+- **FR-SM-007**: 編輯策略的模態框應提供一個結構化的條件產生器，以取代目前的純字串輸入。
+- **FR-SM-008**: 策略列表中的「最近一次觸發」欄位必須（MUST）是可互動的連結，能導航至歷史頁面並自動篩選該策略的通知紀錄。
 
 ### 2.3. 通知歷史追蹤（History Tracking）
-|------|------|
-- **FR-XXX**: 系統必須（MUST）在可分頁、可排序的表格中展示所有通知的發送歷史。
-- **FR-XXX**: 每條歷史紀錄必須（MUST）包含：時間戳、觸發策略、目標管道、收件人、狀態（pending/成功/失敗）、內容摘要。
-- **FR-XXX**: 系統必須（MUST）提供快速篩選器，允許使用者根據「狀態」和「管道類型」過濾列表。
-- **FR-XXX**: 系統必須（MUST）允許使用者點擊任一筆紀錄，以在抽屜中查看該次通知的完整詳細資訊，包括結構化摘要和完整 JSON。
-- **FR-XXX**: 系統必須（MUST）為發送失敗的通知提供「重新發送」功能，且對於處理中（pending）的通知應禁用此功能。
-- **FR-XXX**: 系統必須（MUST）支援將歷史紀錄匯出為 CSV 檔案，包含目前篩選條件。
-- **FR-XXX**: 系統必須（MUST）支援自訂表格顯示的欄位與進階篩選。
-- **FR-XXX**: 頁面每 60 秒自動刷新一次資料。
-- **FR-XXX**: `content` 欄位目前以純文字摘要呈現。
-- **FR-XXX**: 列表頂部應呈現批次/群組成功率摘要，顯示整體通知送達率與失敗率統計。
+- **FR-HT-001**: 系統必須（MUST）在可分頁、可排序的表格中展示所有通知的發送歷史。
+- **FR-HT-002**: 每條歷史紀錄必須（MUST）包含：時間戳、觸發策略、目標管道、收件人、狀態（pending/成功/失敗）、內容摘要。
+- **FR-HT-003**: 系統必須（MUST）提供快速篩選器，允許使用者根據「狀態」和「管道類型」過濾列表。
+- **FR-HT-004**: 系統必須（MUST）允許使用者點擊任一筆紀錄，以在抽屜中查看該次通知的完整詳細資訊，包括結構化摘要和完整 JSON。
+- **FR-HT-005**: 系統必須（MUST）為發送失敗的通知提供「重新發送」功能，且對於處理中（pending）的通知應禁用此功能。
+- **FR-HT-006**: 系統必須（MUST）支援將歷史紀錄匯出為 CSV 檔案，包含目前篩選條件。
+- **FR-HT-007**: 系統必須（MUST）支援自訂表格顯示的欄位與進階篩選。
+- **FR-HT-008**: 頁面每 60 秒自動刷新一次資料。
+- **FR-HT-009**: `content` 欄位目前以純文字摘要呈現。
+- **FR-HT-010**: 列表頂部應呈現批次/群組成功率摘要，顯示整體通知送達率與失敗率統計。
 
 ### 2.4. 整合與治理需求（Integration & Governance）
-|------|------|
-- **FR-XXX**: 所有 UI 文字（包括 Toast 通知）必須（MUST）使用 i18n Key 進行渲染。
-- **FR-XXX**: 所有 UI 元件的顏色必須（MUST）使用語義化的 Theme Token，禁止直接使用 Tailwind 色票或自訂 class。
-- **FR-XXX**: 系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。
-- **FR-XXX**: 所有 CUD 操作（建立、更新、刪除管道/策略）與測試、重新發送操作，都必須（MUST）產生包含操作上下文的審計日誌。
-- **FR-XXX**: 應上報與管道測試成功率、通知發送延遲、策略觸發頻率、歷史送達率相關的指標至監控系統。
-- **FR-XXX**: 所有 state-changing 操作成功後，後端必須（MUST）回傳 `auditId`，前端需在提示訊息中顯示此 ID 以利追蹤。
+- **FR-IG-001**: 所有 UI 文字（包括 Toast 通知）必須（MUST）使用 i18n Key 進行渲染。
+- **FR-IG-002**: 所有 UI 元件的顏色必須（MUST）使用語義化的 Theme Token，禁止直接使用 Tailwind 色票或自訂 class。
+- **FR-IG-003**: 系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。
+- **FR-IG-004**: 所有 CUD 操作（建立、更新、刪除管道/策略）與測試、重新發送操作，都必須（MUST）產生包含操作上下文的審計日誌。
+- **FR-IG-005**: 應上報與管道測試成功率、通知發送延遲、策略觸發頻率、歷史送達率相關的指標至監控系統。
+- **FR-IG-006**: 所有 state-changing 操作成功後，後端必須（MUST）回傳 `auditId`，前端需在提示訊息中顯示此 ID 以利追蹤。
 
 ---
 
-## 三、關鍵資料實體（Key Entities）
----
+## 三、權限控制 (RBAC)
 
-## 四、權限控制 (RBAC)
+### 3.1. 權限定義 (Permissions)
+- `notification:channels:read`: 檢視通知管道列表與詳情。
+- `notification:channels:create`: 建立新的通知管道。
+- `notification:channels:update`: 修改現有通知管道的設定（包括啟用/停用）。
+- `notification:channels:delete`: 刪除通知管道。
+- `notification:channels:test`: 觸發「測試管道」功能。
+- `notification:channels:config`: 管理頁面設定，如「欄位設定」、「匯入」、「匯出」。
+- `notification:strategies:read`: 檢視通知策略列表與詳情。
+- `notification:strategies:create`: 建立新的通知策略。
+- `notification:strategies:update`: 修改現有通知策略的設定（包括啟用/停用、複製）。
+- `notification:strategies:delete`: 刪除通知策略。
+- `notification:history:read`: 檢視通知歷史紀錄。
+- `notification:history:resend`: 重新發送失敗的通知。
+- `notification:history:export`: 匯出通知歷史資料。
 
-### 4.1. 權限定義 (Permissions)
-|-----------|------|
--`notification:channels:read` : 檢視通知管道列表與詳情。 
--`notification:channels:create` : 建立新的通知管道。 
--`notification:channels:update` : 修改現有通知管道的設定（包括啟用/停用）。 
--`notification:channels:delete` : 刪除通知管道。 
--`notification:channels:test` : 觸發「測試管道」功能。 
--`notification:channels:config` : 管理頁面設定，如「欄位設定」、「匯入」、「匯出」。 
--`notification:strategies:read` : 檢視通知策略列表與詳情。 
--`notification:strategies:create` : 建立新的通知策略。 
--`notification:strategies:update` : 修改現有通知策略的設定（包括啟用/停用、複製）。 
--`notification:strategies:delete` : 刪除通知策略。 
--`notification:history:read` : 檢視通知歷史紀錄。 
--`notification:history:resend` : 重新發送失敗的通知。 
--`notification:history:export` : 匯出通知歷史資料。 
-
-### 4.2. UI 控制映射 (UI Mapping)
-- **頁面存取**：整個「通知管理」頁面需由 `<RequirePermission permission="notification:channels:read">` 包裹（最低權限）。
-- **頁籤存取**：
-  - 管道管理頁籤：`notification:channels:read`
-  - 策略管理頁籤：`notification:strategies:read`
-  - 歷史追蹤頁籤：`notification:history:read`
-- **操作按鈕**：
-  - 「新增管道」：`notification:channels:create`
-  - 「編輯管道」：`notification:channels:update`
-  - 「刪除管道」：`notification:channels:delete`
-  - 「測試管道」：`notification:channels:test`
-  - 「匯入/匯出管道」：`notification:channels:config`
-  - 「新增策略」：`notification:strategies:create`
-  - 「編輯策略」：`notification:strategies:update`
-  - 「複製策略」：`notification:strategies:update`
-  - 「啟用/停用策略」：`notification:strategies:update`
-  - 「刪除策略」：`notification:strategies:delete`
-  - 「重新發送通知」：`notification:history:resend`
-  - 「匯出歷史」：`notification:history:export`
-- **批次操作**：所有批次操作均需根據對應的權限進行渲染。
-- **後端 API**：需依權限過濾可見紀錄與可操作項目。
+### 3.2. UI 控制映射 (UI Mapping)
+- **頁面存取**: 整個「通知管理」頁面需由 `<RequirePermission permission="notification:channels:read">` 包裹（最低權限）。
+- **頁籤存取**:
+  - 管道管理頁籤: `notification:channels:read`
+  - 策略管理頁籤: `notification:strategies:read`
+  - 歷史追蹤頁籤: `notification:history:read`
+- **操作按鈕**:
+  - 「新增管道」: `notification:channels:create`
+  - 「編輯管道」: `notification:channels:update`
+  - 「刪除管道」: `notification:channels:delete`
+  - 「測試管道」: `notification:channels:test`
+  - 「匯入/匯出管道」: `notification:channels:config`
+  - 「新增策略」: `notification:strategies:create`
+  - 「編輯策略」: `notification:strategies:update`
+  - 「複製策略」: `notification:strategies:update`
+  - 「啟用/停用策略」: `notification:strategies:update`
+  - 「刪除策略」: `notification:strategies:delete`
+  - 「重新發送通知」: `notification:history:resend`
+  - 「匯出歷史」: `notification:history:export`
+- **批次操作**: 所有批次操作均需根據對應的權限進行渲染。
+- **後端 API**: 需依權限過濾可見紀錄與可操作項目。
 
 ---
 
-## 五、觀測性與治理檢查（Observability & Governance）
-
--項目 | 狀態 : 說明 
--Logging/Tracing | ✅ : 所有 CUD 操作（管道、策略）與測試、重新發送操作需產生審計記錄，包含操作上下文與 auditId。 
--Metrics & Alerts | ✅ : 記錄管道測試成功率與失敗率、通知發送延遲、策略觸發頻率、歷史送達率，並上報至監控系統。 
--RBAC | ✅ : 所有介面與資料權限均依角色控管，使用 `<RequirePermission>` 或 `usePermissions` hook 進行權限檢查。 
--i18n | ✅ : 全部文案由多語系內容管理系統提供，所有 UI 字串均使用 i18n Key。 
--Theme Token | ✅ : 所有樣式遵循語義化色票，禁止直接使用 Tailwind 色票或自訂 class。 
--[FUTURE] Structured Condition Builder | ⚙️ : 策略編輯應提供結構化條件產生器，取代目前的純字串輸入（FR-S-007）。 
--[FUTURE] Success Rate Summary | ⚙️ : 歷史頁面應顯示批次/群組成功率摘要（FR-H-010）。 
+{{specs/common.md}}
 
 ---
 
-## 六、審查與驗收清單（Review & Acceptance Checklist）
+## Success Criteria *(mandatory)*
+
+### Measurable Outcomes
+
+- **SC-001**: 使用者可以在 3 分鐘內設定多管道通知規則
+- **SC-002**: 通知送達成功率達到 99%，平均延遲低於 5 秒
+- **SC-003**: 支援同時管理 1000 個通知管道，每日處理 10 萬個通知
+
+---
+
+## 四、審查與驗收清單（Review & Acceptance Checklist）
 
 - [x] 所有段落齊備且結構正確。
 - [x] 無技術語句。
@@ -215,23 +208,13 @@
 
 ---
 
-## 七、模糊與待確認事項（Clarifications）
+## 五、模糊與待確認事項（Clarifications）
 
--策略關聯管道刪除行為 | [NEEDS CLARIFICATION] : 當一個策略所關聯的通知管道被刪除時，該策略應如何處理？目前規格要求阻止刪除（409 Conflict），但需確認是否支援「軟刪除」或「自動移除無效管道」的備選方案。 
--結構化條件產生器 | [FUTURE] : 編輯策略時應提供結構化條件產生器，取代目前的純字串輸入（FR-S-007），需確認條件語法與支援的事件屬性。 
--通知成功率摘要 | [FUTURE] : 歷史頁面應顯示批次/群組成功率摘要（FR-H-010），需確認統計維度（按管道、按策略、按時間段）與更新頻率。 
--自動刷新頻率 | [NEEDS CLARIFICATION] : 管道頁每 30 秒、歷史頁每 60 秒自動刷新，需確認對後端與前端效能的影響，以及是否支援使用者自訂刷新間隔。 
--管道類型擴展 | [FUTURE] : 需確認未來支援的管道類型範圍（如：Microsoft Teams、Discord、SMS、Voice Call 等），以及 JSON Schema 的擴展機制。 
--通知重試機制 | [NEEDS CLARIFICATION] : 除了手動重新發送，是否支援自動重試機制（如：失敗後延遲重試 3 次），以及重試策略的設定方式。 
-
----
-
-## Success Criteria *(mandatory)*
-
-### Measurable Outcomes
-
-- **SC-001**: 使用者可以在 3 分鐘內設定多管道通知規則
-- **SC-002**: 通知送達成功率達到 99%，平均延遲低於 5 秒
-- **SC-003**: 支援同時管理 1000 個通知管道，每日處理 10 萬個通知
+- **策略關聯管道刪除行為**: [NEEDS CLARIFICATION] : 當一個策略所關聯的通知管道被刪除時，該策略應如何處理？目前規格要求阻止刪除（409 Conflict），但需確認是否支援「軟刪除」或「自動移除無效管道」的備選方案。
+- **結構化條件產生器**: [FUTURE] : 編輯策略時應提供結構化條件產生器，取代目前的純字串輸入（FR-S-007），需確認條件語法與支援的事件屬性。
+- **通知成功率摘要**: [FUTURE] : 歷史頁面應顯示批次/群組成功率摘要（FR-H-010），需確認統計維度（按管道、按策略、按時間段）與更新頻率。
+- **自動刷新頻率**: [NEEDS CLARIFICATION] : 管道頁每 30 秒、歷史頁每 60 秒自動刷新，需確認對後端與前端效能的影響，以及是否支援使用者自訂刷新間隔。
+- **管道類型擴展**: [FUTURE] : 需確認未來支援的管道類型範圍（如：Microsoft Teams、Discord、SMS、Voice Call 等），以及 JSON Schema 的擴展機制。
+- **通知重試機制**: [NEEDS CLARIFICATION] : 除了手動重新發送，是否支援自動重試機制（如：失敗後延遲重試 3 次），以及重試策略的設定方式。
 
 ---

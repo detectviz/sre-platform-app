@@ -82,98 +82,94 @@
 ## 二、功能需求（Functional Requirements）
 
 ### 2.1. 告警規則管理（Alert Rules Management）
-|------|------|
-- **FR-XXX**: 系統必須（MUST）提供完整的 CRUD 介面來管理告警規則。
-- **FR-XXX**: 系統必須（MUST）在可分頁、可排序的表格中展示所有告警規則，包含名稱、狀態、嚴重性、觸發條件摘要、最後觸發時間。
-- **FR-XXX**: 系統必須（MUST）允許使用者透過模態框來新增或編輯告警規則的詳細設定，包含名稱、觸發條件、嚴重性、通知設定、自動化腳本綁定。
-- **FR-XXX**: 系統必須（MUST）提供複製現有規則以建立新規則的功能，複製後的規則名稱加上 "Copy of" 前綴，預設為停用狀態。
-- **FR-XXX**: 系統必須（MUST）允許使用者單獨或批次地啟用/停用告警規則。
-- **FR-XXX**: 系統必須（MUST）支援批次刪除選定的告警規則。
-- **FR-XXX**: 系統必須（MUST）提供進階篩選、欄位自訂、匯入/匯出功能。
-- **FR-XXX**: 系統必須（MUST）能夠對選中的規則觸發 AI 分析，並在模態框中展示報告（歷史觸發頻率、誤報率、建議調整）。
-- **FR-XXX**: 系統應使用語義化的標籤或開關來清晰地展示規則的狀態、嚴重性和自動化狀態。
-- **FR-XXX**: 告警規則的 `conditions_summary` 欄位必須（MUST）由前端根據結構化的 `conditions` 欄位生成，後端 API 應提供結構化的 `conditions` 物件。
+- **FR-AR-001**: 系統必須（MUST）提供完整的 CRUD 介面來管理告警規則。
+- **FR-AR-002**: 系統必須（MUST）在可分頁、可排序的表格中展示所有告警規則，包含名稱、狀態、嚴重性、觸發條件摘要、最後觸發時間。
+- **FR-AR-003**: 系統必須（MUST）允許使用者透過模態框來新增或編輯告警規則的詳細設定，包含名稱、觸發條件、嚴重性、通知設定、自動化腳本綁定。
+- **FR-AR-004**: 系統必須（MUST）提供複製現有規則以建立新規則的功能，複製後的規則名稱加上 "Copy of" 前綴，預設為停用狀態。
+- **FR-AR-005**: 系統必須（MUST）允許使用者單獨或批次地啟用/停用告警規則。
+- **FR-AR-006**: 系統必須（MUST）支援批次刪除選定的告警規則。
+- **FR-AR-007**: 系統必須（MUST）提供進階篩選、欄位自訂、匯入/匯出功能。
+- **FR-AR-008**: 系統必須（MUST）能夠對選中的規則觸發 AI 分析，並在模態框中展示報告（歷史觸發頻率、誤報率、建議調整）。
+- **FR-AR-009**: 系統應使用語義化的標籤或開關來清晰地展示規則的狀態、嚴重性和自動化狀態。
+- **FR-AR-010**: 告警規則的 `conditions_summary` 欄位必須（MUST）由前端根據結構化的 `conditions` 欄位生成，後端 API 應提供結構化的 `conditions` 物件。
 
 ### 2.2. 靜音規則管理（Silence Rules Management）
-|------|------|
-- **FR-XXX**: 系統必須（MUST）提供完整的 CRUD 介面來管理靜音規則。
-- **FR-XXX**: 系統必須（MUST）在可分頁、可排序的表格中展示所有靜音規則，包含名稱、狀態、匹配條件、生效時間、到期時間。
-- **FR-XXX**: 系統必須（MUST）允許使用者透過模態框來新增或編輯靜音規則，包括其名稱、匹配器（matcher）和排程（單次/週期性）。
-- **FR-XXX**: 系統必須（MUST）為「單次」類型的有效靜音規則提供快速「延長」時間的功能。
-- **FR-XXX**: 系統必須（MUST）允許使用者單獨或批次地啟用/停用靜音規則。
-- **FR-XXX**: 系統必須（MUST）支援批次刪除選定的靜音規則。
-- **FR-XXX**: 系統必須（MUST）提供進階篩選、欄位自訂、匯入/匯出功能。
-- **FR-XXX**: 系統必須（MUST）能夠對選中的規則觸發 AI 分析，並在模態框中展示報告（影響範圍、建議優化）。
-- **FR-XXX**: 後端 API 回傳的 `SilenceRule` 物件中，必須（MUST）包含一個 `status` 欄位（如：`active`、`expired`、`pending`），前端應直接使用此欄位來顯示狀態。
-- **FR-XXX**: 系統必須（MUST）支援週期性靜音規則（使用 CRON 表達式），並在設定時提供 CRON 表達式驗證與視覺化預覽。
+- **FR-SR-001**: 系統必須（MUST）提供完整的 CRUD 介面來管理靜音規則。
+- **FR-SR-002**: 系統必須（MUST）在可分頁、可排序的表格中展示所有靜音規則，包含名稱、狀態、匹配條件、生效時間、到期時間。
+- **FR-SR-003**: 系統必須（MUST）允許使用者透過模態框來新增或編輯靜音規則，包括其名稱、匹配器（matcher）和排程（單次/週期性）。
+- **FR-SR-004**: 系統必須（MUST）為「單次」類型的有效靜音規則提供快速「延長」時間的功能。
+- **FR-SR-005**: 系統必須（MUST）允許使用者單獨或批次地啟用/停用靜音規則。
+- **FR-SR-006**: 系統必須（MUST）支援批次刪除選定的靜音規則。
+- **FR-SR-007**: 系統必須（MUST）提供進階篩選、欄位自訂、匯入/匯出功能。
+- **FR-SR-008**: 系統必須（MUST）能夠對選中的規則觸發 AI 分析，並在模態框中展示報告（影響範圍、建議優化）。
+- **FR-SR-009**: 後端 API 回傳的 `SilenceRule` 物件中，必須（MUST）包含一個 `status` 欄位（如：`active`、`expired`、`pending`），前端應直接使用此欄位來顯示狀態。
+- **FR-SR-010**: 系統必須（MUST）支援週期性靜音規則（使用 CRON 表達式），並在設定時提供 CRON 表達式驗證與視覺化預覽。
 
 ### 2.3. 整合與治理需求（Integration & Governance）
-|------|------|
-- **FR-XXX**: 所有 UI 文字（包括 Toast 通知）必須（MUST）使用 i18n Key 進行渲染。
-- **FR-XXX**: 所有 UI 元件的顏色必須（MUST）使用語義化的 Theme Token，禁止直接使用 Tailwind 色票或自訂 class。
-- **FR-XXX**: 系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。
-- **FR-XXX**: 所有 CUD 操作（建立、更新、刪除規則）均需產生包含操作上下文的審計日誌。
-- **FR-XXX**: 應上報與規則觸發頻率、AI 分析使用率、靜音規則建立/啟用/停用相關的指標至監控系統。
-- **FR-XXX**: 所有 state-changing 操作成功後，後端必須（MUST）回傳 `auditId`，前端需在提示訊息中顯示此 ID 以利追蹤。
-- **FR-XXX**: 告警規則詳情面板必須（MUST）顯示「關聯靜音規則」列表，列出目前生效且匹配該告警的所有靜音規則。
-- **FR-XXX**: 靜音規則編輯模態框必須（MUST）提供「預覽匹配」功能，即時顯示符合條件的告警規則清單與數量。
+- **FR-IG-001**: 所有 UI 文字（包括 Toast 通知）必須（MUST）使用 i18n Key 進行渲染。
+- **FR-IG-002**: 所有 UI 元件的顏色必須（MUST）使用語義化的 Theme Token，禁止直接使用 Tailwind 色票或自訂 class。
+- **FR-IG-003**: 系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。
+- **FR-IG-004**: 所有 CUD 操作（建立、更新、刪除規則）均需產生包含操作上下文的審計日誌。
+- **FR-IG-005**: 應上報與規則觸發頻率、AI 分析使用率、靜音規則建立/啟用/停用相關的指標至監控系統。
+- **FR-IG-006**: 所有 state-changing 操作成功後，後端必須（MUST）回傳 `auditId`，前端需在提示訊息中顯示此 ID 以利追蹤。
+- **FR-IG-007**: 告警規則詳情面板必須（MUST）顯示「關聯靜音規則」列表，列出目前生效且匹配該告警的所有靜音規則。
+- **FR-IG-008**: 靜音規則編輯模態框必須（MUST）提供「預覽匹配」功能，即時顯示符合條件的告警規則清單與數量。
 
 ---
 
-## 三、關鍵資料實體（Key Entities）
----
+## 三、權限控制 (RBAC)
 
-## 四、權限控制 (RBAC)
+### 3.1. 權限定義 (Permissions)
+- `incident-rules:alert:read`: 檢視告警規則列表與詳情。
+- `incident-rules:alert:create`: 建立新的告警規則。
+- `incident-rules:alert:update`: 修改告警規則（包括編輯、複製、啟用/停用）。
+- `incident-rules:alert:delete`: 刪除告警規則。
+- `incident-rules:alert:analyze`: 觸發告警規則的 AI 分析功能。
+- `incident-rules:silence:read`: 檢視靜音規則列表與詳情。
+- `incident-rules:silence:create`: 建立新的靜音規則。
+- `incident-rules:silence:update`: 修改靜音規則（包括編輯、延長、啟用/停用）。
+- `incident-rules:silence:delete`: 刪除靜音規則。
+- `incident-rules:silence:analyze`: 觸發靜音規則的 AI 分析功能。
+- `incident-rules:config`: 管理頁面設定，如「欄位設定」、「匯入」、「匯出」。
 
-### 4.1. 權限定義 (Permissions)
-|-----------|------|
--`incident-rules:alert:read` : 檢視告警規則列表與詳情。 
--`incident-rules:alert:create` : 建立新的告警規則。 
--`incident-rules:alert:update` : 修改告警規則（包括編輯、複製、啟用/停用）。 
--`incident-rules:alert:delete` : 刪除告警規則。 
--`incident-rules:alert:analyze` : 觸發告警規則的 AI 分析功能。 
--`incident-rules:silence:read` : 檢視靜音規則列表與詳情。 
--`incident-rules:silence:create` : 建立新的靜音規則。 
--`incident-rules:silence:update` : 修改靜音規則（包括編輯、延長、啟用/停用）。 
--`incident-rules:silence:delete` : 刪除靜音規則。 
--`incident-rules:silence:analyze` : 觸發靜音規則的 AI 分析功能。 
--`incident-rules:config` : 管理頁面設定，如「欄位設定」、「匯入」、「匯出」。 
-
-### 4.2. UI 控制映射 (UI Mapping)
-- **頁面存取**：整個「規則管理」頁面需由 `<RequirePermission permission="incident-rules:alert:read">` 包裹（最低權限）。
-- **頁籤存取**：
-  - 告警規則頁籤：`incident-rules:alert:read`
-  - 靜音規則頁籤：`incident-rules:silence:read`
-- **操作按鈕**：
-  - 「新增告警規則」：`incident-rules:alert:create`
-  - 「編輯告警規則」：`incident-rules:alert:update`
-  - 「複製告警規則」：`incident-rules:alert:update`
-  - 「刪除告警規則」：`incident-rules:alert:delete`
-  - 「啟用/停用告警規則」：`incident-rules:alert:update`
-  - 「AI 分析告警規則」：`incident-rules:alert:analyze`
-  - 「新增靜音規則」：`incident-rules:silence:create`
-  - 「編輯靜音規則」：`incident-rules:silence:update`
-  - 「延長靜音規則」：`incident-rules:silence:update`
-  - 「刪除靜音規則」：`incident-rules:silence:delete`
-  - 「啟用/停用靜音規則」：`incident-rules:silence:update`
-  - 「AI 分析靜音規則」：`incident-rules:silence:analyze`
-  - 「匯入/匯出/欄位設定」：`incident-rules:config`
-- **批次操作**：所有批次操作均需根據對應的權限進行渲染。
+### 3.2. UI 控制映射 (UI Mapping)
+- **頁面存取**: 整個「規則管理」頁面需由 `<RequirePermission permission="incident-rules:alert:read">` 包裹（最低權限）。
+- **頁籤存取**:
+  - 告警規則頁籤: `incident-rules:alert:read`
+  - 靜音規則頁籤: `incident-rules:silence:read`
+- **操作按鈕**:
+  - 「新增告警規則」: `incident-rules:alert:create`
+  - 「編輯告警規則」: `incident-rules:alert:update`
+  - 「複製告警規則」: `incident-rules:alert:update`
+  - 「刪除告警規則」: `incident-rules:alert:delete`
+  - 「啟用/停用告警規則」: `incident-rules:alert:update`
+  - 「AI 分析告警規則」: `incident-rules:alert:analyze`
+  - 「新增靜音規則」: `incident-rules:silence:create`
+  - 「編輯靜音規則」: `incident-rules:silence:update`
+  - 「延長靜音規則」: `incident-rules:silence:update`
+  - 「刪除靜音規則」: `incident-rules:silence:delete`
+  - 「啟用/停用靜音規則」: `incident-rules:silence:update`
+  - 「AI 分析靜音規則」: `incident-rules:silence:analyze`
+  - 「匯入/匯出/欄位設定」: `incident-rules:config`
+- **批次操作**: 所有批次操作均需根據對應的權限進行渲染。
 
 ---
 
-## 五、觀測性與治理檢查（Observability & Governance）
-
--項目 | 狀態 : 說明 
--Logging/Tracing | ✅ : 所有 CUD 操作（告警規則、靜音規則）均需產生審計記錄，包含操作上下文與 auditId。 
--Metrics & Alerts | ✅ : 記錄規則觸發頻率、AI 分析使用率、靜音規則建立/啟用/停用次數，並上報至監控系統。 
--RBAC | ✅ : 所有介面與資料權限均依角色控管，使用 `<RequirePermission>` 或 `usePermissions` hook 進行權限檢查。 
--i18n | ✅ : 全部文案由多語系內容管理系統提供，所有 UI 字串均使用 i18n Key。 
--Theme Token | ✅ : 所有樣式遵循語義化色票，禁止直接使用 Tailwind 色票或自訂 class。 
+{{specs/common.md}}
 
 ---
 
-## 六、審查與驗收清單（Review & Acceptance Checklist）
+## Success Criteria *(mandatory)*
+
+### Measurable Outcomes
+
+- **SC-001**: 使用者可以在 5 分鐘內建立複雜的事件規則並測試生效
+- **SC-002**: 規則引擎支援每秒處理 5000 個事件，平均匹配延遲低於 100 毫秒
+- **SC-003**: 規則觸發準確率達到 99%，誤報率低於 1%
+
+---
+
+## 四、審查與驗收清單（Review & Acceptance Checklist）
 
 - [x] 所有段落齊備且結構正確。
 - [x] 無技術語句。
@@ -185,22 +181,12 @@
 
 ---
 
-## 七、模糊與待確認事項（Clarifications）
+## 五、模糊與待確認事項（Clarifications）
 
--AI 分析功能範圍 | [NEEDS CLARIFICATION] : 需確認 AI 分析的具體指標（歷史觸發頻率、誤報率、建議調整）與分析演算法來源（平台內建 / 外部 AI 服務）。 
--靜音規則匹配邏輯 | [NEEDS CLARIFICATION] : 需確認靜音規則與告警規則的匹配演算法（精確匹配 / 模糊匹配 / 正則表達式），以及多條靜音規則的優先級處理。 
--CRON 表達式格式 | [NEEDS CLARIFICATION] : 需確認支援的 CRON 表達式格式（標準 5 欄位 / 6 欄位含秒 / Quartz 格式），以及是否提供視覺化 CRON 建構器。 
--規則版本控制 | [FUTURE] : 是否支援規則版本歷史追蹤與回滾功能，以便在規則調整後出現問題時快速恢復。 
--規則測試功能 | [FUTURE] : 是否提供「規則測試」功能，允許使用者輸入測試資料模擬規則觸發，驗證規則邏輯正確性。 
-
----
-
-## Success Criteria *(mandatory)*
-
-### Measurable Outcomes
-
-- **SC-001**: 使用者可以在 5 分鐘內建立複雜的事件規則並測試生效
-- **SC-002**: 規則引擎支援每秒處理 5000 個事件，平均匹配延遲低於 100 毫秒
-- **SC-003**: 規則觸發準確率達到 99%，誤報率低於 1%
+- **AI 分析功能範圍**: [NEEDS CLARIFICATION] : 需確認 AI 分析的具體指標（歷史觸發頻率、誤報率、建議調整）與分析演算法來源（平台內建 / 外部 AI 服務）。
+- **靜音規則匹配邏輯**: [NEEDS CLARIFICATION] : 需確認靜音規則與告警規則的匹配演算法（精確匹配 / 模糊匹配 / 正則表達式），以及多條靜音規則的優先級處理。
+- **CRON 表達式格式**: [NEEDS CLARIFICATION] : 需確認支援的 CRON 表達式格式（標準 5 欄位 / 6 欄位含秒 / Quartz 格式），以及是否提供視覺化 CRON 建構器。
+- **規則版本控制**: [FUTURE] : 是否支援規則版本歷史追蹤與回滾功能，以便在規則調整後出現問題時快速恢復。
+- **規則測試功能**: [FUTURE] : 是否提供「規則測試」功能，允許使用者輸入測試資料模擬規則觸發，驗證規則邏輯正確性。
 
 ---

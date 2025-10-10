@@ -89,106 +89,99 @@
 ## 二、功能需求（Functional Requirements）
 
 ### 2.1. 腳本管理（Playbook Management）
-|------|------|
-- **FR-XXX**: 系統必須（MUST）提供完整的 CRUD 介面來管理自動化腳本，並支援分頁、排序、搜尋與批次操作。
-- **FR-XXX**: 系統必須（MUST）在表格中顯示腳本的複合資訊，包括：名稱、描述、腳本類型標籤、參數數量標籤、關聯觸發器數量、最近執行狀態和時間。
-- **FR-XXX**: 使用者必須（MUST）能透過腳本編輯模態框進行腳本的新增與編輯，包含名稱、描述、腳本內容與參數定義。
-- **FR-XXX**: 使用者必須（MUST）能透過執行模態框手動觸發腳本執行，並輸入必要參數。
-- **FR-XXX**: 列表中的觸發器標籤必須（MUST）是可互動的連結，能導航至觸發器管理頁面並應用篩選。
-- **FR-XXX**: 腳本參數定義必須（MUST）包含 `name`、`type`、`required`、`default_value` 等欄位。
-- **FR-XXX**: 當腳本被刪除時，系統必須（MUST）自動禁用所有關聯的觸發器，並在觸發器列表中標示為無效狀態。
+- **FR-PM-001**: 系統必須（MUST）提供完整的 CRUD 介面來管理自動化腳本，並支援分頁、排序、搜尋與批次操作。
+- **FR-PM-002**: 系統必須（MUST）在表格中顯示腳本的複合資訊，包括：名稱、描述、腳本類型標籤、參數數量標籤、關聯觸發器數量、最近執行狀態和時間。
+- **FR-PM-003**: 使用者必須（MUST）能透過腳本編輯模態框進行腳本的新增與編輯，包含名稱、描述、腳本內容與參數定義。
+- **FR-PM-004**: 使用者必須（MUST）能透過執行模態框手動觸發腳本執行，並輸入必要參數。
+- **FR-PM-005**: 列表中的觸發器標籤必須（MUST）是可互動的連結，能導航至觸發器管理頁面並應用篩選。
+- **FR-PM-006**: 腳本參數定義必須（MUST）包含 `name`、`type`、`required`、`default_value` 等欄位。
+- **FR-PM-007**: 當腳本被刪除時，系統必須（MUST）自動禁用所有關聯的觸發器，並在觸發器列表中標示為無效狀態。
 
 ### 2.2. 觸發器管理（Trigger Management）
-|------|------|
-- **FR-XXX**: 系統必須（MUST）提供完整的 CRUD 介面來管理自動化觸發器，並支援分頁、排序、搜尋與批次操作。
-- **FR-XXX**: 系統必須（MUST）支援至少兩種觸發類型：「排程」（CRON 表達式）與「事件」（基於系統事件或告警）。
-- **FR-XXX**: 系統必須（MUST）允許使用者在建立或編輯觸發器時，從現有的自動化腳本庫中選擇一個進行綁定。
-- **FR-XXX**: 對於「事件」類型的觸發器，編輯模態框中必須（MUST）提供結構化的條件產生器以設定觸發條件。
-- **FR-XXX**: 系統必須（MUST）允許使用者單獨或批次地啟用/停用觸發器。
-- **FR-XXX**: 觸發器物件必須（MUST）包含 `last_execution` 物件，記錄由該特定觸發器觸發的最近一次執行狀態與時間。
-- **FR-XXX**: 觸發器列表中的「上次執行結果」欄位必須（MUST）是可互動的連結，能導航至執行歷史頁面並自動篩選該觸發器的執行紀錄。
+- **FR-TM-001**: 系統必須（MUST）提供完整的 CRUD 介面來管理自動化觸發器，並支援分頁、排序、搜尋與批次操作。
+- **FR-TM-002**: 系統必須（MUST）支援至少兩種觸發類型：「排程」（CRON 表達式）與「事件」（基於系統事件或告警）。
+- **FR-TM-003**: 系統必須（MUST）允許使用者在建立或編輯觸發器時，從現有的自動化腳本庫中選擇一個進行綁定。
+- **FR-TM-004**: 對於「事件」類型的觸發器，編輯模態框中必須（MUST）提供結構化的條件產生器以設定觸發條件。
+- **FR-TM-005**: 系統必須（MUST）允許使用者單獨或批次地啟用/停用觸發器。
+- **FR-TM-006**: 觸發器物件必須（MUST）包含 `last_execution` 物件，記錄由該特定觸發器觸發的最近一次執行狀態與時間。
+- **FR-TM-007**: 觸發器列表中的「上次執行結果」欄位必須（MUST）是可互動的連結，能導航至執行歷史頁面並自動篩選該觸發器的執行紀錄。
 
 ### 2.3. 執行歷史追蹤（Execution History）
-|------|------|
-- **FR-XXX**: 系統必須（MUST）提供可分頁、可排序的執行歷史表格。
-- **FR-XXX**: 表格中須包含：腳本名稱、狀態、觸發來源（手動/觸發器名稱）、執行者、開始時間、執行時長。
-- **FR-XXX**: 使用者可透過快速篩選與進階搜尋組合查詢紀錄（狀態、執行者、時間範圍、腳本名稱、觸發來源）。
-- **FR-XXX**: 點擊任一紀錄可開啟詳細面板檢視結構化日誌內容、執行步驟摘要、觸發來源與執行者資訊。
-- **FR-XXX**: 對失敗任務提供「重試」操作，並記錄重試原因與輸入參數。
-- **FR-XXX**: 支援將執行紀錄匯出為 CSV，包含使用中篩選條件。
-- **FR-XXX**: 執行者欄位應渲染結構化資訊（例如使用者名稱、觸發器名稱、觸發來源類型）。
-- **FR-XXX**: 詳細日誌需顯示分段步驟、時間戳、執行結果與錯誤訊息。
-- **FR-XXX**: 資料保留期限為 90 天，逾期自動清除。
-- **FR-XXX**: [FUTURE] 支援實時狀態更新（基於事件流或輪詢）。
-- **FR-XXX**: [FUTURE] 支援批次匯出與批次重試操作。
+- **FR-EH-001**: 系統必須（MUST）提供可分頁、可排序的執行歷史表格。
+- **FR-EH-002**: 表格中須包含：腳本名稱、狀態、觸發來源（手動/觸發器名稱）、執行者、開始時間、執行時長。
+- **FR-EH-003**: 使用者可透過快速篩選與進階搜尋組合查詢紀錄（狀態、執行者、時間範圍、腳本名稱、觸發來源）。
+- **FR-EH-004**: 點擊任一紀錄可開啟詳細面板檢視結構化日誌內容、執行步驟摘要、觸發來源與執行者資訊。
+- **FR-EH-005**: 對失敗任務提供「重試」操作，並記錄重試原因與輸入參數。
+- **FR-EH-006**: 支援將執行紀錄匯出為 CSV，包含使用中篩選條件。
+- **FR-EH-007**: 執行者欄位應渲染結構化資訊（例如使用者名稱、觸發器名稱、觸發來源類型）。
+- **FR-EH-008**: 詳細日誌需顯示分段步驟、時間戳、執行結果與錯誤訊息。
+- **FR-EH-009**: 資料保留期限為 90 天，逾期自動清除。
+- **FR-EH-010**: [FUTURE] 支援實時狀態更新（基於事件流或輪詢）。
+- **FR-EH-011**: [FUTURE] 支援批次匯出與批次重試操作。
 
 ### 2.4. 整合與治理需求（Integration & Governance）
-|------|------|
-- **FR-XXX**: 所有 UI 文字（包括 Toast 通知）必須（MUST）使用 i18n Key 進行渲染。
-- **FR-XXX**: 所有 UI 元件的顏色必須（MUST）使用語義化的 Theme Token，禁止直接使用 Tailwind 色票或自訂 class。
-- **FR-XXX**: 所有 state-changing 操作（建立、更新、刪除、執行）成功後，後端必須（MUST）回傳 `auditId`，前端需在提示訊息中顯示此 ID 以利追蹤。
-- **FR-XXX**: 系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。
-- **FR-XXX**: 所有 CUD（建立、更新、刪除）和執行操作，都必須（MUST）產生包含操作上下文的審計日誌。
-- **FR-XXX**: 應上報與腳本執行成功率、失敗率、平均執行時間、觸發器執行頻率相關的指標至監控系統。
+- **FR-IG-001**: 所有 UI 文字（包括 Toast 通知）必須（MUST）使用 i18n Key 進行渲染。
+- **FR-IG-002**: 所有 UI 元件的顏色必須（MUST）使用語義化的 Theme Token，禁止直接使用 Tailwind 色票或自訂 class。
+- **FR-IG-003**: 所有 state-changing 操作（建立、更新、刪除、執行）成功後，後端必須（MUST）回傳 `auditId`，前端需在提示訊息中顯示此 ID 以利追蹤。
+- **FR-IG-004**: 系統必須（MUST）根據使用者的權限，動態顯示或禁用對應的操作介面。
+- **FR-IG-005**: 所有 CUD（建立、更新、刪除）和執行操作，都必須（MUST）產生包含操作上下文的審計日誌。
+- **FR-IG-006**: 應上報與腳本執行成功率、失敗率、平均執行時間、觸發器執行頻率相關的指標至監控系統。
 
 ---
 
-## 三、關鍵資料實體（Key Entities）
----
+## 三、權限控制 (RBAC)
 
-## 四、權限控制 (RBAC)
+### 3.1. 權限定義 (Permissions)
+- `automation:playbooks:read`: 檢視腳本列表與詳情。
+- `automation:playbooks:create`: 建立新腳本。
+- `automation:playbooks:update`: 修改腳本內容與參數定義。
+- `automation:playbooks:delete`: 刪除腳本。
+- `automation:playbooks:execute`: 手動執行腳本。
+- `automation:triggers:read`: 檢視觸發器列表與詳情。
+- `automation:triggers:create`: 建立新觸發器。
+- `automation:triggers:update`: 修改觸發器設定（包括啟用/停用）。
+- `automation:triggers:delete`: 刪除觸發器。
+- `automation:history:read`: 檢視執行歷史與詳細日誌。
+- `automation:history:retry`: 允許重試執行失敗的任務。
+- `automation:history:export`: 允許匯出執行歷史資料。
 
-### 4.1. 權限定義 (Permissions)
-|-----------|------|
--`automation:playbooks:read` : 檢視腳本列表與詳情。 
--`automation:playbooks:create` : 建立新腳本。 
--`automation:playbooks:update` : 修改腳本內容與參數定義。 
--`automation:playbooks:delete` : 刪除腳本。 
--`automation:playbooks:execute` : 手動執行腳本。 
--`automation:triggers:read` : 檢視觸發器列表與詳情。 
--`automation:triggers:create` : 建立新觸發器。 
--`automation:triggers:update` : 修改觸發器設定（包括啟用/停用）。 
--`automation:triggers:delete` : 刪除觸發器。 
--`automation:history:read` : 檢視執行歷史與詳細日誌。 
--`automation:history:retry` : 允許重試執行失敗的任務。 
--`automation:history:export` : 允許匯出執行歷史資料。 
-
-### 4.2. UI 控制映射 (UI Mapping)
-- **頁面存取**：整個「自動化管理」頁面需由 `<RequirePermission permission="automation:playbooks:read">` 包裹（最低權限）。
-- **頁籤存取**：
-  - 腳本管理頁籤：`automation:playbooks:read`
-  - 觸發器管理頁籤：`automation:triggers:read`
-  - 執行歷史頁籤：`automation:history:read`
-- **操作按鈕**：
-  - 「新增腳本」：`automation:playbooks:create`
-  - 「編輯腳本」：`automation:playbooks:update`
-  - 「刪除腳本」：`automation:playbooks:delete`
-  - 「執行腳本」：`automation:playbooks:execute`
-  - 「新增觸發器」：`automation:triggers:create`
-  - 「編輯觸發器」：`automation:triggers:update`
-  - 「啟用/停用觸發器」：`automation:triggers:update`
-  - 「刪除觸發器」：`automation:triggers:delete`
-  - 「重試執行」：`automation:history:retry`
-  - 「匯出歷史」：`automation:history:export`
-- **批次操作**：所有批次操作均需根據對應的權限進行渲染。
-- **後端 API**：需依權限過濾可見紀錄與可操作項目。
+### 3.2. UI 控制映射 (UI Mapping)
+- **頁面存取**: 整個「自動化管理」頁面需由 `<RequirePermission permission="automation:playbooks:read">` 包裹（最低權限）。
+- **頁籤存取**:
+  - 腳本管理頁籤: `automation:playbooks:read`
+  - 觸發器管理頁籤: `automation:triggers:read`
+  - 執行歷史頁籤: `automation:history:read`
+- **操作按鈕**:
+  - 「新增腳本」: `automation:playbooks:create`
+  - 「編輯腳本」: `automation:playbooks:update`
+  - 「刪除腳本」: `automation:playbooks:delete`
+  - 「執行腳本」: `automation:playbooks:execute`
+  - 「新增觸發器」: `automation:triggers:create`
+  - 「編輯觸發器」: `automation:triggers:update`
+  - 「啟用/停用觸發器」: `automation:triggers:update`
+  - 「刪除觸發器」: `automation:triggers:delete`
+  - 「重試執行」: `automation:history:retry`
+  - 「匯出歷史」: `automation:history:export`
+- **批次操作**: 所有批次操作均需根據對應的權限進行渲染。
+- **後端 API**: 需依權限過濾可見紀錄與可操作項目。
 
 ---
 
-## 五、觀測性與治理檢查（Observability & Governance）
-
--項目 | 狀態 : 說明 
--Logging/Tracing | ✅ : 所有 CUD 操作（腳本、觸發器）與執行操作（執行、重試、匯出）需產生審計記錄，包含操作上下文與 auditId。 
--Metrics & Alerts | ✅ : 記錄腳本執行成功率與錯誤率、觸發器執行頻率、平均執行時間，並上報至監控系統。 
--RBAC | ✅ : 所有介面與資料權限均依角色控管，使用 `<RequirePermission>` 或 `usePermissions` hook 進行權限檢查。 
--i18n | ✅ : 全部文案由多語系內容管理系統提供，所有 UI 字串均使用 i18n Key。 
--Theme Token | ✅ : 所有樣式遵循語義化色票，禁止直接使用 Tailwind 色票或自訂 class。 
--[FUTURE] Realtime Updates | ⚙️ : 需待事件流機制實現後測試，用於執行中任務的狀態即時更新。 
--[FUTURE] Batch Operations | ⚙️ : 支援批次重試、批次匯出等操作。 
+{{specs/common.md}}
 
 ---
 
-## 六、審查與驗收清單（Review & Acceptance Checklist）
+## Success Criteria *(mandatory)*
+
+### Measurable Outcomes
+
+- **SC-001**: 使用者可以在 10 分鐘內建立完整的自動化工作流程
+- **SC-002**: 支援同時執行 50 個自動化任務，平均執行時間低於 2 分鐘
+- **SC-003**: 自動化成功率達到 95%，減少 80% 的重複人工操作
+
+---
+
+## 四、審查與驗收清單（Review & Acceptance Checklist）
 
 - [x] 所有段落齊備且結構正確。
 - [x] 無技術語句。
@@ -200,23 +193,13 @@
 
 ---
 
-## 七、模糊與待確認事項（Clarifications）
+## 五、模糊與待確認事項（Clarifications）
 
--日誌匯出格式 | [CLARIFY] : 預期為 CSV，需確定欄位順序與內容格式。 
--即時狀態更新頻率 | [NEEDS CLARIFICATION] : 需確認事件流或輪詢週期，以及對前端效能的影響。 
--批次重試行為 | [FUTURE] : 將於後期版本開放，需確認批次重試的失敗處理邏輯。 
--觸發器條件產生器 | [NEEDS CLARIFICATION] : 需確認事件類型觸發器的條件語法與支援的事件來源（告警、系統事件、外部 webhook 等）。 
--腳本參數類型 | [NEEDS CLARIFICATION] : 需確認支援的參數類型範圍（string、number、boolean、select、multi-select 等）。 
--執行中任務取消 | [FUTURE] : 需確認是否支援取消執行中的任務，以及取消後的狀態處理。 
-
----
-
-## Success Criteria *(mandatory)*
-
-### Measurable Outcomes
-
-- **SC-001**: 使用者可以在 10 分鐘內建立完整的自動化工作流程
-- **SC-002**: 支援同時執行 50 個自動化任務，平均執行時間低於 2 分鐘
-- **SC-003**: 自動化成功率達到 95%，減少 80% 的重複人工操作
+- **日誌匯出格式**: [CLARIFY] : 預期為 CSV，需確定欄位順序與內容格式。
+- **即時狀態更新頻率**: [NEEDS CLARIFICATION] : 需確認事件流或輪詢週期，以及對前端效能的影響。
+- **批次重試行為**: [FUTURE] : 將於後期版本開放，需確認批次重試的失敗處理邏輯。
+- **觸發器條件產生器**: [NEEDS CLARIFICATION] : 需確認事件類型觸發器的條件語法與支援的事件來源（告警、系統事件、外部 webhook 等）。
+- **腳本參數類型**: [NEEDS CLARIFICATION] : 需確認支援的參數類型範圍（string、number、boolean、select、multi-select 等）。
+- **執行中任務取消**: [FUTURE] : 需確認是否支援取消執行中的任務，以及取消後的狀態處理。
 
 ---

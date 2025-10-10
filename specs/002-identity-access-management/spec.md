@@ -300,38 +300,7 @@
 
 ---
 
-## 六、觀測性與治理（Observability & Governance）
-
-### 6.1. Logging & Tracing
-- [ ] 所有使用者 CRUD 操作記錄於結構化日誌（包含操作者、時間、受影響使用者、動作）
-- [ ] 所有團隊結構變更記錄於日誌（包含變更前後狀態、影響範圍）
-- [ ] 所有角色與權限變更記錄於稽核日誌（類別：`identity`）
-- [ ] 分散式追蹤（Trace ID）貫穿整個權限計算流程
-
-### 6.2. Metrics & Alerts
-- [ ] 監控活躍使用者數（Active User Count）
-- [ ] 監控團隊數量與平均階層深度
-- [ ] 監控角色使用頻率（Role Usage Frequency）
-- [ ] 監控權限變更頻率（異常頻繁時告警）
-- [ ] 監控邀請郵件發送成功率
-
-### 6.3. RBAC
-- [ ] 所有身分與權限管理 API 必須（MUST）驗證 `identity:*:*` 權限
-- [ ] 使用者管理 API 必須（MUST）驗證 `identity:user:write` 權限
-- [ ] 團隊管理 API 必須（MUST）驗證 `identity:team:manage` 權限
-- [ ] 角色管理 API 必須（MUST）驗證 `identity:role:manage` 權限
-- [ ] 稽核日誌查詢 API 必須（MUST）驗證 `identity:audit:read` 權限
-
-### 6.4. i18n
-- [ ] 所有使用者介面文字必須（MUST）使用 i18n Key，禁止硬編碼
-- [ ] i18n Key 命名規範：`identity.{category}.{item}`（如 `identity.user.status_pending`）
-- [ ] 支援至少 2 種語系（繁體中文、英文）
-- [ ] 缺失 Key 時顯示降級文字（key 名稱），並記錄警告日誌
-
-### 6.5. Theme Token
-- [ ] 所有樣式必須（MUST）使用 Theme Token（如 `--text-primary`, `--border-color`）
-- [ ] 支援深色/淺色主題切換
-- [ ] 禁止硬編碼顏色值
+{{specs/common.md}}
 
 ---
 

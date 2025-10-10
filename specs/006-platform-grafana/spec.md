@@ -43,37 +43,25 @@
 ## 二、功能需求（Functional Requirements）
 
 ### 2.1. 設定管理 (Settings Management)
-|------|------|
-- **FR-XXX**: 系統必須（MUST）提供表單介面，允許設定和編輯 Grafana 整合參數。
-- **FR-XXX**: 系統必須（MUST）支援儲存設定與還原未儲存的變更。
+- **FR-SM-001**: 系統必須（MUST）提供表單介面，允許設定和編輯 Grafana 整合參數。
+- **FR-SM-002**: 系統必須（MUST）支援儲存設定與還原未儲存的變更。
 
 ### 2.2. 連線測試 (Connection Testing)
-|------|------|
-- **FR-XXX**: 系統必須（MUST）提供「測試連線」功能，驗證當前設定。
-- **FR-XXX**: 測試成功時，必須（MUST）顯示 Grafana 版本與資源統計資訊。
-- **FR-XXX**: 測試失敗時，必須（MUST）顯示具體錯誤訊息。
+- **FR-CT-001**: 系統必須（MUST）提供「測試連線」功能，驗證當前設定。
+- **FR-CT-002**: 測試成功時，必須（MUST）顯示 Grafana 版本與資源統計資訊。
+- **FR-CT-003**: 測試失敗時，必須（MUST）顯示具體錯誤訊息。
 
 ### 2.3. 敏感資訊保護 (Sensitive Data Protection)
-|------|------|
-- **FR-XXX**: 系統必須（MUST）為 API Key 欄位提供遮蔽功能與顯示/隱藏切換。
-- **FR-XXX**: API Key 必須（MUST）在後端加密儲存。
+- **FR-SDP-001**: 系統必須（MUST）為 API Key 欄位提供遮蔽功能與顯示/隱藏切換。
+- **FR-SDP-002**: API Key 必須（MUST）在後端加密儲存。
 
 ### 2.4. 文件與權限 (Documentation & Permissions)
-|------|------|
-- **FR-XXX**: 系統文件必須（MUST）明確說明整合所需的 API Key 最小權限範圍。
-- **FR-XXX**: [FUTURE] 系統應（SHOULD）根據使用者權限動態顯示或禁用操作介面。
+- **FR-DP-001**: 系統文件必須（MUST）明確說明整合所需的 API Key 最小權限範圍。
+- **FR-DP-002**: [FUTURE] 系統應（SHOULD）根據使用者權限動態顯示或禁用操作介面。
 
 ---
 
-## 三、關鍵資料實體（Key Entities）
--實體名稱 : 描述 
-|-----------|------|
-
----
-
-## 四、觀測性與治理檢查（Observability & Governance Checklist）
--項目 | 狀態 : 說明 
-| **Theme Token** | 🟡 | 需統一使用中央設計系統的 Theme Token。
+{{specs/common.md}}
 
 ---
 

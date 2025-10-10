@@ -59,55 +59,45 @@
 ## 二、功能需求（Functional Requirements）
 
 ### 2.1. 列表展示 (List Display)
-|------|------|
-- **FR-XXX**: 系統必須（MUST）提供一個可分頁、可排序的事件列表。
-- **FR-XXX**: 列表必須（MUST）預設按嚴重性降序、觸發時間降序進行排序。
-- **FR-XXX**: 系統必須（MUST）支援使用者自訂顯示的表格欄位。
+- **FR-LD-001**: 系統必須（MUST）提供一個可分頁、可排序的事件列表。
+- **FR-LD-002**: 列表必須（MUST）預設按嚴重性降序、觸發時間降序進行排序。
+- **FR-LD-003**: 系統必須（MUST）支援使用者自訂顯示的表格欄位。
 
 ### 2.2. 生命週期管理 (Lifecycle Management)
-|------|------|
-- **FR-XXX**: 系統必須（MUST）支援事件的四種核心狀態：New, Acknowledged, Resolved, Silenced。
-- **FR-XXX**: 系統必須（MUST）提供認領（Acknowledge）、指派（Assign）、解決（Resolve）、靜音（Silence）操作。
-- **FR-XXX**: 系統必須（MUST）在事件詳情中提供一個時間軸（Timeline），記錄所有狀態變更和操作歷史。
+- **FR-LM-001**: 系統必須（MUST）支援事件的四種核心狀態：New, Acknowledged, Resolved, Silenced。
+- **FR-LM-002**: 系統必須（MUST）提供認領（Acknowledge）、指派（Assign）、解決（Resolve）、靜音（Silence）操作。
+- **FR-LM-003**: 系統必須（MUST）在事件詳情中提供一個時間軸（Timeline），記錄所有狀態變更和操作歷史。
 
 ### 2.3. 批次操作 (Batch Operations)
-|------|------|
-- **FR-XXX**: 系統必須（MUST）支援對多個選中事件進行批次認領。
-- **FR-XXX**: 系統必須（MUST）支援對多個選中事件進行批次解決。
-- **FR-XXX**: 系統必須（MUST）支援對多個選中事件進行批次靜音。
+- **FR-BO-001**: 系統必須（MUST）支援對多個選中事件進行批次認領。
+- **FR-BO-002**: 系統必須（MUST）支援對多個選中事件進行批次解決。
+- **FR-BO-003**: 系統必須（MUST）支援對多個選中事件進行批次靜音。
 
 ### 2.4. 篩選與搜尋 (Filtering & Search)
-|------|------|
-- **FR-XXX**: 系統必須（MUST）支援按嚴重性、狀態、指派人員、觸發時間範圍進行篩選。
-- **FR-XXX**: 系統必須（MUST）支援按事件標題或標籤進行關鍵字搜尋。
-- **FR-XXX**: 系統應該（SHOULD）支援使用者儲存常用的篩選條件組合。
+- **FR-FS-001**: 系統必須（MUST）支援按嚴重性、狀態、指派人員、觸發時間範圍進行篩選。
+- **FR-FS-002**: 系統必須（MUST）支援按事件標題或標籤進行關鍵字搜尋。
+- **FR-FS-003**: 系統應該（SHOULD）支援使用者儲存常用的篩選條件組合。
 
 ### 2.5. 整合 (Integration)
-|------|------|
-- **FR-XXX**: 系統必須（MUST）能夠顯示觸發事件的來源告警規則。
-- **FR-XXX**: 系統應該（SHOULD）支援手動關聯多個相關事件。
-- **FR-XXX**: 系統應該（SHOULD）整合 AI 分析能力，提供根因推測和解決方案建議。
+- **FR-I-001**: 系統必須（MUST）能夠顯示觸發事件的來源告警規則。
+- **FR-I-002**: 系統應該（SHOULD）支援手動關聯多個相關事件。
+- **FR-I-003**: 系統應該（SHOULD）整合 AI 分析能力，提供根因推測和解決方案建議。
 
 ---
 
-## 四、權限控制 (RBAC)
+## 三、權限控制 (RBAC)
 
-|-----------|------|
--`incident:read` : 允許查看事件列表與詳情。 
--`incident:write` : 允許執行認領、指派、解決、靜音等操作。 
--`incident:comment` : 允許在事件上添加備註。 
--`incident:admin` : 允許刪除事件或修改他人備註。 
+- `incident:read`: 允許查看事件列表與詳情。
+- `incident:write`: 允許執行認領、指派、解決、靜音等操作。
+- `incident:comment`: 允許在事件上添加備註。
+- `incident:admin`: 允許刪除事件或修改他人備註。
 
 ---
 
-## 五、觀測性與治理（Observability & Governance）
+{{specs/common.md}}
 
--項目 | 狀態 : 說明 
--Logging/Tracing | ✅ : 所有事件操作均需產生審計日誌。 
--Metrics & Alerts | ✅ : 追蹤事件處理時長（MTTA, MTTR）、事件數量等關鍵指標。 
--RBAC | ✅ : 所有操作均需進行權限檢查。 
--i18n | ✅ : 所有 UI 文字均需使用 i18n Key。 
--Theme Token | ✅ : 所有顏色、狀態標籤均需使用語義化的 Theme Token。 
+---
+
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
