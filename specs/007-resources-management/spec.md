@@ -91,14 +91,20 @@
 - **FR-006**: 系統必須（MUST）提供一個高維度的「總覽」儀表板，展示資源的宏觀統計數據。
 - **FR-007**: 系統必須（MUST）提供一個視覺化的「拓撲」視圖，展示資源及其依賴關係，節點顏色需反映健康狀態。
 - **FR-008**: 系統必須（MUST）支援設定外部監控資料源（如 Prometheus），並提供連線測試功能。
-- **FR-009**: 所有改變狀態的操作（納管、刪除、分組、設定變更）必須（MUST）寫入稽核日誌。
-- **FR-010**: 系統必須（MUST）根據使用者權限過濾可見和可操作的資源。
+- **FR-009**: 系統必須（MUST）建立統一的認證實體，支援多種雲供應商的認證類型（IAM Role, Service Account, API Key），並提供統一的驗證流程。
+- **FR-010**: 系統必須（MUST）允許使用者定義拓撲關係來源規則，支援雲廠商 API 和監控指標等多種推斷方法。
+- **FR-011**: 系統必須（MUST）允許使用者完全自定義健康狀態計算邏輯，包含任意監控指標、計算公式和權重。
+- **FR-012**: 系統必須（MUST）使用企業級加密服務（如 HashiCorp Vault）來管理雲端認證金鑰等敏感資料，並實施細粒度存取控制。
+- **FR-013**: 所有改變狀態的操作（納管、刪除、分組、設定變更）必須（MUST）寫入稽核日誌。
+- **FR-014**: 系統必須（MUST）根據使用者權限過濾可見和可操作的資源。
 
 ### 關鍵資料實體 *(如果功能涉及資料則包含)*
 
 - **Resource**: 代表一個被管理的實體（如伺服器、資料庫）。主要屬性: id, name, type, status, tags, group_id, datasource_ids。
 - **ResourceGroup**: 代表一組資源的邏輯集合。主要屬性: id, name, description。
 - **Datasource**: 代表一個外部監控資料源。主要屬性: id, name, type, url, credentials。
+- **CloudCredential**: 代表統一的雲供應商認證實體。主要屬性: id, name, provider, credential_type, credential_data。
+- **HealthRule**: 代表健康狀態計算規則。主要屬性: id, name, resource_type, metrics, formula, thresholds, weights。
 - **DiscoveryTask**: 代表一次資源探索任務。主要屬性: id, status, start_time, end_time, discovered_count。
 
 ## 權限控制 *(RBAC)*
@@ -113,22 +119,26 @@
 - **`resources:update`**: 允許編輯資源資訊、標籤和分組。
 - **`resources:delete`**: 允許刪除已納管的資源。
 - **`resources:datasource:manage`**: 允許新增、編輯、刪除和測試資料源。
+- **`resources:credentials:manage`**: 允許新增、編輯和刪除雲端認證，但無法查看敏感金鑰內容。
+- **`resources:credentials:read`**: 允許檢視認證設定，但無法查看敏感金鑰內容。
 - **`resources:discovery:read`**: 允許檢視資源探索的結果和歷史任務。
 - **`resources:discovery:execute`**: 允許手動觸發新的探索任務和納管資源。
 
 #### 角色指派建議
 
 - **Admin 角色**: 需要所有 `resources:*` 權限。
-- **Editor 角色** (SRE): `resources:read`, `resources:update`, `resources:delete`, `resources:discovery:execute`。
+- **Editor 角色** (SRE): `resources:read`, `resources:update`, `resources:delete`, `resources:credentials:read`, `resources:discovery:execute`。
 - **Viewer 角色**: `resources:read`。
+- **Credential Manager 角色**: `resources:credentials:manage`, `resources:credentials:read`。
 
 #### 權限檢查點
 
-- **頁面/頁籤存取**: 存取「資源管理」下的各個頁籤（清單、總覽、拓撲、探索、資料源）需要對應的 `read` 權限。
+- **頁面/頁籤存取**: 存取「資源管理」下的各個頁籤（清單、總覽、拓撲、探索、資料源、認證）需要對應的 `read` 權限。
 - **操作按鈕**:
   - 「編輯/刪除資源」按鈕需要 `resources:update`/`delete` 權限。
   - 「新增/編輯群組」按鈕需要 `resources:update` 權限。
   - 「新增/編輯資料源」按鈕需要 `resources:datasource:manage` 權限。
+  - 「新增/編輯認證」按鈕需要 `resources:credentials:manage` 權限。
   - 「觸發探索/納管資源」按鈕需要 `resources:discovery:execute` 權限。
 
 ---
@@ -143,15 +153,19 @@
 
 ### 可衡量成果
 
-- **SC-001**: 一個新建立的雲端資源，從被自動探索發現到成功納管並出現在拓撲圖中，整個過程應在 10 分鐘內完成。
-- **SC-002**: 對於 10000 個已納管資源，資源清單頁面的篩選和搜尋回應時間應小於 2 秒。
-- **SC-003**: 拓撲圖在有 500 個節點時，初始載入時間應小於 5 秒。
-- **SC-004**: 資源健康狀態的更新延遲應小於 60 秒。
+- **SC-001**: 一個新建立的雲端資源，從被自動探索發現到成功納管並出現在拓撲圖中，整個過程應在 **[參數化]** 納管超時（5分鐘, 10分鐘, 15分鐘）內完成。
+- **SC-002**: 對於 **[參數化]** 資源規模上限（5000個, 10000個, 20000個）已納管資源，資源清單頁面的篩選和搜尋回應時間應小於 2 秒。
+- **SC-003**: 拓撲圖在有 **[參數化]** 圖形節點上限（200個, 500個, 1000個）節點時，初始載入時間應小於 5 秒。
+- **SC-004**: 資源健康狀態的更新頻率應為每 **[參數化]** 健康檢查間隔（1分鐘, 2分鐘, 5分鐘），支援 **[參數化]** 並發用戶上限（25個, 50個, 100個）同時操作。
 
 ---
 
 ## 模糊與待確認事項（Clarifications）
 
-- **多雲認證方式**: [NEEDS CLARIFICATION: 不同雲供應商的 API 認證機制（如 IAM Role, Service Account, API Key）應如何統一管理？]
-- **拓撲關係來源**: [NEEDS CLARIFICATION: 資源間的依賴關係是來自雲廠商的 API，還是需要基於監控指標（如流量）進行推斷？]
-- **健康狀態定義**: [NEEDS CLARIFICATION: 「健康狀態」的計算邏輯是什麼？是基於一組預設的監控指標閾值，還是可由使用者自定義？]
+### Session 2025-10-10
+
+- **Q**: 不同雲供應商的 API 認證機制（如 IAM Role, Service Account, API Key）應如何統一管理？ → **A**: 統一認證：建立抽象認證實體，支援多種認證類型，統一驗證流程
+- **Q**: 資源間的依賴關係是來自雲廠商的 API，還是需要基於監控指標（如流量）進行推斷？ → **A**: 可配置策略：允許使用者定義關係來源規則，支援多種推斷方法
+- **Q**: 「健康狀態」的計算邏輯是什麼？是基於一組預設的監控指標閾值，還是可由使用者自定義？ → **A**: 完全自定義：使用者可定義任意監控指標、計算公式和權重
+- **Q**: 資源管理系統應支援的最大規模是什麼？包括資源數量、並發用戶、監控指標更新頻率等。 → **A**: 中規模：10000 個資源，50 個並發用戶，每 2 分鐘更新指標
+- **Q**: 資源管理系統中如何處理雲端認證金鑰等敏感資料？是否需要特殊的加密和存取控制？ → **A**: 企業級加密：使用外部金鑰管理服務（如 HashiCorp Vault），細粒度存取控制

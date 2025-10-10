@@ -55,8 +55,20 @@
 ### 邊界案例
 
 - **內建儀表板**: 內建儀表板應為唯讀，不允許使用者編輯或刪除其連結。
+- **自訂元件載入失敗**: 當內建儀表板的 React 元件載入失敗時，系統應顯示友好的錯誤訊息並提供重新載入選項。
+- **整合 Grafana 連線失敗**: 當平台管理的 Grafana 實例無法連線時，系統應顯示錯誤訊息並提供重新載入選項。
 - **外部儀表板失效**: 當一個外部連結的 Grafana 儀表板在源頭被刪除時，平台中的連結點擊後應顯示「儀表板不存在或無權限存取」的錯誤頁面。
 - **權限問題**: 當使用者沒有權限查看某個外部儀表板時，點擊連結後應顯示 Grafana 的權限錯誤頁面。
+- **代理伺服器故障**: 當代理伺服器無法連線時，系統應顯示適當的錯誤訊息並提供重新連線選項。
+- **代理快取失效**: 當代理伺服器的快取資料過期或損壞時，應自動重新從源頭獲取最新資料。
+- **代理安全性檢查**: 代理伺服器必須驗證所有轉發請求的安全性，阻止潛在的惡意請求。
+- **API 資料載入失敗**: 當內建儀表板的資料 API 請求失敗時，系統應顯示快取資料或適當的載入狀態。
+- **並發使用者上限**: 當同時在線使用者超過 50 個時，系統應實施適當的資源調配或排隊機制。
+- **儀表板數量上限**: 當儀表板總數接近 200 個時，系統應發出容量警告並建議整理過時儀表板。
+- **每日查看配額超限**: 當每日查看次數接近 5000 次時，系統應實施速率限制並記錄使用量指標。
+- **無效配置參數**: 當使用者輸入無效的配置參數（如負數超時時間）時，系統應拒絕儲存並顯示具體的驗證錯誤訊息。
+- **配置同步延遲**: 當多個節點需要同步配置變更時，系統應確保所有節點在 60 秒內完成同步，以維持一致的儀表板行為。
+- **配置參數衝突**: 當新配置與現有儀表板設定發生衝突時，系統應提供遷移指引或阻止配置生效。
 
 ## 功能需求 *(mandatory)*
 
@@ -64,7 +76,24 @@
 
 - **FR-001**: 系統必須（MUST）支援「內建」和「外部」兩種類型的儀表板，並在清單中清晰標示。
 - **FR-002**: 內建儀表板必須（MUST）是唯讀的。
+- **FR-009**: 內建儀表板採用混合模式：核心儀表板使用自訂 React 元件實現，複雜儀表板整合平台管理的 Grafana 實例。
+- **FR-010**: 系統必須（MUST）支援內建儀表板的動態資料載入，通過平台 API 獲取即時監控資料。
 - **FR-003**: 系統必須（MUST）允許使用者透過 Grafana 的 UID 或 URL 來新增外部儀表板的連結。
+- **FR-011**: 外部儀表板必須（MUST）通過平台的安全代理伺服器載入，避免 CORS 問題並增強安全性。
+- **FR-012**: 代理伺服器必須（MUST）支援請求轉發、回應快取和錯誤處理功能。
+  - **[參數化]** 代理快取大小（100MB, 500MB, 1GB, 2GB）
+  - **[參數化]** 快取過期時間（5分鐘, 15分鐘, 30分鐘, 1小時）
+  - **[參數化]** 請求超時設定（10秒, 30秒, 60秒, 120秒）
+- **FR-013**: 系統必須（MUST）支援中型部署規模：至少 200 個儀表板、50 個並發使用者和每日 5000 次查看。
+- **FR-014**: 系統必須（MUST）提供基本的錯誤處理機制：顯示清晰的錯誤訊息，提供重新載入選項，並記錄所有錯誤到日誌。
+- **FR-015**: 系統必須（MUST）支援參數化配置儀表板載入和顯示行為。
+  - **[參數化]** 儀表板載入超時（5秒, 10秒, 15秒, 30秒）
+  - **[參數化]** 自動重新整理間隔（關閉, 1分鐘, 5分鐘, 15分鐘）
+  - **[參數化]** 預設顯示模式（標準, 全螢幕）
+- **FR-016**: 系統必須（MUST）支援參數化配置規模限制和資源管理。
+  - **[參數化]** 最大儀表板數量（100, 200, 500, 1000）
+  - **[參數化]** 最大並發使用者數（25, 50, 100, 200）
+  - **[參數化]** 每日查看配額（1000, 5000, 10000, 20000）
 - **FR-004**: 儀表板清單必須（MUST）支援搜尋、排序和分頁功能。
 - **FR-005**: 系統必須（MUST）提供多種顯示模式，如標準、全螢幕。
 - **FR-006**: 使用者必須（MUST）能夠設定個人的預設儀表板。
@@ -73,8 +102,9 @@
 
 ### 關鍵資料實體 *(如果功能涉及資料則包含)*
 
-- **Dashboard**: 代表一個儀表板。主要屬性: id, name, type (`BUILT_IN`|`EXTERNAL`), source_id (e.g., Grafana UID), url。
+- **Dashboard**: 代表一個儀表板。主要屬性: id, name, type (`BUILT_IN`|`EXTERNAL`), subtype (對於 BUILT_IN: `CUSTOM_COMPONENT`|`INTEGRATED_GRAFANA`; 對於 EXTERNAL: `LINKED_GRAFANA`), source_id (Grafana UID 或元件 ID), url, component_config (自訂元件的配置), proxy_config (代理伺服器設定)。
 - **UserDashboardPreference**: 儲存使用者的儀表板偏好。主要屬性: user_id, default_dashboard_id, bookmarked_dashboard_ids (`id[]`)。
+- **DashboardSystemConfiguration**: 代表儀表板系統的參數化配置。主要屬性: proxy_cache_size, cache_expiration_minutes, request_timeout_seconds, dashboard_load_timeout, auto_refresh_interval, default_display_mode, max_dashboards, max_concurrent_users, daily_view_quota。
 
 ## 權限控制 *(RBAC)*
 
@@ -88,11 +118,13 @@
 - **`dashboards:link:create`**: 允許新增外部 Grafana 儀表板連結。
 - **`dashboards:link:delete`**: 允許刪除外部儀表板連結。
 - **`dashboards:preferences:update`**: 允許使用者設定自己的偏好（如預設儀表板、書籤）。
+- **`dashboards:config:read`**: 允許檢視儀表板系統的配置參數。
+- **`dashboards:config:update`**: 允許修改儀表板系統的配置參數。
 
 #### 角色指派建議
 
-- **Admin 角色**: `dashboards:read`, `dashboards:link:create`, `dashboards:link:delete`, `dashboards:preferences:update`。
-- **Editor 角色**: `dashboards:read`, `dashboards:link:create`, `dashboards:link:delete`, `dashboards:preferences:update`。
+- **Admin 角色**: `dashboards:read`, `dashboards:link:create`, `dashboards:link:delete`, `dashboards:preferences:update`, `dashboards:config:*`。
+- **Editor 角色**: `dashboards:read`, `dashboards:link:create`, `dashboards:link:delete`, `dashboards:preferences:update`, `dashboards:config:read`。
 - **Viewer 角色**: `dashboards:read`, `dashboards:preferences:update`。
 
 #### 權限檢查點
@@ -101,6 +133,8 @@
 - **顯示「新增連結」按鈕**: 檢查 `dashboards:link:create` 權限。
 - **顯示「刪除連結」按鈕**: 檢查 `dashboards:link:delete` 權限。
 - **儲存個人偏好**: 檢查 `dashboards:preferences:update` 權限。
+- **進入設定頁面**: 檢查 `dashboards:config:read` 權限。
+- **修改系統配置**: 檢查 `dashboards:config:update` 權限。
 
 ---
 
@@ -117,11 +151,24 @@
 - **SC-001**: 使用者可以在 30 秒內成功新增一個外部儀表板連結。
 - **SC-002**: 儀表板（內嵌框架）的平均載入時間應低於 3 秒。
 - **SC-003**: 95% 的使用者能在首次使用時成功找到並設定自己的預設儀表板。
+- **SC-004**: 自訂元件儀表板的初始渲染時間應低於 2 秒，資料更新延遲應低於 1 秒。
+- **SC-005**: 整合 Grafana 儀表板的載入時間應低於 5 秒，包含驗證和 iframe 初始化。
+- **SC-006**: 代理伺服器轉發請求的平均延遲應低於 500 毫秒，快取命中率應達到 80% 以上。
+- **SC-007**: 系統應能管理至少 200 個儀表板，並支援 50 個並發使用者同時查看。
+- **SC-008**: 系統應能處理每日至少 5000 次儀表板查看請求，平均回應時間低於 2 秒。
+- **SC-009**: 當發生錯誤時，系統應在 3 秒內顯示清晰的錯誤訊息，並提供重新載入選項。
+- **SC-010**: 配置參數修改後，系統應在 30 秒內生效並應用到新的儀表板載入流程。
 
 ---
 
 ## 模糊與待確認事項（Clarifications）
 
+### Session 2025-10-10
+
+- **Q**: 內建儀表板的來源和技術實現應採用什麼方式？ → **A**: 混合模式：核心儀表板使用自訂元件，複雜儀表板整合外部 Grafana
+- **Q**: 外部 Grafana 儀表板的整合應採用什麼模式？ → **A**: 安全代理：通過平台代理伺服器轉發請求，避免 CORS 和安全問題
+- **Q**: 儀表板系統的規模和效能應設定在什麼水準？ → **A**: 中型部署：支援 200 個儀表板，50 個並發使用者，單日 5000 次查看
+- **Q**: 儀表板系統的錯誤處理和恢復機制應如何設計？ → **A**: 基本處理：顯示錯誤訊息，提供重新載入選項，記錄錯誤但不自動恢復
 - **儀表板同步**: [FUTURE] 未來是否需要支援將外部儀表板的 JSON 內容同步到平台內，以實現版本控制和更深入的整合？
 - **儀表板匯入/匯出**: [FUTURE] 是否需要支援匯出/匯入儀表板的連結設定，以方便在不同環境間遷移？
 - **Grafana Scenes**: [FUTURE] 未來是否考慮整合 Grafana Scenes 作為內建儀表板的底層技術？

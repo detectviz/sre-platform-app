@@ -58,9 +58,11 @@
 
 ### 邊界案例
 
-- **動態表單**: 新增/編輯管道的表單應根據後端提供的 JSON Schema 動態產生，以支援未來新增的管道類型。
-- **自動刷新**: 管道和歷史頁面應定期自動刷新（例如每 30-60 秒），以獲取最新狀態。
-- **空狀態**: 當任何頁籤（管道、策略、歷史）沒有數據時，應顯示清晰的空狀態提示和操作引導。
+- **動態表單**: 新增/編輯管道的表單採用半動態混合模式：核心欄位（如名稱、類型）固定顯示，額外配置欄位根據後端提供的 JSON Schema 動態產生，以支援未來新增的管道類型。
+- **即時更新**: 管道和歷史頁面採用 WebSocket 事件驅動更新，而非定期自動刷新，當後端數據發生變化時即時推送給前端。
+- **空狀態引導**: 當頁籤沒有數據時，採用智慧建議設計：管道頁籤顯示 Slack 設定示例，策略頁籤顯示告警規則範例，歷史頁籤顯示如何觸發測試通知的引導。
+- **無效配置參數**: 當使用者輸入無效的配置參數（如負數超時時間）時，系統應拒絕儲存並顯示具體的驗證錯誤訊息。
+- **配置同步延遲**: 當多個節點需要同步配置變更時，系統應確保所有節點在 60 秒內完成同步，以維持一致的通知行為。
 
 ## 功能需求 *(mandatory)*
 
@@ -71,15 +73,24 @@
 - **FR-003**: 策略必須（MUST）允許使用者基於事件的屬性（如嚴重性、標籤）來定義觸發條件，並關聯一個或多個通知管道。
 - **FR-004**: 系統必須（MUST）在可分頁、可排序的表格中展示所有通知的發送歷史，記錄包括時間戳、目標管道、狀態（成功/失敗）和內容摘要。
 - **FR-005**: 系統必須（MUST）為發送失敗的通知提供查看失敗原因和手動「重新發送」的功能。
-- **FR-006**: 系統必須（MUST）在刪除一個正在被策略使用的管道時，發出警告並阻止刪除。
-- **FR-007**: 系統必須（MUST）支援將歷史記錄匯出為 CSV 檔案。
-- **FR-008**: 所有 CUD 操作、測試和重發操作都必須（MUST）有權限控制和審計日誌。
+- **FR-006**: 系統必須（MUST）支援智慧重試機制，對失敗通知根據錯誤類型自動決定是否重試（如網路錯誤重試，認證錯誤不重試）。
+  - **[參數化]** 重試次數設定（網路錯誤:3次, 認證錯誤:0次, 其他錯誤:1次）
+  - **[參數化]** 重試間隔設定（初始:30秒, 指數退避:2倍增長, 最大:10分鐘）
+- **FR-007**: 系統必須（MUST）在刪除一個正在被策略使用的管道時，發出警告並阻止刪除。
+- **FR-008**: 系統必須（MUST）支援將歷史記錄匯出為 CSV 檔案。
+- **FR-010**: 系統必須（MUST）支援參數化配置通知行為，包括重試策略、效能參數和資源限制。
+  - **[參數化]** 管道測試超時（30秒, 60秒, 120秒）
+  - **[參數化]** 並發通知處理數量（5, 10, 20）
+  - **[參數化]** 歷史記錄保留天數（7天, 30天, 90天）
+  - **[參數化]** WebSocket 心跳間隔（30秒, 60秒, 120秒）
+- **FR-011**: 所有 CUD 操作、測試和重發操作都必須（MUST）有權限控制和審計日誌。
 
 ### 關鍵資料實體 *(如果功能涉及資料則包含)*
 
 - **NotificationChannel**: 代表一個通知管道。主要屬性: id, name, type (`Slack`|`Email`|`PagerDuty`), config_data, enabled。
 - **NotificationStrategy**: 代表一條通知路由策略。主要屬性: id, name, trigger_conditions, channel_ids, enabled。
 - **NotificationHistory**: 代表一條已發送的通知記錄。主要屬性: id, strategy_id, channel_id, timestamp, status, error_message。
+- **NotificationConfiguration**: 代表通知系統的參數化配置。主要屬性: retry_attempts_network, retry_attempts_auth, retry_attempts_other, retry_interval_initial, retry_interval_max, test_timeout_seconds, concurrent_notifications, history_retention_days, websocket_heartbeat_seconds。
 
 ## 權限控制 *(RBAC)*
 
@@ -97,17 +108,20 @@
 - **`notification:strategies:delete`**: 允許刪除通知策略。
 - **`notification:history:read`**: 允許查看通知歷史。
 - **`notification:history:resend`**: 允許重新發送失敗的通知。
+- **`notification:config:read`**: 允許檢視通知系統的配置參數。
+- **`notification:config:update`**: 允許修改通知系統的配置參數。
 
 #### 角色指派建議
 
 - **Admin 角色**: 需要所有 `notification:*` 權限。
-- **Editor 角色** (SRE): `notification:channels:read/update`, `notification:strategies:read/update/delete`, `notification:history:read/resend`。
+- **Editor 角色** (SRE): `notification:channels:read/update`, `notification:strategies:read/update/delete`, `notification:history:read/resend`, `notification:config:read`。
 - **Viewer 角色**: `notification:channels:read`, `notification:strategies:read`, `notification:history:read`。
 
 #### 權限檢查點
 
-- **頁籤存取**: 存取各頁籤（管道、策略、歷史）需要對應的 `read` 權限。
+- **頁籤存取**: 存取各頁籤（管道、策略、歷史、設定）需要對應的 `read` 權限。
 - **操作按鈕**: 所有按鈕（新增、編輯、刪除、測試、重發等）都需綁定其對應的權限。
+- **設定頁面**: 進入「設定」頁面檢查 `notification:config:read` 權限，修改配置檢查 `notification:config:update` 權限。
 
 ---
 
@@ -125,11 +139,18 @@
 - **SC-002**: 從事件觸發到透過管道發出通知，端到端的平均延遲應低於 5 秒。
 - **SC-003**: 系統的通知發送成功率應達到 99.9%。
 - **SC-004**: 系統應能支援管理至少 1000 個通知策略，並每日處理 10 萬次以上的通知。
+- **SC-005**: 配置參數修改後，系統應在 30 秒內生效並應用到新的通知處理流程。
 
 ---
 
 ## 模糊與待確認事項（Clarifications）
 
+### Session 2025-10-10
+
+- **Q**: 除了手動重試，系統是否應支援對失敗通知的自動重試機制？重試策略是什麼？ → **A**: 智慧重試：根據失敗類型決定是否重試（如網路錯誤重試，認證錯誤不重試）
+- **Q**: 新增/編輯管道的表單應如何根據後端提供的 JSON Schema 動態產生，以支援未來新增的管道類型？ → **A**: 半動態混合：核心欄位（如名稱、類型）固定，額外欄位根據 Schema 動態產生
+- **Q**: 管道和歷史頁面應定期自動刷新（例如每 30-60 秒），具體的刷新頻率和策略是什麼？ → **A**: 事件驅動：不自動刷新，改為 WebSocket 即時推送數據更新
+- **Q**: 當任何頁籤（管道、策略、歷史）沒有數據時，應如何設計空狀態提示和操作引導？ → **A**: 智慧建議：根據頁籤類型顯示不同的引導內容（如管道頁籤提示設定 Slack，策略頁籤提示建立規則）
+- **Q**: 未來計劃支援哪些新的管道類型？動態表單的 Schema 設計應如何確保良好的擴展性？ → **A**: 廣泛支援：支援 Teams、SMS、Webhook、SMS，並設計靈活的 Schema 結構
+
 - **結構化條件產生器**: [FUTURE] 編輯策略時應提供一個結構化的條件產生器，以取代目前的純字串輸入，提升易用性。
-- **自動重試機制**: [NEEDS CLARIFICATION: 除了手動重試，系統是否應支援對失敗通知的自動重試機制？重試策略是什麼？]
-- **管道類型擴展**: [FUTURE] 未來計劃支援哪些新的管道類型（如 Microsoft Teams, SMS）？動態表單的 Schema 是否能良好支持？
