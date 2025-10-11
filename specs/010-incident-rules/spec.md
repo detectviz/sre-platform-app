@@ -82,6 +82,21 @@
 - **AlertRule**: 代表一條告警規則。主要屬性: id, name, enabled, severity, conditions, notification_config。
 - **SilenceRule**: 代表一條靜音規則。主要屬性: id, name, enabled, matchers, schedule_type (`once`|`recurring`), start_time, end_time, cron_expression, status (`active`|`expired`|`pending`)。
 
+## 技術實現細節 *(如果功能涉及技術棧則包含)*
+
+### 數據存儲策略
+- **業務數據**: 使用 PostgreSQL 存儲告警規則和靜音規則配置
+- **快取數據**: 使用 Redis 進行規則匹配快取和性能優化
+- **審計日誌**: 使用 Grafana Loki 記錄規則變更和 AI 分析操作
+
+### API 端點定義
+- **GET /api/v1/rules/alerts**: 告警規則列表
+- **POST /api/v1/rules/alerts**: 創建告警規則
+- **PUT /api/v1/rules/alerts/{id}**: 更新告警規則
+- **GET /api/v1/rules/silences**: 靜音規則列表
+- **POST /api/v1/rules/silences**: 創建靜音規則
+- **POST /api/v1/rules/{id}/analyze**: AI 分析規則效能
+
 ## 權限控制 *(RBAC)*
 
 ### 權限模型設計
@@ -113,7 +128,16 @@
 
 ## 觀測性與治理檢查（Observability & Governance Checklist）
 
-{{specs/common.md}}
+> 本模組遵循平台憲法中定義之全域治理與觀測性原則。  
+> 詳細規範請參閱：
+> - [.specify/memory/constitution.md](../../.specify/memory/constitution.md)
+> - 章節：[觀測性與治理檢查](../../.specify/memory/constitution.md#ai-生成與規格合規)
+
+> 本模組需確保：
+> - 所有操作皆可追蹤並具備審計記錄。  
+> - 關鍵事件具備可觀測性指標（logs、metrics、alerts）。  
+> - 錯誤回報須符合統一錯誤模型並附 trace_id。  
+> - Mock API 與實際行為需與 `/specs` 定義保持一致。
 
 ---
 
@@ -137,4 +161,8 @@
 - **Q**: 當使用者嘗試「延長」一個週期性的靜音規則時，系統應如何處理？ → **A**: 臨時覆蓋：允許臨時延長本次執行的結束時間，但不改變原排程
 - **Q**: 當使用者在建立週期性靜音時輸入了無效的 CRON 表達式，系統應如何處理？ → **A**: 即時驗證：在輸入過程中即時檢查並顯示紅色錯誤提示
 - **Q**: 當使用者嘗試刪除任何規則時，系統應如何設計二次確認對話框？ → **A**: 影響評估：除了規則資訊，還顯示此規則的歷史影響統計（如靜音了多少告警）
+
+### Session 2025-10-11
+
+- **Q**: 根據架構決策，告警規則的配置管理與實際執行應如何分工？ → **A**: 分層架構：平台負責規則的配置、編輯、管理介面，Grafana負責規則的實際執行和觸發，通過Webhook將觸發結果發送給平台進行智慧處理
 - **規則版本控制**: [FUTURE] 是否需要支援規則的版本歷史追蹤與一鍵回滾功能？

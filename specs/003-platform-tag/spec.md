@@ -81,6 +81,19 @@
 - **TagDefinition**: 代表一個標籤的定義。主要屬性: key, type (`enum`|`text`), required (`boolean`), permissions (`role_id[]`)
 - **TagValue**: 代表 `enum` 型別標籤的一個允許值。主要屬性: definition_id, value
 
+## 技術實現細節 *(如果功能涉及技術棧則包含)*
+
+### 數據存儲策略
+- **業務數據**: 使用 PostgreSQL 存儲標籤定義、允許值和標籤綱要
+- **快取數據**: 使用 Redis 進行標籤驗證規則快取
+- **審計日誌**: 使用 Grafana Loki 記錄標籤操作和合規性檢查
+
+### API 端點定義
+- **GET /api/v1/tags/definitions**: 標籤定義列表
+- **POST /api/v1/tags/definitions**: 創建標籤定義
+- **GET /api/v1/tags/definitions/{id}/values**: 標籤允許值列表
+- **POST /api/v1/tags/validate**: 標籤合規性驗證
+
 ## 權限控制 *(RBAC)*
 
 ### 權限模型設計
@@ -114,7 +127,16 @@
 
 ## 觀測性與治理檢查（Observability & Governance Checklist）
 
-{{specs/common.md}}
+> 本模組遵循平台憲法中定義之全域治理與觀測性原則。  
+> 詳細規範請參閱：
+> - [.specify/memory/constitution.md](../../.specify/memory/constitution.md)
+> - 章節：[觀測性與治理檢查](../../.specify/memory/constitution.md#ai-生成與規格合規)
+
+> 本模組需確保：
+> - 所有操作皆可追蹤並具備審計記錄。  
+> - 關鍵事件具備可觀測性指標（logs、metrics、alerts）。  
+> - 錯誤回報須符合統一錯誤模型並附 trace_id。  
+> - Mock API 與實際行為需與 `/specs` 定義保持一致。
 
 ---
 

@@ -18,6 +18,21 @@
 
 1.  **Given** 我進入事件列表頁面, **When** 頁面載入完成, **Then** 系統必須按嚴重性（從高到低）和觸發時間（從新到舊）預設排序。
 2.  **Given** 我想查看所有未解決的嚴重事件, **When** 我使用篩選器設定「嚴重性=Critical」和「狀態≠Resolved」, **Then** 列表應僅顯示符合條件的事件。
+
+---
+
+### 使用者故事 0 - 作為外部系統，通過 Webhook 發送告警觸發事件創建 (優先級: P0)
+
+作為 Grafana 或其他監控系統，我需要能夠通過標準 Webhook 接口向平台發送告警通知，自動觸發事件創建和智慧分析流程。這將實現從被動接收到主動分析的轉型。
+
+**為什麼此優先級**: 這是整個智慧事件處理流程的入口點，確保外部告警能夠無縫接入平台的分析能力。
+
+**獨立測試**: 可以通過向 Webhook 端點發送測試告警，驗證事件成功創建且觸發了 AI 分析來獨立測試。
+
+**驗收情境**:
+
+1.  **Given** Grafana 發送告警 Webhook, **When** 平台接收到格式正確的告警數據, **Then** 系統應自動創建對應事件並觸發 AI 根因分析。
+2.  **Given** 收到複雜告警, **When** 事件創建完成, **Then** 系統應在背景自動執行根因分析並生成解決方案建議。
 3.  **Given** 我在搜尋框中輸入「database」, **When** 查詢執行, **Then** 列表應僅顯示標題或標籤中包含「database」的事件。
 4.  **Given** 我想自訂表格顯示的欄位, **When** 我點擊「欄位設定」並勾選「持續時長」, **Then** 表格中應新增一列顯示每個事件的持續時長。
 
@@ -61,11 +76,18 @@
 - **並發操作**: 當兩個使用者試圖同時認領同一個事件時，系統採用樂觀鎖機制：允許並發操作，但後提交者會收到「事件已被其他人認領」的友好提示，並重新整理頁面顯示最新狀態。
 - **無效的批次操作**: 當批次操作的對象中包含不適用該操作的事件時，系統採用智慧過濾：在用戶點擊批次操作按鈕後，先顯示操作預覽對話框，標示哪些項目有效/無效，並讓用戶確認是否繼續執行有效項目。
 - **儲存的篩選器失效**: 當使用者儲存的篩選條件因某些變更而失效時，系統採用預防性檢查：在用戶儲存篩選器時即時驗證所有依賴項（如用戶是否存在），失效的條件會被阻止儲存並顯示具體錯誤訊息。
+- **Webhook 格式錯誤**: 當接收到格式不正確的 Webhook 數據時，系統應記錄詳細錯誤日誌並返回 400 錯誤，但不會阻擋後續正常請求。
+- **Webhook 服務不可用**: 當 AI 分析服務暫時不可用時，Webhook 應仍創建事件，但跳過 AI 分析並在服務恢復後補充分析結果。
+- **重複告警**: 當收到相同告警的多個 Webhook 時，系統應智慧去重：基於告警指紋判斷是否為相同事件，避免重複創建。
 
 ## 功能需求 *(mandatory)*
 
 ### 功能需求
 
+- **FR-000**: 系統必須（MUST）提供標準 Webhook 端點 `/api/v1/webhooks/alerts`，支援接收 Grafana 等外部系統的告警通知並自動創建事件。
+- **FR-001A**: 系統必須（MUST）支援解析標準 Grafana 告警 Webhook 格式，自動提取告警標籤、註解和狀態資訊。
+- **FR-001B**: 系統必須（MUST）在接收到 Webhook 告警時，自動觸發 AI 根因分析和解決方案建議生成。
+- **FR-001C**: 系統必須（MUST）為每個通過 Webhook 創建的事件建立完整的審計追蹤記錄。
 - **FR-001**: 系統必須（MUST）提供一個可分頁、可排序的事件列表，並預設按嚴重性和觸發時間排序。
 - **FR-002**: 系統必須（MUST）支援事件的核心生命週期管理，包括操作：認領（Acknowledge）、指派（Assign）、解決（Resolve）、靜音（Silence）。
 - **FR-003**: 系統必須（MUST）在事件詳情中提供一個時間軸，按時間倒序記錄所有狀態變更、評論和操作歷史。
@@ -78,8 +100,23 @@
 
 ### 關鍵資料實體 *(如果功能涉及資料則包含)*
 
-- **Incident**: 代表一個獨立的事件。主要屬性: id, title, status (`New`|`Acknowledged`|`Resolved`|`Silenced`), severity, assignee_id, triggered_at, source_rule_id。
-- **TimelineEvent**: 代表事件時間軸上的一筆記錄。主要屬性: id, incident_id, user_id, timestamp, type (`COMMENT`|`STATUS_CHANGE`|`ASSIGNMENT`), content。
+- **Incident**: 代表一個獨立的事件。主要屬性: id, title, status (`New`|`Acknowledged`|`Resolved`|`Silenced`), severity, assignee_id, triggered_at, source_rule_id, source_type (`webhook`|`manual`), raw_alert_data。
+- **TimelineEvent**: 代表事件時間軸上的一筆記錄。主要屬性: id, incident_id, user_id, timestamp, type (`COMMENT`|`STATUS_CHANGE`|`ASSIGNMENT`|`AI_ANALYSIS`), content。
+- **WebhookEvent**: 代表通過 Webhook 接收到的告警事件。主要屬性: id, timestamp, source_system (`grafana`|`prometheus`), raw_payload, parsed_alerts, processing_status (`received`|`processed`|`failed`)。
+
+## 技術實現細節 *(如果功能涉及技術棧則包含)*
+
+### 數據存儲策略
+- **業務數據**: 使用 PostgreSQL 存儲事件、時間軸記錄和 Webhook 事件
+- **快取數據**: 使用 Redis 進行事件查詢快取和會話管理
+- **審計日誌**: 使用 Grafana Loki 進行結構化日誌存儲和檢索
+
+### API 端點定義
+- **POST /api/v1/webhooks/alerts**: Webhook 告警接收端點
+- **GET /api/v1/incidents**: 事件列表查詢
+- **POST /api/v1/incidents/{id}/acknowledge**: 事件認領
+- **POST /api/v1/incidents/{id}/resolve**: 事件解決
+- **POST /api/v1/incidents/{id}/silence**: 事件靜音
 
 ## 權限控制 *(RBAC)*
 
@@ -93,6 +130,7 @@
 - **`incident:list:update`**: 允許執行認領、指派、解決、靜音等改變事件狀態的操作。
 - **`incident:list:comment`**: 允許在事件上添加備註。
 - **`incident:list:admin`**: 允許刪除事件或修改他人備註等管理操作。
+- **`webhook:alerts:create`**: 允許 Webhook 端點接收和處理外部告警通知（系統級權限，通常由服務帳戶持有）。
 
 #### 角色指派建議
 
@@ -111,7 +149,16 @@
 
 ## 觀測性與治理檢查（Observability & Governance Checklist）
 
-{{specs/common.md}}
+> 本模組遵循平台憲法中定義之全域治理與觀測性原則。  
+> 詳細規範請參閱：
+> - [.specify/memory/constitution.md](../../.specify/memory/constitution.md)
+> - 章節：[觀測性與治理檢查](../../.specify/memory/constitution.md#ai-生成與規格合規)
+
+> 本模組需確保：
+> - 所有操作皆可追蹤並具備審計記錄。  
+> - 關鍵事件具備可觀測性指標（logs、metrics、alerts）。  
+> - 錯誤回報須符合統一錯誤模型並附 trace_id。  
+> - Mock API 與實際行為需與 `/specs` 定義保持一致。
 
 ---
 
@@ -123,6 +170,8 @@
 - **SC-002**: 嚴重（Critical）事件的平均解決時間（MTTR）應低於 **[參數化]** 解決目標時間（15分鐘, 30分鐘, 60分鐘）。
 - **SC-003**: 對於 1000 個活躍事件，列表頁面的載入和篩選操作回應時間應低於 500 毫秒。
 - **SC-004**: 引入批次操作後，處理大規模關聯事件的效率提升 90%。
+- **SC-005**: Webhook 端點接收告警後的處理延遲應低於 2 秒（包含事件創建和 AI 分析觸發）。
+- **SC-006**: Webhook 告警處理成功率應達 99.9%，無遺漏事件。
 
 ---
 
@@ -132,6 +181,10 @@
 
 - **Q**: 當一個事件被指派給某個成員時，系統應透過何種渠道（郵件、站內信、IM）通知對方？ → **A**: 用戶偏好設定：允許用戶在個人設定中選擇通知渠道（郵件、站內信、IM）
 - **Q**: AI 分析功能的根因推測是基於歷史數據、關聯事件，還是外部知識庫？ → **A**: 混合智慧：結合統計分析、機器學習和專家知識庫，提供多層次的根因推測
+
+### Session 2025-10-11
+
+- **Q**: 根據架構決策，告警規則的管理與執行應如何分工？ → **A**: 分層分工：平台負責規則配置和管理介面，Grafana負責規則執行和觸發，平台通過Webhook接收告警進行智慧處理
 - **Q**: 當兩個使用者試圖同時認領同一個事件時，系統應如何處理？ → **A**: 樂觀鎖：允許並發操作，但後提交者會收到「事件已被其他人認領」的提示
 - **Q**: 當批次操作的對象中包含不適用該操作的事件時，系統應如何處理？ → **A**: 智慧過濾：在開始操作前預覽並讓用戶確認，無效項目會被自動排除
 - **Q**: 當使用者儲存的篩選條件因某些變更而失效時，系統應如何提示？ → **A**: 預防性檢查：在篩選器儲存時驗證依賴項，防止未來失效

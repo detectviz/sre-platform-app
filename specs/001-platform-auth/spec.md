@@ -135,6 +135,24 @@
 - **AuthConfiguration**: 代表認證系統的參數化設定。主要屬性: id, category, key, value, data_type, is_sensitive, updated_by, updated_at。
 - **IdPAuditLog**: 代表 IdP 審計日誌。
 
+## 技術實現細節 *(如果功能涉及技術棧則包含)*
+
+### 數據存儲策略
+- **業務數據**: 使用 PostgreSQL 存儲 IdP 配置和認證日誌
+- **快取數據**: 使用 Redis 進行認證會話管理和 Token 快取
+- **審計日誌**: 使用 Grafana Loki 記錄身份認證和授權事件
+
+### 外部系統整合
+- **Keycloak**: 作為主要身份認證和授權服務
+- **OIDC/SAML**: 支援標準協議的身份提供商整合
+- **高可用性**: 支援多 IdP 配置和自動故障轉移
+
+### API 端點定義
+- **GET /api/v1/auth/providers**: IdP 配置列表
+- **POST /api/v1/auth/providers**: 新增 IdP 配置
+- **PUT /api/v1/auth/providers/{id}**: 更新 IdP 配置
+- **POST /api/v1/auth/providers/{id}/test**: 測試 IdP 連線
+
 ## 權限控制 *(RBAC)*
 
 ### 權限模型設計
@@ -169,7 +187,16 @@
 
 ## 觀測性與治理檢查（Observability & Governance Checklist）
 
-{{specs/common.md}}
+> 本模組遵循平台憲法中定義之全域治理與觀測性原則。  
+> 詳細規範請參閱：
+> - [.specify/memory/constitution.md](../../.specify/memory/constitution.md)
+> - 章節：[觀測性與治理檢查](../../.specify/memory/constitution.md#ai-生成與規格合規)
+
+> 本模組需確保：
+> - 所有操作皆可追蹤並具備審計記錄。  
+> - 關鍵事件具備可觀測性指標（logs、metrics、alerts）。  
+> - 錯誤回報須符合統一錯誤模型並附 trace_id。  
+> - Mock API 與實際行為需與 `/specs` 定義保持一致。
 
 ---
 

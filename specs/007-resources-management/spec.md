@@ -145,7 +145,16 @@
 
 ## 觀測性與治理檢查（Observability & Governance Checklist）
 
-{{specs/common.md}}
+> 本模組遵循平台憲法中定義之全域治理與觀測性原則。  
+> 詳細規範請參閱：
+> - [.specify/memory/constitution.md](../../.specify/memory/constitution.md)
+> - 章節：[觀測性與治理檢查](../../.specify/memory/constitution.md#ai-生成與規格合規)
+
+> 本模組需確保：
+> - 所有操作皆可追蹤並具備審計記錄。  
+> - 關鍵事件具備可觀測性指標（logs、metrics、alerts）。  
+> - 錯誤回報須符合統一錯誤模型並附 trace_id。  
+> - Mock API 與實際行為需與 `/specs` 定義保持一致。
 
 ---
 
