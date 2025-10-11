@@ -1,0 +1,114 @@
+{
+  "sre.admin": {
+    "settings": [
+      "view",
+      "manage"
+    ],
+    "platform-auth": [
+      "manage"
+    ],
+    "platform-navigation": [
+      "manage"
+    ],
+    "platform-mail": [
+      "manage"
+    ],
+    "platform-tag": [
+      "manage"
+    ],
+    "platform-grafana": [
+      "manage"
+    ],
+    "iam": [
+      "manage_personnel",
+      "manage_teams",
+      "manage_roles"
+    ],
+    "resources": [
+      "view_inventory",
+      "manage_groups",
+      "manage_discovery",
+      "manage_datasources",
+      "view_topology"
+    ],
+    "insight": [
+      "view_logs",
+      "run_backtesting",
+      "view_capacity"
+    ],
+    "incidents": [
+      "manage_rules",
+      "manage_silences",
+      "view_list"
+    ],
+    "notifications": [
+      "manage_strategies",
+      "manage_channels",
+      "view_history"
+    ],
+    "automation": [
+      "manage_playbooks",
+      "manage_triggers",
+      "view_history"
+    ],
+    "dashboards": [
+      "view_library",
+      "edit",
+      "view_war_room"
+    ],
+    "profile": [
+      "view"
+    ],
+    "navigation": [
+      "view"
+    ]
+  },
+  "sre.viewer": {
+    "settings": [
+      "view"
+    ],
+    "platform-auth": [],
+    "platform-navigation": [
+      "view"
+    ],
+    "platform-mail": [
+      "view"
+    ],
+    "platform-tag": [
+      "view"
+    ],
+    "platform-grafana": [
+      "view"
+    ],
+    "iam": [
+      "manage_personnel"
+    ],
+    "resources": [
+      "view_inventory",
+      "view_topology"
+    ],
+    "insight": [
+      "view_logs",
+      "view_capacity"
+    ],
+    "incidents": [
+      "view_list"
+    ],
+    "notifications": [
+      "view_history"
+    ],
+    "automation": [
+      "view_history"
+    ],
+    "dashboards": [
+      "view_library",
+      "view_war_room"
+    ],
+    "profile": [
+      "view"
+    ],
+    "navigation": [
+      "view"
+    ]
+  }
+}
