@@ -1,0 +1,478 @@
+openapi: 3.1.0
+info:
+  title: Platform Auth API
+  version: 1.0.0
+  description: Identity Provider Management and Authentication API
+
+servers:
+  - url: https://api.platform.example.com/v1
+    description: Production API server
+  - url: http://localhost:4000/api/v1
+    description: Mock Server
+
+paths:
+  /auth/idps:
+    get:
+      summary: List identity providers
+      description: Get a list of all configured identity providers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tenant_id
+          in: query
+          schema:
+            type: string
+          description: Filter by tenant ID
+        - name: active_only
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: Return only active IdPs
+      responses:
+        "200":
+          description: List of identity providers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/IdentityProvider"
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+
+    post:
+      summary: Create identity provider
+      description: Create a new identity provider configuration
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IdentityProviderCreate"
+      responses:
+        "201":
+          description: Identity provider created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdentityProvider"
+
+  /auth/idps/{idp_id}:
+    parameters:
+      - name: idp_id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Identity provider ID
+
+    get:
+      summary: Get identity provider
+      description: Get details of a specific identity provider
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Identity provider details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdentityProvider"
+
+    put:
+      summary: Update identity provider
+      description: Update an existing identity provider configuration
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IdentityProviderUpdate"
+      responses:
+        "200":
+          description: Identity provider updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdentityProvider"
+
+    delete:
+      summary: Delete identity provider
+      description: Delete an identity provider configuration
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Identity provider deleted
+
+  /auth/idps/{idp_id}/test:
+    post:
+      summary: Test IdP connection
+      description: Test the connection to an identity provider
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: idp_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Connection test result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectionTestResult"
+
+  /auth/idps/{idp_id}/config:
+    get:
+      summary: Get IdP configuration
+      description: Get configuration parameters for an identity provider
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: idp_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: include_sensitive
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Include sensitive configuration values
+      responses:
+        "200":
+          description: IdP configuration
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/IdPConfiguration"
+
+    put:
+      summary: Update IdP configuration
+      description: Update configuration parameters for an identity provider
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: idp_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                configurations:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/IdPConfigurationUpdate"
+      responses:
+        "200":
+          description: Configuration updated
+
+  /auth/config:
+    get:
+      summary: Get auth configuration
+      description: Get global authentication system configuration
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [security, performance, ui, audit]
+      responses:
+        "200":
+          description: Authentication configuration
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AuthConfiguration"
+
+    put:
+      summary: Update auth configuration
+      description: Update global authentication system configuration
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                configurations:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/AuthConfigurationUpdate"
+      responses:
+        "200":
+          description: Configuration updated
+
+  /auth/audit:
+    get:
+      summary: Get audit logs
+      description: Get authentication audit logs with filtering
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: idp_id
+          in: query
+          schema:
+            type: string
+        - name: user_id
+          in: query
+          schema:
+            type: string
+        - name: action
+          in: query
+          schema:
+            type: string
+            enum: [create, update, delete, test, enable, disable]
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Audit logs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/IdPAuditLog"
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+
+components:
+  schemas:
+    IdentityProvider:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [keycloak, auth0, azure_ad, custom]
+        is_active:
+          type: boolean
+        priority_order:
+          type: integer
+        tenant_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    IdentityProviderCreate:
+      type: object
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [keycloak, auth0, azure_ad, custom]
+        is_active:
+          type: boolean
+          default: true
+        priority_order:
+          type: integer
+        tenant_id:
+          type: string
+        configurations:
+          type: array
+          items:
+            $ref: "#/components/schemas/IdPConfigurationCreate"
+
+    IdentityProviderUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        is_active:
+          type: boolean
+        priority_order:
+          type: integer
+
+    IdPConfiguration:
+      type: object
+      properties:
+        id:
+          type: string
+        config_key:
+          type: string
+        config_value:
+          type: string
+        is_encrypted:
+          type: boolean
+        data_type:
+          type: string
+          enum: [string, number, boolean, json]
+        is_required:
+          type: boolean
+
+    IdPConfigurationCreate:
+      type: object
+      required:
+        - config_key
+        - data_type
+      properties:
+        config_key:
+          type: string
+        config_value:
+          type: string
+        data_type:
+          type: string
+          enum: [string, number, boolean, json]
+        is_required:
+          type: boolean
+          default: false
+
+    IdPConfigurationUpdate:
+      type: object
+      properties:
+        config_value:
+          type: string
+
+    ConnectionTestResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success, failed, timeout]
+        response_time_ms:
+          type: integer
+        error_message:
+          type: string
+        version_info:
+          type: object
+        tested_at:
+          type: string
+          format: date-time
+
+    AuthConfiguration:
+      type: object
+      properties:
+        id:
+          type: string
+        category:
+          type: string
+          enum: [security, performance, ui, audit]
+        key:
+          type: string
+        value:
+          type: string
+        data_type:
+          type: string
+          enum: [string, number, boolean, json]
+        is_sensitive:
+          type: boolean
+        updated_by:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+
+    AuthConfigurationUpdate:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          type: string
+
+    IdPAuditLog:
+      type: object
+      properties:
+        id:
+          type: string
+        idp_id:
+          type: string
+        user_id:
+          type: string
+        action:
+          type: string
+          enum: [create, update, delete, test, enable, disable]
+        action_timestamp:
+          type: string
+          format: date-time
+        ip_address:
+          type: string
+        user_agent:
+          type: string
+        changes:
+          type: object
+        result:
+          type: string
+          enum: [success, failed]
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []

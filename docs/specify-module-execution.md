@@ -26,7 +26,7 @@
 | 3 | `015-user-profile` | 核心平台 | `platform-auth` | 定義使用者個人資料、偏好設定。 |
 | 4 | `017-platform-license` | 核心平台 | `platform-auth` | 定義平台授權與功能啟用邏輯。 |
 | 5 | `005-platform-navigation` | 核心平台 | `identity-access-management` | 定義系統主導航、基於權限的菜單。 |
-| 6 | `003-platform-tag` | 平台服務 | `platform-auth` | 定義全域標籤服務與管理功能。 |
+| 6 | `003-tag-management` | 平台服務 | `platform-auth` | 定義全域標籤服務與管理功能。 |
 | 7 | `004-platform-mail` | 平台服務 | `platform-auth` | 定義郵件範本與發送服務。 |
 | 8 | `012-notification-management` | 平台服務 | `platform-auth`, `platform-mail` | 定義通知規則、通道與訂閱模型。 |
 | 9 | `006-platform-grafana` | 平台服務 | `platform-auth` | 定義 Grafana 嵌入與權限同步。 |
