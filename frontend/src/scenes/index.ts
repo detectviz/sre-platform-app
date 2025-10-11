@@ -1,0 +1,16 @@
+export { createAuthSettingsScene } from '@features/settings/platform-auth/scenes/AuthSettingsScene';
+export { createNavigationModelScene } from '@features/settings/platform-navigation/scenes/NavigationModelScene';
+export { createMailPipelineScene } from '@features/settings/platform-mail/scenes/MailPipelineScene';
+export { createTagGovernanceScene } from '@features/settings/platform-tag/scenes/TagGovernanceScene';
+export { createGrafanaBridgeScene } from '@features/settings/platform-grafana/scenes/GrafanaBridgeScene';
+export { createIamOverviewScene } from '@features/iam/identity-access-management/scenes/IamOverviewScene';
+export { createResourceTopologyScene } from '@features/resources/resources-management/scenes/ResourceTopologyScene';
+export { createLogInsightScene } from '@features/insight/insight-log/scenes/LogInsightScene';
+export { createInsightForecastScene } from '@features/insight/insight-analysis/scenes/InsightForecastScene';
+export { createIncidentRulesScene } from '@features/incidents/incident-rules/scenes/IncidentRulesScene';
+export { createIncidentTimelineScene } from '@features/incidents/incident-list/scenes/IncidentTimelineScene';
+export { createNotificationFlowScene } from '@features/notification/notification-management/scenes/NotificationFlowScene';
+export { createAutomationRunbookScene } from '@features/automation/automation-management/scenes/AutomationRunbookScene';
+export { createSreDashboardScene } from '@features/dashboards/dashboards-management/scenes/SreDashboardScene';
+export { createUserPreferenceScene } from '@features/profile/user-profile/scenes/UserPreferenceScene';
+export { createNavigationWorkbenchScene } from '@features/navigation/platform-navigation/scenes/NavigationWorkbenchScene';

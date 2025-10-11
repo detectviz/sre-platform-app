@@ -1,0 +1,20 @@
+{
+  "platform:admin": {
+    "navigation": ["read", "write"],
+    "settings": ["read", "write"],
+    "resources": ["read", "write"],
+    "incidents": ["read", "write"],
+    "dashboards": ["read", "write"],
+    "automation": ["read", "write"],
+    "notification": ["read", "write"],
+    "profile": ["read", "write"]
+  },
+  "platform:viewer": {
+    "navigation": ["read"],
+    "settings": ["read"],
+    "resources": ["read"],
+    "incidents": ["read"],
+    "dashboards": ["read"],
+    "profile": ["read"]
+  }
+}

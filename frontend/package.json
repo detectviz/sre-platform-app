@@ -1,0 +1,39 @@
+{
+  "name": "sre-platform-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check:obs": "node scripts/check-observability.ts",
+    "check:sec": "node scripts/check-security.ts",
+    "check:consistency": "node scripts/check-consistency.ts",
+    "check:i18n": "node scripts/check-i18n.ts",
+    "check:loop": "node scripts/check-closed-loop.ts",
+    "check:mocks": "node scripts/check-mock-consistency.ts",
+    "check:contracts": "pnpm gen:api && pnpm test:contracts",
+    "check:all": "pnpm -s check:obs && pnpm -s check:sec && pnpm -s check:consistency && pnpm -s check:i18n && pnpm -s check:loop && pnpm -s check:mocks && pnpm -s check:contracts"
+  },
+  "dependencies": {
+    "@emotion/css": "^11.11.2",
+    "@grafana/data": "^10.4.0",
+    "@grafana/runtime": "^10.4.0",
+    "@grafana/scenes": "^0.16.0",
+    "@grafana/ui": "^10.4.0",
+    "@tanstack/react-query": "^5.39.0",
+    "@emotion/react": "^11.11.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.21.0",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@vitejs/plugin-react": "^4.2.1",
+    "typescript": "^5.5.4",
+    "vite": "^5.1.0"
+  }
+}
